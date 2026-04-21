@@ -2,7 +2,17 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0c1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Капани">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Капани">
+<meta name="description" content="Официальное приложение Капани">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./image.png">
+<link rel="icon" type="image/png" href="./image.png">
 <title>Капани - официальный сайт</title>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -14,16 +24,16 @@
     --text:#e2e8f0;--muted:#64748b;--shadow:0 8px 40px rgba(0,0,0,0.5);--r:22px;--r-sm:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:80px;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:80px;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .bottom-nav{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;}
-button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(34,211,165,.07) 0%,transparent 70%),
                radial-gradient(ellipse 50% 50% at 85% 75%,rgba(251,191,36,.06) 0%,transparent 70%);}
 .container{width:100%;max-width:490px;padding:0 12px;position:relative;z-index:1;}
 .g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:900;}
 .h-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
-.h-avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);transition:.2s;}
+.h-avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .h-avatar:hover{transform:scale(1.08);}
 .h-name{font-weight:800;font-size:14px;line-height:1.2;}
 .h-job{font-size:11px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
@@ -37,8 +47,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
 .bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(7,1fr);padding:8px 0 10px;z-index:900;}
-.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:8.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.3px;padding:0 2px;position:relative;}
-.bn-item .ico{font-size:20px;transition:.2s;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:8.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.3px;padding:0 2px;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.bn-item .ico{font-size:20px;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
 .bn-item.sel .ico{transform:scale(1.15);}
 .bn-badge{position:absolute;top:0;right:14px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
@@ -46,18 +56,18 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .section{display:none;animation:fadeUp .35s ease-out;}
 .section.active{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;backdrop-filter:blur(12px);box-shadow:var(--shadow);transition:.2s;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;backdrop-filter:blur(12px);box-shadow:var(--shadow);transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .card:hover{border-color:rgba(255,255,255,0.14);}
 .card-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:16px;}
 #authSection{padding-top:20px;}
 .logo-card{text-align:center;padding:40px 24px 32px;background:linear-gradient(145deg,rgba(34,211,165,.06),rgba(251,191,36,.04));border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;}
 .logo-title{font-family:'Unbounded',sans-serif;font-size:38px;font-weight:900;background:linear-gradient(135deg,var(--primary),var(--gold));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
 .logo-sub{color:var(--muted);margin-top:10px;font-size:14px;}
-input,textarea,select{width:100%;padding:14px 16px;margin:8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;transition:.2s;outline:none;}
+input,textarea,select{width:100%;padding:14px 16px;margin:8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;transition:.2s;outline:none;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 input:focus,textarea:focus,select:focus{border-color:var(--primary);background:rgba(34,211,165,.06);}
 textarea{resize:vertical;min-height:80px;}
 select option{background:#1a2332;}
-.btn{width:100%;padding:16px;border:none;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:.2s;}
+.btn{width:100%;padding:16px;border:none;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .btn:active{transform:scale(.96);}
 .btn-primary{background:linear-gradient(135deg,var(--primary),#0fa87e);color:#0c1117;}
 .btn-gold{background:linear-gradient(135deg,var(--gold),#d97706);color:#0c1117;}
@@ -92,7 +102,7 @@ select option{background:#1a2332;}
 .msg-tab.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
 .msg-panel{display:none;}
 .msg-panel.active{display:block;}
-#chatMessages,#dmMessages{height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;isolation:isolate;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);}
+#chatMessages,#dmMessages{height:30dvh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;isolation:isolate;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);}
 .chat-msg{display:flex;gap:10px;align-items:flex-start;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .chat-msg.me{flex-direction:row-reverse;}
 .chat-av{width:32px;height:32px;border-radius:10px;object-fit:cover;flex-shrink:0;display:block;}
@@ -111,11 +121,11 @@ select option{background:#1a2332;}
 .dm-back{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--primary);font-weight:800;font-size:13px;margin-bottom:12px;background:none;border:none;padding:0;font-family:'Nunito',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .dm-header-row{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
 .market-tabs{display:flex;gap:8px;margin-bottom:14px;}
-.market-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;}
+.market-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .market-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
 .market-panel{display:none;}
 .market-panel.active{display:block;}
-.market-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;transition:.2s;}
+.market-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .market-card:hover{border-color:rgba(255,255,255,.14);}
 .market-img{width:100%;height:180px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:12px;background:var(--surface2);}
 .market-title{font-weight:900;font-size:16px;margin-bottom:4px;}
@@ -278,7 +288,7 @@ select option{background:#1a2332;}
 /* iPhone Fix - Enhanced Performance */
 body{-webkit-overflow-scrolling:touch;touch-action:pan-y pinch-zoom;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;}
 .section{-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
-button,.btn{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+button,.btn{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 input,textarea{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;border-radius:0;}
 input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16px;height:16px;margin:0;cursor:pointer;}
 .chat-bubble{-webkit-backface-visibility:hidden;backface-visibility:hidden;-webkit-transform:translateZ(0);transform:translateZ(0);}
@@ -635,7 +645,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="gHeader" style="display:none" class="g-header">
     <div class="h-left" onclick="navTo('profile')">
         <div class="avatar-wrap" id="headerAvatarWrap">
-            <img id="hAv" src="" class="h-avatar"><video id="hAvVideo" class="h-avatar" style="display:none;position:absolute;inset:0;object-fit:cover;border-radius:12px;" muted autoplay loop playsinline></video>
+            <img id="hAv" src="" class="h-avatar" loading="lazy"><video id="hAvVideo" class="h-avatar" style="display:none;position:absolute;inset:0;object-fit:cover;border-radius:12px;" muted autoplay loop playsinline></video>
             <div class="online-dot" style="border-color:rgba(12,17,23,0.88)"></div>
         </div>
         <div><div class="h-name" id="hNick">...</div><div class="h-job" id="hJob">Житель</div></div>
@@ -648,13 +658,13 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 
 <!-- BOTTOM NAV -->
 <div id="bottomNav" style="display:none;" class="bottom-nav">
-    <button class="bn-item sel" id="bn0" onclick="navTo('home')"><span class="ico">🏠</span>Главная</button>
-    <button class="bn-item" id="bn1" onclick="navTo('messages')"><span class="ico">💬</span>Чаты<span class="bn-badge" id="dmBadge"></span></button>
-    <button class="bn-item" id="bn2" onclick="navTo('market')"><span class="ico">🛍</span>Маркет</button>
-    <button class="bn-item" id="bn3" onclick="navTo('tasks')"><span class="ico">🗂</span>Задания</button>
-    <button class="bn-item" id="bn4" onclick="navTo('bank')"><span class="ico">💰</span>Банк</button>
-    <button class="bn-item" id="bn5" onclick="navTo('subscription')"><span class="ico">⭐</span>Плюс</button>
-    <button class="bn-item" id="bn6" onclick="navTo('profile')"><span class="ico">👤</span>Профиль</button>
+    <button class="bn-item sel" id="bn0" onclick="navTo('home')" aria-label="Перейти на главную страницу"><span class="ico">🏠</span>Главная</button>
+    <button class="bn-item" id="bn1" onclick="navTo('messages')" aria-label="Перейти в чаты"><span class="ico">💬</span>Чаты<span class="bn-badge" id="dmBadge"></span></button>
+    <button class="bn-item" id="bn2" onclick="navTo('market')" aria-label="Перейти в маркет"><span class="ico">🛍</span>Маркет</button>
+    <button class="bn-item" id="bn3" onclick="navTo('tasks')" aria-label="Перейти к заданиям"><span class="ico">🗂</span>Задания</button>
+    <button class="bn-item" id="bn4" onclick="navTo('bank')" aria-label="Перейти в банк"><span class="ico">💰</span>Банк</button>
+    <button class="bn-item" id="bn5" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
+    <button class="bn-item" id="bn6" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
     <button class="bn-item" id="bn7" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
 </div>
 
@@ -666,9 +676,9 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="logo-card"><div class="logo-title">КАПАНИ</div><div class="logo-sub">Наш поселок · Наш сайт</div></div>
     <div class="card">
         <div class="card-title">Вход / Регистрация</div>
-        <input id="lgNick" type="text" placeholder="Никнейм" autocomplete="off">
-        <input id="lgPass" type="password" placeholder="Пароль">
-        <button class="btn btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px">Войти / Создать аккаунт</button>
+        <input id="lgNick" type="text" placeholder="Никнейм" autocomplete="username" required minlength="2" maxlength="20">
+        <input id="lgPass" type="password" placeholder="Пароль" autocomplete="current-password" required minlength="4" maxlength="50">
+        <button class="btn btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px" aria-label="Войти в аккаунт или создать новый">Войти / Создать аккаунт</button>
         <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Нет аккаунта? Создастся автоматически.<br>Стартовый баланс: <b style="color:var(--primary)">0 ₽</b></div>
     </div>
 </div>
@@ -680,10 +690,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="home" class="section active">
     <div class="stats-row" id="homeStats"></div>
     <div class="quick-grid">
-        <div class="quick-card" onclick="navTo('shop')"><div class="qico">🛒</div><div class="qlbl">Магазин</div><div class="qsub">Ресурсы поселка</div></div>
-        <div class="quick-card" onclick="navTo('taxi')"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
-        <div class="quick-card" onclick="navTo('jobs')"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
-        <div class="quick-card" onclick="navTo('ratings')"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
+        <div class="quick-card" onclick="navTo('shop')" role="button" tabindex="0" aria-label="Перейти в магазин"><div class="qico">🛒</div><div class="qlbl">Магазин</div><div class="qsub">Ресурсы поселка</div></div>
+        <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
+        <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
+        <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
     </div>
     <div id="homeOrders"></div>
     <div id="workerSection" style="display:none">
@@ -833,12 +843,12 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 </div>
                 <div id="listingResetInfo" style="margin-top:8px;font-size:11px;color:var(--muted);">Расчет лимита...</div>
             </div>
-            <input type="text" id="mktTitle" placeholder="Название товара / вакансии">
-            <textarea id="mktDesc" placeholder="Описание (для работы — обязанности, график...)" style="min-height:60px;"></textarea>
+            <input type="text" id="mktTitle" placeholder="Название товара / вакансии" required minlength="3" maxlength="100">
+            <textarea id="mktDesc" placeholder="Описание (для работы — обязанности, график...)" style="min-height:60px;" required minlength="10" maxlength="500"></textarea>
             <label style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:800;margin:8px 0;cursor:pointer;"><input type="checkbox" id="mktNegotiable" onchange="toggleMktPriceFields()"> Цена договорная</label>
-            <input type="number" id="mktPrice" placeholder="Цена (₽)" min="0">
-            <input type="text" id="mktSalaryHint" placeholder="Зарплата (для категории «Работа»), напр. 350₽/смена" style="display:none;">
-            <input type="text" id="mktPhoto" placeholder="Фото URL">
+            <input type="number" id="mktPrice" placeholder="Цена (₽)" min="0" step="1">
+            <input type="text" id="mktSalaryHint" placeholder="Зарплата (для категории «Работа»), напр. 350₽/смена" style="display:none;" maxlength="50">
+            <input type="url" id="mktPhoto" placeholder="Фото URL" pattern="https?://.+" title="Введите корректный URL">
             <label class="file-upload-btn" for="mktPhotoFile">📷 Выбрать фото</label>
             <input type="file" id="mktPhotoFile" accept="image/*" onchange="handleMktPhoto(event)">
             <div id="mktPhotoPreview" style="display:none;margin-bottom:8px;"><img id="mktPhotoImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);"></div>
@@ -883,12 +893,12 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="card-title">🛵 Вызов такси</div>
         <div id="taxiMap"></div>
         <div class="taxi-point-row">
-            <input type="text" id="tFrom" placeholder="📍 Откуда" style="margin:0;" onkeydown="if(event.key==='Enter')geocodeFrom()">
+            <input type="text" id="tFrom" placeholder="📍 Откуда" style="margin:0;" required minlength="3" maxlength="100" onkeydown="if(event.key==='Enter')geocodeFrom()">
             <button class="taxi-point-btn" id="btnFromGeo" onclick="detectMyLocation()">📍</button>
             <button class="taxi-point-btn" id="btnFromMap" onclick="startSelectPoint('from')">🗺</button>
         </div>
         <div class="taxi-point-row">
-            <input type="text" id="tTo" placeholder="🏁 Куда" style="margin:0;" onkeydown="if(event.key==='Enter')geocodeTo()">
+            <input type="text" id="tTo" placeholder="🏁 Куда" style="margin:0;" required minlength="3" maxlength="100" onkeydown="if(event.key==='Enter')geocodeTo()">
             <button class="taxi-point-btn" id="btnToMap" onclick="startSelectPoint('to')">🗺</button>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-align:center;line-height:1.45;"><b style="color:var(--text);">Как поставить точку:</b> нажмите значок <b>🗺</b> у нужного поля («Откуда» или «Куда»), затем <b>коснитесь карты</b> в нужном месте.<br><span style="font-size:11px;">📍 — геолокация только для «Откуда»</span></div>
@@ -906,8 +916,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="bank" class="section">
     <div class="card">
         <div class="card-title">💸 Перевод денег</div>
-        <input type="text" id="bTo" placeholder="Никнейм получателя" autocomplete="off">
-        <input type="number" id="bAmt" placeholder="Сумма (₽)">
+        <input type="text" id="bTo" placeholder="Никнейм получателя" autocomplete="off" required minlength="2" maxlength="20">
+        <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
     </div>
     <div class="card">
@@ -1144,7 +1154,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="flex:1;">← Главная</button>
         <button class="btn btn-ghost btn-sm" onclick="navTo('jobs')" style="flex:1;">🛠 Работа</button>
     </div>
-    <div class="card"><div class="card-title">🛵 Мой транспорт</div><input type="text" id="vehicleInput" placeholder="Марка, модель, цвет"><button class="btn btn-ghost" onclick="saveVehicle()" style="margin-bottom:0;">💾 Сохранить</button></div>
+    <div class="card"><div class="card-title">🛵 Мой транспорт</div><input type="text" id="vehicleInput" placeholder="Марка, модель, цвет" maxlength="50"><button class="btn btn-ghost" onclick="saveVehicle()" style="margin-bottom:0;">💾 Сохранить</button></div>
     <div id="driverClientCard" style="display:none;" class="card"><div class="card-title">👤 Клиент</div><div id="driverClientInfo"></div></div>
     <div id="driverTrackCard" style="display:none;" class="tracking-card">
         <div class="tracking-live"><span class="pulse"></span>Активный заказ</div>
@@ -1207,14 +1217,14 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card">
         <div class="card-title">💳 Управление балансом</div>
         <select id="adminTarget" style="margin-bottom:8px;"></select>
-        <input type="number" id="adminAmt" placeholder="Сумма (+ пополнить, − списать)">
+        <input type="number" id="adminAmt" placeholder="Сумма (+ пополнить, − списать)" required step="1">
         <button class="btn btn-gold" onclick="adminMoney()">Выполнить</button>
         <div class="admin-action-grid">
             <button class="btn btn-red" onclick="adminFireWorker()">🚪 Уволить</button>
             <button class="btn btn-ghost" style="color:var(--gold);border-color:var(--gold-dim);" onclick="adminFineWorker()">💸 Штраф</button>
         </div>
-        <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;">
-        <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;">
+        <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;" required min="1" step="1">
+        <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;" required minlength="5" maxlength="200">
     </div>
     <div class="card"><div class="card-title">👥 Все жители</div><div id="allUsersList"></div></div>
     <div class="card"><div class="card-title">📦 Активные заказы</div><div id="adminOrders"></div></div>
@@ -1224,38 +1234,55 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 </div><!-- end container -->
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Конфигурация приложения (встроена для работы через file:// протокол)
+const CONFIG = {
+    firebase: {
+        apiKey: "AIzaSyCDfMUZ-6-GWrw8yCWOoU07g6aappDtwxA",
+        authDomain: "kapanisite.firebaseapp.com",
+        databaseURL: "https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "kapanisite",
+        storageBucket: "kapanisite.firebasestorage.app",
+        messagingSenderId: "250125043268",
+        appId: "1:250125043268:web:fd82172b96e326b2001e11"
+    },
+    fcmVapidKey: "",
+    admin: { username: "Денис" },
+    jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
+    finance: { minBalanceAllowed: -2500, pricePerKm: 15, maxSpeedKmh: 30 },
+    location: { kapani: { lat: 55.7558, lng: 37.6173 } },
+    rewards: { customAvatar: 40, firstWall: 60 },
+    subscriptions: { plus: { price: 199, name: "Kapani Plus" }, ultra: { price: 499, name: "Kapani Ultra" } },
+    limits: { chatMessages: 60, dmMessages: 80, videoCircleMaxDuration: 30, debounceTimeout: 50 },
+    ui: { defaultAvatarUrl: "https://cdn-icons-png.flaticon.com/512/149/149071.png" }
+};
+</script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getMessaging, getToken, onMessage, isSupported as messagingIsSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
-const firebaseConfig = {
-    apiKey:"AIzaSyCDfMUZ-6-GWrw8yCWOoU07g6aappDtwxA",
-    authDomain:"kapanisite.firebaseapp.com",
-    databaseURL:"https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId:"kapanisite",
-    storageBucket:"kapanisite.firebasestorage.app",
-    messagingSenderId:"250125043268",
-    appId:"1:250125043268:web:fd82172b96e326b2001e11"
-};
+const firebaseConfig = CONFIG.firebase;
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
+const functions = getFunctions(app, 'europe-west1');
 
-const ADMIN = 'Денис';
-const JOB_JANITOR = 'Уборщик';
-const JANITOR_TASK_TEXT = 'Убрать площадку';
-const MIN_BALANCE_ALLOWED = -2500;
-const DEFAULT_AVATAR_URL = 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-const REWARD_CUSTOM_AVATAR = 40;
-const REWARD_FIRST_WALL = 60;
-/** Вставьте ключ из Firebase Console → Project settings → Cloud Messaging → Web Push certificates */
-const FCM_VAPID_KEY = '';
+const ADMIN = CONFIG.admin.username;
+const JOB_JANITOR = CONFIG.jobs.janitor;
+const JANITOR_TASK_TEXT = CONFIG.jobs.janitorTaskText;
+const MIN_BALANCE_ALLOWED = CONFIG.finance.minBalanceAllowed;
+const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
+const REWARD_CUSTOM_AVATAR = CONFIG.rewards.customAvatar;
+const REWARD_FIRST_WALL = CONFIG.rewards.firstWall;
+const FCM_VAPID_KEY = CONFIG.fcmVapidKey;
 let messagingInstance = null;
 
-const PRICE_PER_KM = 250;
-const MAX_SPEED_KMH = 25;
-const KAPANI_LAT = 52.6295, KAPANI_LNG = 38.4174;
+const PRICE_PER_KM = CONFIG.finance.pricePerKm;
+const MAX_SPEED_KMH = CONFIG.finance.maxSpeedKmh;
+const KAPANI_LAT = CONFIG.location.kapani.lat;
+const KAPANI_LNG = CONFIG.location.kapani.lng;
 const ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
 
 let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
@@ -1270,6 +1297,30 @@ let lastChatMsgs = {};
 let lastDmMsgs = {};
 let pendingPhotoQueues = { chat: [], dm: [] };
 let vcFacingMode = 'user';
+
+// ─── INTERVAL REGISTRY ─────────────────────
+const activeIntervals = new Map();
+
+function registerInterval(name, intervalId) {
+    activeIntervals.set(name, intervalId);
+    return intervalId;
+}
+
+function clearIntervalByName(name) {
+    const intervalId = activeIntervals.get(name);
+    if (intervalId) {
+        clearInterval(intervalId);
+        activeIntervals.delete(name);
+    }
+}
+
+function stopAllActivity() {
+    activeIntervals.forEach((intervalId, name) => {
+        clearInterval(intervalId);
+        console.log(`Очищен интервал: ${name}`);
+    });
+    activeIntervals.clear();
+}
 
 let taxiMap = null, fromMarker = null, toMarker = null, routeLine = null;
 let selectingPoint = null;
@@ -1289,6 +1340,16 @@ let renderDmMessages;
 let chatReadStates = {};
 
 Object.defineProperty(window, "currentDmNick", { get: () => currentDmNick });
+
+// ─── GLOBAL ERROR HANDLER ───────────────────
+window.addEventListener('error', (event) => {
+    console.error('Глобальная ошибка:', event.error);
+    // Можно добавить логирование в аналитическую систему
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Необработанный Promise rejection:', event.reason);
+});
 
 // ─── HELPERS ──────────────────────────────
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -1350,7 +1411,7 @@ async function updateOnlineStatus() {
 }
 function startOnlineHeartbeat() {
     updateOnlineStatus();
-    onlineHeartbeatInterval = setInterval(updateOnlineStatus, 60000);
+    onlineHeartbeatInterval = registerInterval('onlineHeartbeat', setInterval(updateOnlineStatus, 60000));
     ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>updateOnlineStatus(),{passive:true}));
     // iOS audio unlock: create AudioContext on first touch so speaker is used
     const unlockAudio = () => {
@@ -1509,7 +1570,7 @@ function startApp() {
 }
 
 window.logout = function() {
-    if(onlineHeartbeatInterval) clearInterval(onlineHeartbeatInterval);
+    stopAllActivity();
     Object.values(listeners).forEach(({ref:r,fn})=>off(r,'value',fn));
     if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);}
     if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
@@ -2018,7 +2079,7 @@ window.startVoice=async function(ctx){
         const {indId,timerId}=voiceUiIds(ctx);
         const ind=qs(indId);if(ind)ind.classList.add('show');
         if(ctx==='chat'||ctx==='dm'){const mb=ctx==='chat'?'chatMediaBar':'dmMediaBar';qs(mb)&&qs(mb).classList.remove('open');}
-        voiceInterval=setInterval(()=>{voiceSeconds++;const m=Math.floor(voiceSeconds/60),s=voiceSeconds%60;const tEl=qs(timerId);if(tEl)tEl.textContent=`${m}:${s<10?'0'+s:s}`;if(voiceSeconds>=120)stopVoice(ctx);},1000);
+        voiceInterval=registerInterval('voiceInterval', setInterval(()=>{voiceSeconds++;const m=Math.floor(voiceSeconds/60),s=voiceSeconds%60;const tEl=qs(timerId);if(tEl)tEl.textContent=`${m}:${s<10?'0'+s:s}`;if(voiceSeconds>=120)stopVoice(ctx);},1000));
         toast('🎤 Запись началась...','gold');
     } catch(e){toast('❌ Нет доступа к микрофону','red');}
 };
@@ -2026,7 +2087,7 @@ window.stopVoice=async function(ctx){
     if(!voiceRecorder||voiceRecorder.state==='inactive') return;
     voiceRecorder.stop();
     voiceRecorder.stream.getTracks().forEach(t=>t.stop());
-    clearInterval(voiceInterval);
+    clearIntervalByName('voiceInterval');
     const {indId}=voiceUiIds(ctx);
     const ind=qs(indId);if(ind)ind.classList.remove('show');
     await new Promise(r=>setTimeout(r,200));
@@ -2062,7 +2123,7 @@ function renderActiveOrders(orders) {
         const lbl=sOrder.status==='waiting'?'⏳ Ожидание курьера':'📦 Курьер в пути';
         const workerUser=sOrder.worker?(allUsersCache[sOrder.worker]||{}):null;
         const workerOnline=workerUser?isUserOnline(workerUser):false;
-        const courierBlock=sOrder.worker?`<div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(34,211,165,.08);border-radius:var(--r-sm);margin-bottom:12px;border:1px solid rgba(34,211,165,.2);"><div class="av-wrap-sm ${workerOnline?'online':''}"><img src="${escHtml(workerUser.avatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" style="width:40px;height:40px;border-radius:11px;object-fit:cover;cursor:pointer;" onclick="openUserProfile('${escHtml(sOrder.worker)}')"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:900;font-size:14px;cursor:pointer;" onclick="openUserProfile('${escHtml(sOrder.worker)}')">${escHtml(sOrder.worker)}</div><div style="font-size:11px;color:${workerOnline?'#22c55e':'var(--muted)'};">${workerOnline?'🟢 В сети':'Курьер'}${workerUser.vehicle?' · '+escHtml(workerUser.vehicle):''}</div></div><button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(sOrder.worker)}')" style="font-size:11px;padding:8px 10px;">💬</button></div>`:'';
+        const courierBlock=sOrder.worker?`<div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(34,211,165,.08);border-radius:var(--r-sm);margin-bottom:12px;border:1px solid rgba(34,211,165,.2);"><div class="av-wrap-sm ${workerOnline?'online':''}"><img src="${escHtml(workerUser.avatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" style="width:40px;height:40px;border-radius:11px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="openUserProfile('${escHtml(sOrder.worker)}')"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:900;font-size:14px;cursor:pointer;" onclick="openUserProfile('${escHtml(sOrder.worker)}')">${escHtml(sOrder.worker)}</div><div style="font-size:11px;color:${workerOnline?'#22c55e':'var(--muted)'};">${workerOnline?'🟢 В сети':'Курьер'}${workerUser.vehicle?' · '+escHtml(workerUser.vehicle):''}</div></div><button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(sOrder.worker)}')" style="font-size:11px;padding:8px 10px;">💬</button></div>`:'';
         ss.innerHTML=`<div class="status-card green"><div class="status-badge ${cls}"><span class="pulse"></span>${lbl}</div><div style="font-weight:700;margin-bottom:8px;">📦 ${escHtml(sOrder.info)}</div><div style="font-size:13px;color:var(--muted);margin-bottom:12px;">📍 ${escHtml(sOrder.address||'')}</div>${courierBlock}<button class="btn btn-primary" style="margin-bottom:8px" onclick="payOrder('${sOrder.id}')">✅ Получил — оплатить ${sOrder.price}₽</button><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${sOrder.id}')">Отменить (-50₽)</button></div>`;
     } else { if(btnBuy) btnBuy.disabled=false; ss.innerHTML=''; }
     const ts=qs('taxiStatus');
@@ -2073,7 +2134,7 @@ function renderActiveOrders(orders) {
         const distKm=tOrder.distanceKm||0;const etaMin=distKm?Math.ceil(distKm/MAX_SPEED_KMH*60):null;
         let driverBlock='';
         if(tOrder.worker&&tOrder.status==='in_progress'){
-            driverBlock=`<div class="driver-card"><div class="driver-card-header" style="cursor:pointer;" onclick="openUserProfile('${escHtml(tOrder.worker)}')"><img class="driver-card-av" src="${escHtml(tOrder.driverAvatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}"><div><div class="driver-card-name">${escHtml(tOrder.worker)}</div><div class="driver-card-vehicle">${escHtml(tOrder.driverVehicle||'Транспорт не указан')}</div></div></div>${etaMin?`<div class="driver-eta">⏱ ~<b>${etaMin} мин</b></div>`:''}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="goToChat('${escHtml(tOrder.worker)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="openUserProfile('${escHtml(tOrder.worker)}')">👤 Профиль</button></div></div><div class="tracking-card"><div class="tracking-live"><span class="pulse"></span>Live — водитель на карте</div><div id="trackingMap"></div></div>`;
+            driverBlock=`<div class="driver-card"><div class="driver-card-header" style="cursor:pointer;" onclick="openUserProfile('${escHtml(tOrder.worker)}')"><img class="driver-card-av" src="${escHtml(tOrder.driverAvatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" loading="lazy"><div><div class="driver-card-name">${escHtml(tOrder.worker)}</div><div class="driver-card-vehicle">${escHtml(tOrder.driverVehicle||'Транспорт не указан')}</div></div></div>${etaMin?`<div class="driver-eta">⏱ ~<b>${etaMin} мин</b></div>`:''}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="goToChat('${escHtml(tOrder.worker)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="openUserProfile('${escHtml(tOrder.worker)}')">👤 Профиль</button></div></div><div class="tracking-card"><div class="tracking-live"><span class="pulse"></span>Live — водитель на карте</div><div id="trackingMap"></div></div>`;
             setTimeout(()=>initClientTrackingMap(tOrder.id),150);
         }
         ts.innerHTML=`<div class="status-card gold"><div class="status-badge ${cls2}"><span class="pulse"></span>${lbl2}</div><div style="font-weight:700;margin-bottom:8px;">🗺 ${escHtml(tOrder.info)}</div>${driverBlock}<button class="btn btn-gold" style="margin-bottom:8px" onclick="payOrder('${tOrder.id}')">💳 Оплатить ${tOrder.price}₽</button><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${tOrder.id}')">Отменить (-50₽)</button></div>`;
@@ -2115,7 +2176,7 @@ async function renderWorkerPage(orders){
         const clientCardId=isDriver?'driverClientCard':'deliveryClientCard';const clientInfoId=isDriver?'driverClientInfo':'deliveryClientInfo';
         const clientCardEl=qs(clientCardId),clientInfoEl=qs(clientInfoId);
         if(clientCardEl) clientCardEl.style.display='block';
-        if(clientInfoEl) clientInfoEl.innerHTML=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;"><div class="av-wrap-sm ${clientOnline?'online':''}"><img src="${escHtml(clientUser.avatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" style="width:44px;height:44px;border-radius:13px;object-fit:cover;cursor:pointer;" onclick="openUserProfile('${escHtml(active.client)}')"><div class="online-dot"></div></div><div><div style="font-weight:900;font-size:15px;cursor:pointer;" onclick="openUserProfile('${escHtml(active.client)}')">${escHtml(active.client)}</div><div style="font-size:11px;color:${clientOnline?'#22c55e':'var(--muted)'};">${clientOnline?'🟢 В сети':escHtml(clientUser.job||'Житель')}</div></div></div><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" style="flex:1;" onclick="goToChat('${escHtml(active.client)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openUserProfile('${escHtml(active.client)}')">👤 Профиль</button></div>`;
+        if(clientInfoEl) clientInfoEl.innerHTML=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;"><div class="av-wrap-sm ${clientOnline?'online':''}"><img src="${escHtml(clientUser.avatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" style="width:44px;height:44px;border-radius:13px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="openUserProfile('${escHtml(active.client)}')"><div class="online-dot"></div></div><div><div style="font-weight:900;font-size:15px;cursor:pointer;" onclick="openUserProfile('${escHtml(active.client)}')">${escHtml(active.client)}</div><div style="font-size:11px;color:${clientOnline?'#22c55e':'var(--muted)'};">${clientOnline?'🟢 В сети':escHtml(clientUser.job||'Житель')}</div></div></div><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" style="flex:1;" onclick="goToChat('${escHtml(active.client)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openUserProfile('${escHtml(active.client)}')">👤 Профиль</button></div>`;
         if(isDriver&&active.type==='taxi') setTimeout(()=>initDriverTrackMap(active.id,active.clientLat,active.clientLng,active.destLat,active.destLng),200);
         if(!isDriver&&active.type==='shop') setTimeout(()=>initDeliveryMap(active),200);
     } else {
@@ -2536,27 +2597,53 @@ window.detectShopLocation=function(){if(!navigator.geolocation)return toast('❌
 window.recalcShop=function(){const t=(parseInt(qs('sB').value)||0)*85+(parseInt(qs('sP').value)||0)*22+(parseInt(qs('sL').value)||0)*2+(parseInt(qs('sK').value)||0)*50;qs('sTotal').textContent=t;};
 window.buyShop=async function(){
     if(!await requireSpendable())return;
-    const total=parseInt(qs('sTotal').textContent)||0,addr=qs('sAddr').value.trim();
-    if(total<=0)return toast('⚠️ Выберите товары','gold');if(!addr)return toast('⚠️ Укажите адрес','gold');
+    const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
+    const b=parseInt(qs('sB').value)||0,p=parseInt(qs('sP').value)||0,l=parseInt(qs('sL').value)||0,k=parseInt(qs('sK').value)||0;
+    if(b+p+l+k<=0)return toast('⚠️ Выберите товары','gold');
+    const addr=qs('sAddr').value.trim();
+    if(!addr)return toast('⚠️ Укажите адрес','gold');
+    const total=b*30+p*50+l*20+k*100;
     
     // Apply subscription discount
-    const snap=await get(userRef(currentNick));
-    const u=snap.val()||{};
+    const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasUltra = u.subscription === 'ultra' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     let discountPercent = 0;
     if(hasUltra){ discountPercent = 10; }
+    else if(hasPlus){ discountPercent = 5; }
     
     const finalTotal = Math.max(1, Math.round(total * (1 - discountPercent / 100)));
     
     if(u.balance<finalTotal)return toast(`❌ Недостаточно средств (нужно ${finalTotal}₽${discountPercent > 0 ? ` с учётом скидки Ultra -10%` : ''})`,'red');
     const items=[`🌲×${qs('sB').value||0}`,`🥢×${qs('sP').value||0}`,`🍃×${qs('sL').value||0}`,`🗿×${qs('sK').value||0}`].filter(i=>!i.endsWith('×0')).join(', ');
-    const id=genId();const orderData={id,type:'shop',client:currentNick,price:finalTotal,originalPrice:total,discountApplied:discountPercent,status:'waiting',info:items,address:addr,worker:null};
-    if(shopAddrCoords){orderData.addrLat=shopAddrCoords.lat;orderData.addrLng=shopAddrCoords.lng;}
-    await set(orderRef(id),orderData);
-    await pushNotification(currentNick,`📦 Заказ: ${items} — ${finalTotal}₽${discountPercent > 0 ? ' (скидка 10%)' : ''}`);
-    try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Доставщик'&&nick!==currentNick){await pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders');}}}catch(e){}
-    ['sB','sP','sL','sK'].forEach(i=>qs(i).value=0);qs('sAddr').value='';shopAddrCoords=null;if(shopMarker&&shopMapObj){shopMapObj.removeLayer(shopMarker);shopMarker=null;}recalcShop();
-    toast(`📦 Заказ оформлен!${discountPercent > 0 ? ' Скидка 10% применена!' : ''}`,'green');
+    
+    try {
+        // Вызываем Cloud Function для создания заказа
+        const createOrder = httpsCallable(functions, 'createOrder');
+        const result = await createOrder({
+            type: 'shop',
+            info: items,
+            price: finalTotal,
+            originalPrice: total,
+            discountApplied: discountPercent,
+            address: addr,
+            distanceKm: 0,
+            clientLat: shopAddrCoords?.lat || null,
+            clientLng: shopAddrCoords?.lng || null,
+            destLat: null,
+            destLng: null
+        });
+        
+        if (result.data.success) {
+            await pushNotification(currentNick,`📦 Заказ: ${items} — ${finalTotal}₽${discountPercent > 0 ? ' (скидка 10%)' : ''}`);
+            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Доставщик'&&nick!==currentNick){await pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders');}}}catch(e){}
+            ['sB','sP','sL','sK'].forEach(i=>qs(i).value=0);qs('sAddr').value='';shopAddrCoords=null;if(shopMarker&&shopMapObj){shopMapObj.removeLayer(shopMarker);shopMarker=null;}recalcShop();
+            toast(`📦 Заказ оформлен!${discountPercent > 0 ? ' Скидка 10% применена!' : ''}`,'green');
+        }
+    } catch (error) {
+        console.error('Ошибка заказа:', error);
+        const message = error.message || 'Ошибка при оформлении заказа';
+        toast(`❌ ${message}`,'red');
+    }
 };
 
 // ─── TAXI MAP ─────────────────────────────
@@ -2592,48 +2679,88 @@ window.orderTaxi=async function(){
     
     if(u.balance < finalPrice)return toast(`❌ Недостаточно средств (нужно ${finalPrice}₽${discountPercent > 0 ? ` с учётом ${discountName}` : ''})`,'red');
     
-    const id=genId();
-    await set(orderRef(id),{id,type:'taxi',client:currentNick,price:finalPrice,originalPrice:basePrice,discountApplied:discountPercent,status:'waiting',info:`${from} → ${to}`,worker:null,distanceKm:dist,driverVehicle:null,driverAvatar:null,clientLat:fromCoords?.lat||null,clientLng:fromCoords?.lng||null,destLat:toCoords?.lat||null,destLng:toCoords?.lng||null,driverLat:null,driverLng:null});
-    
-    if(!u.rewardedTaxi){
-        await update(userRef(currentNick),{rewardedTaxi:true,balance:(u.balance||0)+80});
-        await logTx(currentNick,{type:'in',who:'Награда',amt:80,desc:'Бонус за первый заказ такси'});
-        toast('🎁 +80 ₽ за первый заказ такси','gold');
+    try {
+        // Вызываем Cloud Function для создания заказа
+        const createOrder = httpsCallable(functions, 'createOrder');
+        const result = await createOrder({
+            type: 'taxi',
+            info: `${from} → ${to}`,
+            price: finalPrice,
+            originalPrice: basePrice,
+            discountApplied: discountPercent,
+            address: '',
+            distanceKm: dist,
+            clientLat: fromCoords?.lat || null,
+            clientLng: fromCoords?.lng || null,
+            destLat: toCoords?.lat || null,
+            destLng: toCoords?.lng || null
+        });
+        
+        if (result.data.success) {
+            if(!u.rewardedTaxi){
+                await update(userRef(currentNick),{rewardedTaxi:true,balance:(u.balance||0)+80});
+                await logTx(currentNick,{type:'in',who:'Награда',amt:80,desc:'Бонус за первый заказ такси'});
+                toast('🎁 +80 ₽ за первый заказ такси','gold');
+            }
+            
+            const priceText = discountPercent > 0 ? `${finalPrice}₽ (скидка ${discountPercent}%)` : `${finalPrice}₽`;
+            await pushNotification(currentNick,`🛵 Такси: ${from} → ${to} — ${priceText}`,'taxi_orders');
+            toast(`🛵 Такси вызвано!${discountPercent > 0 ? ` Скидка ${discountPercent}% применена!` : ''}`,'gold');
+            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Водитель'&&nick!==currentNick){await pushNotification(nick,`🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,'taxi_orders');}}}catch(e){}
+        }
+    } catch (error) {
+        console.error('Ошибка заказа такси:', error);
+        const message = error.message || 'Ошибка при вызове такси';
+        toast(`❌ ${message}`,'red');
     }
-    
-    const priceText = discountPercent > 0 ? `${finalPrice}₽ (скидка ${discountPercent}%)` : `${finalPrice}₽`;
-    await pushNotification(currentNick,`🛵 Такси: ${from} → ${to} — ${priceText}`,'taxi_orders');
-    toast(`🛵 Такси вызвано!${discountPercent > 0 ? ` Скидка ${discountPercent}% применена!` : ''}`,'gold');
-    try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Водитель'&&nick!==currentNick){await pushNotification(nick,`🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,'taxi_orders');}}}catch(e){}
 };
 
 // ─── ORDER ACTIONS ────────────────────────
 window.takeOrder=async function(id){
     const snap=await get(orderRef(id));if(!snap.exists())return;const o=snap.val();
     if(o.client===currentNick)return toast('⚠️ Нельзя брать свой заказ','gold');
-    const oSnap=await get(ordersRef());const busy=Object.values(oSnap.val()||{}).some(x=>x.worker===currentNick&&x.status==='in_progress');
-    if(busy)return toast('⚠️ Вы уже заняты','gold');
-    const uSnap=await get(userRef(currentNick));const u=uSnap.val();
-    await update(orderRef(id),{status:'in_progress',worker:currentNick,driverVehicle:u.vehicle||'',driverAvatar:u.avatar||''});
-    const isDriver=u.job==='Водитель';
-    const notifText=isDriver?`🛵 Водитель ${currentNick} принял заказ! Транспорт: ${u.vehicle||'?'}`:`📦 Курьер ${currentNick} принял заказ!`;
-    await pushNotification(o.client,notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
-    sendPushNotification('Капани 📦',notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
-    toast('✅ Заказ принят!','green');
-    if(o.type==='taxi'&&isDriver) navTo('driverPage');
-    if(o.type==='shop'&&u.job==='Доставщик') navTo('deliveryPage');
+    
+    try {
+        // Вызываем Cloud Function для принятия заказа
+        const takeOrder = httpsCallable(functions, 'takeOrder');
+        const result = await takeOrder({ orderId: id });
+        
+        if (result.data.success) {
+            const uSnap=await get(userRef(currentNick));const u=uSnap.val();
+            const isDriver=u.job==='Водитель';
+            const notifText=isDriver?`🛵 Водитель ${currentNick} принял заказ! Транспорт: ${u.vehicle||'?'}`:`📦 Курьер ${currentNick} принял заказ!`;
+            await pushNotification(o.client,notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
+            sendPushNotification('Капани 📦',notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
+            toast('✅ Заказ принят!','green');
+            if(o.type==='taxi'&&isDriver) navTo('driverPage');
+            if(o.type==='shop'&&u.job==='Доставщик') navTo('deliveryPage');
+        }
+    } catch (error) {
+        console.error('Ошибка принятия заказа:', error);
+        const message = error.message || 'Ошибка при принятии заказа';
+        toast(`❌ ${message}`,'red');
+    }
 };
 window.abandonOrder=async function(id){
     const snap=await get(orderRef(id));if(!snap.exists())return;const o=snap.val();
     if(o.worker!==currentNick||o.status!=='in_progress')return;
-    const uSnap=await get(userRef(currentNick));const bal=uSnap.val().balance;const penalty=50;
-    if(bal<penalty)return toast('❌ Нет средств для штрафа','red');
-    await update(userRef(currentNick),{balance:bal-penalty});
-    await update(orderRef(id),{status:'waiting',worker:null,driverLat:null,driverLng:null,driverVehicle:null,driverAvatar:null});
-    await pushNotification(currentNick,`⚠️ Отказались от заказа. Штраф: ${penalty}₽`);
-    await pushNotification(o.client,`⚠️ Исполнитель отказался. Ищем нового...`);
-    if(locationWatchId!==null){navigator.geolocation.clearWatch(locationWatchId);locationWatchId=null;}
-    toast(`❌ Заказ отменён (−${penalty}₽)`,'red');
+    
+    try {
+        // Вызываем Cloud Function для отмены заказа
+        const cancelOrder = httpsCallable(functions, 'cancelOrder');
+        const result = await cancelOrder({ orderId: id });
+        
+        if (result.data.success) {
+            await pushNotification(currentNick,`⚠️ Отказались от заказа. Штраф: ${result.data.penalty}₽`);
+            await pushNotification(o.client,`⚠️ Исполнитель отказался. Ищем новый...`);
+            if(locationWatchId!==null){navigator.geolocation.clearWatch(locationWatchId);locationWatchId=null;}
+            toast(`❌ Заказ отменён (−${result.data.penalty}₽)`,'red');
+        }
+    } catch (error) {
+        console.error('Ошибка отмены заказа:', error);
+        const message = error.message || 'Ошибка при отмене заказа';
+        toast(`❌ ${message}`,'red');
+    }
 };
 
 // ─── LOCATION TRACKING ────────────────────
@@ -2671,25 +2798,42 @@ async function initClientTrackingMap(orderId){
 window.payOrder=async function(id){
     const snap=await get(orderRef(id));if(!snap.exists())return toast('❌ Заказ не найден','red');const o=snap.val();
     if(!o.worker)return toast('⚠️ Нет исполнителя','gold');
-    const[cSnap,wSnap]=await Promise.all([get(userRef(o.client)),get(userRef(o.worker))]);
-    if(!cSnap.exists()||!wSnap.exists())return;if(cSnap.val().balance<o.price)return toast('❌ Недостаточно средств','red');
-    await update(userRef(o.client),{balance:cSnap.val().balance-o.price});
-    await update(userRef(o.worker),{balance:(wSnap.val().balance||0)+o.price});
-    await pushNotification(o.client,`💸 Оплата ${o.price}₽ → ${o.worker}`);await pushNotification(o.worker,`💰 Получено ${o.price}₽ от ${o.client}!`);
-    const descC=o.type==='taxi'?`Оплата такси (${o.info||''})`:`Оплата доставки: ${o.info||''}`;
-    const descW=o.type==='taxi'?`Оплата поездки от ${o.client}`:`Доставка для ${o.client}`;
-    await logTx(o.client,{type:'out',who:o.worker,amt:o.price,desc:descC});
-    await logTx(o.worker,{type:'in',who:o.client,amt:o.price,desc:descW});
-    await remove(orderRef(id));toast('💰 Оплата прошла!','green');
+    
+    try {
+        // Вызываем Cloud Function для оплаты заказа
+        const payOrder = httpsCallable(functions, 'payOrder');
+        const result = await payOrder({ orderId: id });
+        
+        if (result.data.success) {
+            await pushNotification(o.client,`💸 Оплата ${o.price}₽ → ${o.worker}`);await pushNotification(o.worker,`💰 Получено ${o.price}₽ от ${o.client}!`);
+            toast('💰 Оплата прошла!','green');
+        }
+    } catch (error) {
+        console.error('Ошибка оплаты заказа:', error);
+        const message = error.message || 'Ошибка при оплате заказа';
+        toast(`❌ ${message}`,'red');
+    }
 };
 window.cancelOrder=async function(id){
     const snap=await get(orderRef(id));if(!snap.exists())return;const o=snap.val();
     const uSnap=await get(userRef(currentNick));const bal=uSnap.val().balance;
     if(bal<50)return toast('❌ Недостаточно средств для штрафа','red');
-    await update(userRef(currentNick),{balance:bal-50});
-    await pushNotification(currentNick,'❌ Заказ отменён, штраф 50₽');
-    if(o.worker)await pushNotification(o.worker,`⚠️ ${currentNick} отменил заказ`);
-    await remove(orderRef(id));toast('❌ Отменён (-50₽)','red');
+    
+    try {
+        // Вызываем Cloud Function для отмены заказа
+        const cancelOrder = httpsCallable(functions, 'cancelOrder');
+        const result = await cancelOrder({ orderId: id });
+        
+        if (result.data.success) {
+            await pushNotification(currentNick,'❌ Заказ отменён, штраф 50₽');
+            if(o.worker)await pushNotification(o.worker,`⚠️ ${currentNick} отменил заказ`);
+            toast(`❌ Отменён (возврат ${result.data.refundAmount}₽)`,'red');
+        }
+    } catch (error) {
+        console.error('Ошибка отмены заказа:', error);
+        const message = error.message || 'Ошибка при отмене заказа';
+        toast(`❌ ${message}`,'red');
+    }
 };
 
 // ─── BANK ─────────────────────────────────
@@ -2710,18 +2854,27 @@ window.doTransfer=async function(){
         return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
     }
     
-    if(!toSnap.exists())return toast('❌ Не найден','red');if(fromUser.balance<amt)return toast('❌ Недостаточно','red');
+    if(!toSnap.exists())return toast('❌ Не найден','red');
     
-    // Update total earned for sender
-    const newTotalEarned = (fromUser.totalEarned || 0) + amt;
-    
-    await update(userRef(currentNick),{balance:fromUser.balance-amt,totalEarned:newTotalEarned});
-    await update(userRef(to),{balance:toSnap.val().balance+amt});
-    await logTx(currentNick,{type:'out',who:to,amt,desc:`Перевод пользователю ${to}`});
-    await logTx(to,{type:'in',who:currentNick,amt,desc:`Перевод от пользователя ${displayNick(fromUser)||currentNick}`});
-    await pushNotification(currentNick,`💸 Перевод ${amt}₽ → ${to}`);await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`);
-    sendPushNotification('Капани 💰',`Вам перевели ${amt}₽ от ${currentNick}`,'money');
-    qs('bTo').value='';qs('bAmt').value='';toast(`💸 ${amt}₽ → ${to}`,'green');renderRecentTransfers();renderFinancialStats();
+    try {
+        // Вызываем Cloud Function для перевода денег
+        const transferMoney = httpsCallable(functions, 'transferMoney');
+        const result = await transferMoney({ 
+            toUid: to, 
+            amount: amt, 
+            description: `Перевод пользователю ${to}` 
+        });
+        
+        if (result.data.success) {
+            await pushNotification(currentNick,`💸 Перевод ${amt}₽ → ${to}`);await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`);
+            sendPushNotification('Капани 💰',`Вам перевели ${amt}₽ от ${currentNick}`,'money');
+            qs('bTo').value='';qs('bAmt').value='';toast(`💸 ${amt}₽ → ${to}`,'green');renderRecentTransfers();renderFinancialStats();
+        }
+    } catch (error) {
+        console.error('Ошибка перевода:', error);
+        const message = error.message || 'Ошибка при выполнении перевода';
+        toast(`❌ ${message}`,'red');
+    }
 };
 async function renderRecentTransfers(){
     const el=qs('txHistory');if(!el)return;const snap=await get(txLogRef(currentNick));
@@ -2951,7 +3104,7 @@ function renderDmContactList(users, pinnedOnly=false){
         
         return `<div class="dm-user-row" onclick="${pinnedOnly ? 'openPinnedDmChat' : 'openDmChat'}('${escHtml(u.nick)}')">
             <div class="av-wrap-sm ${online ? 'online' : ''}" style="position:relative;">
-                <img class="dm-user-av" src="${escHtml(u.avatar||DEFAULT_AVATAR_URL)}">
+                <img class="dm-user-av" src="${escHtml(u.avatar||DEFAULT_AVATAR_URL)}" loading="lazy">
                 ${avatarFrameHtml}
                 <div class="online-dot"></div>
             </div>
@@ -3068,10 +3221,12 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(msgType==='voice') notifText=`🎤 ${currentNick}: Голосовое сообщение`;
     else if(msgType==='video_circle') notifText=`⭕ ${currentNick}: Видеосообщение`;
     else if(msgType==='image') notifText=`🖼 ${currentNick}: Фото`;
-    else if(msgType==='video') notifText=`🎬 ${currentNick}: Видео`;
+    else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
     else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
-    await pushNotification(currentDmNick,notifText,'messages');
-    sendPushNotification(`💬 ${currentNick}`,notifText,'messages');
+    if(currentDmNick!==currentNick){
+        await pushNotification(currentDmNick,notifText,'messages');
+        sendPushNotification(`💬 ${currentNick}`,notifText,'messages');
+    }
 }
 
 // ─── USER PROFILE MODAL ───────────────────
@@ -3637,7 +3792,7 @@ function priceLine(l){
 function marketCard(l,isMine){
     const isWork=l.category==='work';
     const isService=l.category==='service';
-    const isBuyer=l.buyer===currentNick;const canBuy=!isMine&&l.seller!==currentNick&&(l.status==='active'||isService);
+    const isBuyer=l.buyer===currentNick;const canBuy=!isMine&&l.seller!==currentNick;
     const pendingSellerConfirm=isMine&&l.status==='meeting_requested';const pendingBuyerConfirm=isBuyer&&l.status==='meeting_confirmed';
     const pendingBuyerReq=isBuyer&&l.status==='meeting_requested';const chatPartner=isMine?l.buyer:(isBuyer?l.seller:null);
     const showChat=chatPartner&&(l.status==='meeting_requested'||l.status==='meeting_confirmed');const sellerOnline=isUserOnline(allUsersCache[l.seller]);
@@ -3680,7 +3835,7 @@ function marketCard(l,isMine){
             <div class="seller-online-text ${sellerOnline?'online':'offline'}" style="margin-top:2px;font-size:11px;">${sellerOnline?'в сети':'не в сети'}</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${canBuy&&(l.status==='active'||isService)?`<button class="btn btn-gold btn-sm" onclick="requestMeeting('${l.id}')">🤝 ${isService?'Заказать':'Договориться'}</button>`:''}
+            ${canBuy?`<button class="btn btn-gold btn-sm" onclick="requestMeeting('${l.id}')">🤝 ${isService?'Заказать':'Договориться'}</button>`:''}
             ${pendingBuyerReq?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;">⏳ Ожидаем продавца</div><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
             ${pendingSellerConfirm?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
             ${pendingBuyerConfirm?`<button class="btn btn-primary btn-sm" onclick="confirmPurchase('${l.id}')">✅ ${isService?'Подтвердить заказ':'Оплатить и подтвердить'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
@@ -3743,7 +3898,7 @@ window.publishListing=async function(){
     qs('mktTitle').value='';qs('mktDesc').value='';qs('mktPrice').value='';if(qs('mktNegotiable'))qs('mktNegotiable').checked=false;if(qs('mktSalaryHint'))qs('mktSalaryHint').value='';
     qs('mktPhoto').value='';qs('mktPhotoPreview').style.display='none';window._mktPhotoData=null;toggleMktPriceFields();toast('✅ Опубликовано!','green');switchMarketTab(0);
 };
-window.requestMeeting=async function(id){const snap=await get(listingRef(id));if(!snap.exists()||snap.val().status!=='active')return toast('❌ Недоступен','red');const l=snap.val();await update(listingRef(id),{status:'meeting_requested',buyer:currentNick});const pl=l.priceNegotiable?'договорная':`${l.price}₽`;await pushNotification(l.seller,`🤝 Купить хочет: ${currentNick} · "${l.title}" · ${pl}`,'market');toast('✉️ Запрос отправлен!','green');};
+window.requestMeeting=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return toast('❌ Листинг не найден','red');const l=snap.val();await update(listingRef(id),{status:'meeting_requested',buyer:currentNick});const pl=l.priceNegotiable?'договорная':`${l.price}₽`;await pushNotification(l.seller,`🤝 Купить хочет: ${currentNick} · "${l.title}" · ${pl}`,'market');toast('✉️ Запрос отправлен!','green');};
 window.confirmMeeting=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return;const l=snap.val();await update(listingRef(id),{status:'meeting_confirmed'});await pushNotification(l.buyer,`✅ ${l.seller} подтвердил встречу!`,'market');toast('✅ Встреча подтверждена','green');};
 window.cancelMeeting=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return;const l=snap.val();const otherNick=l.buyer===currentNick?l.seller:l.buyer;await update(listingRef(id),{status:'active',buyer:null});if(otherNick)await pushNotification(otherNick,`⚠️ ${currentNick} отказался от сделки`,'market');toast('❌ Отказ от встречи','red');};
 window.goToChat=function(nick){navTo('messages');setTimeout(()=>{switchMsgTab(1);setTimeout(()=>openDmChat(nick),200);},200);};
@@ -3814,7 +3969,7 @@ function renderLeaderboard(users){
         frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
     }
     
-    return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(u.job||'Житель')}</div></div><div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div></div>`;}).join('');
+    return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(u.job||'Житель')}</div></div><div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div></div>`;}).join('');
 }
 
 // ─── JOBS ─────────────────────────────────
@@ -3927,7 +4082,7 @@ window.submitJanitorDone=async function(){
 function renderAdminApps(apps){const pending=Object.values(apps||{}).filter(a=>a.status==='new');qs('appList').innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':pending.map(a=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;"><b>${escHtml(a.from)}</b> → ${escHtml(a.target)}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="approveApp('${a.id}',true)">✅</button><button class="btn btn-red btn-sm" onclick="approveApp('${a.id}',false)">❌</button></div></div>`).join('');}
 function renderAdminUsers(users){
     const el=qs('allUsersList');if(!el)return;
-    el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="av-wrap-sm ${online?'online':''}"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(u.job||'Житель')} · ${(u.balance||0).toLocaleString()}₽</div></div></div>`;}).join('');
+    el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="av-wrap-sm ${online?'online':''}"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(u.job||'Житель')} · ${(u.balance||0).toLocaleString()}₽</div></div></div>`;}).join('');
     const total=Object.values(users).reduce((s,u)=>s+(u.balance||0),0);
     const aStats=qs('adminStats');if(aStats)aStats.innerHTML=`<div class="stat-box"><div class="sv" style="color:var(--gold)">${Object.keys(users).length}</div><div class="sl">Жителей</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)" id="adminOrderCount">—</div><div class="sl">Заказов</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)">${Math.round(total/1000)}к</div><div class="sl">₽ оборот</div></div>`;
 }
@@ -3936,7 +4091,7 @@ function renderAdminUserSelect(users){const sel=qs('adminTarget');if(!sel)return
 function renderAdminJanitorSubmissions(subs){
     const el=qs('janitorAdminList');if(!el)return;
     const pending=Object.values(subs||{}).filter(s=>s.status==='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    el.innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет отчётов</div>':pending.map(s=>`<div class="submission-card"><div class="submission-top" onclick="openUserProfile('${jsEsc(s.worker)}')"><img src="${escHtml(s.workerAvatar||DEFAULT_AVATAR_URL)}" style="width:46px;height:46px;border-radius:13px;object-fit:cover;border:2px solid var(--primary);"><div style="flex:1;min-width:0;"><div style="font-weight:900;font-size:14px;">${escHtml(s.worker)}${s.worker===ADMIN?' 👑':''}</div><div style="font-size:11px;color:var(--muted);">${escHtml(s.workerJob||JOB_JANITOR)} · ${escHtml(s.date||todayKey())}</div></div><div style="font-size:11px;font-weight:900;color:var(--gold);">⏳ На проверке</div></div>${s.photo?`<img class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}${s.comment?`<div style="font-size:13px;color:var(--text);white-space:pre-wrap;">${escHtml(s.comment)}</div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(s.worker)}')">💬 Чат</button><button class="btn btn-primary btn-sm" onclick="payoutJanitorSubmission('${jsEsc(s.id)}')">💵 Выплатить</button><button class="btn btn-red btn-sm" onclick="rejectJanitorSubmission('${jsEsc(s.id)}')">❌ Отказать</button></div></div>`).join('');
+    el.innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет отчётов</div>':pending.map(s=>`<div class="submission-card"><div class="submission-top" onclick="openUserProfile('${jsEsc(s.worker)}')"><img src="${escHtml(s.workerAvatar||DEFAULT_AVATAR_URL)}" style="width:46px;height:46px;border-radius:13px;object-fit:cover;border:2px solid var(--primary);" loading="lazy"><div style="flex:1;min-width:0;"><div style="font-weight:900;font-size:14px;">${escHtml(s.worker)}${s.worker===ADMIN?' 👑':''}</div><div style="font-size:11px;color:var(--muted);">${escHtml(s.workerJob||JOB_JANITOR)} · ${escHtml(s.date||todayKey())}</div></div><div style="font-size:11px;font-weight:900;color:var(--gold);">⏳ На проверке</div></div>${s.photo?`<img class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}${s.comment?`<div style="font-size:13px;color:var(--text);white-space:pre-wrap;">${escHtml(s.comment)}</div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(s.worker)}')">💬 Чат</button><button class="btn btn-primary btn-sm" onclick="payoutJanitorSubmission('${jsEsc(s.id)}')">💵 Выплатить</button><button class="btn btn-red btn-sm" onclick="rejectJanitorSubmission('${jsEsc(s.id)}')">❌ Отказать</button></div></div>`).join('');
 }
 window.payoutJanitorSubmission=async function(id){
     if(currentNick!==ADMIN)return;
@@ -3988,17 +4143,39 @@ window.adminMoney=async function(){
     const target=qs('adminTarget').value,amt=parseInt(qs('adminAmt').value)||0;
     if(!target)return toast('⚠️ Выберите жителя','gold');if(amt===0)return toast('⚠️ Сумма','gold');
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
-    const old=snap.val().balance||0;
-    let newBal=old+amt;
-    newBal=Math.max(MIN_BALANCE_ALLOWED,newBal);
-    const patch={balance:newBal};
-    if(newBal<=MIN_BALANCE_ALLOWED)patch.accountFrozen=true;
-    else if(newBal>0)patch.accountFrozen=false;
-    await update(userRef(target),patch);
-    await pushNotification(target,`${amt>0?'💰 Зачислено':'💸 Списано'} ${Math.abs(amt)}₽ мэром`,'money');
-    await logTx(target,{type:amt>0?'in':'out',who:'Мэрия',amt:Math.abs(amt),desc:amt>0?`Зачисление от мэрии`:`Списание мэрией`});
-    qs('adminAmt').value='';
-    toast(`${amt>0?'💰':'💸'} ${Math.abs(amt)}₽ → ${target}`,amt>0?'green':'red');
+    
+    try {
+        // Вызываем Cloud Function для админской операции с балансом
+        const adminAdjustBalance = httpsCallable(functions, 'adminAdjustBalance');
+        const result = await adminAdjustBalance({ 
+            uid: target, 
+            amount: amt, 
+            type: 'adjustment',
+            description: amt > 0 ? 'Зачисление от мэрии' : 'Списание мэрией'
+        });
+        
+        if (result.data.success) {
+            // Проверяем и обновляем статус заморозки аккаунта
+            const userSnap = await get(userRef(target));
+            const user = userSnap.val();
+            const newBal = result.data.newBalance;
+            const patch = {};
+            if (newBal <= MIN_BALANCE_ALLOWED) patch.accountFrozen = true;
+            else if (newBal > 0) patch.accountFrozen = false;
+            
+            if (Object.keys(patch).length > 0) {
+                await update(userRef(target), patch);
+            }
+            
+            await pushNotification(target,`${amt>0?'💰 Зачислено':'💸 Списано'} ${Math.abs(amt)}₽ мэром`,'money');
+            qs('adminAmt').value='';
+            toast(`${amt>0?'💰':'💸'} ${Math.abs(amt)}₽ → ${target}`,amt>0?'green':'red');
+        }
+    } catch (error) {
+        console.error('Ошибка админской операции:', error);
+        const message = error.message || 'Ошибка при выполнении операции';
+        toast(`❌ ${message}`,'red');
+    }
 };
 window.adminFineWorker=async function(){
     const target=qs('adminTarget').value;
@@ -4008,15 +4185,38 @@ window.adminFineWorker=async function(){
     if(amt<=0)return toast('⚠️ Укажите штраф','gold');
     if(!reason)return toast('⚠️ Укажите причину штрафа','gold');
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
-    const u=snap.val();
-    let newBal=(u.balance||0)-amt;
-    const patch={balance:Math.max(MIN_BALANCE_ALLOWED,newBal)};
-    if(patch.balance<=MIN_BALANCE_ALLOWED)patch.accountFrozen=true;
-    await update(userRef(target),patch);
-    await pushNotification(target,`💸 Штраф ${amt}₽ от мэрии. Причина: ${reason}`,'money');
-    await logTx(target,{type:'out',who:'Мэрия',amt,desc:`Штраф от мэрии: ${reason}`});
-    qs('adminFineAmt').value='';if(qs('adminFineReason'))qs('adminFineReason').value='';
-    toast(`💸 Штраф ${amt}₽ → ${target}`,'red');
+    
+    try {
+        // Вызываем Cloud Function для штрафа
+        const adminAdjustBalance = httpsCallable(functions, 'adminAdjustBalance');
+        const result = await adminAdjustBalance({ 
+            uid: target, 
+            amount: -amt, // Отрицательное значение для списания
+            type: 'fine',
+            description: `Штраф от мэрии: ${reason}`
+        });
+        
+        if (result.data.success) {
+            // Проверяем и обновляем статус заморозки аккаунта
+            const userSnap = await get(userRef(target));
+            const user = userSnap.val();
+            const newBal = result.data.newBalance;
+            const patch = {};
+            if (newBal <= MIN_BALANCE_ALLOWED) patch.accountFrozen = true;
+            
+            if (Object.keys(patch).length > 0) {
+                await update(userRef(target), patch);
+            }
+            
+            await pushNotification(target,`💸 Штраф ${amt}₽ от мэрии. Причина: ${reason}`,'money');
+            qs('adminFineAmt').value='';if(qs('adminFineReason'))qs('adminFineReason').value='';
+            toast(`💸 Штраф ${amt}₽ → ${target}`,'red');
+        }
+    } catch (error) {
+        console.error('Ошибка штрафа:', error);
+        const message = error.message || 'Ошибка при выполнении операции';
+        toast(`❌ ${message}`,'red');
+    }
 };
 window.adminDeleteOrder=async function(id){await remove(orderRef(id));toast('🗑 Удалено','gold');};
 window.adminFireWorker=async function(){
@@ -4098,7 +4298,11 @@ window.addEventListener('load', ()=>{
 }, {once:true});
 if(currentNick){
     try { startApp(); } catch(e) { console.error(e); toast('⚠️ Ошибка запуска интерфейса','red'); hideLoadingSafe(); }
-    get(userRef(currentNick)).then(snap=>{
+    // Добавляем таймаут для Firebase запроса, чтобы сайт не висел бесконечно
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firebase request timeout')), 10000)
+    );
+    Promise.race([get(userRef(currentNick)), timeoutPromise]).then(snap=>{
         if(!snap.exists()){
             sessionStorage.removeItem('kp_s');
             localStorage.removeItem('kp_s');
@@ -4165,101 +4369,117 @@ function msgEditHtml(kind, msgId, m){
 }
 
 // ─── CHAT RENDER / DELETE FIXES ───────────
+let _chatRenderPending = false;
+let _chatRenderTimeout = null;
+
 window.renderChat = async function(msgs){
     lastChatMsgs = msgs || {};
     const el = qs('chatMessages'); if(!el) return;
-    const scroll = preserveScrollState(el);
     
-    // Get current user's chat bubble style
-    let myBubbleStyle = '';
-    try {
-        const snap = await get(userRef(currentNick));
-        const u = snap.val() || {};
-        const hasActiveSub = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-        if(hasActiveSub) myBubbleStyle = u.chatBubbleStyle || '';
-    } catch(e) {}
+    // Debounce render for performance on iPhone
+    if(_chatRenderPending) {
+        if(_chatRenderTimeout) clearTimeout(_chatRenderTimeout);
+        _chatRenderTimeout = setTimeout(() => renderChat(msgs), 50);
+        return;
+    }
     
-    const entries = Object.entries(lastChatMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-60);
-    let lastDateStr = '';
-    const html = entries.map(([msgId, m]) => {
-        const isMe = m.nick === currentNick;
-        const online = isUserOnline(allUsersCache[m.nick]);
-        const edited = m.edited ? `<span style="font-size:9px;color:var(--muted);margin-left:4px;">(изм.)</span>` : '';
-        const avSrc = safeAvatar(m.nick, m.avatar);
-        const ts = m.createdAt || 0;
-        const others = Object.keys(allUsersCache).filter(n => n !== currentNick);
-        const allRead = isMe && ts > 0 && others.length > 0 && others.every(n => (chatReadStates[n] || 0) >= ts);
-        const readLine = isMe && ts > 0 && others.length > 0
-            ? (allRead ? `<div class="chat-time" style="color:var(--primary);font-weight:800;">✓✓ Прочитано всеми</div>` : `<div class="chat-time" style="color:var(--muted);font-size:9px;">✓ Отправлено</div>`)
-            : '';
-        // Date separator
-        const msgDateStr = ts ? new Date(ts).toLocaleDateString('ru', {day:'numeric',month:'long',year:'numeric'}) : '';
-        let separator = '';
-        if(msgDateStr && msgDateStr !== lastDateStr) {
-            lastDateStr = msgDateStr;
-            separator = `<div class="chat-date-separator" data-date="${localDateKey(ts)}"><span>${msgDateStr}</span></div>`;
-        }
-        // Apply custom bubble style for all users with subscriptions
-        let bubbleClass = 'chat-bubble';
-        const senderUser = allUsersCache[m.nick];
-        if(senderUser) {
-            const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
-            if(hasActiveSub && senderUser.chatBubbleStyle) {
-                const style = senderUser.chatBubbleStyle;
-                if(style === 'gold') bubbleClass += ' chat-bubble-gold';
-                else if(style === 'rainbow') bubbleClass += ' chat-bubble-rainbow';
-                else if(style === 'ocean') bubbleClass += ' chat-bubble-ocean';
-                else if(style === 'sunset') bubbleClass += ' chat-bubble-sunset';
-                else if(style === 'aurora') bubbleClass += ' chat-bubble-aurora';
-                else if(style === 'galaxy') bubbleClass += ' chat-bubble-galaxy';
-                else if(style === 'fire') bubbleClass += ' chat-bubble-fire';
-                else if(style === 'neon') bubbleClass += ' chat-bubble-neon';
-                else if(style === 'rose') bubbleClass += ' chat-bubble-rose';
-            }
-        }
-        // Apply avatar frame for users with subscriptions
-        let avatarFrameHtml = '';
-        if(senderUser) {
-            const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
-            if(hasActiveSub && senderUser.avatarFrame) {
-                let frameClass = 'avatar-frame';
-                if(senderUser.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
-                else if(senderUser.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
-                else if(senderUser.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
-                else if(senderUser.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
-                else if(senderUser.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
-                else if(senderUser.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
-                else if(senderUser.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
-                else if(senderUser.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
-                else if(senderUser.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
-                else if(senderUser.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
-                else if(senderUser.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
-                else if(senderUser.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-                else if(senderUser.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
-                
-                avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
-            }
-        }
+    _chatRenderPending = true;
+    
+    requestAnimationFrame(async () => {
+        const scroll = preserveScrollState(el);
         
-        return separator + `<div class="chat-msg ${isMe ? 'me' : ''}" data-msgid="${jsEsc(msgId)}">
-            <div class="av-wrap-sm ${online ? 'online' : ''}" onclick="openUserProfile('${jsEsc(m.nick)}')" style="position:relative;">
-                <img class="chat-av" src="${escHtml(avSrc)}" style="cursor:pointer;" loading="lazy" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
-                ${avatarFrameHtml}
-                <div class="online-dot"></div>
-            </div>
-            <div class="chat-msg-body">
-                <div class="${bubbleClass}" id="gcbubble_${jsEsc(msgId)}">
-                    ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
-                    ${mediaHtml(m)}${edited}
-                    <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
+        // Get current user's chat bubble style
+        let myBubbleStyle = '';
+        try {
+            const snap = await get(userRef(currentNick));
+            const u = snap.val() || {};
+            const hasActiveSub = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+            if(hasActiveSub) myBubbleStyle = u.chatBubbleStyle || '';
+        } catch(e) {}
+        
+        const entries = Object.entries(lastChatMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-60);
+        let lastDateStr = '';
+        const html = entries.map(([msgId, m]) => {
+            const isMe = m.nick === currentNick;
+            const online = isUserOnline(allUsersCache[m.nick]);
+            const edited = m.edited ? `<span style="font-size:9px;color:var(--muted);margin-left:4px;">(изм.)</span>` : '';
+            const avSrc = safeAvatar(m.nick, m.avatar);
+            const ts = m.createdAt || 0;
+            const others = Object.keys(allUsersCache).filter(n => n !== currentNick);
+            const allRead = isMe && ts > 0 && others.length > 0 && others.every(n => (chatReadStates[n] || 0) >= ts);
+            const readLine = isMe && ts > 0 && others.length > 0
+                ? (allRead ? `<div class="chat-time" style="color:var(--primary);font-weight:800;">✓✓ Прочитано всеми</div>` : `<div class="chat-time" style="color:var(--muted);font-size:9px;">✓ Отправлено</div>`)
+                : '';
+            // Date separator
+            const msgDateStr = ts ? new Date(ts).toLocaleDateString('ru', {day:'numeric',month:'long',year:'numeric'}) : '';
+            let separator = '';
+            if(msgDateStr && msgDateStr !== lastDateStr) {
+                lastDateStr = msgDateStr;
+                separator = `<div class="chat-date-separator" data-date="${localDateKey(ts)}"><span>${msgDateStr}</span></div>`;
+            }
+            // Apply custom bubble style for all users with subscriptions
+            let bubbleClass = 'chat-bubble';
+            const senderUser = allUsersCache[m.nick];
+            if(senderUser) {
+                const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
+                if(hasActiveSub && senderUser.chatBubbleStyle) {
+                    const style = senderUser.chatBubbleStyle;
+                    if(style === 'gold') bubbleClass += ' chat-bubble-gold';
+                    else if(style === 'rainbow') bubbleClass += ' chat-bubble-rainbow';
+                    else if(style === 'ocean') bubbleClass += ' chat-bubble-ocean';
+                    else if(style === 'sunset') bubbleClass += ' chat-bubble-sunset';
+                    else if(style === 'aurora') bubbleClass += ' chat-bubble-aurora';
+                    else if(style === 'galaxy') bubbleClass += ' chat-bubble-galaxy';
+                    else if(style === 'fire') bubbleClass += ' chat-bubble-fire';
+                    else if(style === 'neon') bubbleClass += ' chat-bubble-neon';
+                    else if(style === 'rose') bubbleClass += ' chat-bubble-rose';
+                }
+            }
+            // Apply avatar frame for users with subscriptions
+            let avatarFrameHtml = '';
+            if(senderUser) {
+                const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
+                if(hasActiveSub && senderUser.avatarFrame) {
+                    let frameClass = 'avatar-frame';
+                    if(senderUser.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
+                    else if(senderUser.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
+                    else if(senderUser.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
+                    else if(senderUser.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
+                    else if(senderUser.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
+                    else if(senderUser.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
+                    else if(senderUser.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
+                    else if(senderUser.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
+                    else if(senderUser.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
+                    else if(senderUser.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
+                    else if(senderUser.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
+                    else if(senderUser.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
+                    else if(senderUser.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+                    
+                    avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
+                }
+            }
+            
+            return separator + `<div class="chat-msg ${isMe ? 'me' : ''}" data-msgid="${jsEsc(msgId)}">
+                <div class="av-wrap-sm ${online ? 'online' : ''}" onclick="openUserProfile('${jsEsc(m.nick)}')" style="position:relative;">
+                    <img class="chat-av" src="${escHtml(avSrc)}" style="cursor:pointer;" loading="lazy" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
+                    ${avatarFrameHtml}
+                    <div class="online-dot"></div>
                 </div>
-                ${msgActionsHtml('chat', msgId, m, isMe)}
-                ${msgEditHtml('chat', msgId, m)}
-            </div>
-        </div>`;
-    }).join('');
-    el.innerHTML = html;
-    restoreScrollState(el, scroll);
+                <div class="chat-msg-body">
+                    <div class="${bubbleClass}" id="gcbubble_${jsEsc(msgId)}">
+                        ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
+                        ${mediaHtml(m)}${edited}
+                        <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
+                    </div>
+                    ${msgActionsHtml('chat', msgId, m, isMe)}
+                    ${msgEditHtml('chat', msgId, m)}
+                </div>
+            </div>`;
+        }).join('');
+        el.innerHTML = html;
+        restoreScrollState(el, scroll);
+        _chatRenderPending = false;
+    });
 };
 window.deleteChat = async function(msgId){
     try { 
@@ -4289,97 +4509,113 @@ window.saveEditChat = async function(msgId){
 };
 
 // ─── DM RENDER / DELETE FIXES ─────────────
+let _dmRenderPending = false;
+let _dmRenderTimeout = null;
+
 window.renderDmMessages = async function(msgs){
     lastDmMsgs = msgs || {};
     const el = qs('dmMessages'); if(!el) return;
-    const scroll = preserveScrollState(el);
     
-    // Get current user's chat bubble style
-    let myBubbleStyle = '';
-    try {
-        const snap = await get(userRef(currentNick));
-        const u = snap.val() || {};
-        const hasActiveSub = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-        if(hasActiveSub) myBubbleStyle = u.chatBubbleStyle || '';
-    } catch(e) {}
+    // Debounce render for performance on iPhone
+    if(_dmRenderPending) {
+        if(_dmRenderTimeout) clearTimeout(_dmRenderTimeout);
+        _dmRenderTimeout = setTimeout(() => renderDmMessages(msgs), 50);
+        return;
+    }
     
-    const entries = Object.entries(lastDmMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-80);
-    let lastDateStr = '';
-    const html = entries.map(([msgId, m]) => {
-        const isMe = m.nick === currentNick;
-        const edited = m.edited ? `<span style="font-size:9px;color:var(--muted);margin-left:4px;">(изм.)</span>` : '';
-        const ts = m.createdAt || 0;
-        const readOk = isMe && dmPeerReadTs && ts && dmPeerReadTs >= ts;
-        const readLine = isMe && ts
-            ? (readOk ? `<div class="chat-time" style="color:var(--primary);font-weight:800;">✓✓ Прочитано</div>` : `<div class="chat-time" style="color:var(--muted);font-size:9px;">✓ Доставлено</div>`)
-            : '';
-        // Date separator
-        const msgDateStr = ts ? new Date(ts).toLocaleDateString('ru', {day:'numeric',month:'long',year:'numeric'}) : '';
-        let separator = '';
-        if(msgDateStr && msgDateStr !== lastDateStr) {
-            lastDateStr = msgDateStr;
-            separator = `<div class="chat-date-separator" data-date="${localDateKey(ts)}"><span>${msgDateStr}</span></div>`;
-        }
-        // Apply custom bubble style for all users with subscriptions
-        let bubbleClass = 'chat-bubble';
-        const senderUser = allUsersCache[m.nick];
-        if(senderUser) {
-            const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
-            if(hasActiveSub && senderUser.chatBubbleStyle) {
-                const style = senderUser.chatBubbleStyle;
-                if(style === 'gold') bubbleClass += ' chat-bubble-gold';
-                else if(style === 'rainbow') bubbleClass += ' chat-bubble-rainbow';
-                else if(style === 'ocean') bubbleClass += ' chat-bubble-ocean';
-                else if(style === 'sunset') bubbleClass += ' chat-bubble-sunset';
-                else if(style === 'aurora') bubbleClass += ' chat-bubble-aurora';
-                else if(style === 'galaxy') bubbleClass += ' chat-bubble-galaxy';
-                else if(style === 'fire') bubbleClass += ' chat-bubble-fire';
-                else if(style === 'neon') bubbleClass += ' chat-bubble-neon';
-                else if(style === 'rose') bubbleClass += ' chat-bubble-rose';
-            }
-        }
-        // Apply avatar frame for users with subscriptions
-        let avatarFrameHtml = '';
-        if(senderUser) {
-            const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
-            if(hasActiveSub && senderUser.avatarFrame) {
-                let frameClass = 'avatar-frame';
-                if(senderUser.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
-                else if(senderUser.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
-                else if(senderUser.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
-                else if(senderUser.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
-                else if(senderUser.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
-                else if(senderUser.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
-                else if(senderUser.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
-                else if(senderUser.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
-                else if(senderUser.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
-                else if(senderUser.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
-                else if(senderUser.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
-                else if(senderUser.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-                else if(senderUser.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
-                
-                avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
-            }
-        }
+    _dmRenderPending = true;
+    
+    requestAnimationFrame(async () => {
+        const scroll = preserveScrollState(el);
         
-        return separator + `<div class="chat-msg ${isMe ? 'me' : ''}" data-msgid="${jsEsc(msgId)}">
-            <div style="position:relative;display:inline-block;">
-                <img class="chat-av" src="${escHtml(m.avatar||DEFAULT_AVATAR_URL)}" style="cursor:pointer;" loading="lazy" onclick="openImgViewer(this.src)" onerror="this.src='${DEFAULT_AVATAR_URL}'">
-                ${avatarFrameHtml}
-            </div>
-            <div class="chat-msg-body">
-                ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
-                <div class="${bubbleClass}" id="bubble_${jsEsc(msgId)}">
-                    ${mediaHtml(m)}${edited}
-                    <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
+        // Get current user's chat bubble style
+        let myBubbleStyle = '';
+        try {
+            const snap = await get(userRef(currentNick));
+            const u = snap.val() || {};
+            const hasActiveSub = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+            if(hasActiveSub) myBubbleStyle = u.chatBubbleStyle || '';
+        } catch(e) {}
+        
+        const entries = Object.entries(lastDmMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-80);
+        let lastDateStr = '';
+        const html = entries.map(([msgId, m]) => {
+            const isMe = m.nick === currentNick;
+            const edited = m.edited ? `<span style="font-size:9px;color:var(--muted);margin-left:4px;">(изм.)</span>` : '';
+            const ts = m.createdAt || 0;
+            const readOk = isMe && dmPeerReadTs && ts && dmPeerReadTs >= ts;
+            const readLine = isMe && ts
+                ? (readOk ? `<div class="chat-time" style="color:var(--primary);font-weight:800;">✓✓ Прочитано</div>` : `<div class="chat-time" style="color:var(--muted);font-size:9px;">✓ Доставлено</div>`)
+                : '';
+            // Date separator
+            const msgDateStr = ts ? new Date(ts).toLocaleDateString('ru', {day:'numeric',month:'long',year:'numeric'}) : '';
+            let separator = '';
+            if(msgDateStr && msgDateStr !== lastDateStr) {
+                lastDateStr = msgDateStr;
+                separator = `<div class="chat-date-separator" data-date="${localDateKey(ts)}"><span>${msgDateStr}</span></div>`;
+            }
+            // Apply custom bubble style for all users with subscriptions
+            let bubbleClass = 'chat-bubble';
+            const senderUser = allUsersCache[m.nick];
+            if(senderUser) {
+                const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
+                if(hasActiveSub && senderUser.chatBubbleStyle) {
+                    const style = senderUser.chatBubbleStyle;
+                    if(style === 'gold') bubbleClass += ' chat-bubble-gold';
+                    else if(style === 'rainbow') bubbleClass += ' chat-bubble-rainbow';
+                    else if(style === 'ocean') bubbleClass += ' chat-bubble-ocean';
+                    else if(style === 'sunset') bubbleClass += ' chat-bubble-sunset';
+                    else if(style === 'aurora') bubbleClass += ' chat-bubble-aurora';
+                    else if(style === 'galaxy') bubbleClass += ' chat-bubble-galaxy';
+                    else if(style === 'fire') bubbleClass += ' chat-bubble-fire';
+                    else if(style === 'neon') bubbleClass += ' chat-bubble-neon';
+                    else if(style === 'rose') bubbleClass += ' chat-bubble-rose';
+                }
+            }
+            // Apply avatar frame for users with subscriptions
+            let avatarFrameHtml = '';
+            if(senderUser) {
+                const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
+                if(hasActiveSub && senderUser.avatarFrame) {
+                    let frameClass = 'avatar-frame';
+                    if(senderUser.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
+                    else if(senderUser.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
+                    else if(senderUser.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
+                    else if(senderUser.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
+                    else if(senderUser.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
+                    else if(senderUser.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
+                    else if(senderUser.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
+                    else if(senderUser.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
+                    else if(senderUser.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
+                    else if(senderUser.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
+                    else if(senderUser.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
+                    else if(senderUser.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
+                    else if(senderUser.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+                    
+                    avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
+                }
+            }
+            
+            return separator + `<div class="chat-msg ${isMe ? 'me' : ''}" data-msgid="${jsEsc(msgId)}">
+                <div style="position:relative;display:inline-block;">
+                    <img class="chat-av" src="${escHtml(m.avatar||DEFAULT_AVATAR_URL)}" style="cursor:pointer;" loading="lazy" onclick="openImgViewer(this.src)" onerror="this.src='${DEFAULT_AVATAR_URL}'">
+                    ${avatarFrameHtml}
                 </div>
-                ${msgActionsHtml('dm', msgId, m, isMe)}
-                ${msgEditHtml('dm', msgId, m)}
-            </div>
-        </div>`;
-    }).join('');
-    el.innerHTML = html;
-    restoreScrollState(el, scroll);
+                <div class="chat-msg-body">
+                    ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
+                    <div class="${bubbleClass}" id="bubble_${jsEsc(msgId)}">
+                        ${mediaHtml(m)}${edited}
+                        <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
+                    </div>
+                    ${msgActionsHtml('dm', msgId, m, isMe)}
+                    ${msgEditHtml('dm', msgId, m)}
+                </div>
+            </div>`;
+        }).join('');
+        el.innerHTML = html;
+        restoreScrollState(el, scroll);
+        _dmRenderPending = false;
+    });
 };
 window.deleteDm = async function(msgId){
     try { 
@@ -4567,7 +4803,7 @@ async function startVcStream(){
     const play = qs('vcPlaybackVid');
     if(play){ play.pause(); play.removeAttribute('src'); play.load(); play.style.display='none'; }
 }
-function stopVcTimer(){ if(vcTimerInterval){ clearInterval(vcTimerInterval); vcTimerInterval = null; } }
+function stopVcTimer(){ clearIntervalByName('vcTimerInterval'); vcTimerInterval = null; }
 function stopVcTracks(){ if(vcStream){ vcStream.getTracks().forEach(t=>t.stop()); vcStream = null; } }
 function setVcReadyUI(){
     const btn = qs('vcRecBtn'); if(btn){ btn.textContent = '⏺'; btn.classList.remove('is-rec'); }
@@ -4639,11 +4875,11 @@ function startVcRecording(){
     const btn = qs('vcRecBtn'); if(btn){ btn.textContent = '⏹'; btn.classList.add('is-rec'); }
     const badge = qs('vcTimerBadge'); if(badge){ badge.style.display='block'; badge.textContent = `${vcSecondsLeft}s`; }
     stopVcTimer();
-    vcTimerInterval = setInterval(() => {
+    vcTimerInterval = registerInterval('vcTimerInterval', setInterval(() => {
         vcSecondsLeft = Math.max(0, vcSecondsLeft - 1);
         const b = qs('vcTimerBadge'); if(b) b.textContent = `${vcSecondsLeft}s`;
         if(vcSecondsLeft <= 0) stopVcRecording();
-    }, 1000);
+    }, 1000));
 }
 function stopVcRecording(){
     stopVcTimer();

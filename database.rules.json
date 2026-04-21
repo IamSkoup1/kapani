@@ -1,0 +1,142 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    
+    "users": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.admin == true)",
+        ".write": "auth.token.admin == true",
+        "balance": {
+          ".write": "false"
+        },
+        "adminMoney": {
+          ".write": "auth.token.admin == true"
+        },
+        "fine": {
+          ".write": "auth.token.admin == true"
+        },
+        "accountVerified": {
+          ".write": "auth.token.admin == true"
+        },
+        "accountFrozen": {
+          ".write": "auth.token.admin == true"
+        },
+        "job": {
+          ".write": "auth.token.admin == true"
+        },
+        "vehicle": {
+          ".write": "auth.uid == $uid"
+        },
+        "avatar": {
+          ".write": "auth.uid == $uid"
+        },
+        "avatarFrame": {
+          ".write": "auth.uid == $uid"
+        },
+        "profileBgEffect": {
+          ".write": "auth.uid == $uid"
+        },
+        "chatBubbleStyle": {
+          ".write": "auth.uid == $uid"
+        },
+        "profileDescription": {
+          ".write": "auth.uid == $uid"
+        },
+        "nicknameEmoji": {
+          ".write": "auth.uid == $uid"
+        },
+        "subscription": {
+          ".write": "auth.token.admin == true"
+        },
+        "subscriptionExpiry": {
+          ".write": "auth.token.admin == true"
+        },
+        "txlog": {
+          ".read": "auth.uid == $uid",
+          ".write": "false"
+        },
+        "notifications": {
+          ".read": "auth.uid == $uid",
+          ".write": "false"
+        },
+        "pinnedChats": {
+          ".read": "auth.uid == $uid",
+          ".write": "auth.uid == $uid"
+        }
+      }
+    },
+    
+    "orders": {
+      ".read": "auth != null",
+      ".write": "false",
+      "$orderId": {
+        ".write": "false"
+      }
+    },
+    
+    "chat": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    
+    "dms": {
+      "$key": {
+        ".read": "auth != null && $key.contains(auth.uid)",
+        ".write": "auth != null && $key.contains(auth.uid)",
+        "messages": {
+          "$msgId": {
+            ".write": "auth != null && $key.contains(auth.uid)"
+          }
+        },
+        "lastRead": {
+          "$uid": {
+            ".write": "auth.uid == $uid"
+          }
+        }
+      }
+    },
+    
+    "market": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$listingId": {
+        "status": {
+          ".write": "auth.uid == data.child('seller').val() || auth.token.admin == true"
+        }
+      }
+    },
+    
+    "walls": {
+      "$nick": {
+        ".read": "auth != null",
+        ".write": "auth.uid == $nick",
+        "$postId": {
+          ".write": "auth.uid == $nick"
+        }
+      }
+    },
+    
+    "apps": {
+      ".read": "auth != null",
+      ".write": "auth.token.admin == true"
+    },
+    
+    "notifications": {
+      "$uid": {
+        ".read": "auth.uid == $uid",
+        ".write": "false"
+      }
+    },
+    
+    "janitor_submissions": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$submissionId": {
+        "status": {
+          ".write": "auth.token.admin == true"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "Капани",
+  "short_name": "Капани",
+  "description": "Официальное приложение Капани",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0c1117",
+  "theme_color": "#22d3a5",
+  "orientation": "portrait",
+  "scope": "./",
+  "icons": [
+    {
+      "src": "./image.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social", "lifestyle"],
+  "lang": "ru"
+}
