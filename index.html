@@ -279,6 +279,31 @@ select option{background:#1a2332;}
 @keyframes flickerBubbleInner{0%,100%{opacity:0.4;transform:scale(1);}50%{opacity:0.6;transform:scale(1.02);}}
 .chat-bubble-neon{background:linear-gradient(135deg,rgba(0,255,255,.2),rgba(0,136,255,.1))!important;border-color:rgba(0,255,255,.5)!important;box-shadow:0 0 15px rgba(0,255,255,.3),inset 0 0 10px rgba(0,255,255,.1)!important;}
 .chat-bubble-rose{background:linear-gradient(135deg,rgba(236,72,153,.2),rgba(219,39,119,.1))!important;border-color:rgba(236,72,153,.3)!important;box-shadow:0 2px 8px rgba(236,72,153,.2)!important;}
+/* New Ultra Chat Bubble Styles */
+.chat-bubble-plasma{background:linear-gradient(135deg,rgba(255,0,255,.25),rgba(128,0,255,.15))!important;border-color:rgba(255,0,255,.5)!important;box-shadow:0 0 20px rgba(255,0,255,.4),inset 0 0 15px rgba(255,0,255,.2)!important;animation:plasmaBubble 2s ease-in-out infinite;}
+@keyframes plasmaBubble{0%,100%{box-shadow:0 0 20px rgba(255,0,255,.4),inset 0 0 15px rgba(255,0,255,.2);}50%{box-shadow:0 0 30px rgba(255,0,255,.6),inset 0 0 20px rgba(255,0,255,.3);}}
+.chat-bubble-thunder{background:linear-gradient(135deg,rgba(255,255,0,.2),rgba(255,215,0,.1))!important;border-color:rgba(255,255,0,.5)!important;box-shadow:0 0 25px rgba(255,255,0,.4)!important;animation:thunderBubble 3s ease-in-out infinite;}
+@keyframes thunderBubble{0%,85%,100%{box-shadow:0 0 25px rgba(255,255,0,.4);}86%,88%{box-shadow:0 0 40px rgba(255,255,255,.8);}87%,89%{box-shadow:0 0 50px rgba(255,255,0,1);}}
+.chat-bubble-hologram{background:linear-gradient(135deg,rgba(0,255,255,.25),rgba(0,136,255,.15))!important;border-color:rgba(0,255,255,.5)!important;box-shadow:0 0 20px rgba(0,255,255,.3)!important;animation:hologramBubble 4s ease-in-out infinite;position:relative;}
+@keyframes hologramBubble{0%,90%,100%{opacity:1;transform:translateY(0);}91%{opacity:0.8;transform:translateY(-1px);}92%{opacity:0.6;transform:translateY(1px);}93%{opacity:0.9;transform:translateY(-1px);}94%{opacity:0.7;transform:translateY(1px);}}
+.chat-bubble-dragon{background:linear-gradient(135deg,rgba(255,102,0,.25),rgba(255,51,0,.15))!important;border-color:rgba(255,102,0,.5)!important;box-shadow:0 0 20px rgba(255,102,0,.4),inset 0 0 15px rgba(255,51,0,.2)!important;animation:dragonBubble 3s ease-in-out infinite;}
+@keyframes dragonBubble{0%,100%{box-shadow:0 0 20px rgba(255,102,0,.4),inset 0 0 15px rgba(255,51,0,.2);}50%{box-shadow:0 0 35px rgba(255,51,0,.6),inset 0 0 25px rgba(255,0,0,.3);}}
+
+/* Interface Themes */
+.theme-gold{--primary:#fbbf24;--pri-dim:rgba(251,191,36,.14);}
+.theme-gold .h-bal{background:linear-gradient(135deg,var(--gold),#d97706)!important;}
+.theme-gold .btn-primary{background:linear-gradient(135deg,var(--gold),#d97706)!important;color:#0c1117!important;}
+.theme-gold .h-avatar{border-color:var(--gold)!important;}
+.theme-gold .chat-msg.me .chat-bubble{background:rgba(251,191,36,.1)!important;border-color:rgba(251,191,36,.3)!important;}
+.theme-emerald{--primary:#10b981;--pri-dim:rgba(16,185,129,.14);}
+.theme-emerald .h-bal{background:linear-gradient(135deg,#10b981,#059669)!important;}
+.theme-emerald .btn-primary{background:linear-gradient(135deg,#10b981,#059669)!important;}
+.theme-emerald .h-avatar{border-color:#10b981!important;}
+.theme-cyber{--primary:#00d4ff;--pri-dim:rgba(0,212,255,.14);--gold:#ff00ff;--gold-dim:rgba(255,0,255,.14);}
+.theme-cyber .h-bal{background:linear-gradient(135deg,#00d4ff,#0099cc)!important;}
+.theme-cyber .btn-primary{background:linear-gradient(135deg,#00d4ff,#0099cc)!important;}
+.theme-cyber .h-avatar{border-color:#00d4ff!important;box-shadow:0 0 15px rgba(0,212,255,.5)!important;}
+.theme-cyber body::before{background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(0,212,255,.1) 0%,transparent 70%),radial-gradient(ellipse 50% 50% at 85% 75%,rgba(255,0,255,.08) 0%,transparent 70%)!important;}
 
 /* Subscription Badge */
 .sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#d97706);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
@@ -981,8 +1006,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="margin-bottom:8px;">✅ <b>Цвет фона профиля</b> (Мерцание, Частицы)</div>
         </div>
         <button class="btn btn-gold" onclick="buySubscription('plus')" id="btnBuyPlus">Оформить Plus</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('plus')">
+            <span>🎁</span> Подарить Plus (199₽)
+        </button>
     </div>
-    
+
     <!-- Kapani Ultra -->
     <div class="card" style="border:2px solid var(--primary);background:linear-gradient(145deg,rgba(34,211,165,.15),rgba(251,191,36,.05));">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -1003,6 +1031,9 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="margin-bottom:8px;">✅ <b>Спецэффекты</b> для профиля</div>
         </div>
         <button class="btn btn-primary" onclick="buySubscription('ultra')" id="btnBuyUltra">Оформить Ultra</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('ultra')">
+            <span>🎁</span> Подарить Ultra (499₽)
+        </button>
     </div>
     
     <div class="card">
@@ -1249,7 +1280,7 @@ const CONFIG = {
     fcmVapidKey: "",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
-    finance: { minBalanceAllowed: -2500, pricePerKm: 15, maxSpeedKmh: 30 },
+    finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
     location: { kapani: { lat: 55.7558, lng: 37.6173 } },
     rewards: { customAvatar: 40, firstWall: 60 },
     subscriptions: { plus: { price: 199, name: "Kapani Plus" }, ultra: { price: 499, name: "Kapani Ultra" } },
@@ -1372,6 +1403,162 @@ function haversine(lat1,lon1,lat2,lon2) {
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 function isUserOnline(user) { if(!user||!user.lastSeen) return false; return (Date.now()-user.lastSeen)<ONLINE_TIMEOUT_MS; }
+
+// ─── CLOUD FUNCTION FALLBACK HELPERS ────────
+// These helpers try Cloud Functions first, then fall back to direct DB operations
+async function callFunctionWithFallback(functionName, data, fallbackFn) {
+    try {
+        const fn = httpsCallable(functions, functionName);
+        const result = await fn(data);
+        return result.data;
+    } catch (error) {
+        console.warn(`Cloud Function ${functionName} failed, using fallback:`, error.message);
+        if(fallbackFn) {
+            return await fallbackFn(data);
+        }
+        throw error;
+    }
+}
+
+// Fallback: Create order directly in database
+async function fallbackCreateOrder(data) {
+    const id = genId();
+    const orderData = {
+        id,
+        type: data.type,
+        client: currentNick,
+        info: data.info,
+        price: data.price,
+        originalPrice: data.originalPrice || data.price,
+        discountApplied: data.discountApplied || 0,
+        address: data.address || '',
+        status: 'pending',
+        createdAt: Date.now(),
+        clientLat: data.clientLat || null,
+        clientLng: data.clientLng || null,
+        destLat: data.destLat || null,
+        destLng: data.destLng || null,
+        distanceKm: data.distanceKm || 0
+    };
+    
+    // Deduct balance immediately
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val();
+    if(!u || u.balance < data.price) {
+        throw new Error('Недостаточно средств');
+    }
+    
+    await update(userRef(currentNick), { balance: u.balance - data.price });
+    await set(orderRef(id), orderData);
+    await logTx(currentNick, { type: 'out', who: 'Заказ', amt: data.price, desc: `${data.type === 'taxi' ? '🛵 Такси' : '📦 Доставка'}: ${data.info}` });
+    
+    return { success: true, orderId: id };
+}
+
+// Fallback: Take order directly
+async function fallbackTakeOrder(data) {
+    const snap = await get(orderRef(data.orderId));
+    if(!snap.exists()) throw new Error('Заказ не найден');
+    const o = snap.val();
+    if(o.client === currentNick) throw new Error('Нельзя брать свой заказ');
+    if(o.status !== 'pending') throw new Error('Заказ уже в работе');
+    if(o.worker) throw new Error('Уже есть исполнитель');
+    
+    await update(orderRef(data.orderId), { worker: currentNick, status: 'in_progress' });
+    return { success: true };
+}
+
+// Fallback: Cancel order directly
+async function fallbackCancelOrder(data) {
+    const snap = await get(orderRef(data.orderId));
+    if(!snap.exists()) throw new Error('Заказ не найден');
+    const o = snap.val();
+    
+    if(o.client === currentNick) {
+        // Client canceling - refund minus penalty
+        const refundAmount = Math.max(0, o.price - 50);
+        const uSnap = await get(userRef(currentNick));
+        const u = uSnap.val();
+        await update(userRef(currentNick), { balance: (u.balance || 0) + refundAmount });
+        await update(orderRef(data.orderId), { status: 'cancelled', cancelledAt: Date.now() });
+        await logTx(currentNick, { type: 'in', who: 'Возврат', amt: refundAmount, desc: 'Отмена заказа (штраф 50₽)' });
+        return { success: true, refundAmount };
+    } else if(o.worker === currentNick) {
+        // Worker abandoning - penalty
+        const uSnap = await get(userRef(currentNick));
+        const u = uSnap.val();
+        const penalty = Math.min(100, u.balance || 0);
+        await update(userRef(currentNick), { balance: (u.balance || 0) - penalty });
+        await update(orderRef(data.orderId), { worker: null, status: 'pending', abandonedAt: Date.now() });
+        return { success: true, penalty };
+    }
+    throw new Error('Нет прав для отмены');
+}
+
+// Fallback: Pay order directly
+async function fallbackPayOrder(data) {
+    const snap = await get(orderRef(data.orderId));
+    if(!snap.exists()) throw new Error('Заказ не найден');
+    const o = snap.val();
+    if(!o.worker) throw new Error('Нет исполнителя');
+    
+    const cSnap = await get(userRef(o.client));
+    const wSnap = await get(userRef(o.worker));
+    const c = cSnap.val();
+    const w = wSnap.val();
+    
+    if(c.balance < o.price) throw new Error('Недостаточно средств');
+    
+    await update(userRef(o.client), { balance: c.balance - o.price });
+    await update(userRef(o.worker), { balance: (w.balance || 0) + o.price });
+    await update(orderRef(data.orderId), { status: 'completed', paidAt: Date.now() });
+    await logTx(o.client, { type: 'out', who: o.worker, amt: o.price, desc: `Оплата заказа ${data.orderId}` });
+    await logTx(o.worker, { type: 'in', who: o.client, amt: o.price, desc: `Выплата за заказ ${data.orderId}` });
+    
+    return { success: true };
+}
+
+// Fallback: Transfer money directly
+async function fallbackTransferMoney(data) {
+    const fromSnap = await get(userRef(currentNick));
+    const toSnap = await get(userRef(data.toUid));
+    const fromUser = fromSnap.val();
+    const toUser = toSnap.val();
+    
+    if(!fromUser || !toUser) throw new Error('Пользователь не найден');
+    if(!fromUser.accountVerified) throw new Error('Ваш аккаунт не подтверждён');
+    if(!toUser.accountVerified) throw new Error('Аккаунт получателя не подтверждён');
+    if(fromUser.balance < data.amount) throw new Error('Недостаточно средств');
+    
+    await update(userRef(currentNick), { balance: fromUser.balance - data.amount });
+    await update(userRef(data.toUid), { balance: (toUser.balance || 0) + data.amount });
+    await logTx(currentNick, { type: 'out', who: data.toUid, amt: data.amount, desc: data.description || 'Перевод' });
+    await logTx(data.toUid, { type: 'in', who: currentNick, amt: data.amount, desc: data.description || 'Перевод' });
+    
+    return { success: true };
+}
+
+// Fallback: Admin adjust balance directly
+async function fallbackAdminAdjustBalance(data) {
+    if(currentNick !== ADMIN) throw new Error('Только для мэра');
+    
+    const snap = await get(userRef(data.uid));
+    if(!snap.exists()) throw new Error('Пользователь не найден');
+    
+    const u = snap.val();
+    const newBalance = (u.balance || 0) + data.amount;
+    
+    await update(userRef(data.uid), { balance: newBalance });
+    
+    if(data.amount > 0) {
+        await logTx(data.uid, { type: 'in', who: 'Мэрия', amt: data.amount, desc: data.description || 'Зачисление от мэрии' });
+    } else {
+        await logTx(data.uid, { type: 'out', who: 'Мэрия', amt: Math.abs(data.amount), desc: data.description || 'Списание мэрией' });
+    }
+    
+    return { success: true, newBalance };
+}
+
 function isVideoAvatarSrc(src){
     if(!src) return false;
     return /^data:video\//i.test(src) || /\.(mp4|webm|mov|m4v)(?:$|[?#])/i.test(src) || src.includes('video');
@@ -1717,6 +1904,14 @@ function updateHeader(u) {
     // Check subscription status first
     const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
     const isActive = expiry && expiry > new Date();
+    
+    // Apply interface theme if user has subscription
+    if(isActive && u.interfaceTheme && u.interfaceTheme !== 'default') {
+        applyInterfaceTheme(u.interfaceTheme);
+    } else {
+        // Reset to default theme if no subscription or no theme set
+        applyInterfaceTheme('default');
+    }
     
     // Apply avatar frame in header if user has subscription and frame
     const headerAvatarWrap = qs('headerAvatarWrap');
@@ -2361,6 +2556,24 @@ window.openProfileCustomizer=async function(){
         `;
     }
     
+    // Interface theme options
+    let themeOptions = '';
+    if(hasUltra){
+        themeOptions = `
+            <option value="default">🌙 Стандартная (тёмная)</option>
+            <option value="gold">⭐ Золотая (Plus)</option>
+            <option value="emerald">💎 Изумрудная (Ultra)</option>
+            <option value="cyber">🌆 Киберпанк (Ultra)</option>
+        `;
+    } else if(hasPlus){
+        themeOptions = `
+            <option value="default">🌙 Стандартная (тёмная)</option>
+            <option value="gold">⭐ Золотая (Plus)</option>
+            <option value="" disabled>──────────</option>
+            <option value="" disabled>🔒 Ultra: Изумрудная, Киберпанк</option>
+        `;
+    }
+    
     const modalHtml = `
         <div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeProfileCustomizer()">
             <div style="background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;">
@@ -2390,6 +2603,13 @@ window.openProfileCustomizer=async function(){
                         ${chatBgOptions}
                     </select>
                 </div>
+                
+                <div style="margin-bottom:20px;">
+                    <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🎨 Тема интерфейса</div>
+                    <select id="interfaceThemeSelect" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);" onchange="previewInterfaceTheme(this.value)">
+                        ${themeOptions}
+                    </select>
+                </div>
                 ` : '<div style="text-align:center;color:var(--muted);padding:20px;">Нужна подписка для кастомизации</div>'}
                 
                 <div style="display:flex;gap:10px;">
@@ -2412,16 +2632,22 @@ window.openProfileCustomizer=async function(){
         const frameSelect = qs('avatarFrameSelect');
         const bgSelect = qs('profileBgSelect');
         const chatSelect = qs('chatBgSelect');
+        const themeSelect = qs('interfaceThemeSelect');
         if(emojiSelect) emojiSelect.value = u.nicknameEmoji || '';
         if(frameSelect) frameSelect.value = u.avatarFrame || '';
         if(bgSelect) bgSelect.value = u.profileBgEffect || '';
         if(chatSelect) chatSelect.value = u.chatBubbleStyle || '';
+        if(themeSelect) themeSelect.value = u.interfaceTheme || 'default';
     }, 10);
 };
 
-window.closeProfileCustomizer=function(){
+window.closeProfileCustomizer=async function(){
     const modal = qs('profileCustomizerModal');
     if(modal) modal.remove();
+    // Restore original theme
+    const snap = await get(userRef(currentNick));
+    const u = snap.val() || {};
+    applyInterfaceTheme(u.interfaceTheme || 'default');
 };
 
 window.previewNicknameEmoji=function(emoji){
@@ -2443,6 +2669,10 @@ window.previewAvatarFrame=function(frame){
     else if(frame === 'crystal') frameEl.classList.add('avatar-frame-crystal');
     else if(frame === 'ice') frameEl.classList.add('avatar-frame-ice');
     else if(frame === 'rose') frameEl.classList.add('avatar-frame-rose');
+    else if(frame === 'plasma') frameEl.classList.add('avatar-frame-plasma');
+    else if(frame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
+    else if(frame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
+    else if(frame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
 };
 
 window.previewProfileBg=function(effect){
@@ -2472,7 +2702,7 @@ window.previewChatBg=function(style){
     // Preview in chat bubbles
     const bubbles = document.querySelectorAll('.chat-bubble.me');
     bubbles.forEach(b => {
-        b.classList.remove('chat-bubble-gold', 'chat-bubble-rainbow', 'chat-bubble-ocean', 'chat-bubble-sunset', 'chat-bubble-aurora', 'chat-bubble-galaxy', 'chat-bubble-fire', 'chat-bubble-neon', 'chat-bubble-rose');
+        b.classList.remove('chat-bubble-gold', 'chat-bubble-rainbow', 'chat-bubble-ocean', 'chat-bubble-sunset', 'chat-bubble-aurora', 'chat-bubble-galaxy', 'chat-bubble-fire', 'chat-bubble-neon', 'chat-bubble-rose', 'chat-bubble-plasma', 'chat-bubble-thunder', 'chat-bubble-hologram', 'chat-bubble-dragon');
         if(style === 'gold') b.classList.add('chat-bubble-gold');
         else if(style === 'rainbow') b.classList.add('chat-bubble-rainbow');
         else if(style === 'ocean') b.classList.add('chat-bubble-ocean');
@@ -2482,7 +2712,27 @@ window.previewChatBg=function(style){
         else if(style === 'fire') b.classList.add('chat-bubble-fire');
         else if(style === 'neon') b.classList.add('chat-bubble-neon');
         else if(style === 'rose') b.classList.add('chat-bubble-rose');
+        else if(style === 'plasma') b.classList.add('chat-bubble-plasma');
+        else if(style === 'thunder') b.classList.add('chat-bubble-thunder');
+        else if(style === 'hologram') b.classList.add('chat-bubble-hologram');
+        else if(style === 'dragon') b.classList.add('chat-bubble-dragon');
     });
+};
+
+window.previewInterfaceTheme=function(theme){
+    // Temporarily apply theme to body for preview
+    document.body.classList.remove('theme-gold', 'theme-emerald', 'theme-cyber');
+    if(theme && theme !== 'default') {
+        document.body.classList.add('theme-' + theme);
+    }
+};
+
+window.applyInterfaceTheme=function(theme){
+    // Apply theme class to body
+    document.body.classList.remove('theme-gold', 'theme-emerald', 'theme-cyber');
+    if(theme && theme !== 'default') {
+        document.body.classList.add('theme-' + theme);
+    }
 };
 
 window.saveProfileCustomization=async function(){
@@ -2490,12 +2740,17 @@ window.saveProfileCustomization=async function(){
     const frameSelect = qs('avatarFrameSelect');
     const bgSelect = qs('profileBgSelect');
     const chatSelect = qs('chatBgSelect');
+    const themeSelect = qs('interfaceThemeSelect');
     
     const updates = {};
     if(emojiSelect) updates.nicknameEmoji = emojiSelect.value || null;
     if(frameSelect) updates.avatarFrame = frameSelect.value || null;
     if(bgSelect) updates.profileBgEffect = bgSelect.value || null;
     if(chatSelect) updates.chatBubbleStyle = chatSelect.value || null;
+    if(themeSelect) {
+        updates.interfaceTheme = themeSelect.value || 'default';
+        applyInterfaceTheme(updates.interfaceTheme);
+    }
     
     await update(userRef(currentNick), updates);
     toast('✅ Настройки сохранены', 'green');
@@ -2617,9 +2872,8 @@ window.buyShop=async function(){
     const items=[`🌲×${qs('sB').value||0}`,`🥢×${qs('sP').value||0}`,`🍃×${qs('sL').value||0}`,`🗿×${qs('sK').value||0}`].filter(i=>!i.endsWith('×0')).join(', ');
     
     try {
-        // Вызываем Cloud Function для создания заказа
-        const createOrder = httpsCallable(functions, 'createOrder');
-        const result = await createOrder({
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('createOrder', {
             type: 'shop',
             info: items,
             price: finalTotal,
@@ -2631,9 +2885,9 @@ window.buyShop=async function(){
             clientLng: shopAddrCoords?.lng || null,
             destLat: null,
             destLng: null
-        });
+        }, fallbackCreateOrder);
         
-        if (result.data.success) {
+        if (result.success) {
             await pushNotification(currentNick,`📦 Заказ: ${items} — ${finalTotal}₽${discountPercent > 0 ? ' (скидка 10%)' : ''}`);
             try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Доставщик'&&nick!==currentNick){await pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders');}}}catch(e){}
             ['sB','sP','sL','sK'].forEach(i=>qs(i).value=0);qs('sAddr').value='';shopAddrCoords=null;if(shopMarker&&shopMapObj){shopMapObj.removeLayer(shopMarker);shopMarker=null;}recalcShop();
@@ -2680,9 +2934,8 @@ window.orderTaxi=async function(){
     if(u.balance < finalPrice)return toast(`❌ Недостаточно средств (нужно ${finalPrice}₽${discountPercent > 0 ? ` с учётом ${discountName}` : ''})`,'red');
     
     try {
-        // Вызываем Cloud Function для создания заказа
-        const createOrder = httpsCallable(functions, 'createOrder');
-        const result = await createOrder({
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('createOrder', {
             type: 'taxi',
             info: `${from} → ${to}`,
             price: finalPrice,
@@ -2694,9 +2947,9 @@ window.orderTaxi=async function(){
             clientLng: fromCoords?.lng || null,
             destLat: toCoords?.lat || null,
             destLng: toCoords?.lng || null
-        });
+        }, fallbackCreateOrder);
         
-        if (result.data.success) {
+        if (result.success) {
             if(!u.rewardedTaxi){
                 await update(userRef(currentNick),{rewardedTaxi:true,balance:(u.balance||0)+80});
                 await logTx(currentNick,{type:'in',who:'Награда',amt:80,desc:'Бонус за первый заказ такси'});
@@ -2721,11 +2974,10 @@ window.takeOrder=async function(id){
     if(o.client===currentNick)return toast('⚠️ Нельзя брать свой заказ','gold');
     
     try {
-        // Вызываем Cloud Function для принятия заказа
-        const takeOrder = httpsCallable(functions, 'takeOrder');
-        const result = await takeOrder({ orderId: id });
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('takeOrder', { orderId: id }, fallbackTakeOrder);
         
-        if (result.data.success) {
+        if (result.success) {
             const uSnap=await get(userRef(currentNick));const u=uSnap.val();
             const isDriver=u.job==='Водитель';
             const notifText=isDriver?`🛵 Водитель ${currentNick} принял заказ! Транспорт: ${u.vehicle||'?'}`:`📦 Курьер ${currentNick} принял заказ!`;
@@ -2746,15 +2998,14 @@ window.abandonOrder=async function(id){
     if(o.worker!==currentNick||o.status!=='in_progress')return;
     
     try {
-        // Вызываем Cloud Function для отмены заказа
-        const cancelOrder = httpsCallable(functions, 'cancelOrder');
-        const result = await cancelOrder({ orderId: id });
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('cancelOrder', { orderId: id }, fallbackCancelOrder);
         
-        if (result.data.success) {
-            await pushNotification(currentNick,`⚠️ Отказались от заказа. Штраф: ${result.data.penalty}₽`);
+        if (result.success) {
+            await pushNotification(currentNick,`⚠️ Отказались от заказа. Штраф: ${result.penalty}₽`);
             await pushNotification(o.client,`⚠️ Исполнитель отказался. Ищем новый...`);
             if(locationWatchId!==null){navigator.geolocation.clearWatch(locationWatchId);locationWatchId=null;}
-            toast(`❌ Заказ отменён (−${result.data.penalty}₽)`,'red');
+            toast(`❌ Заказ отменён (−${result.penalty}₽)`,'red');
         }
     } catch (error) {
         console.error('Ошибка отмены заказа:', error);
@@ -2800,11 +3051,10 @@ window.payOrder=async function(id){
     if(!o.worker)return toast('⚠️ Нет исполнителя','gold');
     
     try {
-        // Вызываем Cloud Function для оплаты заказа
-        const payOrder = httpsCallable(functions, 'payOrder');
-        const result = await payOrder({ orderId: id });
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('payOrder', { orderId: id }, fallbackPayOrder);
         
-        if (result.data.success) {
+        if (result.success) {
             await pushNotification(o.client,`💸 Оплата ${o.price}₽ → ${o.worker}`);await pushNotification(o.worker,`💰 Получено ${o.price}₽ от ${o.client}!`);
             toast('💰 Оплата прошла!','green');
         }
@@ -2820,14 +3070,13 @@ window.cancelOrder=async function(id){
     if(bal<50)return toast('❌ Недостаточно средств для штрафа','red');
     
     try {
-        // Вызываем Cloud Function для отмены заказа
-        const cancelOrder = httpsCallable(functions, 'cancelOrder');
-        const result = await cancelOrder({ orderId: id });
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('cancelOrder', { orderId: id }, fallbackCancelOrder);
         
-        if (result.data.success) {
+        if (result.success) {
             await pushNotification(currentNick,'❌ Заказ отменён, штраф 50₽');
             if(o.worker)await pushNotification(o.worker,`⚠️ ${currentNick} отменил заказ`);
-            toast(`❌ Отменён (возврат ${result.data.refundAmount}₽)`,'red');
+            toast(`❌ Отменён (возврат ${result.refundAmount}₽)`,'red');
         }
     } catch (error) {
         console.error('Ошибка отмены заказа:', error);
@@ -2857,16 +3106,16 @@ window.doTransfer=async function(){
     if(!toSnap.exists())return toast('❌ Не найден','red');
     
     try {
-        // Вызываем Cloud Function для перевода денег
-        const transferMoney = httpsCallable(functions, 'transferMoney');
-        const result = await transferMoney({ 
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('transferMoney', { 
             toUid: to, 
             amount: amt, 
             description: `Перевод пользователю ${to}` 
-        });
+        }, fallbackTransferMoney);
         
-        if (result.data.success) {
-            await pushNotification(currentNick,`💸 Перевод ${amt}₽ → ${to}`);await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`);
+        if (result.success) {
+            // Only notify recipient, not sender
+            await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
             sendPushNotification('Капани 💰',`Вам перевели ${amt}₽ от ${currentNick}`,'money');
             qs('bTo').value='';qs('bAmt').value='';toast(`💸 ${amt}₽ → ${to}`,'green');renderRecentTransfers();renderFinancialStats();
         }
@@ -4145,20 +4394,19 @@ window.adminMoney=async function(){
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
     
     try {
-        // Вызываем Cloud Function для админской операции с балансом
-        const adminAdjustBalance = httpsCallable(functions, 'adminAdjustBalance');
-        const result = await adminAdjustBalance({ 
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('adminAdjustBalance', { 
             uid: target, 
             amount: amt, 
             type: 'adjustment',
             description: amt > 0 ? 'Зачисление от мэрии' : 'Списание мэрией'
-        });
+        }, fallbackAdminAdjustBalance);
         
-        if (result.data.success) {
+        if (result.success) {
             // Проверяем и обновляем статус заморозки аккаунта
             const userSnap = await get(userRef(target));
             const user = userSnap.val();
-            const newBal = result.data.newBalance;
+            const newBal = result.newBalance;
             const patch = {};
             if (newBal <= MIN_BALANCE_ALLOWED) patch.accountFrozen = true;
             else if (newBal > 0) patch.accountFrozen = false;
@@ -4187,20 +4435,19 @@ window.adminFineWorker=async function(){
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
     
     try {
-        // Вызываем Cloud Function для штрафа
-        const adminAdjustBalance = httpsCallable(functions, 'adminAdjustBalance');
-        const result = await adminAdjustBalance({ 
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('adminAdjustBalance', { 
             uid: target, 
             amount: -amt, // Отрицательное значение для списания
             type: 'fine',
             description: `Штраф от мэрии: ${reason}`
-        });
+        }, fallbackAdminAdjustBalance);
         
-        if (result.data.success) {
+        if (result.success) {
             // Проверяем и обновляем статус заморозки аккаунта
             const userSnap = await get(userRef(target));
             const user = userSnap.val();
-            const newBal = result.data.newBalance;
+            const newBal = result.newBalance;
             const patch = {};
             if (newBal <= MIN_BALANCE_ALLOWED) patch.accountFrozen = true;
             
@@ -4433,6 +4680,10 @@ window.renderChat = async function(msgs){
                     else if(style === 'fire') bubbleClass += ' chat-bubble-fire';
                     else if(style === 'neon') bubbleClass += ' chat-bubble-neon';
                     else if(style === 'rose') bubbleClass += ' chat-bubble-rose';
+                    else if(style === 'plasma') bubbleClass += ' chat-bubble-plasma';
+                    else if(style === 'thunder') bubbleClass += ' chat-bubble-thunder';
+                    else if(style === 'hologram') bubbleClass += ' chat-bubble-hologram';
+                    else if(style === 'dragon') bubbleClass += ' chat-bubble-dragon';
                 }
             }
             // Apply avatar frame for users with subscriptions
@@ -4570,6 +4821,10 @@ window.renderDmMessages = async function(msgs){
                     else if(style === 'fire') bubbleClass += ' chat-bubble-fire';
                     else if(style === 'neon') bubbleClass += ' chat-bubble-neon';
                     else if(style === 'rose') bubbleClass += ' chat-bubble-rose';
+                    else if(style === 'plasma') bubbleClass += ' chat-bubble-plasma';
+                    else if(style === 'thunder') bubbleClass += ' chat-bubble-thunder';
+                    else if(style === 'hologram') bubbleClass += ' chat-bubble-hologram';
+                    else if(style === 'dragon') bubbleClass += ' chat-bubble-dragon';
                 }
             }
             // Apply avatar frame for users with subscriptions
@@ -5100,6 +5355,148 @@ window.cancelSubscription = async function(){
     await pushNotification(currentNick, '🔔 Подписка отменена', 'system');
     toast('Подписка отменена', 'gold');
     renderSubscription();
+};
+
+// ─── GIFT SUBSCRIPTION FUNCTIONS ────────────
+let giftSubscriptionType = '';
+
+window.openGiftSubscriptionModal = async function(type){
+    giftSubscriptionType = type;
+    const price = type === 'plus' ? 199 : 499;
+    const name = type === 'plus' ? 'Kapani Plus' : 'Kapani Ultra';
+    
+    // Get all users for selection
+    const usersSnap = await get(ref(db, 'users'));
+    const users = usersSnap.val() || {};
+    
+    // Build user options, excluding current user
+    let userOptions = '<option value="">Выберите получателя...</option>';
+    Object.values(users).forEach(u => {
+        if(u.nick && u.nick !== currentNick) {
+            const displayName = u.displayName || u.nick;
+            userOptions += `<option value="${escHtml(u.nick)}">${escHtml(displayName)} (@${escHtml(u.nick)})</option>`;
+        }
+    });
+    
+    const modalHtml = `
+        <div id="giftSubModal" style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeGiftSubscriptionModal()">
+            <div style="background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <div style="font-weight:900;font-size:18px;">🎁 Подарить подписку</div>
+                    <span style="cursor:pointer;font-size:20px;" onclick="closeGiftSubscriptionModal()">✕</span>
+                </div>
+                
+                <div style="background:linear-gradient(135deg,${type==='plus'?'var(--gold-dim),rgba(251,191,36,.1)':'var(--pri-dim),rgba(34,211,165,.1)'});border:2px solid ${type==='plus'?'var(--gold)':'var(--primary)'};border-radius:16px;padding:16px;margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                        <div style="font-size:28px;">${type==='plus'?'⭐':'💎'}</div>
+                        <div>
+                            <div style="font-weight:900;font-size:16px;color:${type==='plus'?'var(--gold)':'var(--primary)'};">${name}</div>
+                            <div style="font-size:13px;color:var(--muted);">${price} ₽ / неделя</div>
+                        </div>
+                    </div>
+                    <div style="font-size:12px;color:var(--muted);">Получатель получит все привилегии ${name} на 7 дней</div>
+                </div>
+                
+                <div style="margin-bottom:20px;">
+                    <div style="font-weight:800;font-size:14px;margin-bottom:10px;">👤 Кому подарить</div>
+                    <select id="giftRecipient" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);">
+                        ${userOptions}
+                    </select>
+                </div>
+                
+                <div style="background:var(--surface2);border-radius:12px;padding:12px;margin-bottom:20px;">
+                    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Стоимость подарка</div>
+                    <div style="font-weight:900;font-size:20px;color:var(--text);">${price} ₽</div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px;">Списание с вашего баланса</div>
+                </div>
+                
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-ghost" style="flex:1;" onclick="closeGiftSubscriptionModal()">Отмена</button>
+                    <button class="btn btn-primary" style="flex:1;" onclick="sendGiftSubscription()">🎁 Подарить</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const modal = document.createElement('div');
+    modal.innerHTML = modalHtml;
+    document.body.appendChild(modal.firstElementChild);
+};
+
+window.closeGiftSubscriptionModal = function(){
+    const modal = qs('giftSubModal');
+    if(modal) modal.remove();
+    giftSubscriptionType = '';
+};
+
+window.sendGiftSubscription = async function(){
+    const recipient = qs('giftRecipient')?.value;
+    if(!recipient) return toast('⚠️ Выберите получателя', 'gold');
+    if(!giftSubscriptionType) return;
+    
+    const price = giftSubscriptionType === 'plus' ? 199 : 499;
+    const name = giftSubscriptionType === 'plus' ? 'Kapani Plus' : 'Kapani Ultra';
+    
+    // Check giver's balance
+    const giverSnap = await get(userRef(currentNick));
+    const giver = giverSnap.val();
+    if(!giver || (giver.balance || 0) < price) {
+        return toast(`❌ Недостаточно средств. Нужно ${price}₽`, 'red');
+    }
+    
+    // Check recipient exists
+    const recipientSnap = await get(userRef(recipient));
+    if(!recipientSnap.exists()) {
+        return toast('❌ Получатель не найден', 'red');
+    }
+    const recipientUser = recipientSnap.val();
+    
+    // Calculate expiry (extend if already has active subscription)
+    const now = new Date();
+    const currentExpiry = recipientUser.subscriptionExpiry ? new Date(recipientUser.subscriptionExpiry) : null;
+    const hasActiveSameType = currentExpiry && currentExpiry > now && recipientUser.subscription === giftSubscriptionType;
+    
+    let expiry, startDate;
+    if(hasActiveSameType) {
+        expiry = new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000);
+        startDate = recipientUser.subscriptionStart || now.toISOString();
+    } else {
+        expiry = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        startDate = now.toISOString();
+    }
+    
+    if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
+    
+    // Deduct from giver
+    await update(userRef(currentNick), { balance: (giver.balance || 0) - price });
+    
+    // Apply to recipient
+    await update(userRef(recipient), {
+        subscription: giftSubscriptionType,
+        subscriptionExpiry: expiry.toISOString(),
+        subscriptionStart: startDate,
+        subscriptionGiftedBy: currentNick,
+        subscriptionGiftedAt: now.toISOString()
+    });
+    
+    // Log transactions
+    await logTx(currentNick, {
+        type: 'out',
+        who: 'Подарок подписки',
+        amt: price,
+        desc: `Подарок ${name} для ${recipient}`
+    });
+    
+    // Send notifications
+    await pushNotification(currentNick, `🎁 Вы подарили ${name} пользователю ${recipient}!`, 'system');
+    await pushNotification(recipient, `🎁 ${currentNick} подарил вам ${name}!`, 'system');
+    sendPushNotification('Капани 🎁', `${currentNick} подарил вам ${name}!`, 'system');
+    
+    toast(`🎁 ${name} подарен ${recipient}!`, 'green');
+    closeGiftSubscriptionModal();
+    
+    // Update header balance
+    updateHeader_balance({...giver, balance: (giver.balance || 0) - price});
 };
 </script>
 
