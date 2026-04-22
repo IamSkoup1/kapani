@@ -307,7 +307,7 @@ select option{background:#1a2332;}
 
 /* Subscription Badge */
 .sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#d97706);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
-.sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,var(--primary),#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
+.sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,#22d3a5,#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
 @keyframes pulseUltra{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
 
 /* iPhone Fix - Enhanced Performance */
@@ -772,9 +772,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div class="chat-input-row">
                 <button class="media-ico-btn" onclick="toggleEmoji('chat')" title="Эмодзи">😊</button>
                 <button class="media-ico-btn" onclick="toggleMediaBar('chat')" title="Прикрепить">📎</button>
-                <input type="text" id="chatInput" placeholder="Написать сообщение..." maxlength="300" onkeydown="if(event.key==='Enter')sendChat()">
+                <input type="text" id="chatInput" placeholder="Написать сообщение..." maxlength="300" oninput="onChatInputTyping()" onkeydown="if(event.key==='Enter')sendChat()">
                 <button class="btn btn-primary btn-sm" onclick="sendChat()">➤</button>
             </div>
+            <div id="chatLiveStatus" style="display:none;margin-top:6px;font-size:11px;color:var(--primary);font-weight:800;"></div>
         </div>
     </div>
 
@@ -824,7 +825,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <div class="chat-input-row">
                     <button class="media-ico-btn" onclick="toggleEmoji('dm')" title="Эмодзи">😊</button>
                     <button class="media-ico-btn" onclick="toggleMediaBar('dm')" title="Прикрепить">📎</button>
-                    <input type="text" id="dmInput" placeholder="Сообщение..." maxlength="300" onkeydown="if(event.key==='Enter')sendDm()">
+                    <input type="text" id="dmInput" placeholder="Сообщение..." maxlength="300" oninput="onDmInputTyping()" onkeydown="if(event.key==='Enter')sendDm()">
                     <button class="btn btn-primary btn-sm" onclick="sendDm()">➤</button>
                 </div>
             </div>
@@ -1364,6 +1365,10 @@ let dmPeerReadTs = 0;
 let lastMarketListings = {};
 let dmConvoMeta = {};
 let myPinnedChats = {};
+let dmTypingUnsub = null;
+let chatTypingUnsub = null;
+let dmTypingResetTimer = null;
+let chatTypingResetTimer = null;
 let _imgZoomScale = 1;
 let wallMediaPending = null;
 let renderChat;
@@ -1389,6 +1394,8 @@ function qs(id) { return document.getElementById(id); }
 function nowTime() { return new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}); }
 function fullDateTimeStr(){ const d=new Date(); return { date:d.toLocaleDateString('ru'), time:nowTime(), ts:d.toISOString() }; }
 function dmKey(a,b) { return [a,b].sort().join('__dm__'); }
+function typingChatRef(nick){ return ref(db, `typing/chat/${nick}`); }
+function typingDmRef(key, nick){ return ref(db, `typing/dm/${key}/${nick}`); }
 function safeAvatar(userOrNick, fallback='https://cdn-icons-png.flaticon.com/512/149/149071.png') {
     if(!userOrNick) return fallback;
     if(typeof userOrNick === 'string') return (allUsersCache[userOrNick]?.avatar) || fallback;
@@ -1403,6 +1410,74 @@ function haversine(lat1,lon1,lat2,lon2) {
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 function isUserOnline(user) { if(!user||!user.lastSeen) return false; return (Date.now()-user.lastSeen)<ONLINE_TIMEOUT_MS; }
+function formatLastSeen(user){
+    if(!user || !user.lastSeen) return 'был(а) давно';
+    const diff = Date.now() - Number(user.lastSeen || 0);
+    if(diff < ONLINE_TIMEOUT_MS) return 'В сети';
+    const m = Math.floor(diff / 60000);
+    if(m < 60) return `${m || 1} мин. назад`;
+    const h = Math.floor(m / 60);
+    if(h < 24) return `${h} ч. назад`;
+    const d = Math.floor(h / 24);
+    if(d < 7) return `${d} ${d===1?'день':(d>=2&&d<=4?'дня':'дней')} назад`;
+    if(d < 30) return `${Math.floor(d/7)} нед. назад`;
+    return `был(а) ${new Date(Number(user.lastSeen)).toLocaleDateString('ru')}`;
+}
+function updateDmLiveStatus(peerUser, typingData){
+    const el = qs('dmChatJob');
+    if(!el || !peerUser) return;
+    const base = peerUser.job || 'Житель';
+    const online = isUserOnline(peerUser);
+    const ageOk = typingData && (Date.now() - Number(typingData.ts || 0) < 7000);
+    let live = online ? 'в сети' : formatLastSeen(peerUser);
+    if(ageOk){
+        if(typingData.state === 'typing') live = 'Печатает...';
+        else if(typingData.state === 'voice') live = 'Записывает голосовое...';
+        else if(typingData.state === 'video') live = 'Записывает видеосообщение...';
+    }
+    el.textContent = `${base} · ${live}`;
+    el.style.color = ageOk ? 'var(--primary)' : 'var(--muted)';
+}
+function updateChatLiveStatus(usersTyping){
+    const el = qs('chatLiveStatus');
+    if(!el) return;
+    const now = Date.now();
+    const rows = Object.entries(usersTyping || {})
+        .filter(([nick]) => nick !== currentNick)
+        .map(([nick, v]) => ({nick, state: v?.state || 'typing', ts: Number(v?.ts || 0)}))
+        .filter(x => x.ts && now - x.ts < 7000);
+    if(!rows.length){
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+    const line = rows.slice(0,2).map(x => {
+        const dn = displayNick(allUsersCache[x.nick]) || x.nick;
+        if(x.state === 'voice') return `${dn} записывает голосовое...`;
+        if(x.state === 'video') return `${dn} записывает видеосообщение...`;
+        return `${dn} печатает...`;
+    }).join(' · ');
+    el.textContent = line;
+    el.style.display = 'block';
+}
+async function setChatTypingState(state){
+    if(!currentNick) return;
+    try { await set(typingChatRef(currentNick), { state, ts: Date.now() }); } catch(e){}
+}
+async function setDmTypingState(state){
+    if(!currentNick || !currentDmNick) return;
+    try { await set(typingDmRef(dmKey(currentNick, currentDmNick), currentNick), { state, ts: Date.now() }); } catch(e){}
+}
+window.onChatInputTyping = function(){
+    if(chatTypingResetTimer) clearTimeout(chatTypingResetTimer);
+    setChatTypingState('typing');
+    chatTypingResetTimer = setTimeout(()=>setChatTypingState('idle'), 1600);
+};
+window.onDmInputTyping = function(){
+    if(dmTypingResetTimer) clearTimeout(dmTypingResetTimer);
+    setDmTypingState('typing');
+    dmTypingResetTimer = setTimeout(()=>setDmTypingState('idle'), 1600);
+};
 
 // ─── CLOUD FUNCTION FALLBACK HELPERS ────────
 // These helpers try Cloud Functions first, then fall back to direct DB operations
@@ -1787,13 +1862,21 @@ function attachListeners() {
     const cRef=chatRef();
     const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);};
     onValue(cRef,cFn); listeners.chat={ref:cRef,fn:cFn};
+    const chatTypingRef = ref(db, 'typing/chat');
+    const chatTypingFn = (snap) => {
+        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')){
+            updateChatLiveStatus(snap.val() || {});
+        }
+    };
+    onValue(chatTypingRef, chatTypingFn);
+    listeners.chatTyping = { ref: chatTypingRef, fn: chatTypingFn };
 
     const allRef=ref(db,'users');
     const allFn=(snap)=>{
         const users=snap.val()||{}; allUsersCache=users;
         renderHomeStats_users(users);
         if(curPage==='ratings') renderLeaderboard(users);
-        if(curPage==='adminPage'){renderAdminUsers(users);renderAdminUserSelect(users);}
+        if(curPage==='adminPage'){renderAdminUsers(users);renderAdminUserSelect(users);renderUnverifiedAccounts();}
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
@@ -1862,6 +1945,7 @@ function attachListeners() {
                 else if(latestMsg.msgType==='video_circle') notifText=`⭕ ${senderNick}: Видеосообщение`;
                 else if(latestMsg.msgType==='image') notifText=`🖼 ${senderNick}: Фото`;
                 else if(latestMsg.msgType==='video') notifText=`🎬 ${senderNick}: Видео`;
+                else if(latestMsg.msgType==='gift_subscription') notifText=`🎁 ${senderNick}: Подарок подписки`;
                 else { const preview=latestMsg.text?(latestMsg.text.length>55?latestMsg.text.slice(0,52)+'...':latestMsg.text):''; notifText=`💬 ${senderNick}: ${preview}`; }
                 const alreadyInDm=curPage==='messages'&&currentDmNick===senderNick;
                 if(!alreadyInDm && !(window._recentlyDeletedMsgs && window._recentlyDeletedMsgs.has(latestId))){
@@ -1912,7 +1996,6 @@ function updateHeader(u) {
         // Reset to default theme if no subscription or no theme set
         applyInterfaceTheme('default');
     }
-    
     // Apply avatar frame in header if user has subscription and frame
     const headerAvatarWrap = qs('headerAvatarWrap');
     if(headerAvatarWrap && isActive && u.avatarFrame) {
@@ -2274,6 +2357,8 @@ window.startVoice=async function(ctx){
         const {indId,timerId}=voiceUiIds(ctx);
         const ind=qs(indId);if(ind)ind.classList.add('show');
         if(ctx==='chat'||ctx==='dm'){const mb=ctx==='chat'?'chatMediaBar':'dmMediaBar';qs(mb)&&qs(mb).classList.remove('open');}
+        if(ctx==='chat') setChatTypingState('voice');
+        if(ctx==='dm') setDmTypingState('voice');
         voiceInterval=registerInterval('voiceInterval', setInterval(()=>{voiceSeconds++;const m=Math.floor(voiceSeconds/60),s=voiceSeconds%60;const tEl=qs(timerId);if(tEl)tEl.textContent=`${m}:${s<10?'0'+s:s}`;if(voiceSeconds>=120)stopVoice(ctx);},1000));
         toast('🎤 Запись началась...','gold');
     } catch(e){toast('❌ Нет доступа к микрофону','red');}
@@ -2285,6 +2370,8 @@ window.stopVoice=async function(ctx){
     clearIntervalByName('voiceInterval');
     const {indId}=voiceUiIds(ctx);
     const ind=qs(indId);if(ind)ind.classList.remove('show');
+    if(ctx==='chat') setChatTypingState('idle');
+    if(ctx==='dm') setDmTypingState('idle');
     await new Promise(r=>setTimeout(r,200));
     const blob=new Blob(voiceChunks,{type:'audio/webm'});
     const reader=new FileReader();
@@ -2303,6 +2390,8 @@ window.cancelVoice=function(ctx){
     clearInterval(voiceInterval); voiceRecorder=null; voiceChunks=[];
     const {indId}=voiceUiIds(ctx);
     const ind=qs(indId);if(ind)ind.classList.remove('show');
+    if(ctx==='chat') setChatTypingState('idle');
+    if(ctx==='dm') setDmTypingState('idle');
     toast('🗑 Запись отменена','red');
 };
 
@@ -2734,7 +2823,6 @@ window.applyInterfaceTheme=function(theme){
         document.body.classList.add('theme-' + theme);
     }
 };
-
 window.saveProfileCustomization=async function(){
     const emojiSelect = qs('nicknameEmojiSelect');
     const frameSelect = qs('avatarFrameSelect');
@@ -2751,7 +2839,6 @@ window.saveProfileCustomization=async function(){
         updates.interfaceTheme = themeSelect.value || 'default';
         applyInterfaceTheme(updates.interfaceTheme);
     }
-    
     await update(userRef(currentNick), updates);
     toast('✅ Настройки сохранены', 'green');
     closeProfileCustomizer();
@@ -3116,7 +3203,6 @@ window.doTransfer=async function(){
         if (result.success) {
             // Only notify recipient, not sender
             await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
-            sendPushNotification('Капани 💰',`Вам перевели ${amt}₽ от ${currentNick}`,'money');
             qs('bTo').value='';qs('bAmt').value='';toast(`💸 ${amt}₽ → ${to}`,'green');renderRecentTransfers();renderFinancialStats();
         }
     } catch (error) {
@@ -3245,6 +3331,7 @@ window.sendPendingPhotos=async function(ctx){
 window.sendChat=async function(){
     const inp=qs('chatInput');const text=inp.value.trim();if(!text)return;
     await sendChatMsg(text,null,null);inp.value='';
+    setChatTypingState('idle');
 };
 async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     const uSnap=await get(userRef(currentNick));const u=uSnap.val();
@@ -3262,6 +3349,7 @@ function getPinnedMap(){ return (allUsersCache[currentNick] && allUsersCache[cur
 function isChatPinned(nick){ return !!getPinnedMap()[nick]; }
 function dmPreviewText(msg){
     if(!msg) return 'Новый чат';
+    if(msg.msgType==='gift_subscription') return `🎁 ${msg.nick===currentNick ? 'Вы' : (displayNick(allUsersCache[msg.nick]) || msg.nick)}: Подарок подписки`;
     if(msg.msgType==='voice') return `🎤 ${msg.nick===currentNick ? 'Вы' : (displayNick(allUsersCache[msg.nick]) || msg.nick)}: Голосовое сообщение`;
     if(msg.msgType==='video_circle') return `⭕ ${msg.nick===currentNick ? 'Вы' : (displayNick(allUsersCache[msg.nick]) || msg.nick)}: Видеосообщение`;
     if(msg.msgType==='image') return `🖼 ${msg.nick===currentNick ? 'Вы' : (displayNick(allUsersCache[msg.nick]) || msg.nick)}: Фото`;
@@ -3401,7 +3489,7 @@ window.openDmChat=async function(nick){
     currentDmNick=nick;dmPeerReadTs=0;
     const snap=await get(userRef(nick));const u=snap.exists()?snap.val():{nick,avatar:'',job:'Житель'};const online=isUserOnline(u);
     toggleAvatarMedia(qs('dmChatAv'), qs('dmChatAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
-    qs('dmChatName').textContent=displayNick(u)||u.nick;qs('dmChatJob').textContent=u.job||'Житель';
+    qs('dmChatName').textContent=displayNick(u)||u.nick;updateDmLiveStatus(u, null);
     const avWrap=qs('dmChatAvWrap');if(avWrap)avWrap.classList.toggle('online',online);
     
     // Apply avatar frame for chat header
@@ -3447,15 +3535,27 @@ window.openDmChat=async function(nick){
     const peerReadRef=ref(db,`dms/${key}/lastRead/${nick}`);
     const readFn=(rs)=>{dmPeerReadTs=rs.exists()?(rs.val()||0):0;if(currentDmNick===nick)renderDmMessages(lastDmMsgs);};
     onValue(peerReadRef,readFn);dmListeners.read={ref:peerReadRef,fn:readFn};
+    if(dmTypingUnsub){ dmTypingUnsub(); dmTypingUnsub = null; }
+    const typingRef = typingDmRef(key, nick);
+    const typingCb = (ts) => {
+        const typingVal = ts.val() || null;
+        const freshUser = allUsersCache[nick] || u;
+        updateDmLiveStatus(freshUser, typingVal);
+    };
+    onValue(typingRef, typingCb);
+    dmTypingUnsub = () => off(typingRef, 'value', typingCb);
 };
 window.closeDmChat=function(){
     if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);dmListeners.current=null;}
     if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);dmListeners.read=null;}
+    if(dmTypingUnsub){ dmTypingUnsub(); dmTypingUnsub = null; }
+    setDmTypingState('idle');
     currentDmNick=null;dmPeerReadTs=0;qs('dmChatView').style.display='none';qs('dmListView').style.display='block';
 };
 window.sendDm=async function(){
     const inp=qs('dmInput');const text=inp.value.trim();if(!text||!currentDmNick)return;
     await sendDmMsg(text,null,null);inp.value='';
+    setDmTypingState('idle');
 };
 async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(!currentDmNick)return;
@@ -3474,7 +3574,6 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
     if(currentDmNick!==currentNick){
         await pushNotification(currentDmNick,notifText,'messages');
-        sendPushNotification(`💬 ${currentNick}`,notifText,'messages');
     }
 }
 
@@ -3587,13 +3686,13 @@ window.openUserProfile=async function(nick){
             vpfSubBadge.style.display = 'block';
         } else if(u.subscription === 'ultra' && isActive){
             vpfSubBadge.textContent = '💎 Kapani Ultra';
-            vpfSubBadge.style.color = 'var(--primary)';
+            vpfSubBadge.style.color = '#22d3a5';
             vpfSubBadge.style.display = 'block';
         } else {
             vpfSubBadge.style.display = 'none';
         }
     }
-    const onlineEl=qs('upmOnline');if(onlineEl){onlineEl.className=`upm-online ${online?'is-online':'is-offline'}`;onlineEl.querySelector('span').textContent=online?'В сети':'Не в сети';}
+    const onlineEl=qs('upmOnline');if(onlineEl){onlineEl.className=`upm-online ${online?'is-online':'is-offline'}`;onlineEl.querySelector('span').textContent=online?'В сети':formatLastSeen(u);}
     const avWrap=qs('upmAvatarWrap');if(avWrap)avWrap.classList.toggle('online',online);
     
     // Apply avatar frame if user has subscription and frame
@@ -3723,7 +3822,7 @@ async function renderVisitorProfilePage(nick){
         }
     }
     const vo=qs('vpfOnline');
-    if(vo){vo.className='upm-online '+(online?'is-online':'is-offline');const sp=vo.querySelector('span');if(sp)sp.textContent=online?'В сети':'Не в сети';}
+    if(vo){vo.className='upm-online '+(online?'is-online':'is-offline');const sp=vo.querySelector('span');if(sp)sp.textContent=online?'В сети':formatLastSeen(u);}
     
     // Apply profile background effect if user has subscription
     const profileBgEffect = qs('vpfProfileBgEffect');
@@ -4494,7 +4593,7 @@ window.renderUnverifiedAccounts=async function(){
     const el=qs('unverifiedAccounts');if(!el)return;
     const snap=await get(ref(db,'users'));
     const all=snap.val()||{};
-    const unverified=Object.entries(all).filter(([k,u])=>!u.accountVerified);
+    const unverified=Object.entries(all).filter(([k,u])=>u && u.accountVerified !== true);
     if(unverified.length===0){
         el.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет неподтверждённых аккаунтов</div>';
         return;
@@ -4590,6 +4689,8 @@ function mediaHtml(m){
         html += `<div class="msg-media-wrap"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(m.mediaData)}')" style="background:#111;"><video preload="none" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(m.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
     } else if(m.msgType==='voice'){
         html += `<div class="msg-media-wrap"><div class="chat-audio-player"><audio controls preload="none"><source src="${escHtml(m.mediaData)}"></audio></div></div>`;
+    } else if(m.msgType==='gift_subscription'){
+        html += `<div class="msg-text">🎁 ${escHtml(m.text || 'Подарок подписки')}</div>`;
     } else if(!caption && m.mediaData){
         html += `<div class="msg-text">${escHtml(m.text || '')}</div>`;
     }
@@ -5127,6 +5228,8 @@ function startVcRecording(){
         finalizeVcRecording();
     };
     vcMediaRecorder.start(100);
+    if(vcTargetCtx === 'chat') setChatTypingState('video');
+    if(vcTargetCtx === 'dm') setDmTypingState('video');
     const btn = qs('vcRecBtn'); if(btn){ btn.textContent = '⏹'; btn.classList.add('is-rec'); }
     const badge = qs('vcTimerBadge'); if(badge){ badge.style.display='block'; badge.textContent = `${vcSecondsLeft}s`; }
     stopVcTimer();
@@ -5138,6 +5241,8 @@ function startVcRecording(){
 }
 function stopVcRecording(){
     stopVcTimer();
+    if(vcTargetCtx === 'chat') setChatTypingState('idle');
+    if(vcTargetCtx === 'dm') setDmTypingState('idle');
     if(vcMediaRecorder && vcMediaRecorder.state !== 'inactive'){
         try { vcMediaRecorder.stop(); } catch(e) {}
     }
@@ -5164,6 +5269,8 @@ window.closeVcModal = function(){
     stopVcTracks();
     vcChunks = [];
     setVcReadyUI();
+    if(vcTargetCtx === 'chat') setChatTypingState('idle');
+    if(vcTargetCtx === 'dm') setDmTypingState('idle');
     qs('vcModal').classList.remove('open');
 };
 window.toggleVcRecord = function(){
@@ -5490,7 +5597,15 @@ window.sendGiftSubscription = async function(){
     // Send notifications
     await pushNotification(currentNick, `🎁 Вы подарили ${name} пользователю ${recipient}!`, 'system');
     await pushNotification(recipient, `🎁 ${currentNick} подарил вам ${name}!`, 'system');
-    sendPushNotification('Капани 🎁', `${currentNick} подарил вам ${name}!`, 'system');
+    const giftDm = {
+        nick: currentNick,
+        avatar: giver.avatar || DEFAULT_AVATAR_URL,
+        text: `🎁 ${name} в подарок`,
+        msgType: 'gift_subscription',
+        time: nowTime(),
+        createdAt: Date.now()
+    };
+    await push(dmRef(dmKey(currentNick, recipient)), giftDm);
     
     toast(`🎁 ${name} подарен ${recipient}!`, 'green');
     closeGiftSubscriptionModal();
