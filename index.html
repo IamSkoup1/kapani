@@ -46,12 +46,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm{position:relative;display:block;flex-shrink:0;align-self:flex-start;}
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
-.bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(7,1fr);padding:8px 0 10px;z-index:900;}
-.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:8.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.3px;padding:0 2px;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(8,1fr);padding:8px 0 10px;z-index:900;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:7.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.2px;padding:0 1px;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .bn-item .ico{font-size:20px;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
 .bn-item.sel .ico{transform:scale(1.15);}
-.bn-badge{position:absolute;top:0;right:14px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
+.bn-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
 .page-wrap{padding-top:76px;padding-bottom:env(safe-area-inset-bottom,0px);}
 .section{display:none;animation:fadeUp .35s ease-out;}
 .section.active{display:block;}
@@ -576,6 +576,74 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 /* Fix video circle flicker on scroll - use contain */
 .msg-video-wrap{contain:layout paint;will-change:auto;}
 .msg-media-img{contain:layout paint;will-change:auto;}
+
+/* ─── SAFARI iOS CHAT FIXES ─────────────────────────── */
+/* Prevent flickering and ensure smooth scrolling in chat */
+#chatMessages,#dmMessages{
+    -webkit-overflow-scrolling:touch;
+    -webkit-transform:translateZ(0);
+    transform:translateZ(0);
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
+    will-change:scroll-position;
+}
+/* Fix buttons not responding in chat on Safari iOS */
+#chatMessages .chat-msg,
+#dmMessages .chat-msg,
+#chatMessages .msg-action-btn,
+#dmMessages .msg-action-btn{
+    -webkit-transform:translateZ(0);
+    transform:translateZ(0);
+    pointer-events:auto;
+}
+/* Ensure chat input area is always interactive */
+.chat-input-row{
+    -webkit-transform:translateZ(0);
+    transform:translateZ(0);
+    position:relative;
+    z-index:100;
+}
+.chat-input-row input,
+.chat-input-row button{
+    pointer-events:auto;
+    -webkit-tap-highlight-color:transparent;
+}
+/* Fix Safari iOS double-tap and scroll issues */
+@supports (-webkit-touch-callout:none){
+    /* iOS specific fixes */
+    .section{min-height:100vh;min-height:-webkit-fill-available;}
+    #messages{min-height:100vh;min-height:-webkit-fill-available;}
+    /* Prevent chat flickering during scroll */
+    .chat-bubble{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden;}
+    /* Ensure buttons work after chat entry */
+    .btn,.msg-action-btn{position:relative;z-index:10;}
+    /* Fix bottom nav on iPhone with safe area */
+    .bottom-nav{padding-bottom:max(10px,env(safe-area-inset-bottom));}
+    /* Prevent visual viewport issues */
+    body{min-height:100vh;min-height:-webkit-fill-available;}
+}
+/* Prevent momentum scrolling issues in chat */
+#chatWrapper,#dmWrapper{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+}
+/* Ensure emoji panel and media bar are clickable */
+.emoji-panel,.media-bar,.media-bar-btn{
+    pointer-events:auto;
+    -webkit-transform:translateZ(0);
+    transform:translateZ(0);
+}
+/* Fix message actions appearing and buttons clickable */
+.msg-actions{
+    pointer-events:auto;
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-end;
+    max-width:min(68%,100%);
+    margin-top:2px;
+}
 /* Chat date separator */
 .chat-date-separator{display:flex;align-items:center;justify-content:center;margin:10px 0;gap:8px;}
 .chat-date-separator span{font-size:11px;font-weight:800;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 12px;white-space:nowrap;}
@@ -688,9 +756,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <button class="bn-item" id="bn2" onclick="navTo('market')" aria-label="Перейти в маркет"><span class="ico">🛍</span>Маркет</button>
     <button class="bn-item" id="bn3" onclick="navTo('tasks')" aria-label="Перейти к заданиям"><span class="ico">🗂</span>Задания</button>
     <button class="bn-item" id="bn4" onclick="navTo('bank')" aria-label="Перейти в банк"><span class="ico">💰</span>Банк</button>
-    <button class="bn-item" id="bn5" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
-    <button class="bn-item" id="bn6" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
-    <button class="bn-item" id="bn7" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
+    <button class="bn-item" id="bn5" onclick="navTo('news')" aria-label="Перейти к новостям"><span class="ico">📰</span>Новости</button>
+    <button class="bn-item" id="bn6" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
+    <button class="bn-item" id="bn7" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
+    <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
 </div>
 
 <div class="container">
@@ -1156,6 +1225,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <option value="Водитель">🛵 Водитель такси</option>
             <option value="Доставщик">📦 Курьер / Доставщик</option>
             <option value="Уборщик">🧹 Уборщик</option>
+            <option value="Журналист">📰 Журналист</option>
         </select>
         <textarea id="jAppText" placeholder="Расскажите о себе и почему должны принять именно вас на эту работу..." style="min-height:80px;margin-top:8px;"></textarea>
         <button class="btn btn-primary" onclick="sendApp()">Подать заявку</button>
@@ -1167,7 +1237,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div style="font-size:13px;color:var(--muted);line-height:1.9;">
             <b style="color:var(--text)">🛵 Водитель</b> — принимает заказы такси, получает оплату за поездку. Зарплата: в зависимости от заказов<br>
             <b style="color:var(--text)">📦 Курьер</b> — доставляет ресурсы, зарабатывает комиссию. Зарплата: в зависимости от заказов<br>
-            <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. Зарплата: 250 рублей/день
+            <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. Зарплата: 250 рублей/день<br>
+            <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. Зарплата: по договорённости с мэрией
         </div>
     </div>
 </div>
@@ -1180,6 +1251,32 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div id="tasksList" class="task-section"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div>
     </div>
 </div>
+
+<!-- NEWS -->
+<div id="news" class="section">
+    <div class="card" id="newsEditorPanel" style="display:none;">
+        <div class="card-title">📰 Создать новость</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Только Денис и Журналисты могут публиковать новости.</div>
+        <input type="text" id="newsTitle" placeholder="Заголовок новости" maxlength="100">
+        <textarea id="newsContent" placeholder="Текст новости..." style="min-height:120px;"></textarea>
+        <input type="url" id="newsImage" placeholder="URL изображения (необязательно)">
+        <label class="file-upload-btn" for="newsImageFile">📷 Выбрать фото</label>
+        <input type="file" id="newsImageFile" accept="image/*" onchange="handleNewsPhoto(event)">
+        <div id="newsImagePreview" style="display:none;margin-bottom:8px;"><img id="newsImageImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);"></div>
+        <select id="newsCategory">
+            <option value="general">📢 Общее</option>
+            <option value="event">🎉 Событие</option>
+            <option value="alert">🚨 Важное</option>
+            <option value="update">🔄 Обновление</option>
+        </select>
+        <button class="btn btn-primary" onclick="publishNews()" style="margin-top:8px;">📤 Опубликовать</button>
+    </div>
+    <div class="card">
+        <div class="card-title">📰 Новости поселка</div>
+        <div id="newsList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
+    </div>
+</div>
+
 <!-- DRIVER PAGE -->
 <div id="driverPage" class="section">
     <div style="display:flex;gap:8px;margin-bottom:14px;">
@@ -1303,6 +1400,7 @@ const functions = getFunctions(app, 'europe-west1');
 
 const ADMIN = CONFIG.admin.username;
 const JOB_JANITOR = CONFIG.jobs.janitor;
+const JOB_JOURNALIST = "Журналист";
 const JANITOR_TASK_TEXT = CONFIG.jobs.janitorTaskText;
 const MIN_BALANCE_ALLOWED = CONFIG.finance.minBalanceAllowed;
 const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
@@ -1722,6 +1820,8 @@ const txLogRef  = (nick) => ref(db, `users/${nick}/txlog`);
 const janitorSubsRef = () => ref(db, 'janitorSubmissions');
 const janitorSubRef = (id) => ref(db, `janitorSubmissions/${id}`);
 const wallRef = (nick) => ref(db, `walls/${nick}`);
+const newsRef = () => ref(db, 'news');
+const newsItemRef = (id) => ref(db, `news/${id}`);
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
@@ -4124,11 +4224,30 @@ function renderMarket(listings){
     const cat=qs('mktBrowseCat')?.value||'all';
     const allEl=qs('marketListings');
     if(allEl){
-        let active=all.filter(l=>l.status!=='sold' || l.category==='service');
+        let active=all.filter(l=>(l.status!=='sold' || l.category==='service') && !l.archived);
         if(cat&&cat!=='all') active=active.filter(l=>(l.category||'other')===cat);
         allEl.innerHTML=active.length===0?'<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Нет объявлений</div>':active.map(l=>marketCard(l,false)).join('');
     }
-    const myEl=qs('myMarketListings');if(myEl){const mine=all.filter(l=>l.seller===currentNick);myEl.innerHTML=mine.length===0?'<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Нет объявлений</div>':mine.map(l=>marketCard(l,true)).join('');}
+    const myEl=qs('myMarketListings');
+    if(myEl){
+        const mine=all.filter(l=>l.seller===currentNick);
+        const activeMine=mine.filter(l=>!l.archived);
+        const archivedMine=mine.filter(l=>l.archived);
+        let html='';
+        if(activeMine.length===0 && archivedMine.length===0){
+            html='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Нет объявлений</div>';
+        } else {
+            if(activeMine.length>0){
+                html+=`<div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">📋 Активные (${activeMine.length})</div>`;
+                html+=activeMine.map(l=>marketCard(l,true,false)).join('');
+            }
+            if(archivedMine.length>0){
+                html+=`<div style="font-size:12px;font-weight:800;color:var(--muted);margin:20px 0 12px;text-transform:uppercase;letter-spacing:0.5px;">🕓 Скрытые (${archivedMine.length})</div>`;
+                html+=archivedMine.map(l=>marketCard(l,true,true)).join('');
+            }
+        }
+        myEl.innerHTML=html;
+    }
 }
 const categoryEmoji={other:'📦',food:'🍎',tools:'🔧',clothes:'👕',electronics:'📱',building:'🧱',work:'💼',service:'🤝'};
 function priceLine(l){
@@ -4137,13 +4256,14 @@ function priceLine(l){
     if(l.priceNegotiable)return 'Договорная';
     return `${(l.price||0).toLocaleString()} ₽`;
 }
-function marketCard(l,isMine){
+function marketCard(l,isMine, isArchived=false){
     const isWork=l.category==='work';
     const isService=l.category==='service';
-    const isBuyer=l.buyer===currentNick;const canBuy=!isMine&&l.seller!==currentNick;
+    const isBuyer=l.buyer===currentNick;const canBuy=!isMine&&l.seller!==currentNick&&!isArchived;
     const pendingSellerConfirm=isMine&&l.status==='meeting_requested';const pendingBuyerConfirm=isBuyer&&l.status==='meeting_confirmed';
     const pendingBuyerReq=isBuyer&&l.status==='meeting_requested';const chatPartner=isMine?l.buyer:(isBuyer?l.seller:null);
-    const showChat=chatPartner&&(l.status==='meeting_requested'||l.status==='meeting_confirmed');const sellerOnline=isUserOnline(allUsersCache[l.seller]);
+    const showChat=chatPartner&&(l.status==='meeting_requested'||l.status==='meeting_confirmed')&&!isArchived;
+    const sellerOnline=isUserOnline(allUsersCache[l.seller]);
     const su=allUsersCache[l.seller]||{};
     
     // Check if seller has active subscription and avatar frame
@@ -4171,9 +4291,10 @@ function marketCard(l,isMine){
     
     const workBadge=isWork&&l.workAcceptedBy?`<span class="market-status-pending" style="margin-left:8px;">✅ Подтверждено</span>`:'';
     const serviceBadge=isService?`<span class="market-status-service" style="margin-left:8px;">🤝 Услуга</span>`:'';
+    const archivedBadge=isArchived?`<span class="market-status-sold" style="margin-left:8px;">🕓 Скрыто</span>`:'';
     const statusBadge=l.status==='sold'&&!isService?'<span class="market-status-sold">Продано</span>':(l.status!=='active'&&!isWork&&!isService?'<span class="market-status-pending">Ожидание</span>':'');
-    return `<div class="market-card">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'">`:''}
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div>${statusBadge}${workBadge}${serviceBadge}</div>
+    return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'">`:''}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div>${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div>
         <div class="market-price">${priceLine(l)}</div>${l.desc?`<div class="market-desc">${escHtml(l.desc)}</div>`:''}
         <div class="market-seller" style="cursor:pointer;" onclick="openUserProfile('${escHtml(l.seller)}')">
             <div class="seller-info" style="display:flex;align-items:center;gap:6px;">
@@ -4184,11 +4305,12 @@ function marketCard(l,isMine){
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             ${canBuy?`<button class="btn btn-gold btn-sm" onclick="requestMeeting('${l.id}')">🤝 ${isService?'Заказать':'Договориться'}</button>`:''}
-            ${pendingBuyerReq?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;">⏳ Ожидаем продавца</div><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
-            ${pendingSellerConfirm?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
-            ${pendingBuyerConfirm?`<button class="btn btn-primary btn-sm" onclick="confirmPurchase('${l.id}')">✅ ${isService?'Подтвердить заказ':'Оплатить и подтвердить'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
+            ${pendingBuyerReq&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;">⏳ Ожидаем продавца</div><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
+            ${pendingSellerConfirm&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
+            ${pendingBuyerConfirm&&!isArchived?`<button class="btn btn-primary btn-sm" onclick="confirmPurchase('${l.id}')">✅ ${isService?'Подтвердить заказ':'Оплатить и подтвердить'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
             ${showChat?`<button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(chatPartner)}')">💬 Написать</button>`:''}
-            ${isMine&&(l.status==='active'||isService)?`<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑</button>`:''}
+            ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
+            ${isMine&&isArchived?`<button class="btn btn-primary btn-sm" onclick="restoreListing('${l.id}')">↩ Вернуть</button><button class="btn btn-red btn-sm" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
         </div></div>`;
 }
 window.publishListing=async function(){
@@ -4287,7 +4409,33 @@ window.confirmPurchase=async function(id){
         toast('🎉 Покупка!','green');
     }
 };
-window.deleteListing=async function(id){await remove(listingRef(id));toast('🗑 Удалено','gold');};
+window.deleteListing=async function(id){
+    const snap=await get(listingRef(id));
+    if(!snap.exists())return toast('❌ Объявление не найдено','red');
+    const l=snap.val();
+    if(l.seller!==currentNick)return toast('❌ Нет прав','red');
+    if(!confirm('Удалить объявление навсегда?'))return;
+    await remove(listingRef(id));
+    toast('🗑 Удалено','gold');
+};
+window.archiveListing=async function(id){
+    const snap=await get(listingRef(id));
+    if(!snap.exists())return toast('❌ Объявление не найдено','red');
+    const l=snap.val();
+    if(l.seller!==currentNick)return toast('❌ Нет прав','red');
+    await update(listingRef(id),{archived:true,archivedAt:Date.now()});
+    toast('🕓 Объявление скрыто','gold');
+    get(marketRef()).then(snap=>renderMarket(snap.val()||{}));
+};
+window.restoreListing=async function(id){
+    const snap=await get(listingRef(id));
+    if(!snap.exists())return toast('❌ Объявление не найдено','red');
+    const l=snap.val();
+    if(l.seller!==currentNick)return toast('❌ Нет прав','red');
+    await update(listingRef(id),{archived:null,archivedAt:null});
+    toast('↩ Объявление восстановлено','green');
+    get(marketRef()).then(snap=>renderMarket(snap.val()||{}));
+};
 
 // ─── LEADERBOARD ──────────────────────────
 function renderLeaderboard(users){
@@ -4614,12 +4762,122 @@ window.renderUnverifiedAccounts=async function(){
     `).join('');
 };
 
+// ─── NEWS FUNCTIONS ─────────────────────────
+const NEWS_CATEGORIES = {
+    general: { emoji: '📢', label: 'Общее' },
+    event: { emoji: '🎉', label: 'Событие' },
+    alert: { emoji: '🚨', label: 'Важное' },
+    update: { emoji: '🔄', label: 'Обновление' }
+};
+function canPublishNews(){
+    const me = allUsersCache[currentNick];
+    if(!me) return false;
+    return currentNick === ADMIN || me.job === JOB_JOURNALIST;
+}
+window.handleNewsPhoto = async function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    try {
+        toast('📷 Сжимаем фото...', 'gold');
+        const dataUrl = await compressImage(file, 1200, 0.85);
+        const img = qs('newsImageImg');
+        img.src = dataUrl;
+        img.parentElement.style.display = 'block';
+        // Store in hidden input
+        window._newsPhotoData = dataUrl;
+    } catch(err) {
+        toast('❌ Не удалось загрузить фото', 'red');
+    }
+    e.target.value = '';
+};
+window.publishNews = async function(){
+    if(!canPublishNews()) return toast('❌ Только Денис и Журналисты могут публиковать новости', 'red');
+    const title = qs('newsTitle').value.trim();
+    const content = qs('newsContent').value.trim();
+    const category = qs('newsCategory').value;
+    const imageUrl = window._newsPhotoData || qs('newsImage').value.trim() || null;
+    if(!title) return toast('⚠️ Укажите заголовок новости', 'gold');
+    if(!content) return toast('⚠️ Укажите текст новости', 'gold');
+    const id = genId();
+    const newsItem = {
+        id,
+        title,
+        content,
+        category,
+        imageUrl,
+        author: currentNick,
+        authorJob: allUsersCache[currentNick]?.job || 'Житель',
+        createdAt: Date.now(),
+        date: new Date().toLocaleDateString('ru'),
+        time: nowTime()
+    };
+    await set(newsItemRef(id), newsItem);
+    toast('📰 Новость опубликована!', 'green');
+    qs('newsTitle').value = '';
+    qs('newsContent').value = '';
+    qs('newsImage').value = '';
+    window._newsPhotoData = null;
+    qs('newsImagePreview').style.display = 'none';
+    renderNews();
+};
+window.deleteNews = async function(id){
+    if(!confirm('Удалить эту новость?')) return;
+    const snap = await get(newsItemRef(id));
+    if(!snap.exists()) return toast('❌ Новость не найдена', 'red');
+    const item = snap.val();
+    // Only author or admin can delete
+    if(item.author !== currentNick && currentNick !== ADMIN) {
+        return toast('❌ Только автор или Денис может удалить новость', 'red');
+    }
+    await remove(newsItemRef(id));
+    toast('🗑 Новость удалена', 'gold');
+    renderNews();
+};
+window.renderNews = async function(){
+    // Show/hide editor panel based on permissions
+    const editorPanel = qs('newsEditorPanel');
+    if(editorPanel) {
+        editorPanel.style.display = canPublishNews() ? 'block' : 'none';
+    }
+    const el = qs('newsList');
+    if(!el) return;
+    try {
+        const snap = await get(newsRef());
+        const all = snap.val() || {};
+        const sorted = Object.values(all).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+        if(sorted.length === 0) {
+            el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет новостей</div>';
+            return;
+        }
+        el.innerHTML = sorted.map(item => {
+            const catInfo = NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general;
+            const canDelete = item.author === currentNick || currentNick === ADMIN;
+            return `<div class="news-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;">
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:12px;background:var(--surface2);padding:4px 8px;border-radius:8px;color:var(--primary);">${catInfo.emoji} ${catInfo.label}</span>
+                    <span style="font-size:11px;color:var(--muted);">${item.date} · ${item.time}</span>
+                    ${canDelete ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);" onclick="deleteNews('${jsEsc(item.id)}')">🗑</button>` : ''}
+                </div>
+                <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
+                ${item.imageUrl ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
+                <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
+                <div style="margin-top:10px;font-size:11px;color:var(--muted);">
+                    Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        console.error('Error loading news:', e);
+        el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Ошибка загрузки новостей</div>';
+    }
+};
+
 // ─── NAVIGATION ───────────────────────────
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,subscription:5,profile:6,janitorPage:7};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
-    for(let i=0;i<8;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
+    for(let i=0;i<9;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
     window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
@@ -4631,6 +4889,7 @@ window.navTo=function(id){
     if(id==='subscription') renderSubscription();
     if(id==='tasks') renderTasks();
     if(id==='jobs') renderJobAppStatus();
+    if(id==='news') renderNews();
     if(id==='taxi') setTimeout(()=>window.initTaxiMap(),100);
     if(id==='driverPage') setTimeout(()=>{if(driverTrackMapObj)driverTrackMapObj.invalidateSize();},450);
     if(id==='janitorPage') renderJanitorPage();
@@ -4704,6 +4963,7 @@ function msgActionsHtml(kind, msgId, m, isMe){
         <button type="button" class="msg-action-btn" style="color:var(--red);" onclick="event.stopPropagation();${kind==='chat'?'deleteChat':'deleteDm'}('${jsEsc(msgId)}')">🗑</button>
     </div>`;
 }
+function replyPreviewHtml(m){ return ''; }
 function msgEditHtml(kind, msgId, m){
     if(m.msgType) return '';
     const textareaId = kind==='chat' ? `gceditText_${msgId}` : `editText_${msgId}`;
@@ -4820,6 +5080,7 @@ window.renderChat = async function(msgs){
                 <div class="chat-msg-body">
                     <div class="${bubbleClass}" id="gcbubble_${jsEsc(msgId)}">
                         ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
+                        ${replyPreviewHtml(m)}
                         ${mediaHtml(m)}${edited}
                         <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
                     </div>
@@ -4960,6 +5221,7 @@ window.renderDmMessages = async function(msgs){
                 <div class="chat-msg-body">
                     ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
                     <div class="${bubbleClass}" id="bubble_${jsEsc(msgId)}">
+                        ${replyPreviewHtml(m)}
                         ${mediaHtml(m)}${edited}
                         <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
                     </div>
