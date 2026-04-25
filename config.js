@@ -35,8 +35,8 @@ export const CONFIG = {
     // Координаты
     location: {
         kapani: {
-            lat: 55.7558,
-            lng: 37.6173
+            lat: 52.628825753234985,
+            lng: 38.416863347119566
         }
     },
     

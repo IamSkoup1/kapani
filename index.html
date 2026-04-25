@@ -24,7 +24,7 @@
     --text:#e2e8f0;--muted:#64748b;--shadow:0 8px 40px rgba(0,0,0,0.5);--r:22px;--r-sm:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:80px;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+body{font-family:'Nunito','Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:80px;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .bottom-nav{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;}
 button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
@@ -695,13 +695,13 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="imgViewer" onclick="if(event.target===this)closeImgViewer()">
     <button class="img-viewer-close" onclick="closeImgViewer()">✕</button>
     <div class="img-zoom-wrap" id="imgZoomWrap" onclick="event.stopPropagation()">
-        <img id="imgViewerImg" src="" alt="" style="max-width:95vw;max-height:85vh;object-fit:contain;">
+        <img id="imgViewerImg" src="" alt="" style="max-width:95vw;max-height:85vh;object-fit:contain;touch-action:none;user-select:none;-webkit-user-select:none;">
     </div>
     <div class="img-zoom-bar" onclick="event.stopPropagation()">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="adjustImgZoom(-0.25)">−</button>
-        <span id="imgZoomPct" style="font-size:12px;font-weight:800;min-width:42px;text-align:center;">100%</span>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="adjustImgZoom(0.25)">+</button>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="resetImgZoom()">↺</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="adjustImgZoom(-0.5)" style="font-size:18px;padding:8px 16px;">−</button>
+        <span id="imgZoomPct" style="font-size:12px;font-weight:800;min-width:48px;text-align:center;">100%</span>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="adjustImgZoom(0.5)" style="font-size:18px;padding:8px 16px;">+</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="resetImgZoom()" style="padding:8px 14px;">↺</button>
     </div>
 </div>
 
@@ -976,6 +976,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <button class="taxi-point-btn" onclick="detectShopLocation()" style="margin-bottom:0;flex-shrink:0;">📍</button>
         </div>
         <div id="shopMap"></div>
+        <div id="shopDeliveryNote" style="display:none;font-size:12px;color:var(--muted);text-align:right;margin-bottom:4px;">включает доставку <b style="color:var(--primary)">+30₽</b></div>
         <div class="total-row"><span>Итого</span><span class="total-val"><span id="sTotal">0</span> ₽</span></div>
         <button id="btnBuy" class="btn btn-primary" onclick="buyShop()">Оформить доставку</button>
     </div>
@@ -1379,7 +1380,7 @@ const CONFIG = {
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
-    location: { kapani: { lat: 55.7558, lng: 37.6173 } },
+    location: { kapani: { lat: 52.628825753234985, lng: 38.416863347119566 } },
     rewards: { customAvatar: 40, firstWall: 60 },
     subscriptions: { plus: { price: 199, name: "Kapani Plus" }, ultra: { price: 499, name: "Kapani Ultra" } },
     limits: { chatMessages: 60, dmMessages: 80, videoCircleMaxDuration: 30, debounceTimeout: 50 },
@@ -1614,16 +1615,8 @@ async function fallbackCreateOrder(data) {
         distanceKm: data.distanceKm || 0
     };
     
-    // Deduct balance immediately
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val();
-    if(!u || u.balance < data.price) {
-        throw new Error('Недостаточно средств');
-    }
-    
-    await update(userRef(currentNick), { balance: u.balance - data.price });
+    // Do NOT deduct balance immediately - only deduct on confirmation/payment
     await set(orderRef(id), orderData);
-    await logTx(currentNick, { type: 'out', who: 'Заказ', amt: data.price, desc: `${data.type === 'taxi' ? '🛵 Такси' : '📦 Доставка'}: ${data.info}` });
     
     return { success: true, orderId: id };
 }
@@ -1649,21 +1642,29 @@ async function fallbackCancelOrder(data) {
     
     if(o.client === currentNick) {
         // Client canceling - refund minus penalty
-        const refundAmount = Math.max(0, o.price - 50);
+        const penalty = 35;
         const uSnap = await get(userRef(currentNick));
         const u = uSnap.val();
-        await update(userRef(currentNick), { balance: (u.balance || 0) + refundAmount });
-        await update(orderRef(data.orderId), { status: 'cancelled', cancelledAt: Date.now() });
-        await logTx(currentNick, { type: 'in', who: 'Возврат', amt: refundAmount, desc: 'Отмена заказа (штраф 50₽)' });
-        return { success: true, refundAmount };
+        const currentBalance = u.balance || 0;
+        // If balance is less than penalty, deduct all available
+        const actualPenalty = Math.min(penalty, currentBalance);
+        const refundAmount = Math.max(0, o.price - actualPenalty);
+        await update(userRef(currentNick), { balance: currentBalance - actualPenalty });
+        // Удаляем заказ полностью
+        await remove(orderRef(data.orderId));
+        await logTx(currentNick, { type: 'in', who: 'Возврат', amt: refundAmount, desc: `Отмена заказа (штраф ${actualPenalty}₽)` });
+        return { success: true, refundAmount, penalty: actualPenalty };
     } else if(o.worker === currentNick) {
         // Worker abandoning - penalty
+        const penalty = 35;
         const uSnap = await get(userRef(currentNick));
         const u = uSnap.val();
-        const penalty = Math.min(100, u.balance || 0);
-        await update(userRef(currentNick), { balance: (u.balance || 0) - penalty });
+        const currentBalance = u.balance || 0;
+        // If balance is less than penalty, deduct all available
+        const actualPenalty = Math.min(penalty, currentBalance);
+        await update(userRef(currentNick), { balance: currentBalance - actualPenalty });
         await update(orderRef(data.orderId), { worker: null, status: 'pending', abandonedAt: Date.now() });
-        return { success: true, penalty };
+        return { success: true, penalty: actualPenalty };
     }
     throw new Error('Нет прав для отмены');
 }
@@ -2235,9 +2236,11 @@ function updateHeader(u) {
     if(isDelivery) qs('workerTitle').textContent='📦 Заказы на доставку';
     if(isJanitor){ const wt=qs('workerTitle'); if(wt) wt.textContent='🧹 Уборка площадки'; }
     const vBtn=qs('vehicleBtn'); if(vBtn) vBtn.style.display=(isDriver||isDelivery)?'inline-block':'none';
-    const profBtn=qs('bn6'); if(profBtn) profBtn.style.display='flex';
-    const janBtn=qs('bn7'); if(janBtn) janBtn.style.display=isJanitor?'flex':'none';
-    const bottomNav=qs('bottomNav'); if(bottomNav) bottomNav.style.gridTemplateColumns=isJanitor?'repeat(8,1fr)':'repeat(7,1fr)';
+    // Всегда показываем кнопку Профиль (bn7)
+    const profBtn=qs('bn7'); if(profBtn) profBtn.style.display='flex';
+    // Кнопка уборщика — bn8, показываем только для уборщиков
+    const janBtn=qs('bn8'); if(janBtn) janBtn.style.display=isJanitor?'flex':'none';
+    const bottomNav=qs('bottomNav'); if(bottomNav) bottomNav.style.gridTemplateColumns=isJanitor?'repeat(9,1fr)':'repeat(8,1fr)';
     const vDisp=qs('vehicleDisplay');
     if(vDisp){if(u.vehicle){vDisp.style.display='block';vDisp.textContent='🛵 '+u.vehicle;}else vDisp.style.display='none';}
     const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=(u.job&&u.job!=='Житель')?'block':'none';
@@ -2358,20 +2361,85 @@ window.openImgViewer=function(src){
     if(!img)return;
     img.src=src;
     _imgZoomScale=1;
-    img.style.transform='scale(1)';
+    _imgPanX=0; _imgPanY=0;
+    img.style.transform='scale(1) translate(0px,0px)';
     const pct=qs('imgZoomPct');if(pct)pct.textContent='100%';
     lockBodyScroll();
     qs('imgViewer').classList.add('open');
+    // Init pinch-to-zoom
+    _initImgPinchZoom(img);
 };
 window.closeImgViewer=function(){
     qs('imgViewer').classList.remove('open');
-    _imgZoomScale=1;
-    const img=qs('imgViewerImg');if(img)img.style.transform='scale(1)';
+    _imgZoomScale=1; _imgPanX=0; _imgPanY=0;
+    const img=qs('imgViewerImg');if(img)img.style.transform='scale(1) translate(0px,0px)';
     unlockBodyScroll();
 };
-window.adjustImgZoom=function(delta){_imgZoomScale=Math.min(3,Math.max(0.5,_imgZoomScale+delta));const img=qs('imgViewerImg');if(img)img.style.transform=`scale(${_imgZoomScale})`;const pct=qs('imgZoomPct');if(pct)pct.textContent=Math.round(_imgZoomScale*100)+'%';};
-window.resetImgZoom=function(){_imgZoomScale=1;const img=qs('imgViewerImg');if(img)img.style.transform='scale(1)';const pct=qs('imgZoomPct');if(pct)pct.textContent='100%';};
-
+window.adjustImgZoom=function(delta){
+    _imgZoomScale=Math.min(5,Math.max(0.5,_imgZoomScale+delta));
+    if(_imgZoomScale<=1){_imgPanX=0;_imgPanY=0;}
+    const img=qs('imgViewerImg');
+    if(img)img.style.transform=`scale(${_imgZoomScale}) translate(${_imgPanX/_imgZoomScale}px,${_imgPanY/_imgZoomScale}px)`;
+    const pct=qs('imgZoomPct');if(pct)pct.textContent=Math.round(_imgZoomScale*100)+'%';
+};
+window.resetImgZoom=function(){
+    _imgZoomScale=1;_imgPanX=0;_imgPanY=0;
+    const img=qs('imgViewerImg');if(img)img.style.transform='scale(1) translate(0px,0px)';
+    const pct=qs('imgZoomPct');if(pct)pct.textContent='100%';
+};
+let _imgPanX=0, _imgPanY=0;
+function _applyImgTransform(img){
+    if(!img)return;
+    img.style.transform=`scale(${_imgZoomScale}) translate(${_imgPanX/_imgZoomScale}px,${_imgPanY/_imgZoomScale}px)`;
+    const pct=qs('imgZoomPct');if(pct)pct.textContent=Math.round(_imgZoomScale*100)+'%';
+}
+function _initImgPinchZoom(img){
+    if(!img || img._pinchInited) return;
+    img._pinchInited = true;
+    let startDist=0, startScale=1, startMidX=0, startMidY=0, startPanX=0, startPanY=0;
+    let isDragging=false, dragStartX=0, dragStartY=0, dragStartPanX=0, dragStartPanY=0;
+    img.addEventListener('touchstart', function(e){
+        if(e.touches.length===2){
+            e.preventDefault();
+            const t1=e.touches[0],t2=e.touches[1];
+            startDist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+            startScale=_imgZoomScale;
+            startMidX=(t1.clientX+t2.clientX)/2;
+            startMidY=(t1.clientY+t2.clientY)/2;
+            startPanX=_imgPanX; startPanY=_imgPanY;
+        } else if(e.touches.length===1&&_imgZoomScale>1){
+            isDragging=true;
+            dragStartX=e.touches[0].clientX; dragStartY=e.touches[0].clientY;
+            dragStartPanX=_imgPanX; dragStartPanY=_imgPanY;
+        }
+    },{passive:false});
+    img.addEventListener('touchmove', function(e){
+        if(e.touches.length===2){
+            e.preventDefault();
+            const t1=e.touches[0],t2=e.touches[1];
+            const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+            _imgZoomScale=Math.min(5,Math.max(0.5,startScale*(dist/startDist)));
+            if(_imgZoomScale<=1){_imgPanX=0;_imgPanY=0;}
+            _applyImgTransform(img);
+        } else if(e.touches.length===1&&isDragging&&_imgZoomScale>1){
+            e.preventDefault();
+            _imgPanX=dragStartPanX+(e.touches[0].clientX-dragStartX);
+            _imgPanY=dragStartPanY+(e.touches[0].clientY-dragStartY);
+            _applyImgTransform(img);
+        }
+    },{passive:false});
+    img.addEventListener('touchend', function(){isDragging=false;},{passive:true});
+    // Double-tap to zoom
+    let _lastTap=0;
+    img.addEventListener('touchend', function(e){
+        const now=Date.now();
+        if(now-_lastTap<300&&e.changedTouches.length===1){
+            if(_imgZoomScale>1){window.resetImgZoom();}
+            else{_imgZoomScale=2.5;_applyImgTransform(img);}
+        }
+        _lastTap=now;
+    },{passive:true});
+}
 function setPlaybackAudioRoute(){
     try {
         // Use 'playback' to route through speaker on iOS (not earpiece)
@@ -2508,7 +2576,7 @@ function renderActiveOrders(orders) {
         const workerUser=sOrder.worker?(allUsersCache[sOrder.worker]||{}):null;
         const workerOnline=workerUser?isUserOnline(workerUser):false;
         const courierBlock=sOrder.worker?`<div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(34,211,165,.08);border-radius:var(--r-sm);margin-bottom:12px;border:1px solid rgba(34,211,165,.2);"><div class="av-wrap-sm ${workerOnline?'online':''}"><img src="${escHtml(workerUser.avatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" style="width:40px;height:40px;border-radius:11px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="openUserProfile('${escHtml(sOrder.worker)}')"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:900;font-size:14px;cursor:pointer;" onclick="openUserProfile('${escHtml(sOrder.worker)}')">${escHtml(sOrder.worker)}</div><div style="font-size:11px;color:${workerOnline?'#22c55e':'var(--muted)'};">${workerOnline?'🟢 В сети':'Курьер'}${workerUser.vehicle?' · '+escHtml(workerUser.vehicle):''}</div></div><button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(sOrder.worker)}')" style="font-size:11px;padding:8px 10px;">💬</button></div>`:'';
-        ss.innerHTML=`<div class="status-card green"><div class="status-badge ${cls}"><span class="pulse"></span>${lbl}</div><div style="font-weight:700;margin-bottom:8px;">📦 ${escHtml(sOrder.info)}</div><div style="font-size:13px;color:var(--muted);margin-bottom:12px;">📍 ${escHtml(sOrder.address||'')}</div>${courierBlock}<button class="btn btn-primary" style="margin-bottom:8px" onclick="payOrder('${sOrder.id}')">✅ Получил — оплатить ${sOrder.price}₽</button><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${sOrder.id}')">Отменить (-50₽)</button></div>`;
+        ss.innerHTML=`<div class="status-card green"><div class="status-badge ${cls}"><span class="pulse"></span>${lbl}</div><div style="font-weight:700;margin-bottom:8px;">📦 ${escHtml(sOrder.info)}</div><div style="font-size:13px;color:var(--muted);margin-bottom:12px;">📍 ${escHtml(sOrder.address||'')}</div>${courierBlock}<button class="btn btn-primary" style="margin-bottom:8px" onclick="payOrder('${sOrder.id}')">✅ Получил — оплатить ${sOrder.price}₽</button><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${sOrder.id}')">Отменить (-35₽)</button></div>`;
     } else { if(btnBuy) btnBuy.disabled=false; ss.innerHTML=''; }
     const ts=qs('taxiStatus');
     if(tOrder){
@@ -2521,7 +2589,7 @@ function renderActiveOrders(orders) {
             driverBlock=`<div class="driver-card"><div class="driver-card-header" style="cursor:pointer;" onclick="openUserProfile('${escHtml(tOrder.worker)}')"><img class="driver-card-av" src="${escHtml(tOrder.driverAvatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" loading="lazy"><div><div class="driver-card-name">${escHtml(tOrder.worker)}</div><div class="driver-card-vehicle">${escHtml(tOrder.driverVehicle||'Транспорт не указан')}</div></div></div>${etaMin?`<div class="driver-eta">⏱ ~<b>${etaMin} мин</b></div>`:''}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="goToChat('${escHtml(tOrder.worker)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="openUserProfile('${escHtml(tOrder.worker)}')">👤 Профиль</button></div></div><div class="tracking-card"><div class="tracking-live"><span class="pulse"></span>Live — водитель на карте</div><div id="trackingMap"></div></div>`;
             setTimeout(()=>initClientTrackingMap(tOrder.id),150);
         }
-        ts.innerHTML=`<div class="status-card gold"><div class="status-badge ${cls2}"><span class="pulse"></span>${lbl2}</div><div style="font-weight:700;margin-bottom:8px;">🗺 ${escHtml(tOrder.info)}</div>${driverBlock}<button class="btn btn-gold" style="margin-bottom:8px" onclick="payOrder('${tOrder.id}')">💳 Оплатить ${tOrder.price}₽</button><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${tOrder.id}')">Отменить (-50₽)</button></div>`;
+        ts.innerHTML=`<div class="status-card gold"><div class="status-badge ${cls2}"><span class="pulse"></span>${lbl2}</div><div style="font-weight:700;margin-bottom:8px;">🗺 ${escHtml(tOrder.info)}</div>${driverBlock}<button class="btn btn-gold" style="margin-bottom:8px" onclick="payOrder('${tOrder.id}')">💳 Оплатить ${tOrder.price}₽</button><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${tOrder.id}')">Отменить (-35₽)</button></div>`;
     } else { const tf=qs('taxiForm');if(tf)tf.style.display='block';ts.innerHTML=''; }
     const ho=qs('homeOrders');
     const mine=ordersArr.filter(o=>o.client===currentNick);
@@ -2555,7 +2623,7 @@ async function renderWorkerPage(orders){
     const ordersArr=Object.entries(orders).map(([id,o])=>({...o,id}));
     const active=ordersArr.find(o=>o.worker===currentNick&&o.status==='in_progress');
     if(active){
-        el.innerHTML=`<div class="work-order work-active"><div style="color:var(--primary);font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">🟢 Активный заказ</div><div style="font-weight:700;font-size:15px;margin-bottom:4px;">${escHtml(active.info)}</div>${active.address?`<div style="color:var(--muted);font-size:13px;margin-bottom:8px;">📍 ${escHtml(active.address)}</div>`:''}<div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Клиент: <b style="color:var(--text)">${escHtml(active.client)}</b> · ${active.price}₽</div><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="abandonOrder('${active.id}')">⚠️ Отказаться (−50₽)</button></div>`;
+        el.innerHTML=`<div class="work-order work-active"><div style="color:var(--primary);font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">🟢 Активный заказ</div><div style="font-weight:700;font-size:15px;margin-bottom:4px;">${escHtml(active.info)}</div>${active.address?`<div style="color:var(--muted);font-size:13px;margin-bottom:8px;">📍 ${escHtml(active.address)}</div>`:''}<div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Клиент: <b style="color:var(--text)">${escHtml(active.client)}</b> · ${active.price}₽</div><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="abandonOrder('${active.id}')">⚠️ Отказаться (−35₽)</button></div>`;
         const clientUser=allUsersCache[active.client]||{};const clientOnline=isUserOnline(clientUser);
         const clientCardId=isDriver?'driverClientCard':'deliveryClientCard';const clientInfoId=isDriver?'driverClientInfo':'deliveryClientInfo';
         const clientCardEl=qs(clientCardId),clientInfoEl=qs(clientInfoId);
@@ -3036,7 +3104,16 @@ window.toggleShopMap=function(){const el=qs('shopMap'),toggleBtn=qs('shopMapTogg
 window.detectShopLocation=function(){if(!navigator.geolocation)return toast('❌ Геолокация недоступна','red');const el=qs('shopMap'),toggleBtn=qs('shopMapToggleBtn');if(!el.classList.contains('visible')){el.classList.add('visible');if(toggleBtn)toggleBtn.textContent='🗺 Скрыть карту';}requestAnimationFrame(()=>requestAnimationFrame(()=>{initShopMapIfNeeded();shopMapObj.invalidateSize();navigator.geolocation.getCurrentPosition(function(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude;shopAddrCoords={lat,lng};if(shopMarker)shopMapObj.removeLayer(shopMarker);shopMarker=createShopMarker(lat,lng).addTo(shopMapObj).bindPopup('📍 Я').openPopup();shopMapObj.setView([lat,lng],16);reverseGeocode(lat,lng).then(name=>{qs('sAddr').value=name;});toast('📍 Определено','green');},function(){toast('❌ Нет геолокации','red');},{enableHighAccuracy:true,timeout:8000});}));};
 
 // ─── SHOP ─────────────────────────────────
-window.recalcShop=function(){const t=(parseInt(qs('sB').value)||0)*85+(parseInt(qs('sP').value)||0)*22+(parseInt(qs('sL').value)||0)*2+(parseInt(qs('sK').value)||0)*50;qs('sTotal').textContent=t;};
+window.recalcShop=function(){
+    const itemsTotal=(parseInt(qs('sB').value)||0)*85+(parseInt(qs('sP').value)||0)*22+(parseInt(qs('sL').value)||0)*2+(parseInt(qs('sK').value)||0)*50;
+    const hasItems = itemsTotal > 0;
+    const deliveryFee = hasItems ? 30 : 0;
+    const total = itemsTotal + deliveryFee;
+    qs('sTotal').textContent=total;
+    // Update delivery note
+    const delivNote = qs('shopDeliveryNote');
+    if(delivNote) delivNote.style.display = hasItems ? 'block' : 'none';
+};
 window.buyShop=async function(){
     if(!await requireSpendable())return;
     const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
@@ -3044,7 +3121,10 @@ window.buyShop=async function(){
     if(b+p+l+k<=0)return toast('⚠️ Выберите товары','gold');
     const addr=qs('sAddr').value.trim();
     if(!addr)return toast('⚠️ Укажите адрес','gold');
-    const total=b*30+p*50+l*20+k*100;
+    // Цены соответствуют отображаемым в магазине + 30₽ за доставку
+    const itemsTotal=b*85+p*22+l*2+k*50;
+    const DELIVERY_FEE = 30;
+    const total = itemsTotal + DELIVERY_FEE;
     
     // Apply subscription discount
     const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
@@ -3055,8 +3135,8 @@ window.buyShop=async function(){
     
     const finalTotal = Math.max(1, Math.round(total * (1 - discountPercent / 100)));
     
-    if(u.balance<finalTotal)return toast(`❌ Недостаточно средств (нужно ${finalTotal}₽${discountPercent > 0 ? ` с учётом скидки Ultra -10%` : ''})`,'red');
-    const items=[`🌲×${qs('sB').value||0}`,`🥢×${qs('sP').value||0}`,`🍃×${qs('sL').value||0}`,`🗿×${qs('sK').value||0}`].filter(i=>!i.endsWith('×0')).join(', ');
+    if(u.balance<finalTotal)return toast(`❌ Недостаточно средств (нужно ${finalTotal}₽${discountPercent > 0 ? ` с учётом скидки -${discountPercent}%` : ''})`,'red');
+    const items=[`🌲×${b}`,`🥢×${p}`,`🍃×${l}`,`🗿×${k}`].filter(i=>!i.endsWith('×0')).join(', ');
     
     try {
         // Вызываем Cloud Function с fallback
@@ -3075,10 +3155,10 @@ window.buyShop=async function(){
         }, fallbackCreateOrder);
         
         if (result.success) {
-            await pushNotification(currentNick,`📦 Заказ: ${items} — ${finalTotal}₽${discountPercent > 0 ? ' (скидка 10%)' : ''}`);
+            await pushNotification(currentNick,`📦 Заказ: ${items} — ${finalTotal}₽${discountPercent > 0 ? ` (скидка ${discountPercent}%)` : ''} (вкл. доставка 30₽)`);
             try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Доставщик'&&nick!==currentNick){await pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders');}}}catch(e){}
             ['sB','sP','sL','sK'].forEach(i=>qs(i).value=0);qs('sAddr').value='';shopAddrCoords=null;if(shopMarker&&shopMapObj){shopMapObj.removeLayer(shopMarker);shopMarker=null;}recalcShop();
-            toast(`📦 Заказ оформлен!${discountPercent > 0 ? ' Скидка 10% применена!' : ''}`,'green');
+            toast(`📦 Заказ оформлен!${discountPercent > 0 ? ' Скидка ' + discountPercent + '% применена!' : ''}`,'green');
         }
     } catch (error) {
         console.error('Ошибка заказа:', error);
@@ -3253,15 +3333,16 @@ window.payOrder=async function(id){
 };
 window.cancelOrder=async function(id){
     const snap=await get(orderRef(id));if(!snap.exists())return;const o=snap.val();
-    const uSnap=await get(userRef(currentNick));const bal=uSnap.val().balance;
-    if(bal<50)return toast('❌ Недостаточно средств для штрафа','red');
+    if(o.client!==currentNick)return toast('❌ Нет прав для отмены','red');
     
     try {
         // Вызываем Cloud Function с fallback
         const result = await callFunctionWithFallback('cancelOrder', { orderId: id }, fallbackCancelOrder);
         
         if (result.success) {
-            await pushNotification(currentNick,'❌ Заказ отменён, штраф 50₽');
+            // Удаляем заказ из базы данных после успешной отмены
+            try { await remove(orderRef(id)); } catch(e) {}
+            await pushNotification(currentNick,`❌ Заказ отменён, штраф ${result.penalty}₽`);
             if(o.worker)await pushNotification(o.worker,`⚠️ ${currentNick} отменил заказ`);
             toast(`❌ Отменён (возврат ${result.refundAmount}₽)`,'red');
         }
@@ -4578,7 +4659,7 @@ window.submitJanitorDone=async function(){
 function renderAdminApps(apps){const pending=Object.values(apps||{}).filter(a=>a.status==='new');qs('appList').innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':pending.map(a=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;"><b>${escHtml(a.from)}</b> → ${escHtml(a.target)}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="approveApp('${a.id}',true)">✅</button><button class="btn btn-red btn-sm" onclick="approveApp('${a.id}',false)">❌</button></div></div>`).join('');}
 function renderAdminUsers(users){
     const el=qs('allUsersList');if(!el)return;
-    el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="av-wrap-sm ${online?'online':''}"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(u.job||'Житель')} · ${(u.balance||0).toLocaleString()}₽</div></div></div>`;}).join('');
+    el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);const canDelete=u.nick!==ADMIN;return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;"><div class="av-wrap-sm ${online?'online':''}" style="cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(u.job||'Житель')} · ${(u.balance||0).toLocaleString()}₽</div></div>${canDelete?`<button class="btn btn-red btn-sm" style="margin-left:8px;padding:6px 10px;font-size:11px;" onclick="event.stopPropagation();adminDeleteAccount('${escHtml(u.nick)}')">🗑</button>`:''}</div>`;}).join('');
     const total=Object.values(users).reduce((s,u)=>s+(u.balance||0),0);
     const aStats=qs('adminStats');if(aStats)aStats.innerHTML=`<div class="stat-box"><div class="sv" style="color:var(--gold)">${Object.keys(users).length}</div><div class="sl">Жителей</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)" id="adminOrderCount">—</div><div class="sl">Заказов</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)">${Math.round(total/1000)}к</div><div class="sl">₽ оборот</div></div>`;
 }
@@ -5454,13 +5535,9 @@ function finalizeVcRecording(){
         play.setAttribute('webkit-playsinline', '');
         play.muted = false;
         play.volume = 1;
-        if (vcFacingMode === 'user') {
-            play.style.setProperty('transform', 'scaleX(-1)', 'important');
-            play.style.setProperty('-webkit-transform', 'scaleX(-1)', 'important');
-        } else {
-            play.style.setProperty('transform', 'none', 'important');
-            play.style.setProperty('-webkit-transform', 'none', 'important');
-        }
+        // Убираем зеркальное отражение у превью — видео снято как есть
+        play.style.removeProperty('transform');
+        play.style.removeProperty('-webkit-transform');
         play.style.objectFit = 'cover';
         play.play().catch(()=>{});
     }
@@ -5530,6 +5607,11 @@ window.closeVcModal = function(){
     if(vcMediaRecorder && vcMediaRecorder.state !== 'inactive'){ try { vcMediaRecorder.stop(); } catch(e) {} }
     stopVcTracks();
     vcChunks = [];
+    // Останавливаем воспроизведение превью видео и освобождаем src
+    const play = qs('vcPlaybackVid');
+    if(play){ play.pause(); play.removeAttribute('src'); play.load(); play.style.display='none'; }
+    const live = qs('vcLiveVid');
+    if(live){ live.pause(); live.removeAttribute('srcObject'); live.srcObject=null; live.style.display='none'; }
     setVcReadyUI();
     if(vcTargetCtx === 'chat') setChatTypingState('idle');
     if(vcTargetCtx === 'dm') setDmTypingState('idle');
@@ -5965,7 +6047,8 @@ window.sendGiftSubscription = async function(){
   ].join(', ');
 
   document.addEventListener('touchend', function(e){
-    const interactive = e.target && e.target.closest && e.target.closest('button, a, input, textarea, select, label, [role="button"]');
+    // Не перехватываем клики по нативным интерактивным элементам — кнопки, инпуты, ссылки
+    const interactive = e.target && e.target.closest && e.target.closest('button, a, input, textarea, select, label, [role="button"], .msg-action-btn, .media-ico-btn, .media-bar-btn, .jump-date-text, .msg-tab, .bn-item, .btn');
     if (interactive) return;
     const target = e.target && e.target.closest && e.target.closest(tappableSelector);
     if (!target) return;
