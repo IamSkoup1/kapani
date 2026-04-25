@@ -5422,7 +5422,7 @@ window.renderNews = async function(){
                     ${canDelete ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);" onclick="deleteNews('${jsEsc(item.id)}')">🗑</button>` : ''}
                 </div>
                 <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
-                ${item.imageUrl ? (item.mediaType === 'video' ? `<video src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;" controls playsinline onclick="openVideoViewer('${jsEsc(item.imageUrl)}')"></video>` : `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">`) : ''}
+                ${item.imageUrl ? (item.mediaType === 'video' ? `<video src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;" controls playsinline></video>` : `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">`) : ''}
                 <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
                 <div style="margin-top:10px;font-size:11px;color:var(--muted);">
                     Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
@@ -5466,7 +5466,7 @@ window.renderNewsDiscussion = async function(){
                 <span style="font-size:11px;color:var(--muted);">${item.date} · ${item.time}</span>
             </div>
             <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
-            ${item.imageUrl ? (item.mediaType === 'video' ? `<video src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;" controls playsinline onclick="openVideoViewer('${jsEsc(item.imageUrl)}')"></video>` : `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">`) : ''}
+            ${item.imageUrl ? (item.mediaType === 'video' ? `<video src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;" controls playsinline></video>` : `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">`) : ''}
             <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
             <div style="margin-top:10px;font-size:11px;color:var(--muted);">
                 Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
@@ -5571,36 +5571,11 @@ function mediaHtml(m){
     if(m.msgType==='image' || (!m.msgType && m.mediaData && /^data:image\//.test(m.mediaData))){
         html += `<div class="msg-media-wrap"><img class="msg-media-img" src="${escHtml(m.mediaData)}" loading="lazy" decoding="async" onclick="openImgViewer('${jsEsc(m.mediaData)}')" alt="Фото"></div>`;
     } else if(m.msgType==='video'){
-        const cvpId = 'cvp_' + genId();
-        html += `<div class="msg-media-wrap"><div class="cvp-wrap" id="${cvpId}">
-            <video preload="metadata" playsinline webkit-playsinline onclick="toggleCvp('${cvpId}')" onloadedmetadata="onCvpMeta('${cvpId}',this)" ontimeupdate="onCvpTime('${cvpId}',this)" onended="onCvpEnd('${cvpId}',this)"><source src="${escHtml(m.mediaData)}"></video>
-            <div class="cvp-overlay" onclick="toggleCvp('${cvpId}')"><div class="cvp-play-ico">▶</div></div>
-            <div class="cvp-controls">
-                <button class="cvp-ctrl-btn" onclick="event.stopPropagation();toggleCvp('${cvpId}')">▶</button>
-                <div class="cvp-bar" onclick="event.stopPropagation();seekCvp('${cvpId}',event)"><div class="cvp-bar-fill"></div></div>
-                <span class="cvp-time cvp-cur">0:00</span>
-                <span class="cvp-time">/</span>
-                <span class="cvp-time cvp-dur">0:00</span>
-                <button class="cvp-ctrl-btn" onclick="event.stopPropagation();toggleCvpFullscreen('${cvpId}')">⛶</button>
-            </div>
-        </div></div>`;
+        html += `<div class="msg-media-wrap"><video src="${escHtml(m.mediaData)}" controls playsinline webkit-playsinline style="max-width:100%;border-radius:12px;margin-top:4px;"></video></div>`;
     } else if(m.msgType==='video_circle'){
-        const cvcId = 'cvc_' + genId();
-        html += `<div class="msg-media-wrap"><div class="cvp-circle-wrap" id="${cvcId}" onclick="toggleCvc('${cvcId}')">
-            <video preload="metadata" playsinline webkit-playsinline muted onloadedmetadata="this.currentTime=0.1;onCvcMeta('${cvcId}',this)" ontimeupdate="onCvcTime('${cvcId}',this)" onended="onCvcEnd('${cvcId}',this)"><source src="${escHtml(m.mediaData)}"></video>
-            <div class="cvp-circle-overlay"><div class="cvp-circle-ico">▶</div></div>
-            <div class="cvp-circle-bar"><div class="cvp-circle-bar-fill"></div></div>
-        </div></div>`;
+        html += `<div class="msg-media-wrap"><video src="${escHtml(m.mediaData)}" controls playsinline webkit-playsinline style="max-width:100%;border-radius:12px;margin-top:4px;"></video></div>`;
     } else if(m.msgType==='voice'){
-        const vpId = 'vp_' + genId();
-        html += `<div class="msg-media-wrap"><div class="voice-player" id="${vpId}">
-            <button class="voice-player-btn" onclick="toggleVoicePlayer('${vpId}')">▶</button>
-            <div class="voice-player-track">
-                <div class="voice-player-bar" onclick="seekVoicePlayer('${vpId}',event)"><div class="voice-player-fill"></div></div>
-                <div class="voice-player-times"><span class="vp-cur">0:00</span><span class="vp-dur">0:00</span></div>
-            </div>
-            <audio preload="metadata" src="${escHtml(m.mediaData)}" onloadedmetadata="onVoiceMeta('${vpId}',this)" ontimeupdate="onVoiceTime('${vpId}',this)" onended="onVoiceEnd('${vpId}',this)"></audio>
-        </div></div>`;
+        html += `<div class="wall-audio" style="margin-top:4px;"><audio controls preload="metadata" style="max-width:100%;height:32px;"><source src="${escHtml(m.mediaData)}"></audio></div>`;
     } else if(m.msgType==='gift_subscription'){
         html += `<div class="msg-text">🎁 ${escHtml(m.text || 'Подарок подписки')}</div>`;
     } else if(!caption && m.mediaData){
