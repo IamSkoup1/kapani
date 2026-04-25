@@ -2069,7 +2069,13 @@ function attachListeners() {
     onValue(aRef,aFn); listeners.apps={ref:aRef,fn:aFn};
 
     const cRef=chatRef();
-    const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);};
+    const cFn=(snap)=>{
+        const newMsgs=snap.val()||{};
+        // Only re-render if messages actually changed (prevent flickering)
+        if(JSON.stringify(newMsgs)===JSON.stringify(lastChatMsgs)) return;
+        lastChatMsgs=newMsgs;
+        if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);
+    };
     onValue(cRef,cFn); listeners.chat={ref:cRef,fn:cFn};
     const chatTypingRef = ref(db, 'typing/chat');
     const chatTypingFn = (snap) => {
@@ -2089,10 +2095,11 @@ function attachListeners() {
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
-        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
+        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')&&!_isUserInteracting) renderChat(lastChatMsgs);
         if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
         if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
         if(curPage==='tasks') renderTasks();
+        if(curPage==='news') renderNews();
     };
     onValue(allRef,allFn); listeners.allUsers={ref:allRef,fn:allFn};
 
@@ -2805,31 +2812,66 @@ window.onVoiceTime=function(vpId,audio){
     if(fill&&audio.duration){const pct=(audio.currentTime/audio.duration)*100;fill.style.width=pct+'%';}
 };
 window.onVoiceEnd=function(vpId,audio){
-    const el=document.getElementById(vpId);if(!el)return;
-    const btn=el.querySelector('.voice-player-btn');if(btn)btn.textContent='▶';
-    const fill=el.querySelector('.voice-player-fill');if(fill)fill.style.width='0%';
-    const cur=el.querySelector('.vp-cur');if(cur)cur.textContent='0:00';
-    audio.currentTime=0;
-};
-window.seekVoicePlayer=function(vpId,e){
-    const el=document.getElementById(vpId);if(!el)return;
-    const audio=el.querySelector('audio');if(!audio||!audio.duration)return;
-    const bar=el.querySelector('.voice-player-bar');if(!bar)return;
-    const rect=bar.getBoundingClientRect();
-    const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-    audio.currentTime=pct*audio.duration;
-};
+      const el=document.getElementById(vpId);if(!el)return;
+      const btn=el.querySelector('.voice-player-btn');if(btn)btn.textContent='?';
+      const fill=el.querySelector('.voice-player-fill');if(fill)fill.style.width='0%';
+      const cur=el.querySelector('.vp-cur');if(cur)cur.textContent='0:00';
+      audio.currentTime=0;
+  };
 
-// ─── CUSTOM VIDEO PLAYER ──────────────────
-function fmtCvpTime(s){const m=Math.floor(s/60);const sec=Math.floor(s%60);return `${m}:${sec<10?'0'+sec:sec}`;}
-window.toggleCvp=function(cvpId){
-    const el=document.getElementById(cvpId);if(!el)return;
-    const video=el.querySelector('video');if(!video)return;
-    const overlay=el.querySelector('.cvp-overlay');
-    const ctrlBtn=el.querySelector('.cvp-ctrl-btn');
-    if(video.paused){video.play().catch(()=>{});el.classList.add('playing');if(overlay)overlay.classList.add('hidden');if(ctrlBtn)ctrlBtn.textContent='⏸';}
-    else{video.pause();el.classList.remove('playing');if(overlay){overlay.classList.remove('hidden');overlay.querySelector('.cvp-play-ico').textContent='▶';}if(ctrlBtn)ctrlBtn.textContent='▶';}
-};
+  // Drag-to-seek functionality for voice player
+  let voiceDragging = null;
+  let voiceDragAudio = null;
+  
+  window.startVoiceDrag=function(vpId,e){
+      const el=document.getElementById(vpId);if(!el)return;
+      const audio=el.querySelector('audio');if(!audio||!audio.duration)return;
+      voiceDragging=vpId;
+      voiceDragAudio=audio;
+      e.preventDefault();
+  };
+  
+  window.onVoiceDrag=function(e){
+      if(!voiceDragging||!voiceDragAudio)return;
+      const el=document.getElementById(voiceDragging);
+      if(!el)return;
+      const bar=el.querySelector('.voice-player-bar');
+      if(!bar)return;
+      const rect=bar.getBoundingClientRect();
+      const clientX=e.touches ? e.touches[0].clientX : e.clientX;
+      const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+      voiceDragAudio.currentTime=pct*voiceDragAudio.duration;
+      const fill=el.querySelector('.voice-player-fill');
+      if(fill)fill.style.width=(pct*100)+'%';
+      const cur=el.querySelector('.vp-cur');
+      if(cur)cur.textContent=fmtVoiceTime(voiceDragAudio.currentTime||0);
+  };
+  
+  window.endVoiceDrag=function(){
+      voiceDragging=null;
+      voiceDragAudio=null;
+  };
+
+  window.seekVoicePlayer=function(vpId,e){
+      const el=document.getElementById(vpId);if(!el)return;
+      const audio=el.querySelector('audio');if(!audio||!audio.duration)return;
+      const bar=el.querySelector('.voice-player-bar');
+      if(!bar)return;
+      const rect=bar.getBoundingClientRect();
+      const clientX=e.touches ? e.touches[0].clientX : e.clientX;
+      const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+      audio.currentTime=pct*audio.duration;
+      const fill=el.querySelector('.voice-player-fill');
+      if(fill)fill.style.width=(pct*100)+'%';
+      const cur=el.querySelector('.vp-cur');
+      if(cur)cur.textContent=fmtVoiceTime(audio.currentTime||0);
+  };
+
+  // Add global event listeners for drag
+  document.addEventListener('mousemove',window.onVoiceDrag);
+  document.addEventListener('mouseup',window.endVoiceDrag);
+  document.addEventListener('touchmove',window.onVoiceDrag,{passive:false});
+  document.addEventListener('touchend',window.endVoiceDrag);
 window.onCvpMeta=function(cvpId,video){
     const el=document.getElementById(cvpId);if(!el)return;
     const dur=el.querySelector('.cvp-dur');if(dur)dur.textContent=fmtCvpTime(video.duration||0);
@@ -4100,7 +4142,22 @@ function wallPostBodyHtml(p){
     if(p.msgType==='image'&&p.mediaData)body+=`<img src="${escHtml(p.mediaData)}" style="max-width:100%;border-radius:12px;margin-top:8px;cursor:pointer;" onclick="openImgViewer('${jsEsc(p.mediaData)}')">`;
     if(p.msgType==='video'&&p.mediaData)body+=`<video src="${escHtml(p.mediaData)}" controls playsinline webkit-playsinline style="max-width:100%;border-radius:12px;margin-top:8px;"></video>`;
     if(p.msgType==='video_circle'&&p.mediaData)body+=`<div class="msg-media-wrap" style="margin-top:8px;"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(p.mediaData)}')" style="background:#111;"><video preload="none" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(p.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
-    if(p.msgType==='voice'&&p.mediaData)body+=`<div class="wall-audio" style="margin-top:8px;"><audio controls preload="metadata" style="width:100%;max-width:100%;height:36px;"><source src="${escHtml(p.mediaData)}"></audio></div>`;
+    if(p.msgType==='voice'&&p.mediaData){
+        const vpId = 'vp_wall_' + Math.random().toString(36).substr(2, 9);
+        body+=`<div class="voice-player" id="${vpId}" style="margin-top:8px;">
+            <button class="voice-player-btn" onclick="event.stopPropagation();toggleVoicePlayer('${vpId}')">▶</button>
+            <div class="voice-player-track">
+                <div class="voice-player-bar" onmousedown="event.stopPropagation();startVoiceDrag('${vpId}',event)" ontouchstart="event.stopPropagation();startVoiceDrag('${vpId}',event)" onclick="event.stopPropagation();seekVoicePlayer('${vpId}',event)">
+                    <div class="voice-player-fill"></div>
+                </div>
+                <div class="voice-player-times">
+                    <span class="vp-cur">0:00</span>
+                    <span class="vp-dur">0:00</span>
+                </div>
+            </div>
+            <audio preload="metadata" onloadedmetadata="onVoiceMeta('${vpId}',this)" ontimeupdate="onVoiceTime('${vpId}',this)" onended="onVoiceEnd('${vpId}',this)" style="display:none;"><source src="${escHtml(p.mediaData)}"></audio>
+        </div>`;
+    }
     return body;
 }
 function wallPostCardHtml(ownerNick, postId, p){
@@ -5242,51 +5299,56 @@ window.handleNewsPhoto = async function(e){
     e.target.value = '';
 };
 window.publishNews = async function(){
-    if(!canPublishNews()) return toast('❌ Только Денис и Журналисты могут публиковать новости', 'red');
-    const title = qs('newsTitle').value.trim();
-    const content = qs('newsContent').value.trim();
-    const category = qs('newsCategory').value;
-    const imageUrl = window._newsPhotoData || qs('newsImage').value.trim() || null;
-    const mediaType = window._newsMediaType || (qs('newsImage').value.trim() && qs('newsImage').value.trim().match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image');
-    if(!title) return toast('⚠️ Укажите заголовок новости', 'gold');
-    if(!content) return toast('⚠️ Укажите текст новости', 'gold');
-    const id = genId();
-    const newsItem = {
-        id,
-        title,
-        content,
-        category,
-        imageUrl,
-        mediaType,
-        author: currentNick,
-        authorJob: allUsersCache[currentNick]?.job || 'Житель',
-        createdAt: Date.now(),
-        date: new Date().toLocaleDateString('ru'),
-        time: nowTime()
-    };
-    await set(newsItemRef(id), newsItem);
-    toast('📰 Новость опубликована!', 'green');
-    qs('newsTitle').value = '';
-    qs('newsContent').value = '';
-    qs('newsImage').value = '';
-    window._newsPhotoData = null;
-    window._newsMediaType = null;
-    qs('newsImagePreview').style.display = 'none';
-    qs('newsImageImg').style.display = 'none';
-    qs('newsVideoPreview').style.display = 'none';
-    qs('newsVideoPreview').src = '';
-    // Send notification to all users
-    try{
-        const allSnap=await get(ref(db,'users'));
-        const allU=allSnap.val()||{};
-        for(const[nick,usr]of Object.entries(allU)){
-            if(nick!==currentNick){
-                await pushNotification(nick,`📰 Новость: ${title}`,'news');
-            }
-        }
-    }catch(e){}
-    renderNews();
-};
+      try {
+          if(!canPublishNews()) return toast('⚠️ Только администратор или журналист могут публиковать новости', 'red');
+          const title = qs('newsTitle').value.trim();
+          const content = qs('newsContent').value.trim();
+          const category = qs('newsCategory').value;
+          const imageUrl = window._newsPhotoData || qs('newsImage').value.trim() || null;
+          const mediaType = window._newsMediaType || (qs('newsImage').value.trim() && qs('newsImage').value.trim().match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image');
+          if(!title) return toast('⚠️ Напишите заголовок новости', 'gold');
+          if(!content) return toast('⚠️ Напишите текст новости', 'gold');
+          const id = genId();
+          const newsItem = {
+              id,
+              title,
+              content,
+              category,
+              imageUrl,
+              mediaType,
+              author: currentNick,
+              authorJob: allUsersCache[currentNick]?.job || 'Житель',
+              createdAt: Date.now(),
+              date: new Date().toLocaleDateString('ru'),
+              time: nowTime()
+          };
+          await set(newsItemRef(id), newsItem);
+          toast('✅ Новость опубликована!', 'green');
+          qs('newsTitle').value = '';
+          qs('newsContent').value = '';
+          qs('newsImage').value = '';
+          window._newsPhotoData = null;
+          window._newsMediaType = null;
+          qs('newsImagePreview').style.display = 'none';
+          qs('newsImageImg').style.display = 'none';
+          qs('newsVideoPreview').style.display = 'none';
+          qs('newsVideoPreview').src = '';
+          // Send notification to all users
+          try{
+              const allSnap=await get(ref(db,'users'));
+              const allU=allSnap.val()||{};
+              for(const[nick,usr]of Object.entries(allU)){
+                  if(nick!==currentNick){
+                      await pushNotification(nick,`📰 Новость опубликована: ${title}`,'news');
+                  }
+              }
+          }catch(e){}
+          renderNews();
+      } catch (error) {
+          console.error('Ошибка публикации новости:', error);
+          toast('❌ Ошибка при публикации: ' + (error.message || 'Неизвестная ошибка'), 'red');
+      }
+  };
 window.deleteNews = async function(id){
     if(!confirm('Удалить эту новость?')) return;
     const snap = await get(newsItemRef(id));
@@ -5575,7 +5637,20 @@ function mediaHtml(m){
     } else if(m.msgType==='video_circle'){
         html += `<div class="msg-media-wrap"><video src="${escHtml(m.mediaData)}" controls playsinline webkit-playsinline style="max-width:100%;border-radius:12px;margin-top:4px;"></video></div>`;
     } else if(m.msgType==='voice'){
-        html += `<div class="wall-audio" style="margin-top:4px;"><audio controls preload="metadata" style="max-width:100%;height:32px;"><source src="${escHtml(m.mediaData)}"></audio></div>`;
+        const vpId = 'vp_' + Math.random().toString(36).substr(2, 9);
+        html += `<div class="voice-player" id="${vpId}" style="margin-top:4px;">
+            <button class="voice-player-btn" onclick="event.stopPropagation();toggleVoicePlayer('${vpId}')">▶</button>
+            <div class="voice-player-track">
+                <div class="voice-player-bar" onmousedown="event.stopPropagation();startVoiceDrag('${vpId}',event)" ontouchstart="event.stopPropagation();startVoiceDrag('${vpId}',event)" onclick="event.stopPropagation();seekVoicePlayer('${vpId}',event)">
+                    <div class="voice-player-fill"></div>
+                </div>
+                <div class="voice-player-times">
+                    <span class="vp-cur">0:00</span>
+                    <span class="vp-dur">0:00</span>
+                </div>
+            </div>
+            <audio preload="metadata" onloadedmetadata="onVoiceMeta('${vpId}',this)" ontimeupdate="onVoiceTime('${vpId}',this)" onended="onVoiceEnd('${vpId}',this)" style="display:none;"><source src="${escHtml(m.mediaData)}"></audio>
+        </div>`;
     } else if(m.msgType==='gift_subscription'){
         html += `<div class="msg-text">🎁 ${escHtml(m.text || 'Подарок подписки')}</div>`;
     } else if(!caption && m.mediaData){
@@ -5652,10 +5727,44 @@ function msgEditHtml(kind, msgId, m){
 // ─── CHAT RENDER / DELETE FIXES ───────────
 let _chatRenderPending = false;
 let _chatRenderTimeout = null;
+let _isUserInteracting = false;
+let _interactionTimeout = null;
+
+// Track user interaction to prevent re-renders
+function markUserInteraction(){
+    _isUserInteracting = true;
+    if(_interactionTimeout) clearTimeout(_interactionTimeout);
+    _interactionTimeout = setTimeout(() => {
+        _isUserInteracting = false;
+    }, 3000); // Wait 3 seconds after last interaction before allowing re-renders
+}
+
+// Add interaction listeners to chat container - try immediately and also on DOM ready
+function setupChatInteractionListeners(){
+    const chatEl = qs('chatMessages');
+    if(chatEl){
+        chatEl.addEventListener('mousedown', markUserInteraction);
+        chatEl.addEventListener('touchstart', markUserInteraction);
+        chatEl.addEventListener('click', markUserInteraction);
+    }
+}
+
+// Try immediately in case element already exists
+setupChatInteractionListeners();
+
+// Also try on DOM ready
+if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', setupChatInteractionListeners);
+} else {
+    setupChatInteractionListeners();
+}
 
 window.renderChat = async function(msgs){
     lastChatMsgs = msgs || {};
     const el = qs('chatMessages'); if(!el) return;
+    
+    // Skip render if user is interacting
+    if(_isUserInteracting) return;
     
     // Debounce render for performance on iPhone
     if(_chatRenderPending) {
@@ -6744,3 +6853,14 @@ window.sendGiftSubscription = async function(){
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
