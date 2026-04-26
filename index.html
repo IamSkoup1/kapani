@@ -405,8 +405,13 @@ input[type=file]{display:none;}
 /* === VIDEO CIRCLE MODAL === */
 #vcModal{position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:9990;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
 #vcModal.open{display:flex;animation:fadeUp .25s ease-out;}
-.vc-circle{position:relative;width:240px;height:240px;border-radius:50%;overflow:hidden;border:3px solid var(--primary);box-shadow:0 0 0 8px var(--pri-dim),0 8px 40px rgba(34,211,165,.3);flex-shrink:0;}
+.vc-circle{position:relative;width:240px;height:240px;border-radius:50%;overflow:hidden;border:3px solid var(--primary);box-shadow:0 0 0 8px var(--pri-dim),0 8px 40px rgba(34,211,165,.3);flex-shrink:0;background:#000;}
 .vc-circle video{width:100%;height:100%;object-fit:cover;display:block;}
+/* Live video: front camera mirrors (selfie style), back camera doesn't */
+#vcLiveVid{transform:scaleX(-1);-webkit-transform:scaleX(-1);}
+#vcLiveVid[data-facing="environment"]{transform:scaleX(1);-webkit-transform:scaleX(1);}
+/* Playback video: NEVER mirror - shows exactly as recorded */
+#vcPlaybackVid{transform:scaleX(1) !important;-webkit-transform:scaleX(1) !important;object-fit:cover !important;width:100% !important;height:100% !important;}
 .vc-timer-badge{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.75);color:#fff;font-weight:900;font-size:13px;padding:3px 12px;border-radius:10px;white-space:nowrap;display:none;}
 .vc-rec-btn{width:72px;height:72px;border-radius:50%;border:4px solid rgba(255,255,255,.25);font-size:28px;cursor:pointer;background:var(--red);color:#fff;box-shadow:0 4px 20px rgba(248,113,113,.5);transition:.2s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .vc-rec-btn.is-rec{box-shadow:0 0 0 8px rgba(220,38,38,.3);animation:pulse 1s infinite;}
@@ -420,8 +425,6 @@ input[type=file]{display:none;}
 
 /* === MEDIA IN MESSAGES === */
 .msg-media-img{max-width:210px;max-height:210px;border-radius:12px;cursor:pointer;display:block;object-fit:cover;margin-top:4px;}
-.msg-video-wrap{position:relative;width:140px;height:140px;border-radius:50%;overflow:hidden;border:2px solid var(--primary);cursor:pointer;margin-top:4px;}
-.msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
 .vc-play-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);font-size:28px;color:#fff;transition:.2s;}
 .vc-play-overlay:hover{background:rgba(0,0,0,.4);}
 .chat-audio-player{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:4px;}
@@ -430,10 +433,12 @@ input[type=file]{display:none;}
 .chat-bubble .chat-time{align-self:flex-start;}
 .chat-msg.me .chat-bubble{align-items:flex-end;}
 .msg-media-wrap{display:block;max-width:100%;overflow:hidden;border-radius:12px;}
+.msg-media-wrap.msg-media-circle{border-radius:999px;overflow:visible;display:inline-block;max-width:none;}
 .msg-media-img{max-width:100%;width:100%;height:auto;max-height:260px;border-radius:12px;cursor:pointer;display:block;object-fit:cover;margin-top:4px;}
 .msg-media-video{max-width:100%;width:100%;height:auto;max-height:260px;border-radius:12px;display:block;margin-top:4px;}
+/* Video message circle - NEVER mirror */
 .msg-video-wrap{position:relative;width:min(180px,100%);aspect-ratio:1/1;border-radius:50%;overflow:hidden;border:2px solid var(--primary);cursor:pointer;margin-top:4px;}
-.msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;max-height:none !important;}
+.msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;max-height:none !important;transform:scaleX(1) !important;-webkit-transform:scaleX(1) !important;}
 .chat-audio-player{display:flex;align-items:center;gap:8px;padding:2px 0;margin-top:4px;width:100%;max-width:100%;}
 .media-queue{display:none;flex-direction:column;gap:8px;margin:8px 0 10px;}
 .media-queue.open{display:flex;}
@@ -511,6 +516,9 @@ input[type=file]{display:none;}
 .msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;transform:none !important;-webkit-transform:none !important;max-height:none !important;}
 .chat-audio-player{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:4px;width:100%;max-width:100%;}
 .chat-audio-player audio{width:100%;max-width:100%;min-width:100px;height:28px;}
+/* Make voice messages easier to seek */
+.chat-audio-player{width:100%;}
+.chat-audio-player audio{width:100% !important;max-width:100% !important;min-width:220px !important;height:36px !important;}
 .msg-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end;max-width:min(68%,100%);margin-top:2px;}
 .msg-action-btn{pointer-events:auto;touch-action:manipulation;}
 .msg-edit-area{max-width:min(68%,100%);width:100%;}
@@ -734,6 +742,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <!-- VIDEO VIEWER -->
 <div id="videoViewer" onclick="if(event.target===this)closeVideoViewer()">
     <button class="img-viewer-close" onclick="closeVideoViewer()">✕</button>
+    <button class="img-viewer-close" style="right:auto;left:16px;" onclick="toggleVideoFullscreen()" title="Полный экран">⛶</button>
     <video id="videoViewerVideo" controls playsinline webkit-playsinline></video>
 </div>
 
@@ -1265,7 +1274,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <b style="color:var(--text)">🛵 Водитель</b> — принимает заказы такси, получает оплату за поездку. Зарплата: в зависимости от заказов<br>
             <b style="color:var(--text)">📦 Курьер</b> — доставляет ресурсы, зарабатывает комиссию. Зарплата: в зависимости от заказов<br>
             <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. Зарплата: 250 рублей/день<br>
-            <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. Зарплата: по договорённости с мэрией
+            <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. Зарплата: <b style="color:var(--gold)">100 рублей/объявление</b>. В случае выкладывания неподобающих объявлений — <b style="color:var(--red)">увольнение</b>.
         </div>
     </div>
 </div>
@@ -1294,6 +1303,12 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <label class="file-upload-btn" for="newsImageFile">📷 Выбрать фото</label>
         <input type="file" id="newsImageFile" accept="image/*" onchange="handleNewsPhoto(event)">
         <div id="newsImagePreview" style="display:none;margin-bottom:8px;"><img id="newsImageImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);"></div>
+        <label class="file-upload-btn" for="newsVideoFile">🎬 Выбрать видео</label>
+        <input type="file" id="newsVideoFile" accept="video/*" onchange="handleNewsVideo(event)">
+        <div id="newsVideoPreview" style="display:none;margin-bottom:8px;">
+            <div style="font-size:12px;color:var(--primary);font-weight:900;margin-bottom:6px;">Видео прикреплено</div>
+            <video id="newsVideoVid" style="width:100%;max-height:180px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);" muted playsinline preload="metadata"></video>
+        </div>
         <select id="newsCategory">
             <option value="general">📢 Общее</option>
             <option value="event">🎉 Событие</option>
@@ -1347,7 +1362,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div class="chat-input-row" style="margin-top:0;">
                 <button class="media-ico-btn" onclick="toggleEmoji('news')" title="Эмодзи">😊</button>
                 <button class="media-ico-btn" onclick="toggleMediaBar('news')" title="Прикрепить">📎</button>
-                <input type="text" id="newsInput" placeholder="Написать сообщение..." oninput="onNewsInputTyping()">
+                <input type="text" id="newsInput" placeholder="Написать сообщение..." oninput="onNewsInputTyping()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendNewsMsg();}">
                 <button class="btn btn-primary btn-sm" onclick="sendNewsMsg()">➤</button>
             </div>
         </div>
@@ -1428,6 +1443,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="admin-action-grid">
             <button class="btn btn-red" onclick="adminFireWorker()">🚪 Уволить</button>
             <button class="btn btn-ghost" style="color:var(--gold);border-color:var(--gold-dim);" onclick="adminFineWorker()">💸 Штраф</button>
+            <button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);" onclick="adminSetMigrant(true)">🧾 Мигрант</button>
+            <button class="btn btn-ghost" onclick="adminSetMigrant(false)">♻ Снять роль</button>
         </div>
         <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;" required min="1" step="1">
         <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;" required minlength="5" maxlength="200">
@@ -1469,11 +1486,13 @@ import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverT
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 import { getMessaging, getToken, onMessage, isSupported as messagingIsSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
+import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = CONFIG.firebase;
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 const functions = getFunctions(app, 'europe-west1');
+const storage = getStorage(app);
 
 const ADMIN = CONFIG.admin.username;
 const JOB_JANITOR = CONFIG.jobs.janitor;
@@ -1504,6 +1523,46 @@ let lastChatMsgs = {};
 let lastDmMsgs = {};
 let pendingPhotoQueues = { chat: [], dm: [] };
 let vcFacingMode = 'user';
+let chatLoading = false;
+let dmLoading = false;
+
+const ROLE_MIGRANT = 'Мигрант';
+function isMigrantUser(u){ return !!(u && u.roles && u.roles.migrant === true); }
+async function requireNotMigrant(actionText){
+    try{
+        const snap = await get(userRef(currentNick));
+        const u = snap.exists() ? (snap.val()||{}) : {};
+        if(isMigrantUser(u)){
+            toast(`🚫 ${ROLE_MIGRANT}: ${actionText}`,'red');
+            return false;
+        }
+    }catch(e){}
+    return true;
+}
+function loadingHtml(text='Загрузка...'){
+    const t = escHtml(text);
+    return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px 0;color:var(--muted);font-size:13px;">
+        <div class="spinner" style="width:24px;height:24px;border-width:2px;margin-bottom:10px;"></div>
+        <div>${t}</div>
+    </div>`;
+}
+function safeExtFromMime(mime, fallback){
+    if(!mime) return fallback || 'bin';
+    const map = { 'audio/webm':'webm','audio/ogg':'ogg','audio/mpeg':'mp3','video/webm':'webm','video/mp4':'mp4','video/quicktime':'mov','image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif' };
+    return map[mime] || (fallback || 'bin');
+}
+async function uploadBlobToStorage(blobOrFile, folder){
+    const mime = blobOrFile?.type || '';
+    const ext = safeExtFromMime(mime, 'bin');
+    const name = `${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
+    const path = `${folder}/${currentNick || 'anon'}/${name}`;
+    const r = sRef(storage, path);
+    const task = uploadBytesResumable(r, blobOrFile, mime ? { contentType: mime } : undefined);
+    await new Promise((res, rej) => {
+        task.on('state_changed', () => {}, (err) => rej(err), () => res());
+    });
+    return await getDownloadURL(task.snapshot.ref);
+}
 
 // ─── INTERVAL REGISTRY ─────────────────────
 const activeIntervals = new Map();
@@ -2535,6 +2594,21 @@ window.openVideoViewer=function(src){
     setPlaybackAudioRoute();
     v.pause();
     v.removeAttribute('src');
+    // Apply optional transform for video circles (front camera needs un-mirror)
+    // Pass as: openVideoViewer(url, { transform: 'scaleX(-1)' })
+    let transform = null;
+    try{
+        if(arguments.length > 1 && arguments[1] && typeof arguments[1] === 'object'){
+            transform = arguments[1].transform || null;
+        }
+    }catch(e){}
+    if(transform){
+        v.style.setProperty('transform', transform, 'important');
+        v.style.setProperty('-webkit-transform', transform, 'important');
+    } else {
+        v.style.removeProperty('transform');
+        v.style.removeProperty('-webkit-transform');
+    }
     v.src=src;
     v.load();
     v.playsInline = true;
@@ -2551,6 +2625,20 @@ window.closeVideoViewer=function(){
     try { if(navigator.audioSession) navigator.audioSession.type = 'auto'; } catch(e) {}
     unlockBodyScroll();
     qs('videoViewer').classList.remove('open');
+};
+
+window.toggleVideoFullscreen = function(){
+    const v = qs('videoViewerVideo');
+    if(!v) return;
+    const doc = document;
+    const isFs = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if(isFs){
+        const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+        if(exit) exit.call(doc);
+        return;
+    }
+    const req = v.requestFullscreen || v.webkitRequestFullscreen;
+    if(req) req.call(v);
 };
 
 
@@ -2572,12 +2660,13 @@ window.handleMediaFile=async function(e, ctx){
         }
         if(videos.length){
             for(const file of videos){
-                if(file.size>20*1024*1024){toast('❌ Видео слишком большое (макс. 20 МБ)','red');continue;}
+                const maxMb = ctx==='news' ? 300 : 60;
+                if(file.size > maxMb*1024*1024){toast(`❌ Видео слишком большое (макс. ${maxMb} МБ)`,'red');continue;}
                 toast('🎬 Загружаем видео...','gold');
-                const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});
-                if(ctx==='chat') await sendChatMsg(null,dataUrl,'video');
-                else if(ctx==='dm') await sendDmMsg(null,dataUrl,'video');
-                else if(ctx==='news') await sendNewsDiscussionMsg(null,dataUrl,'video');
+                const url = await uploadBlobToStorage(file, 'media/videos');
+                if(ctx==='chat') await sendChatMsg(null,url,'video');
+                else if(ctx==='dm') await sendDmMsg(null,url,'video');
+                else if(ctx==='news') await sendNewsDiscussionMsg(null,url,'video');
             }
         }
         const mb=ctx==='chat'?'chatMediaBar':ctx==='dm'?'dmMediaBar':'newsMediaBar'; qs(mb)&&qs(mb).classList.remove('open');
@@ -2586,6 +2675,7 @@ window.handleMediaFile=async function(e, ctx){
 
 // ─── VOICE RECORDING ──────────────────────
 let voiceRecorder=null, voiceChunks=[], voiceInterval=null, voiceSeconds=0, voiceCtx='chat';
+let voiceStopResolve=null;
 function voiceUiIds(ctx){
     if(ctx==='wall')return{indId:'wallRecInd',timerId:'wallRecTimer'};
     if(ctx==='chat')return{indId:'chatRecInd',timerId:'chatRecTimer'};
@@ -2597,9 +2687,11 @@ window.startVoice=async function(ctx){
     voiceCtx=ctx;
     try {
         const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-        voiceChunks=[]; voiceSeconds=0;
+        voiceChunks=[]; voiceSeconds=0; voiceStopResolve=null;
         voiceRecorder=new MediaRecorder(stream);
-        voiceRecorder.ondataavailable=e=>voiceChunks.push(e.data);
+        voiceRecorder.ondataavailable=e=>{ if(e.data && e.data.size>0) voiceChunks.push(e.data); };
+        voiceRecorder.onstop=()=>{ if(voiceStopResolve) voiceStopResolve(); };
+        voiceRecorder.onerror=(e)=>{ toast('❌ Ошибка записи','red'); if(voiceStopResolve) voiceStopResolve(); };
         voiceRecorder.start(100);
         const {indId,timerId}=voiceUiIds(ctx);
         const ind=qs(indId);if(ind)ind.classList.add('show');
@@ -2613,6 +2705,10 @@ window.startVoice=async function(ctx){
 };
 window.stopVoice=async function(ctx){
     if(!voiceRecorder||voiceRecorder.state==='inactive') return;
+    // Request final data chunk before stopping
+    try { voiceRecorder.requestData(); } catch(e){}
+    // Wait for onstop event to ensure all data is collected
+    const stopPromise=new Promise(r=>{ voiceStopResolve=r; });
     voiceRecorder.stop();
     voiceRecorder.stream.getTracks().forEach(t=>t.stop());
     clearIntervalByName('voiceInterval');
@@ -2621,23 +2717,27 @@ window.stopVoice=async function(ctx){
     if(ctx==='chat') setChatTypingState('idle');
     if(ctx==='dm') setDmTypingState('idle');
     if(ctx==='news') setNewsTypingState('idle');
+    // Wait for onstop event
+    await stopPromise;
+    // Small additional delay to ensure ondataavailable fired
     await new Promise(r=>setTimeout(r,200));
-    const blob=new Blob(voiceChunks,{type:'audio/webm'});
-    const reader=new FileReader();
-    reader.onload=async()=>{
-        const dataUrl=reader.result;
-        if(ctx==='chat') await sendChatMsg(null,dataUrl,'voice');
-        else if(ctx==='dm') await sendDmMsg(null,dataUrl,'voice');
-        else if(ctx==='news') await sendNewsDiscussionMsg(null,dataUrl,'voice');
-        else if(ctx==='wall'){await pushWallPostMedia('voice',dataUrl);return;}
-        toast('🎤 Голосовое отправлено','green');
-    };
-    reader.readAsDataURL(blob);
+    if(voiceChunks.length===0){ toast('❌ Запись пуста','red'); voiceRecorder=null; voiceChunks=[]; return; }
+    // Try webm first, fallback to default mime if needed
+    let blob;
+    try { blob = new Blob(voiceChunks,{type:'audio/webm'}); }
+    catch(e) { blob = new Blob(voiceChunks); }
+    toast('🎤 Загружаем голосовое...','gold');
+    const url = await uploadBlobToStorage(blob, 'media/voice');
+    if(ctx==='chat') await sendChatMsg(null,url,'voice');
+    else if(ctx==='dm') await sendDmMsg(null,url,'voice');
+    else if(ctx==='news') await sendNewsDiscussionMsg(null,url,'voice');
+    else if(ctx==='wall'){await pushWallPostMedia('voice',url);return;}
+    toast('🎤 Голосовое отправлено','green');
     voiceRecorder=null; voiceChunks=[];
 };
 window.cancelVoice=function(ctx){
     if(voiceRecorder&&voiceRecorder.state!=='inactive'){voiceRecorder.stop();voiceRecorder.stream.getTracks().forEach(t=>t.stop());}
-    clearInterval(voiceInterval); voiceRecorder=null; voiceChunks=[];
+    clearIntervalByName('voiceInterval'); voiceRecorder=null; voiceChunks=[]; voiceStopResolve=null;
     const {indId}=voiceUiIds(ctx);
     const ind=qs(indId);if(ind)ind.classList.remove('show');
     if(ctx==='chat') setChatTypingState('idle');
@@ -3438,6 +3538,7 @@ window.cancelOrder=async function(id){
 
 // ─── BANK ─────────────────────────────────
 window.doTransfer=async function(){
+    if(!await requireNotMigrant('переводы недоступны')) return;
     if(!await requireSpendable())return;
     const to=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
     if(!to)return toast('⚠️ Введите никнейм','gold');if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
@@ -3445,12 +3546,15 @@ window.doTransfer=async function(){
     // Check if sender account is verified
     const[fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
     const fromUser = fromSnap.val();
+    const toUser = toSnap.val();
+    if(isMigrantUser(fromUser)) return toast(`🚫 ${ROLE_MIGRANT}: переводы недоступны`,'red');
+    if(isMigrantUser(toUser)) return toast(`🚫 Нельзя переводить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
     if(!fromUser.accountVerified) {
         return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
     }
     
     // Check if recipient account is verified
-    if(!toSnap.val().accountVerified) {
+    if(!toUser.accountVerified) {
         return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
     }
     
@@ -3604,6 +3708,7 @@ async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
     if(msgType) msg.msgType=msgType;
+    if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
     await push(chatRef(),msg);
 }
@@ -3745,7 +3850,13 @@ window.togglePinChat = async function(nick){
 };
 window.switchMsgTab=function(i){
     [0,1].forEach(j=>{const tab=qs(`msgTab${j}`); if(tab) tab.classList.toggle('active',j===i); const panel=qs(`msgPanel${j}`); if(panel) panel.classList.toggle('active',j===i);});
-    if(i===0){get(chatRef()).then(snap=>renderChat(snap.val()||{}));try{set(ref(db,`readState/${currentNick}/chat`),Date.now());}catch(e){}}
+    if(i===0){
+        const host = qs('chatMessages');
+        if(host && !host.innerHTML.trim()){ host.innerHTML = loadingHtml('Загрузка чата...'); }
+        chatLoading = true;
+        get(chatRef()).then(snap=>{ chatLoading = false; renderChat(snap.val()||{}); });
+        try{set(ref(db,`readState/${currentNick}/chat`),Date.now());}catch(e){}
+    }
     if(i===1){renderDmContactList(allUsersCache, false); if(!Object.keys(allUsersCache).length) get(ref(db,'users')).then(snap=>renderDmUserList(snap.val()||{}));}
 };
 window.renderDmUserList=function(users){ renderDmContactList(users, false); };
@@ -3790,11 +3901,13 @@ window.openDmChat=async function(nick){
         }
     }
     
-    qs('dmListView').style.display='none';qs('dmChatView').style.display='block';qs('dmMessages').innerHTML='';
+    qs('dmListView').style.display='none';qs('dmChatView').style.display='block';
+    dmLoading = true;
+    qs('dmMessages').innerHTML = loadingHtml('Загрузка сообщений...');
     if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);}
     if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
     const key=dmKey(currentNick,nick);const dmR=dmRef(key);
-    const dmFn=(snap2)=>{lastDmMsgs=snap2.val()||{};if(currentDmNick===nick)renderDmMessages(lastDmMsgs);};
+    const dmFn=(snap2)=>{dmLoading=false; lastDmMsgs=snap2.val()||{};if(currentDmNick===nick)renderDmMessages(lastDmMsgs);};
     onValue(dmR,dmFn);dmListeners.current={ref:dmR,fn:dmFn};
     try{await set(ref(db,`dms/${key}/lastRead/${currentNick}`),Date.now());}catch(e){}
     const peerReadRef=ref(db,`dms/${key}/lastRead/${nick}`);
@@ -3829,6 +3942,7 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
     if(msgType) msg.msgType=msgType;
+    if(cameraFacing) msg.cameraFacing = cameraFacing;
     const key=dmKey(currentNick,currentDmNick);
     await push(dmRef(key),msg);
     let notifText;
@@ -3855,7 +3969,10 @@ function wallPostBodyHtml(p){
     if(p.text)body+=`<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;">${escHtml(p.text)}</div>`;
     if(p.msgType==='image'&&p.mediaData)body+=`<img src="${escHtml(p.mediaData)}" style="max-width:100%;border-radius:12px;margin-top:8px;cursor:pointer;" onclick="event.stopPropagation();openImgViewer('${jsEsc(p.mediaData)}')">`;
     if(p.msgType==='video'&&p.mediaData)body+=`<video src="${escHtml(p.mediaData)}" controls playsinline webkit-playsinline style="max-width:100%;border-radius:12px;margin-top:8px;"></video>`;
-    if(p.msgType==='video_circle'&&p.mediaData)body+=`<div class="msg-media-wrap" style="margin-top:8px;"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(p.mediaData)}')" style="background:#111;"><video preload="none" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(p.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
+    if(p.msgType==='video_circle'&&p.mediaData){
+        const tf = (p.cameraFacing || 'user') === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+        body+=`<div class="msg-media-wrap msg-media-circle" style="margin-top:6px;"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(p.mediaData)}', { transform: '${tf}' })" style="background:#111;"><video muted preload="metadata" playsinline webkit-playsinline style="pointer-events:none;transform:${tf} !important;-webkit-transform:${tf} !important;"><source src="${escHtml(p.mediaData)}#t=0.1"></video><div class="vc-play-overlay">▶</div></div></div>`;
+    }
     if(p.msgType==='voice'&&p.mediaData)body+=`<div class="wall-audio" style="margin-top:8px;"><audio controls preload="metadata" style="width:100%;max-width:100%;height:36px;"><source src="${escHtml(p.mediaData)}"></audio></div>`;
     return body;
 }
@@ -4182,6 +4299,7 @@ async function checkDailyTaskCondition(taskId, u, ordersVal, marketVal, chatVal,
     }
 }
 window.claimDailyTask = async function(taskId, reward){
+    if(!await requireNotMigrant('заработок через задания недоступен')) return;
     const today = todayKey();
     const claimedKey = `dailyClaimed_${today}`;
     const snap = await get(userRef(currentNick));
@@ -4198,6 +4316,7 @@ window.claimDailyTask = async function(taskId, reward){
     renderTasks();
 };
 window.claimOneTimeTask = async function(taskKey, reward){
+    if(!await requireNotMigrant('заработок через задания недоступен')) return;
     const snap = await get(userRef(currentNick));
     if(!snap.exists()) return;
     const u = snap.val();
@@ -4288,11 +4407,14 @@ window.renderTasks = async function(){
         }
 
         // Auto-reward new one-time tasks (job and market purchase) if just completed
-        for(const t of oneTimeTasks){
+        if(isMigrantUser(u)){
+            // Migrants cannot receive money from tasks
+        } else for(const t of oneTimeTasks){
             if(t.done && !u[t.key]){
                 try {
                     const latestSnap = await get(userRef(currentNick));
                     const lu = latestSnap.val()||{};
+                    if(isMigrantUser(lu)) continue;
                     if(!lu[t.key]){
                         await update(userRef(currentNick),{[t.key]:true,balance:(lu.balance||0)+t.reward});
                         await logTx(currentNick,{type:'in',who:'Задания',amt:t.reward,desc:`Одноразовое задание: ${t.title}`});
@@ -4479,6 +4601,7 @@ function marketCard(l,isMine, isArchived=false){
         </div></div>`;
 }
 window.publishListing=async function(){
+    if(!await requireNotMigrant('маркетплейс недоступен')) return;
     const title=qs('mktTitle').value.trim();
     const negotiable=qs('mktNegotiable')?.checked;
     const cat=qs('mktCategory').value;
@@ -4491,6 +4614,7 @@ window.publishListing=async function(){
     // Проверяем лимит объявлений в месяц
     const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
+    if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: маркетплейс недоступен`,'red');
     const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const subscription = isSubActive ? (u.subscription || 'none') : 'none';
     const listingsThisMonth = u.listingsThisMonth || 0;
@@ -4533,12 +4657,23 @@ window.publishListing=async function(){
     qs('mktTitle').value='';qs('mktDesc').value='';qs('mktPrice').value='';if(qs('mktNegotiable'))qs('mktNegotiable').checked=false;if(qs('mktSalaryHint'))qs('mktSalaryHint').value='';
     qs('mktPhoto').value='';qs('mktPhotoPreview').style.display='none';window._mktPhotoData=null;toggleMktPriceFields();toast('✅ Опубликовано!','green');switchMarketTab(0);
 };
-window.requestMeeting=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return toast('❌ Листинг не найден','red');const l=snap.val();await update(listingRef(id),{status:'meeting_requested',buyer:currentNick});const pl=l.priceNegotiable?'договорная':`${l.price}₽`;await pushNotification(l.seller,`🤝 Купить хочет: ${currentNick} · "${l.title}" · ${pl}`,'market');toast('✉️ Запрос отправлен!','green');};
+window.requestMeeting=async function(id){
+    if(!await requireNotMigrant('маркетплейс недоступен')) return;
+    const snap=await get(listingRef(id));if(!snap.exists())return toast('❌ Листинг не найден','red');
+    const meSnap = await get(userRef(currentNick)); const me = meSnap.val()||{};
+    if(isMigrantUser(me)) return toast(`🚫 ${ROLE_MIGRANT}: маркетплейс недоступен`,'red');
+    const l=snap.val();
+    await update(listingRef(id),{status:'meeting_requested',buyer:currentNick});
+    const pl=l.priceNegotiable?'договорная':`${l.price}₽`;
+    await pushNotification(l.seller,`🤝 Купить хочет: ${currentNick} · "${l.title}" · ${pl}`,'market');
+    toast('✉️ Запрос отправлен!','green');
+};
 window.confirmMeeting=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return;const l=snap.val();await update(listingRef(id),{status:'meeting_confirmed'});await pushNotification(l.buyer,`✅ ${l.seller} подтвердил встречу!`,'market');toast('✅ Встреча подтверждена','green');};
 window.cancelMeeting=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return;const l=snap.val();const otherNick=l.buyer===currentNick?l.seller:l.buyer;await update(listingRef(id),{status:'active',buyer:null});if(otherNick)await pushNotification(otherNick,`⚠️ ${currentNick} отказался от сделки`,'market');toast('❌ Отказ от встречи','red');};
 window.goToChat=function(nick){navTo('messages');setTimeout(()=>{switchMsgTab(1);setTimeout(()=>openDmChat(nick),200);},200);};
 window.declineListing=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return;const l=snap.val();await update(listingRef(id),{status:'active',buyer:null});await pushNotification(l.buyer,`❌ ${l.seller} отказал`,'market');toast('❌ Отклонено','red');};
 window.confirmPurchase=async function(id){
+    if(!await requireNotMigrant('маркетплейс недоступен')) return;
     if(!await requireSpendable())return;
     const snap=await get(listingRef(id));if(!snap.exists())return;
     const l=snap.val();
@@ -4721,6 +4856,7 @@ window.handleJanitorProof=async function(e){
 window.submitJanitorDone=async function(){
     const uSnap=await get(userRef(currentNick));if(!uSnap.exists())return;
     const u=uSnap.val();
+    if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: задания недоступны`,'red');
     if(u.job!==JOB_JANITOR)return toast('⚠️ Только для уборщика','gold');
     if(u.janitorSubmissionStatus==='pending')return toast('⏳ Уже отправлено','gold');
     if(u.janitorSubmissionStatus==='approved')return toast('✅ Сегодня уже закрыто','green');
@@ -4877,6 +5013,29 @@ window.adminFineWorker=async function(){
         toast(`❌ ${message}`,'red');
     }
 };
+window.adminSetMigrant = async function(on){
+    if(currentNick!==ADMIN) return;
+    const target = qs('adminTarget').value;
+    if(!target) return toast('⚠️ Выберите жителя','gold');
+    if(target===ADMIN) return toast('⚠️ Нельзя применить к мэру','gold');
+    const snap = await get(userRef(target));
+    if(!snap.exists()) return toast('❌ Не найден','red');
+    const u = snap.val() || {};
+    const already = !!(u.roles && u.roles.migrant === true);
+    if(on && already) return toast('✅ Уже мигрант','gold');
+    if(!on && !already) return toast('✅ Роли нет','gold');
+    try{
+        await update(userRef(target), { roles: { ...(u.roles||{}), migrant: !!on } });
+        await pushNotification(target, on
+            ? `🧾 Мэрия выдала роль «${ROLE_MIGRANT}». Ограничения: без заданий/переводов/маркетплейса.`
+            : `♻ Мэрия сняла роль «${ROLE_MIGRANT}».`,
+            'system'
+        );
+        toast(on ? `🧾 ${target} теперь ${ROLE_MIGRANT}` : `♻ Роль снята: ${target}`, on ? 'red' : 'green');
+    }catch(e){
+        toast('❌ Не удалось обновить роль','red');
+    }
+};
 window.adminDeleteOrder=async function(id){await remove(orderRef(id));toast('🗑 Удалено','gold');};
 window.adminFireWorker=async function(){
     const target=qs('adminTarget').value;
@@ -4991,6 +5150,31 @@ window.handleNewsPhoto = async function(e){
     }
     e.target.value = '';
 };
+
+window.handleNewsVideo = async function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+        const maxMb = 500;
+        if(file.size > maxMb*1024*1024){
+            toast(`❌ Видео слишком большое (макс. ${maxMb} МБ)`, 'red');
+            e.target.value = '';
+            return;
+        }
+        toast('🎬 Загружаем видео в новости...', 'gold');
+        const url = await uploadBlobToStorage(file, 'news/videos');
+        window._newsVideoUrl = url;
+        const prev = qs('newsVideoPreview');
+        const vid = qs('newsVideoVid');
+        if(vid){ vid.pause(); vid.removeAttribute('src'); vid.src = url; vid.load(); }
+        if(prev) prev.style.display = 'block';
+        toast('✅ Видео добавлено', 'green');
+    }catch(err){
+        console.error(err);
+        toast('❌ Не удалось загрузить видео', 'red');
+    }
+    e.target.value = '';
+};
 window.publishNews = async function(){
     const scope = qs('newsScope') ? qs('newsScope').value : currentNewsTab;
     if(!canPublishNews(scope)) return toast(scope === 'lands' ? '❌ Только Денис может публиковать новости Капанёвских земель' : '❌ Только Денис и Журналисты могут публиковать новости', 'red');
@@ -4998,6 +5182,7 @@ window.publishNews = async function(){
     const content = qs('newsContent').value.trim();
     const category = qs('newsCategory').value;
     const imageUrl = window._newsPhotoData || qs('newsImage').value.trim() || null;
+    const videoUrl = window._newsVideoUrl || null;
     if(!title) return toast('⚠️ Укажите заголовок новости', 'gold');
     if(!content) return toast('⚠️ Укажите текст новости', 'gold');
     const id = genId();
@@ -5008,6 +5193,7 @@ window.publishNews = async function(){
         content,
         category,
         imageUrl,
+        videoUrl,
         author: currentNick,
         authorJob: allUsersCache[currentNick]?.job || 'Житель',
         createdAt: Date.now(),
@@ -5021,6 +5207,10 @@ window.publishNews = async function(){
     qs('newsImage').value = '';
     window._newsPhotoData = null;
     qs('newsImagePreview').style.display = 'none';
+    window._newsVideoUrl = null;
+    const nvp = qs('newsVideoPreview'); if(nvp) nvp.style.display = 'none';
+    const nvv = qs('newsVideoVid'); if(nvv){ nvv.pause(); nvv.removeAttribute('src'); nvv.load(); }
+    const nvf = qs('newsVideoFile'); if(nvf) nvf.value = '';
     renderNews();
 };
 window.deleteNews = async function(id){
@@ -5076,6 +5266,7 @@ window.renderNews = async function(){
                     </div>
                     <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
                     ${item.imageUrl ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
+                    ${item.videoUrl ? `<div style="margin-bottom:10px;cursor:pointer;" onclick="openVideoViewer('${jsEsc(item.videoUrl)}')"><video style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);background:#000;" muted playsinline preload="metadata"><source src="${escHtml(item.videoUrl)}#t=0.1"></video></div>` : ''}
                     <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
                     <div style="margin-top:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                         <span>Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}</span>
@@ -5117,6 +5308,7 @@ window.openNewsDiscussion = async function(id){
             </div>
             <div style="font-weight:900;font-size:18px;margin:10px 0 8px;">${escHtml(item.title || '')}</div>
             ${item.imageUrl ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
+            ${item.videoUrl ? `<div style="margin-bottom:10px;cursor:pointer;" onclick="openVideoViewer('${jsEsc(item.videoUrl)}')"><video style="width:100%;max-height:260px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);background:#000;" muted playsinline preload="metadata"><source src="${escHtml(item.videoUrl)}#t=0.1"></video></div>` : ''}
             <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content || '')}</div>
             <div style="margin-top:10px;font-size:11px;color:var(--muted);">
                 Автор: <b style="color:var(--text);">${escHtml(item.author || '')}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
@@ -5211,7 +5403,11 @@ window.sendNewsDiscussionMsg = async function(text, mediaData, msgType){
     await push(newsDiscussionRef(currentNewsId), msg);
 };
 window.deleteNewsMsg = async function(msgId){
-    try { await remove(ref(db, `newsDiscussions/${currentNewsId}/messages/${msgId}`)); } catch(e){ toast('❌ Не удалось удалить сообщение', 'red'); }
+    try {
+        await remove(ref(db, `newsDiscussions/${currentNewsId}/messages/${msgId}`));
+        if(currentNewsMsgs && currentNewsMsgs[msgId]) delete currentNewsMsgs[msgId];
+        if(curPage === 'newsDiscussion') renderNewsDiscussionMessages(currentNewsMsgs);
+    } catch(e){ toast('❌ Не удалось удалить сообщение', 'red'); }
 };
 window.startEditNews = function(msgId, oldText){
     const actions = qs(`newsactions_${msgId}`); if(actions) actions.style.display='none';
@@ -5237,7 +5433,15 @@ window.navTo=function(id){
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
-    if(id==='messages') get(chatRef()).then(s=>renderChat(s.val()||{}));
+    if(id==='messages'){
+        // Show loaders immediately on first open
+        const chatHost = qs('chatMessages');
+        if(chatHost && !chatHost.innerHTML.trim()) chatHost.innerHTML = loadingHtml('Загрузка чата...');
+        const dmHost = qs('dmMessages');
+        if(dmHost && currentDmNick && !dmHost.innerHTML.trim()) dmHost.innerHTML = loadingHtml('Загрузка сообщений...');
+        chatLoading = true;
+        get(chatRef()).then(s=>{ chatLoading = false; renderChat(s.val()||{}); });
+    }
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
@@ -5298,12 +5502,30 @@ function mediaHtml(m){
     if(m.msgType==='image' || (!m.msgType && m.mediaData && /^data:image\//.test(m.mediaData))){
         html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><img class="msg-media-img" src="${escHtml(m.mediaData)}" loading="lazy" decoding="async" onclick="openImgViewer('${jsEsc(m.mediaData)}')" alt="Фото"></div>`;
     } else if(m.msgType==='video'){
-        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><video class="msg-media-video" controls playsinline webkit-playsinline preload="none" onclick="openVideoViewer('${jsEsc(m.mediaData)}')"><source src="${escHtml(m.mediaData)}"></video></div>`;
+        // Preview (tap to open viewer). Use #t=0.1 so browser can grab a first frame.
+        const vsrc = escHtml(m.mediaData || '');
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()">
+            <div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#0b1220;cursor:pointer;" onclick="openVideoViewer('${jsEsc(m.mediaData)}')">
+                <video class="msg-media-video" muted playsinline webkit-playsinline preload="metadata" style="max-height:260px;pointer-events:none;" poster="">
+                    <source src="${vsrc}#t=0.1">
+                </video>
+                <div class="vc-play-overlay" style="border-radius:12px;">▶</div>
+            </div>
+        </div>`;
     } else if(m.msgType==='video_circle'){
-        // Use a static thumbnail div to avoid flicker — play only on tap via viewer
-        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(m.mediaData)}')" style="background:#111;"><video preload="none" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(m.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
+        // Preview frame (tap to open viewer). Use #t=0.1 for a visible first frame.
+        const vsrc = escHtml(m.mediaData || '');
+        // Video messages should NEVER be mirrored - always display as recorded
+        html += `<div class="msg-media-wrap msg-media-circle" onclick="event.stopPropagation()">
+            <div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(m.mediaData)}')" style="background:#111;">
+                <video muted playsinline webkit-playsinline preload="metadata">
+                    <source src="${vsrc}#t=0.1">
+                </video>
+                <div class="vc-play-overlay">▶</div>
+            </div>
+        </div>`;
     } else if(m.msgType==='voice'){
-        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="chat-audio-player"><audio controls preload="none"><source src="${escHtml(m.mediaData)}"></audio></div></div>`;
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="chat-audio-player"><audio controls preload="metadata" style="width:100%;"><source src="${escHtml(m.mediaData)}"></audio></div></div>`;
     } else if(m.msgType==='gift_subscription'){
         html += `<div class="msg-text">🎁 ${escHtml(m.text || 'Подарок подписки')}</div>`;
     } else if(!caption && m.mediaData){
@@ -5461,6 +5683,8 @@ window.deleteChat = async function(msgId){
         // Удаляем из Set через 5 секунд
         setTimeout(() => { window._recentlyDeletedMsgs.delete(msgId); }, 5000);
         await remove(ref(db, `chat/${msgId}`));
+        if(lastChatMsgs && lastChatMsgs[msgId]) delete lastChatMsgs[msgId];
+        if(curPage==='messages' && document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
     }
     catch(e){ 
         toast('❌ Не удалось удалить сообщение', 'red'); 
@@ -5501,7 +5725,7 @@ window.renderDmMessages = async function(msgs){
         const scroll = preserveScrollState(el);
         const entries = Object.entries(lastDmMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-80);
         const sig = entries.map(([id,m])=>`${id}:${m.createdAt||0}:${m.text||''}:${m.msgType||''}:${m.mediaData?1:0}:${m.edited?1:0}`).join('|') + '|peer:' + String(dmPeerReadTs || 0);
-        if(el.dataset.sig === sig) return;
+        if(el.dataset.sig === sig){ _dmRenderPending = false; return; }
         el.dataset.sig = sig;
         // Get current user's chat bubble style
         let myBubbleStyle = '';
@@ -5604,7 +5828,10 @@ window.deleteDm = async function(msgId){
             window._recentlyDeletedMsgs.add(msgId);
             // Удаляем из Set через 5 секунд
             setTimeout(() => { window._recentlyDeletedMsgs.delete(msgId); }, 5000);
-            await remove(ref(db, `dms/${dmKey(currentNick,currentDmNick)}/messages/${msgId}`));
+            const key = dmKey(currentNick,currentDmNick);
+            await remove(ref(db, `dms/${key}/messages/${msgId}`));
+            if(lastDmMsgs && lastDmMsgs[msgId]) delete lastDmMsgs[msgId];
+            if(curPage==='messages' && currentDmNick) renderDmMessages(lastDmMsgs);
         }
     }
     catch(e){ 
@@ -5743,13 +5970,10 @@ const VC_MAX_SEC_OVERRIDE = 30;
 function vcApplyLiveStyles(v){
     if(!v) return;
     v.style.display = 'block';
-    // Если камера фронтальная, принудительно разворачиваем её обратно
-    if (vcFacingMode === 'user') {
-        v.style.setProperty('transform', 'scaleX(-1)', 'important');
-    } else {
-        v.style.setProperty('transform', 'none', 'important');
-    }
+    // Let CSS handle mirroring based on data-facing attribute
+    v.setAttribute('data-facing', vcFacingMode);
     v.style.objectFit = 'cover';
+    // Do NOT set transform here - CSS handles it
 }
 window.applyVcZoom = async function(val){
     if(!vcStream) return;
@@ -5798,8 +6022,14 @@ function setVcPreviewUI(){
     const badge = qs('vcTimerBadge'); if(badge) badge.style.display='none';
 }
 function vcMime(){ return MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'; }
-function finalizeVcRecording(){
-    const blob = new Blob(vcChunks, { type: 'video/webm' });
+async function finalizeVcRecording(){
+    // Small delay to ensure all ondataavailable events have fired
+    await new Promise(r=>setTimeout(r,200));
+    if(vcChunks.length===0){ toast('❌ Запись пуста','red'); setVcReadyUI(); return; }
+    // Try webm first, fallback to default if needed
+    let blob;
+    try { blob = new Blob(vcChunks, { type: 'video/webm' }); }
+    catch(e) { blob = new Blob(vcChunks); }
     const url = URL.createObjectURL(blob);
     const play = qs('vcPlaybackVid');
     if(play){
@@ -5815,10 +6045,7 @@ function finalizeVcRecording(){
         play.setAttribute('webkit-playsinline', '');
         play.muted = false;
         play.volume = 1;
-        // Убираем зеркальное отражение у превью — видео снято как есть
-        play.style.removeProperty('transform');
-        play.style.removeProperty('-webkit-transform');
-        play.style.objectFit = 'cover';
+        // Let CSS handle mirroring - do NOT set transform here
         play.play().catch(()=>{});
     }
     setVcPreviewUI();
@@ -5827,7 +6054,7 @@ function startVcRecording(){
     if(!vcStream) throw new Error('Камера недоступна');
     const vOpts = { mimeType: vcMime(), videoBitsPerSecond: 450000 };
     try { vcMediaRecorder = new MediaRecorder(vcStream, vOpts); } catch(e) { vcMediaRecorder = new MediaRecorder(vcStream, { mimeType: vcMime() }); }
-    vcMediaRecorder.ondataavailable = e => { if(e.data && e.data.size) vcChunks.push(e.data); };
+    vcMediaRecorder.ondataavailable = e => { if(e.data && e.data.size>0) vcChunks.push(e.data); };
     vcMediaRecorder.onstop = async () => {
         const shouldSwitch = vcSwitchPending;
         vcSwitchPending = false;
@@ -5844,9 +6071,15 @@ function startVcRecording(){
                 return;
             }
         }
-        finalizeVcRecording();
+        await finalizeVcRecording();
     };
     vcMediaRecorder.start(100);
+    // Also collect data every second to ensure we don't lose anything
+    vcMediaRecorder._interval = setInterval(() => {
+        if(vcMediaRecorder && vcMediaRecorder.state === 'recording') {
+            try { vcMediaRecorder.requestData(); } catch(e){}
+        }
+    }, 1000);
     if(vcTargetCtx === 'chat') setChatTypingState('video');
     if(vcTargetCtx === 'dm') setDmTypingState('video');
     const btn = qs('vcRecBtn'); if(btn){ btn.textContent = '⏹'; btn.classList.add('is-rec'); }
@@ -5863,6 +6096,10 @@ function stopVcRecording(){
     if(vcTargetCtx === 'chat') setChatTypingState('idle');
     if(vcTargetCtx === 'dm') setDmTypingState('idle');
     if(vcMediaRecorder && vcMediaRecorder.state !== 'inactive'){
+        // Request final data chunk before stopping
+        try { vcMediaRecorder.requestData(); } catch(e){}
+        // Clear the interval
+        if(vcMediaRecorder._interval) { clearInterval(vcMediaRecorder._interval); vcMediaRecorder._interval = null; }
         try { vcMediaRecorder.stop(); } catch(e) {}
     }
 }
@@ -5941,17 +6178,20 @@ window.retakeVc = async function(){
 window.sendVcMsg = async function(){
     if(!vcChunks.length) return toast('⚠️ Нет записи', 'gold');
     const blob = new Blob(vcChunks, { type: 'video/webm' });
-    const reader = new FileReader();
-    reader.onload = async () => {
-        const dataUrl = reader.result;
-        closeVcModal();
-        if(vcTargetCtx === 'chat') await sendChatMsg(null, dataUrl, 'video_circle');
-        else if(vcTargetCtx === 'dm') await sendDmMsg(null, dataUrl, 'video_circle');
-        else if(vcTargetCtx === 'news') await sendNewsDiscussionMsg(null, dataUrl, 'video_circle');
-        else if(vcTargetCtx === 'wall') await pushWallPostMedia('video_circle', dataUrl);
-        if(vcTargetCtx !== 'wall') toast('⭕ Видеосообщение отправлено', 'green');
-    };
-    reader.readAsDataURL(blob);
+    // Close immediately; upload in background to avoid "stuck" preview
+    closeVcModal();
+    (async ()=>{
+        try{
+            const url = await uploadBlobToStorage(blob, 'media/video_circles');
+            if(vcTargetCtx === 'chat') await sendChatMsg(null, url, 'video_circle', vcFacingMode);
+            else if(vcTargetCtx === 'dm') await sendDmMsg(null, url, 'video_circle', vcFacingMode);
+            else if(vcTargetCtx === 'news') await sendNewsDiscussionMsg(null, url, 'video_circle');
+            else if(vcTargetCtx === 'wall') await pushWallPostMedia('video_circle', url);
+            if(vcTargetCtx !== 'wall') toast('⭕ Видеосообщение отправлено', 'green');
+        } catch(e){
+            toast('❌ Не удалось отправить видеосообщение','red');
+        }
+    })();
 };
 
 renderChat = window.renderChat;
