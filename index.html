@@ -513,7 +513,7 @@ input[type=file]{display:none;}
 .msg-media-wrap{display:block;max-width:100%;overflow:hidden;border-radius:12px;}
 .msg-media-img,.msg-media-video{max-width:100%;width:100%;height:auto;max-height:220px;border-radius:12px;display:block;object-fit:cover;margin-top:4px;}
 .msg-video-wrap{position:relative;width:min(170px,100%);aspect-ratio:1/1;border-radius:50%;overflow:hidden;border:2px solid var(--primary);cursor:pointer;margin-top:4px;}
-.msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;transform:none !important;-webkit-transform:none !important;max-height:none !important;}
+.msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;max-height:none !important;}
 .chat-audio-player{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:4px;width:100%;max-width:100%;}
 .chat-audio-player audio{width:100%;max-width:100%;min-width:100px;height:28px;}
 .chat-audio-player.playing .cap-play-btn{color:var(--primary);}
@@ -864,6 +864,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <button class="jump-date-text" onclick="openJumpToDate('chat')" data-chat-context="chat" title="Перейти к дате" type="button">📅 Перейти к дате</button>
             </div>
             <div id="chatWrapper" style="position:relative;">
+            <div id="chatLoading" style="display:none;text-align:center;padding:20px 0;color:var(--muted);font-size:13px;">
+                <div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0 auto 8px;"></div>
+                Загрузка сообщений...
+            </div>
             <div id="chatMessages"></div>
             </div>
             <div class="emoji-panel" id="chatEmojiPanel"></div>
@@ -2091,10 +2095,10 @@ function attachListeners() {
     onValue(aRef,aFn); listeners.apps={ref:aRef,fn:aFn};
 
     const cRef=chatRef();
-    const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);};
+    const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages')renderChat(lastChatMsgs);};
     onValue(cRef,cFn); listeners.chat={ref:cRef,fn:cFn};
     // Initial render of chat
-    get(cRef).then(snap=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);});
+    get(cRef).then(snap=>{lastChatMsgs=snap.val()||{};if(curPage==='messages')renderChat(lastChatMsgs);});
     const chatTypingRef = ref(db, 'typing/chat');
     const chatTypingFn = (snap) => {
         if(curPage==='messages'&&document.querySelector('#msgPanel0.active')){
@@ -2113,8 +2117,8 @@ function attachListeners() {
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
-        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
-        if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
+        if(curPage==='messages') renderChat(lastChatMsgs);
+        if(curPage==='messages') renderDmUserList(users);
         if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
         if(curPage==='tasks') renderTasks();
     };
@@ -5422,7 +5426,10 @@ window.navTo=function(id){
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
-    if(id==='messages') get(chatRef()).then(s=>renderChat(s.val()||{}));
+    if(id==='messages') {
+        const loadingEl = qs('chatLoading'); if(loadingEl) loadingEl.style.display = 'block';
+        get(chatRef()).then(s=>renderChat(s.val()||{}));
+    }
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
@@ -5542,8 +5549,14 @@ function mediaHtml(m){
     } else if(m.msgType==='video'){
         html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div style="position:relative;display:inline-block;width:100%;"><video class="msg-media-video" controls playsinline webkit-playsinline preload="metadata" style="cursor:pointer;" onclick="this.requestFullscreen&&this.requestFullscreen()"><source src="${escHtml(m.mediaData)}"></video></div></div>`;
     } else if(m.msgType==='video_circle'){
+        // Parse camera facing mode from media data (format: dataUrl|facingMode)
+        const videoParts = (m.mediaData || '').split('|');
+        const videoUrl = videoParts[0] || m.mediaData;
+        const facingMode = videoParts[1] || 'user';
+        // Apply transform based on camera facing mode
+        const transformStyle = facingMode === 'user' ? 'transform:scaleX(-1);' : 'transform:none;';
         // Use a static thumbnail div to avoid flicker — play only on tap via viewer
-        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(m.mediaData)}')" style="background:#111;"><video preload="metadata" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(m.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(videoUrl)}')" style="background:#111;"><video preload="metadata" playsinline webkit-playsinline style="pointer-events:none;${transformStyle}"><source src="${escHtml(videoUrl)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
     } else if(m.msgType==='voice'){
         const pid = 'vp_' + (Math.random().toString(36).slice(2));
         html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="chat-audio-player" id="${pid}">
@@ -5556,7 +5569,7 @@ function mediaHtml(m){
                 <div class="cap-time" id="${pid}_time">0:00</div>
                 <div class="cap-duration" id="${pid}_duration">0:00</div>
             </div>
-            <audio preload="none" src="${escHtml(m.mediaData)}" onloadedmetadata="capMeta('${pid}')" ontimeupdate="capTick('${pid}')" onended="capEnded('${pid}')" style="display:none;"></audio>
+            <audio preload="metadata" src="${escHtml(m.mediaData)}" onloadedmetadata="capMeta('${pid}')" ontimeupdate="capTick('${pid}')" onended="capEnded('${pid}')" style="display:none;"></audio>
         </div></div>`;
     } else if(m.msgType==='gift_subscription'){
         html += `<div class="msg-text">🎁 ${escHtml(m.text || 'Подарок подписки')}</div>`;
@@ -5596,6 +5609,7 @@ let _chatRenderTimeout = null;
 window.renderChat = async function(msgs){
     lastChatMsgs = msgs || {};
     const el = qs('chatMessages'); if(!el) return;
+    const loadingEl = qs('chatLoading'); if(loadingEl) loadingEl.style.display = 'none';
     
     // Debounce render for performance on iPhone
     if(_chatRenderPending) {
@@ -6210,11 +6224,13 @@ window.sendVcMsg = async function(){
     const reader = new FileReader();
     reader.onload = async () => {
         const dataUrl = reader.result;
+        // Store camera facing mode with the video data to apply correct transform on playback
+        const videoData = dataUrl + '|' + vcFacingMode;
         closeVcModal();
-        if(vcTargetCtx === 'chat') await sendChatMsg(null, dataUrl, 'video_circle');
-        else if(vcTargetCtx === 'dm') await sendDmMsg(null, dataUrl, 'video_circle');
-        else if(vcTargetCtx === 'news') await sendNewsDiscussionMsg(null, dataUrl, 'video_circle');
-        else if(vcTargetCtx === 'wall') await pushWallPostMedia('video_circle', dataUrl);
+        if(vcTargetCtx === 'chat') await sendChatMsg(null, videoData, 'video_circle');
+        else if(vcTargetCtx === 'dm') await sendDmMsg(null, videoData, 'video_circle');
+        else if(vcTargetCtx === 'news') await sendNewsDiscussionMsg(null, videoData, 'video_circle');
+        else if(vcTargetCtx === 'wall') await pushWallPostMedia('video_circle', videoData);
         if(vcTargetCtx !== 'wall') toast('⭕ Видеосообщение отправлено', 'green');
     };
     reader.readAsDataURL(blob);
