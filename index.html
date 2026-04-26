@@ -10,7 +10,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Капани">
 <meta name="description" content="Официальное приложение Капани">
-<link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./image.png">
 <link rel="icon" type="image/png" href="./image.png">
 <title>Капани - официальный сайт</title>
@@ -102,7 +101,7 @@ select option{background:#1a2332;}
 .msg-tab.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
 .msg-panel{display:none;}
 .msg-panel.active{display:block;}
-#chatMessages,#dmMessages{height:40dvh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;isolation:isolate;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);}
+#chatMessages,#dmMessages{height:30dvh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;isolation:isolate;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);}
 .chat-msg{display:flex;gap:10px;align-items:flex-start;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .chat-msg.me{flex-direction:row-reverse;}
 .chat-av{width:32px;height:32px;border-radius:10px;object-fit:cover;flex-shrink:0;display:block;}
@@ -165,7 +164,7 @@ select option{background:#1a2332;}
 .notif-time{font-size:10px;color:var(--muted);white-space:nowrap;margin-top:2px;}
 .notif-del{color:var(--red);font-size:16px;opacity:.5;transition:.2s;padding-left:4px;}
 .notif-item:hover .notif-del{opacity:1;}
-#notifPopup{position:fixed;top:10px;left:50%;transform:translateX(-50%);max-width:460px;width:calc(100% - 24px);background:rgba(17,24,32,.97);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:14px 18px;z-index:9990;display:none;box-shadow:var(--shadow);}
+#notifPopup{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);max-width:460px;width:calc(100% - 24px);background:rgba(17,24,32,.97);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:14px 18px;z-index:9990;display:none;box-shadow:var(--shadow);}
 #notifPopup.show{display:flex;align-items:center;gap:12px;animation:slideDown .35s cubic-bezier(.22,.68,0,1.2);}
 @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-24px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 .np-icon{font-size:24px;flex-shrink:0;}
@@ -330,8 +329,8 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 #loadingOverlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
 .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-#toasts{position:fixed;top:80px;left:50%;transform:translateX(-50%);width:340px;max-width:90%;z-index:9999;padding:0;}
-.toast{display:flex;align-items:center;gap:12px;margin-bottom:8px;padding:14px 18px;background:rgba(17,24,32,.96);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);animation:toastIn .3s ease-out;font-size:14px;font-weight:700;}
+#toasts{position:fixed;top:84px;right:12px;bottom:auto;width:340px;max-width:calc(100% - 24px);z-index:9999;padding-right:0;pointer-events:none;}
+.toast{display:flex;align-items:center;gap:12px;margin-bottom:8px;padding:14px 18px;background:rgba(17,24,32,.96);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);animation:toastIn .3s ease-out;font-size:14px;font-weight:700;pointer-events:auto;}
 .toast.green{border-left:3px solid var(--primary);}
 .toast.gold{border-left:3px solid var(--gold);}
 .toast.red{border-left:3px solid var(--red);}
@@ -425,17 +424,22 @@ input[type=file]{display:none;}
 .msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
 .vc-play-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);font-size:28px;color:#fff;transition:.2s;}
 .vc-play-overlay:hover{background:rgba(0,0,0,.4);}
-.chat-audio-player{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:4px;}
-.chat-audio-player audio{height:32px;min-width:120px;max-width:170px;flex:1;}
 .chat-bubble{display:flex;flex-direction:column;align-items:flex-start;gap:6px;max-width:75%;min-width:0;overflow:hidden;}
 .chat-bubble .chat-time{align-self:flex-start;}
 .chat-msg.me .chat-bubble{align-items:flex-end;}
 .msg-media-wrap{display:block;max-width:100%;overflow:hidden;border-radius:12px;}
 .msg-media-img{max-width:100%;width:100%;height:auto;max-height:260px;border-radius:12px;cursor:pointer;display:block;object-fit:cover;margin-top:4px;}
-.msg-media-video{max-width:100%;width:100%;height:auto;max-height:260px;border-radius:12px;display:block;margin-top:4px;}
+.msg-media-video{max-width:100%;width:100%;height:auto;max-height:260px;border-radius:12px;display:block;margin-top:4px;background:#000;cursor:pointer;}
 .msg-video-wrap{position:relative;width:min(180px,100%);aspect-ratio:1/1;border-radius:50%;overflow:hidden;border:2px solid var(--primary);cursor:pointer;margin-top:4px;}
 .msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;max-height:none !important;}
-.chat-audio-player{display:flex;align-items:center;gap:8px;padding:2px 0;margin-top:4px;width:100%;max-width:100%;}
+.chat-audio-player{display:flex;align-items:center;gap:8px;padding:6px 10px;margin-top:4px;width:100%;max-width:240px;background:rgba(0,0,0,.18);border-radius:14px;box-sizing:border-box;}
+.cap-play-btn{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:none;background:var(--primary);color:#0c1117;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s;font-weight:900;}
+.cap-play-btn:active{transform:scale(.9);}
+.cap-scrub-wrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.cap-scrubber{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:rgba(255,255,255,.2);outline:none;cursor:pointer;}
+.cap-scrubber::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--primary);cursor:pointer;margin-top:-5px;}
+.cap-scrubber::-webkit-slider-runnable-track{height:4px;border-radius:4px;}
+.cap-time{font-size:10px;color:rgba(255,255,255,.6);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
 .media-queue{display:none;flex-direction:column;gap:8px;margin:8px 0 10px;}
 .media-queue.open{display:flex;}
 .media-queue-item{display:flex;gap:10px;align-items:flex-start;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);}
@@ -445,56 +449,17 @@ input[type=file]{display:none;}
 .media-queue-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:6px;}
 .media-queue-actions .msg-action-btn{padding:6px 10px;}
 .media-queue-send{width:100%;margin-top:2px;}
-#videoViewer{position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:none;align-items:center;justify-content:center;cursor:pointer;touch-action:none;}
+#videoViewer{position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:none;align-items:center;justify-content:center;cursor:pointer;}
 #videoViewer.open{display:flex;}
-#videoViewerVideo{max-width:95vw;max-height:95vh;border-radius:12px;object-fit:contain;background:#000;cursor:default;touch-action:none;}
+#videoViewerVideo{max-width:95vw;max-height:95vh;border-radius:12px;object-fit:contain;background:#000;cursor:default;}
 
 /* === IMAGE VIEWER === */
-#imgViewer{position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:none;align-items:center;justify-content:center;cursor:pointer;touch-action:none;}
+#imgViewer{position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:9999;display:none;align-items:center;justify-content:center;cursor:pointer;}
 #imgViewer.open{display:flex;}
-.img-zoom-wrap{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
-#imgViewerImg{max-width:95vw;max-height:85vh;object-fit:contain;touch-action:none;user-select:none;-webkit-user-select:none;transform-origin:center center;transition:transform 0.1s ease-out;}
-.img-zoom-bar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);padding:10px 16px;border-radius:16px;border:1px solid rgba(255,255,255,.15);z-index:2;}
-.img-zoom-bar .btn{padding:8px 12px;min-width:36px;}
-#imgZoomPct{color:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;min-width:48px;text-align:center;}
+#imgViewer img{max-width:95vw;max-height:95vh;border-radius:8px;object-fit:contain;cursor:default;}
 .img-viewer-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;z-index:1;}
 .img-viewer-close:hover{background:rgba(255,255,255,.25);}
 
-.reply-quote{display:inline-block;max-width:75%;background:var(--surface2);border-left:2px solid var(--primary);padding:1px 4px;border-radius:2px;margin-bottom:1px;font-size:8px;cursor:pointer;transition:background .15s;}
-.reply-quote:hover{background:var(--pri-dim);}
-.reply-quote-nick{font-weight:800;color:var(--primary);line-height:1;}
-.reply-quote-text{color:var(--muted);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;}
-/* Custom Voice Player */
-.voice-player{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:4px;width:100%;max-width:220px;min-width:140px;}
-.voice-player-btn{width:32px;height:32px;border-radius:50%;border:none;background:var(--primary);color:#0c1117;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s;}
-.voice-player-btn:active{transform:scale(.9);}
-.voice-player-track{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
-.voice-player-bar{width:100%;height:16px;background:var(--surface2);border-radius:2px;overflow:hidden;cursor:pointer;position:relative;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
-.voice-player-fill{height:4px;background:var(--primary);border-radius:2px;width:0%;transition:width .1s linear;position:absolute;top:6px;left:0;right:0;}
-.voice-player-times{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-variant-numeric:tabular-nums;}
-/* Custom Video Player in Messages */
-.cvp-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;margin-top:4px;max-width:100%;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
-.cvp-wrap video{width:100%;max-height:260px;display:block;object-fit:cover;border-radius:12px;touch-action:manipulation;}
-.cvp-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);cursor:pointer;transition:background .2s,opacity .2s;touch-action:manipulation;z-index:2;opacity:1;}
-.cvp-overlay:hover{background:rgba(0,0,0,.5);}
-.cvp-overlay.hidden{opacity:0;pointer-events:none;}
-.cvp-play-ico{width:48px;height:48px;border-radius:50%;background:rgba(34,211,165,.9);display:flex;align-items:center;justify-content:center;font-size:22px;color:#0c1117;box-shadow:0 2px 12px rgba(34,211,165,.5);transition:transform .15s;}
-.cvp-overlay:hover .cvp-play-ico{transform:scale(1.1);}
-.cvp-controls{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;gap:6px;padding:6px 10px;background:linear-gradient(transparent,rgba(0,0,0,.7));opacity:0;transition:opacity .2s;z-index:3;touch-action:none;}
-.cvp-wrap:hover .cvp-controls,.cvp-wrap.playing .cvp-controls{opacity:1;}
-.cvp-ctrl-btn{background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:2px 4px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;}
-.cvp-bar{flex:1;height:4px;background:rgba(255,255,255,.25);border-radius:2px;cursor:pointer;overflow:hidden;touch-action:none;}
-.cvp-bar-fill{height:100%;background:var(--primary);border-radius:2px;width:0%;transition:width .1s linear;}
-.cvp-time{font-size:9px;color:rgba(255,255,255,.8);font-variant-numeric:tabular-nums;white-space:nowrap;}
-/* Custom Video Circle Player */
-.cvp-circle-wrap{position:relative;width:min(170px,100%);aspect-ratio:1/1;border-radius:50%;overflow:hidden;border:2px solid var(--primary);cursor:pointer;margin-top:4px;background:#111;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
-.cvp-circle-wrap video{width:100%;height:100%;object-fit:cover;display:block;transform:none !important;-webkit-transform:none !important;touch-action:manipulation;}
-.cvp-circle-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);transition:background .2s,opacity .2s;touch-action:manipulation;z-index:2;opacity:1;}
-.cvp-circle-overlay:hover{background:rgba(0,0,0,.45);}
-.cvp-circle-overlay.hidden{opacity:0;pointer-events:none;}
-.cvp-circle-ico{width:40px;height:40px;border-radius:50%;background:rgba(34,211,165,.85);display:flex;align-items:center;justify-content:center;font-size:18px;color:#0c1117;box-shadow:0 2px 10px rgba(34,211,165,.4);}
-.cvp-circle-bar{position:absolute;bottom:8px;left:12px;right:12px;height:12px;background:rgba(255,255,255,.2);border-radius:2px;overflow:hidden;z-index:3;cursor:pointer;touch-action:manipulation;}
-.cvp-circle-bar-fill{height:3px;background:var(--primary);border-radius:2px;width:0%;position:absolute;top:0;left:0;right:0;}
 .chat-msg{align-items:flex-start;}
 .chat-msg > div.chat-msg-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px;}
 .chat-bubble{width:fit-content;max-width:min(78%,100%);padding:10px 14px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);font-size:13px;line-height:1.45;word-break:normal;overflow-wrap:anywhere;overflow:hidden;box-sizing:border-box;}
@@ -551,12 +516,20 @@ input[type=file]{display:none;}
 .msg-video-wrap video{width:100%;height:100%;object-fit:cover;display:block;transform:none !important;-webkit-transform:none !important;max-height:none !important;}
 .chat-audio-player{display:flex;align-items:center;gap:8px;padding:4px 0;margin-top:4px;width:100%;max-width:100%;}
 .chat-audio-player audio{width:100%;max-width:100%;min-width:100px;height:28px;}
-.msg-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-start;max-width:min(68%,100%);margin-top:4px;padding:4px 0;}
-.msg-action-btn{pointer-events:auto;touch-action:manipulation;padding:6px 8px;font-size:12px;min-height:32px;}
-.msg-edit-area{max-width:min(68%,100%);width:100%;position:relative;z-index:10;margin-top:4px;padding:8px;background:var(--surface2);border-radius:12px;border:1px solid var(--primary);box-shadow:0 4px 16px rgba(34,211,165,.15);}
-.msg-edit-area textarea{width:100%;min-height:60px;padding:8px;margin:0 0 8px 0;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'Nunito',sans-serif;resize:vertical;touch-action:manipulation;}
-.edit-btns{display:flex;gap:8px;justify-content:flex-end;}
-.edit-btns button{padding:8px 12px;font-size:12px;min-height:36px;}
+.chat-audio-player.playing .cap-play-btn{color:var(--primary);}
+.cap-play-btn{min-width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;}
+.cap-play-btn:hover{background:var(--surface);border-color:var(--primary);}
+.cap-scrub-wrap{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
+.cap-progress-bg{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;position:relative;}
+.cap-progress{height:100%;background:var(--primary);width:0%;transition:width .1s linear;}
+.cap-scrubber{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;-webkit-appearance:none;}
+.cap-scrubber::-webkit-slider-thumb{-webkit-appearance:none;width:0;height:0;}
+.cap-scrubber::-moz-range-thumb{width:0;height:0;border:none;}
+.cap-time{font-size:11px;font-weight:800;color:var(--text);min-width:36px;text-align:right;}
+.cap-duration{font-size:11px;font-weight:800;color:var(--muted);min-width:36px;}
+.msg-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end;max-width:min(68%,100%);margin-top:2px;}
+.msg-action-btn{pointer-events:auto;touch-action:manipulation;}
+.msg-edit-area{max-width:min(68%,100%);width:100%;}
 .media-queue-item{align-items:stretch;}
 .media-queue-body textarea{white-space:pre-wrap;overflow-wrap:anywhere;}
 #vcLiveVid,#vcPlaybackVid,#vcModal .vc-circle video{filter:none !important;}
@@ -613,8 +586,7 @@ body.modal-open{overflow:hidden;position:fixed;width:100%;}
 .user-profile-sheet,.history-sheet{-webkit-overflow-scrolling:touch;overflow-y:auto;}
 /* Fix touch events passing through on iOS */
 #userProfileModal.open,.section.active{pointer-events:auto;}
-/* Prevent double-tap zoom on buttons and body to avoid page shifts */
-body{touch-action:manipulation;}
+/* Prevent double-tap zoom on buttons */
 a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 /* Fix video circle flicker on scroll - use contain */
 .msg-video-wrap{contain:layout paint;will-change:auto;}
@@ -629,23 +601,15 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     -webkit-backface-visibility:hidden;
     backface-visibility:hidden;
     will-change:scroll-position;
-    touch-action:manipulation; /* prevent double-tap zoom causing page shift */
-    overscroll-behavior:contain;
 }
 /* Fix buttons not responding in chat on Safari iOS */
 #chatMessages .chat-msg,
 #dmMessages .chat-msg,
 #chatMessages .msg-action-btn,
-#dmMessages .msg-action-btn,
-#chatMessages .voice-player-btn,
-#dmMessages .voice-player-btn,
-#chatMessages .cvp-ctrl-btn,
-#dmMessages .cvp-ctrl-btn{
+#dmMessages .msg-action-btn{
     -webkit-transform:translateZ(0);
     transform:translateZ(0);
     pointer-events:auto;
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
 }
 /* Ensure chat input area is always interactive */
 .chat-input-row{
@@ -686,25 +650,14 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 }
 /* Fix message actions appearing and buttons clickable */
 .msg-actions{
-    pointer-events:auto !important;
-    display:flex !important;
+    pointer-events:auto;
+    display:flex;
     gap:6px;
     flex-wrap:wrap;
     align-items:center;
     justify-content:flex-end;
     max-width:min(68%,100%);
     margin-top:2px;
-}
-.msg-action-btn{
-    pointer-events:auto !important;
-    touch-action:manipulation;
-    -webkit-tap-highlight-color:transparent;
-    min-height:36px;
-    min-width:36px;
-    padding:6px 10px;
-    font-size:14px;
-    position:relative;
-    z-index:10;
 }
 /* Chat date separator */
 .chat-date-separator{display:flex;align-items:center;justify-content:center;margin:10px 0;gap:8px;}
@@ -719,6 +672,33 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 /* Ensure profile buttons are clickable above backgrounds */
 .user-profile-sheet button{position:relative;z-index:10;pointer-events:auto;}
 .user-profile-sheet .btn{position:relative;z-index:10;pointer-events:auto;}
+
+/* === HARD FIXES FOR CHAT / MEDIA / NEWS === */
+#chatMessages,#dmMessages,#newsDiscussionMessages{overflow-anchor:none;touch-action:pan-y;scrollbar-gutter:stable;}
+#chatMessages .chat-msg,#dmMessages .chat-msg,#newsDiscussionMessages .chat-msg{user-select:text;-webkit-user-select:text;}
+.msg-actions,.msg-edit-area,.msg-action-btn,.edit-btns .btn,.jump-date-text,.media-bar-btn,.media-ico-btn,.news-tab,.news-discuss-btn,.news-back-btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.msg-action-btn,.edit-btns .btn{min-height:40px;min-width:40px;}
+.msg-action-btn{padding:8px 12px;font-size:12px;}
+.msg-edit-area textarea{min-height:58px;}
+@media (hover:none){
+    .msg-actions{display:flex!important;opacity:1!important;visibility:visible!important;}
+    .msg-edit-area{display:block;}
+}
+.news-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.news-tab{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;}
+.news-tab.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
+.news-panel{display:none;}
+.news-panel.active{display:block;}
+.news-card{position:relative;}
+.news-badge-new{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(34,211,165,.14);border:1px solid rgba(34,211,165,.25);color:var(--primary);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.news-discuss-btn{width:auto;min-width:0;white-space:nowrap;}
+.news-scope-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text);}
+.news-discussion-shell{display:flex;flex-direction:column;gap:12px;}
+.news-discussion-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+#newsDiscussionMessages{height:min(46dvh,460px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;isolation:isolate;position:relative;}
+.news-discussion-composer .chat-input-row{position:relative;z-index:2;}
+.news-back-btn{width:auto;}
+
 </style>
 </head>
 <body>
@@ -770,7 +750,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <!-- VIDEO VIEWER -->
 <div id="videoViewer" onclick="if(event.target===this)closeVideoViewer()">
     <button class="img-viewer-close" onclick="closeVideoViewer()">✕</button>
-    <video id="videoViewerVideo" controls playsinline webkit-playsinline></video>
+    <video id="videoViewerVideo" controls playsinline webkit-playsinline allowfullscreen style="cursor:pointer;" ondblclick="this.requestFullscreen&&this.requestFullscreen()"></video>
+    <button type="button" onclick="qs('videoViewerVideo').requestFullscreen&&qs('videoViewerVideo').requestFullscreen()" style="position:absolute;bottom:20px;right:20px;background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;padding:8px 14px;font-size:13px;font-weight:800;cursor:pointer;">⛶ Полный экран</button>
 </div>
 
 <!-- VIDEO CIRCLE MODAL -->
@@ -900,7 +881,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <button class="rec-stop-btn" onclick="stopVoice('chat')">⏹ Отправить</button>
                 <button class="rec-cancel-btn" onclick="cancelVoice('chat')">✕</button>
             </div>
-            <div id="chatReplyPreview" style="display:none;"></div>
             <div class="chat-input-row">
                 <button class="media-ico-btn" onclick="toggleEmoji('chat')" title="Эмодзи">😊</button>
                 <button class="media-ico-btn" onclick="toggleMediaBar('chat')" title="Прикрепить">📎</button>
@@ -954,7 +934,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                     <button class="rec-stop-btn" onclick="stopVoice('dm')">⏹ Отправить</button>
                     <button class="rec-cancel-btn" onclick="cancelVoice('dm')">✕</button>
                 </div>
-                <div id="dmReplyPreview" style="display:none;"></div>
                 <div class="chat-input-row">
                     <button class="media-ico-btn" onclick="toggleEmoji('dm')" title="Эмодзи">😊</button>
                     <button class="media-ico-btn" onclick="toggleMediaBar('dm')" title="Прикрепить">📎</button>
@@ -1291,6 +1270,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <option value="Доставщик">📦 Курьер / Доставщик</option>
             <option value="Уборщик">🧹 Уборщик</option>
             <option value="Журналист">📰 Журналист</option>
+            <option value="Мигрант">🧳 Мигрант</option>
         </select>
         <textarea id="jAppText" placeholder="Расскажите о себе и почему должны принять именно вас на эту работу..." style="min-height:80px;margin-top:8px;"></textarea>
         <button class="btn btn-primary" onclick="sendApp()">Подать заявку</button>
@@ -1303,7 +1283,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <b style="color:var(--text)">🛵 Водитель</b> — принимает заказы такси, получает оплату за поездку. Зарплата: в зависимости от заказов<br>
             <b style="color:var(--text)">📦 Курьер</b> — доставляет ресурсы, зарабатывает комиссию. Зарплата: в зависимости от заказов<br>
             <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. Зарплата: 250 рублей/день<br>
-            <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. Зарплата: по договорённости с мэрией
+            <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. Зарплата: по договорённости с мэрией<br>
+            <b style="color:var(--text)">🧳 Мигрант</b> — временный статус без заработка, переводов и доступа к маркету. Ограничения: нет дохода, нельзя переводить деньги, нельзя продавать на маркетплейсе
         </div>
     </div>
 </div>
@@ -1321,77 +1302,81 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="news" class="section">
     <div class="card" id="newsEditorPanel" style="display:none;">
         <div class="card-title">📰 Создать новость</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Только Денис и Журналисты могут публиковать новости.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Новости посёлка могут публиковать Денис и Журналисты. Новости Капанёвских земель — только Денис.</div>
+        <select id="newsScope" style="margin-bottom:8px;">
+            <option value="village">🏘️ Новости посёлка</option>
+            <option value="lands">🌲 Новости Капанёвских земель</option>
+        </select>
         <input type="text" id="newsTitle" placeholder="Заголовок новости" maxlength="100">
         <textarea id="newsContent" placeholder="Текст новости..." style="min-height:120px;"></textarea>
-        <input type="url" id="newsImage" placeholder="URL изображения или видео (необязательно)">
-        <label class="file-upload-btn" for="newsImageFile">📷 Выбрать фото/видео</label>
-        <input type="file" id="newsImageFile" accept="image/*,video/*" onchange="handleNewsPhoto(event)">
-        <div id="newsImagePreview" style="display:none;margin-bottom:8px;">
-            <img id="newsImageImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);">
-            <video id="newsVideoPreview" style="width:100%;max-height:140px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);display:none;" controls muted></video>
-        </div>
+        <input type="url" id="newsImage" placeholder="URL изображения (необязательно)">
+        <label class="file-upload-btn" for="newsImageFile">📷 Выбрать фото</label>
+        <input type="file" id="newsImageFile" accept="image/*" onchange="handleNewsPhoto(event)">
+        <label class="file-upload-btn" for="newsVideoFile" style="margin-top:4px;">🎬 Прикрепить видео (до 100 МБ)</label>
+        <input type="file" id="newsVideoFile" accept="video/*" onchange="handleNewsVideo(event)">
+        <div id="newsVideoPreview" style="display:none;margin-bottom:8px;"><video id="newsVideoEl" controls style="width:100%;max-height:160px;border-radius:var(--r-sm);border:1px solid var(--border);"></video></div>
+        <div id="newsImagePreview" style="display:none;margin-bottom:8px;"><img id="newsImageImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);"></div>
         <select id="newsCategory">
             <option value="general">📢 Общее</option>
             <option value="event">🎉 Событие</option>
             <option value="alert">🚨 Важное</option>
             <option value="update">🔄 Обновление</option>
+            <option value="meteorology">🌦 Метеорология</option>
+            <option value="announcement">📣 Объявление</option>
         </select>
         <button class="btn btn-primary" onclick="publishNews()" style="margin-top:8px;">📤 Опубликовать</button>
     </div>
     <div class="card">
-        <div class="card-title">📰 Новости поселка</div>
-        <div id="newsList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
+        <div class="news-tabs">
+            <button class="news-tab active" id="newsTabVillage" onclick="switchNewsTab('village')" type="button">🏘️ Новости посёлка</button>
+            <button class="news-tab" id="newsTabLands" onclick="switchNewsTab('lands')" type="button">🌲 Новости Капанёвских земель</button>
+        </div>
+        <div class="news-panel active" id="newsPanelVillage">
+            <div id="newsListVillage"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
+        </div>
+        <div class="news-panel" id="newsPanelLands">
+            <div id="newsListLands"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
+        </div>
     </div>
 </div>
 
 <!-- NEWS DISCUSSION -->
 <div id="newsDiscussion" class="section">
-    <div style="display:flex;gap:8px;margin-bottom:14px;">
-        <button class="btn btn-ghost btn-sm" onclick="navTo('news')" style="flex:1;">← Назад к новостям</button>
-    </div>
     <div class="card">
-        <div id="newsDiscussionContent"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
-        <div id="newsDiscussionComments" style="max-height:400px;overflow-y:auto;"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-            <input type="text" id="newsDiscussionInput" placeholder="Напишите комментарий..." maxlength="200" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);" onkeydown="if(event.key==='Enter'){event.preventDefault();postDiscussionComment();}">
-            <button class="btn btn-primary btn-sm" onclick="postDiscussionComment()">💬</button>
+        <button class="btn btn-ghost btn-sm news-back-btn" onclick="closeNewsDiscussion()">← К новостям</button>
+    </div>
+    <div class="card news-discussion-shell">
+        <div id="newsDiscussionHeader"></div>
+        <div class="card-title" style="margin-bottom:0;">💬 Обсуждение новости</div>
+        <div class="news-discussion-meta" id="newsDiscussionMeta"></div>
+        <div id="newsDiscussionMessages"></div>
+        <div class="emoji-panel" id="newsEmojiPanel"></div>
+        <div class="media-bar" id="newsMediaBar">
+            <label class="media-bar-btn" for="newsFileInp">📷 Фото/Видео</label>
+            <input type="file" id="newsFileInp" accept="image/*,video/*" multiple onchange="handleMediaFile(event,'news')">
+            <button class="media-bar-btn" onclick="startVoice('news')">🎤 Голосовое</button>
+            <button class="media-bar-btn" onclick="openVcModal('news')">⭕ Видеосообщение</button>
+        </div>
+        <div class="media-queue" id="newsPhotoQueue"></div>
+        <div class="rec-indicator" id="newsRecInd">
+            <div class="rec-dot-anim"></div>
+            <span class="rec-timer-txt" id="newsRecTimer">0:00</span>
+            <span style="font-size:11px;color:var(--red);flex:1;margin-left:4px;">Запись...</span>
+            <button class="rec-stop-btn" onclick="stopVoice('news')">⏹ Отправить</button>
+            <button class="rec-cancel-btn" onclick="cancelVoice('news')">✕</button>
+        </div>
+        <div class="news-discussion-composer">
+            <div class="chat-input-row" style="margin-top:0;">
+                <button class="media-ico-btn" onclick="toggleEmoji('news')" title="Эмодзи">😊</button>
+                <button class="media-ico-btn" onclick="toggleMediaBar('news')" title="Прикрепить">📎</button>
+                <input type="text" id="newsInput" placeholder="Написать сообщение..." oninput="onNewsInputTyping()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendNewsMsg();}">
+                <button class="btn btn-primary btn-sm" onclick="sendNewsMsg()">➤</button>
+            </div>
         </div>
     </div>
 </div>
 
-        <!-- ADMIN PAGE -->
-        <div id="adminPage" class="section">
-            <div class="card" style="border-color:rgba(251,191,36,.3);background:var(--gold-dim);">
-                <div class="card-title" style="color:var(--gold);">👑 Мэрия</div>
-                <div class="stats-row" id="adminStats"></div>
-            </div>
-            <div class="card"><div class="card-title">📋 Заявки на работу</div><div id="appList"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
-            <div class="card"><div class="card-title">🆕 Новые аккаунты (на подтверждение)</div><div id="unverifiedAccounts"><div style="color:var(--muted);font-size:13px;">Нет неподтверждённых аккаунтов</div></div></div>
-            <div class="card"><div class="card-title">🧹 Отчёты уборщиков (на проверке)</div><div id="janitorAdminList"><div style="color:var(--muted);font-size:13px;">Нет отчётов</div></div></div>
-            <div class="card">
-                <div class="card-title">💳 Управление балансом</div>
-                <select id="adminTarget" style="margin-bottom:8px;"></select>
-                <input type="number" id="adminAmt" placeholder="Сумма (+ пополнить, − списать)" required step="1">
-                <button class="btn btn-gold" onclick="adminMoney()">Выполнить</button>
-                <div class="admin-action-grid">
-                    <button class="btn btn-red" onclick="adminFireWorker()">🚪 Уволить</button>
-                    <button class="btn btn-ghost" style="color:var(--gold);border-color:var(--gold-dim);" onclick="adminFineWorker()">💸 Штраф</button>
-                </div>
-                <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;" required min="1" step="1">
-                <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;" required minlength="5" maxlength="200">
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <div style="font-weight:800;font-size:12px;margin-bottom:8px;">🎭 Управление ролью</div>
-                    <select id="adminRoleSelect" style="margin-bottom:8px;">
-                        <option value="">Выберите роль...</option>
-                        <option value="Житель">👤 Житель</option>
-                        <option value="Мигрант">🧳 Мигрант (ограничения)</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="adminAssignRole()">Назначить роль</button>
-                </div>
-            </div>
-            <div class="card"><div class="card-title">👥 Все жители</div><div id="allUsersList"></div></div>
-            <div class="card"><div class="card-title">📦 Активные заказы</div><div id="adminOrders"></div></div>
+<!-- DRIVER PAGE -->
 <div id="driverPage" class="section">
     <div style="display:flex;gap:8px;margin-bottom:14px;">
         <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="flex:1;">← Главная</button>
@@ -1468,18 +1453,20 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         </div>
         <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;" required min="1" step="1">
         <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;" required minlength="5" maxlength="200">
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-            <div style="font-weight:800;font-size:12px;margin-bottom:8px;">🎭 Управление ролью</div>
-            <select id="adminRoleSelect" style="margin-bottom:8px;">
-                <option value="">Выберите роль...</option>
-                <option value="Житель">👤 Житель</option>
-                <option value="Мигрант">🧳 Мигрант (ограничения)</option>
-            </select>
-            <button class="btn btn-primary" onclick="adminAssignRole()">Назначить роль</button>
-        </div>
     </div>
     <div class="card"><div class="card-title">👥 Все жители</div><div id="allUsersList"></div></div>
     <div class="card"><div class="card-title">📦 Активные заказы</div><div id="adminOrders"></div></div>
+    <div class="card">
+        <div class="card-title">🛂 Управление статусом</div>
+        <select id="adminRoleTarget" style="margin-bottom:8px;"></select>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button class="btn btn-primary" onclick="setUserRole('Житель')">Сделать жителем</button>
+            <button class="btn btn-red" onclick="setUserRole('Мигрант')">Сделать мигрантом</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">
+            <b>Мигранты</b> имеют ограничения: не могут писать в чат, использовать маркет, отправлять переводы и создавать объявления.
+        </div>
+    </div>
 </div>
 
 </div><!-- end mainApp -->
@@ -1524,7 +1511,6 @@ const functions = getFunctions(app, 'europe-west1');
 const ADMIN = CONFIG.admin.username;
 const JOB_JANITOR = CONFIG.jobs.janitor;
 const JOB_JOURNALIST = "Журналист";
-const JOB_MIGRANT = "Мигрант";
 const JANITOR_TASK_TEXT = CONFIG.jobs.janitorTaskText;
 const MIN_BALANCE_ALLOWED = CONFIG.finance.minBalanceAllowed;
 const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
@@ -1632,6 +1618,7 @@ function haversine(lat1,lon1,lat2,lon2) {
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 function isUserOnline(user) { if(!user||!user.lastSeen) return false; return (Date.now()-user.lastSeen)<ONLINE_TIMEOUT_MS; }
+function isMigrant(user) { return user && user.job === 'Мигрант'; }
 function formatLastSeen(user){
     if(!user || !user.lastSeen) return 'был(а) давно';
     const diff = Date.now() - Number(user.lastSeen || 0);
@@ -1690,6 +1677,7 @@ async function setDmTypingState(state){
     if(!currentNick || !currentDmNick) return;
     try { await set(typingDmRef(dmKey(currentNick, currentDmNick), currentNick), { state, ts: Date.now() }); } catch(e){}
 }
+function setNewsTypingState(state){ /* intentionally silent */ }
 window.onChatInputTyping = function(){
     if(chatTypingResetTimer) clearTimeout(chatTypingResetTimer);
     setChatTypingState('typing');
@@ -1917,10 +1905,6 @@ function startOnlineHeartbeat() {
 // ─── NOTIFICATION POPUP ───────────────────
 let npTimer = null;
 function showNotifPopup(text, time) {
-    // Hide notification popup if user is in a chat (either DM or general chat)
-    if(curPage === 'messages' && (currentDmNick || document.querySelector('#msgPanel0.active'))) {
-        return;
-    }
     if(npTimer) clearTimeout(npTimer);
     qs('npText').textContent = text;
     qs('npTime').textContent = time||nowTime();
@@ -1950,7 +1934,6 @@ const janitorSubRef = (id) => ref(db, `janitorSubmissions/${id}`);
 const wallRef = (nick) => ref(db, `walls/${nick}`);
 const newsRef = () => ref(db, 'news');
 const newsItemRef = (id) => ref(db, `news/${id}`);
-const newsCommentsRef = (newsId) => ref(db, `news/${newsId}/comments`);
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
@@ -1994,6 +1977,23 @@ async function requireSpendable(){
 }
 async function logTx(nick, entry){
     const { date, time, ts } = fullDateTimeStr();
+    
+    // Migrant restriction: skip income transactions for migrants
+    if(entry.type === 'in' && entry.amt > 0) {
+        try {
+            const snap = await get(userRef(nick));
+            if(snap.exists()) {
+                const user = snap.val();
+                if(isMigrant(user)) {
+                    console.log('Skipping income for migrant:', nick);
+                    return; // Don't log income for migrants
+                }
+            }
+        } catch(e) {
+            console.warn('Failed to check migrant status:', e);
+        }
+    }
+    
     await push(txLogRef(nick), { ...entry, date, time, ts });
     
     // Update total earned for income transactions (anti-dup system)
@@ -2002,8 +2002,10 @@ async function logTx(nick, entry){
             const snap = await get(userRef(nick));
             if(snap.exists()) {
                 const user = snap.val();
-                const newTotalEarned = (user.totalEarned || 0) + entry.amt;
-                await update(userRef(nick), { totalEarned: newTotalEarned });
+                if(!isMigrant(user)) {
+                    const newTotalEarned = (user.totalEarned || 0) + entry.amt;
+                    await update(userRef(nick), { totalEarned: newTotalEarned });
+                }
             }
         } catch(e) {
             console.warn('Failed to update total earned:', e);
@@ -2089,14 +2091,10 @@ function attachListeners() {
     onValue(aRef,aFn); listeners.apps={ref:aRef,fn:aFn};
 
     const cRef=chatRef();
-    const cFn=(snap)=>{
-        const newMsgs=snap.val()||{};
-        // Only re-render if messages actually changed (prevent flickering)
-        if(JSON.stringify(newMsgs)===JSON.stringify(lastChatMsgs)) return;
-        lastChatMsgs=newMsgs;
-        if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);
-    };
+    const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);};
     onValue(cRef,cFn); listeners.chat={ref:cRef,fn:cFn};
+    // Initial render of chat
+    get(cRef).then(snap=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);});
     const chatTypingRef = ref(db, 'typing/chat');
     const chatTypingFn = (snap) => {
         if(curPage==='messages'&&document.querySelector('#msgPanel0.active')){
@@ -2115,11 +2113,10 @@ function attachListeners() {
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
-        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')&&!_isUserInteracting) renderChat(lastChatMsgs);
+        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
         if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
         if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
         if(curPage==='tasks') renderTasks();
-        if(curPage==='news') renderNews();
     };
     onValue(allRef,allFn); listeners.allUsers={ref:allRef,fn:allFn};
 
@@ -2156,7 +2153,6 @@ function attachListeners() {
 
     const dmInboxRef=ref(db,'dms');
     let dmInboxInit=false; let dmLastMsgIds={};
-    let dmLastMsgCounts={};
     const dmInboxFn=(snap)=>{
         const allDms=snap.val()||{};
         updateDmConvoMeta(allDms);
@@ -2164,18 +2160,19 @@ function attachListeners() {
             if(!key.includes(currentNick)) return;
             const msgs=conv.messages||{};
             const entries=Object.entries(msgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0));
-            const msgCount=entries.length;
             if(!entries.length) return;
             const [latestId,latestMsg]=entries[entries.length-1];
-            if(!dmInboxInit){dmLastMsgIds[key]=latestId;dmLastMsgCounts[key]=msgCount;return;}
+            if(!dmInboxInit){dmLastMsgIds[key]=latestId;return;}
             const prevId=dmLastMsgIds[key];
-            const prevCount=dmLastMsgCounts[key]||0;
-            // Only notify if it's a NEW message (count increased) AND from someone else
-            // This prevents notifications when messages are deleted (count decreases)
-            if(latestId!==prevId&&latestMsg.nick!==currentNick&&msgCount>prevCount){
+            if(latestId!==prevId&&latestMsg.nick!==currentNick){
+                // Проверяем, не было ли это сообщение недавно удалено
+                if(window._recentlyDeletedMsgs && window._recentlyDeletedMsgs.has(latestId)){
+                    dmLastMsgIds[key]=latestId;
+                    return;
+                }
                 dmLastMsgIds[key]=latestId;
-                dmLastMsgCounts[key]=msgCount;
                 const senderNick=latestMsg.nick||'?';
+                if(curPage==='messages' && currentDmNick===senderNick){ dmLastMsgIds[key]=latestId; return; }
                 let notifText;
                 if(latestMsg.msgType==='voice') notifText=`🎤 ${senderNick}: Голосовое сообщение`;
                 else if(latestMsg.msgType==='video_circle') notifText=`⭕ ${senderNick}: Видеосообщение`;
@@ -2184,17 +2181,13 @@ function attachListeners() {
                 else if(latestMsg.msgType==='gift_subscription') notifText=`🎁 ${senderNick}: Подарок подписки`;
                 else { const preview=latestMsg.text?(latestMsg.text.length>55?latestMsg.text.slice(0,52)+'...':latestMsg.text):''; notifText=`💬 ${senderNick}: ${preview}`; }
                 const alreadyInDm=curPage==='messages'&&currentDmNick===senderNick;
-                const inChatPage=curPage==='messages';
-                if(!alreadyInDm && !inChatPage){
+                if(!alreadyInDm && !(window._recentlyDeletedMsgs && window._recentlyDeletedMsgs.has(latestId))){
                     showNotifPopup(notifText,latestMsg.time||nowTime());
                     sendPushNotification('Капани 💬',notifText,'messages');
                     const badgeEl=qs('dmBadge');
                     if(badgeEl){badgeEl.textContent='';badgeEl.style.display='block';setTimeout(()=>{if(badgeEl)badgeEl.style.display='none';},5000);}
                 }
-            } else if(latestId!==prevId){
-                dmLastMsgIds[key]=latestId;
-                dmLastMsgCounts[key]=msgCount;
-            }
+            } else if(latestId!==prevId){dmLastMsgIds[key]=latestId;}
         });
         if(curPage==='messages'){
             if(document.querySelector('#msgPanel1.active')) renderDmUserList(allUsersCache);
@@ -2402,6 +2395,7 @@ function isPushCatEnabled(cat){if(!isPushOn())return false;const p=getPushPrefs(
 let _swReg=null;
 async function getSwReg(){
     if(_swReg) return _swReg;
+    if(location.protocol === 'file:') return null;
     if(!('serviceWorker' in navigator)) return null;
     try {
         const swUrl = new URL('firebase-messaging-sw.js', location.href).href;
@@ -2470,7 +2464,7 @@ window.toggleMasterPush=function(){const p=getPushPrefs();p.enabled=p.enabled!==
 window.togglePushCat=function(cat){const p=getPushPrefs();p[cat]=p[cat]===false?true:false;savePushPrefs(p);updatePushSettingsUI();toast((p[cat]!==false?'🔔 ':'🔕 ')+'Обновлено','green');};
 
 // ─── NOTIFICATIONS ────────────────────────
-async function pushNotification(nick,text,cat='system'){/* Notifications disabled */}
+async function pushNotification(nick,text,cat='system'){await push(notifRef(nick),{text,time:nowTime(),cat});}
 window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
 window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
 function renderNotifications(notifs){
@@ -2488,10 +2482,10 @@ const EMOJI_LIST = [
     '😆','🤣','😋','🙃','🤑','😤','🫡','🫶','💀','👌',
     '✅','❌','⚠️','🕐','📍','🗺','💰','🏆','🛒','🔧'
 ];
-function buildEmojiPanels(){['chatEmojiPanel','dmEmojiPanel'].forEach(id=>{const el=qs(id);if(!el)return;const grid=document.createElement('div');grid.className='emoji-grid';EMOJI_LIST.forEach(em=>{const btn=document.createElement('button');btn.className='ep-btn';btn.textContent=em;btn.onclick=()=>insertEmoji(id,em);grid.appendChild(btn);});el.appendChild(grid);});}
-function insertEmoji(panelId,em){const inputId=panelId==='chatEmojiPanel'?'chatInput':'dmInput';const inp=qs(inputId);if(!inp)return;const s=inp.selectionStart||0,e=inp.selectionEnd||0,v=inp.value;inp.value=v.slice(0,s)+em+v.slice(e);inp.selectionStart=inp.selectionEnd=s+em.length;inp.focus();}
-window.toggleEmoji=function(ctx){const panelId=ctx==='chat'?'chatEmojiPanel':'dmEmojiPanel';const el=qs(panelId);if(!el)return;el.classList.toggle('open');if(el.classList.contains('open')){const mb=ctx==='chat'?'chatMediaBar':'dmMediaBar';qs(mb)&&qs(mb).classList.remove('open');}};
-window.toggleMediaBar=function(ctx){const barId=ctx==='chat'?'chatMediaBar':'dmMediaBar';const el=qs(barId);if(!el)return;el.classList.toggle('open');if(el.classList.contains('open')){const ep=ctx==='chat'?'chatEmojiPanel':'dmEmojiPanel';qs(ep)&&qs(ep).classList.remove('open');}};
+function buildEmojiPanels(){['chatEmojiPanel','dmEmojiPanel','newsEmojiPanel'].forEach(id=>{const el=qs(id);if(!el)return;const grid=document.createElement('div');grid.className='emoji-grid';EMOJI_LIST.forEach(em=>{const btn=document.createElement('button');btn.className='ep-btn';btn.textContent=em;btn.onclick=()=>insertEmoji(id,em);grid.appendChild(btn);});el.appendChild(grid);});}
+function insertEmoji(panelId,em){const inputId=panelId==='chatEmojiPanel'?'chatInput':panelId==='newsEmojiPanel'?'newsInput':'dmInput';const inp=qs(inputId);if(!inp)return;const s=inp.selectionStart||0,e=inp.selectionEnd||0,v=inp.value;inp.value=v.slice(0,s)+em+v.slice(e);inp.selectionStart=inp.selectionEnd=s+em.length;inp.focus();}
+window.toggleEmoji=function(ctx){const panelId=ctx==='chat'?'chatEmojiPanel':ctx==='news'?'newsEmojiPanel':'dmEmojiPanel';const el=qs(panelId);if(!el)return;el.classList.toggle('open');if(el.classList.contains('open')){const mb=ctx==='chat'?'chatMediaBar':ctx==='news'?'newsMediaBar':'dmMediaBar';qs(mb)&&qs(mb).classList.remove('open');}};
+window.toggleMediaBar=function(ctx){const barId=ctx==='chat'?'chatMediaBar':ctx==='news'?'newsMediaBar':'dmMediaBar';const el=qs(barId);if(!el)return;el.classList.toggle('open');if(el.classList.contains('open')){const ep=ctx==='chat'?'chatEmojiPanel':ctx==='news'?'newsEmojiPanel':'dmEmojiPanel';qs(ep)&&qs(ep).classList.remove('open');}};
 
 // ─── IMAGE VIEWER ─────────────────────────
 window.openImgViewer=function(src){
@@ -2633,42 +2627,41 @@ window.handleMediaFile=async function(e, ctx){
         }
         if(videos.length){
             for(const file of videos){
-                if(file.size>20*1024*1024){toast('❌ Видео слишком большое (макс. 20 МБ)','red');continue;}
+                if(file.size>100*1024*1024){toast('❌ Видео слишком большое (макс. 100 МБ)','red');continue;}
                 toast('🎬 Загружаем видео...','gold');
                 const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});
                 if(ctx==='chat') await sendChatMsg(null,dataUrl,'video');
-                else await sendDmMsg(null,dataUrl,'video');
+                else if(ctx==='dm') await sendDmMsg(null,dataUrl,'video');
+                else if(ctx==='news') await sendNewsDiscussionMsg(null,dataUrl,'video');
             }
         }
-        const mb=ctx==='chat'?'chatMediaBar':'dmMediaBar'; qs(mb)&&qs(mb).classList.remove('open');
+        const mb=ctx==='chat'?'chatMediaBar':ctx==='dm'?'dmMediaBar':'newsMediaBar'; qs(mb)&&qs(mb).classList.remove('open');
     } catch(err){toast('❌ Ошибка загрузки: '+err.message,'red');}
 };
 
 // ─── VOICE RECORDING ──────────────────────
 let voiceRecorder=null, voiceChunks=[], voiceInterval=null, voiceSeconds=0, voiceCtx='chat';
-let voiceRecordedBlob=null, voiceRecordedUrl=null;
-let voiceEffect='normal'; // normal, chipmunk, deep, echo
 function voiceUiIds(ctx){
     if(ctx==='wall')return{indId:'wallRecInd',timerId:'wallRecTimer'};
     if(ctx==='chat')return{indId:'chatRecInd',timerId:'chatRecTimer'};
+    if(ctx==='news')return{indId:'newsRecInd',timerId:'newsRecTimer'};
     return{indId:'dmRecInd',timerId:'dmRecTimer'};
 }
 window.startVoice=async function(ctx){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return toast('❌ Запись недоступна в этом браузере','red');
     voiceCtx=ctx;
-    voiceEffect='normal';
     try {
         const stream=await navigator.mediaDevices.getUserMedia({audio:true});
         voiceChunks=[]; voiceSeconds=0;
-        voiceRecordedBlob=null; voiceRecordedUrl=null;
         voiceRecorder=new MediaRecorder(stream);
         voiceRecorder.ondataavailable=e=>voiceChunks.push(e.data);
         voiceRecorder.start(100);
         const {indId,timerId}=voiceUiIds(ctx);
         const ind=qs(indId);if(ind)ind.classList.add('show');
-        if(ctx==='chat'||ctx==='dm'){const mb=ctx==='chat'?'chatMediaBar':'dmMediaBar';qs(mb)&&qs(mb).classList.remove('open');}
+        if(ctx==='chat'||ctx==='dm'||ctx==='news'){const mb=ctx==='chat'?'chatMediaBar':ctx==='dm'?'dmMediaBar':'newsMediaBar';qs(mb)&&qs(mb).classList.remove('open');}
         if(ctx==='chat') setChatTypingState('voice');
         if(ctx==='dm') setDmTypingState('voice');
+        if(ctx==='news') setNewsTypingState('voice');
         voiceInterval=registerInterval('voiceInterval', setInterval(()=>{voiceSeconds++;const m=Math.floor(voiceSeconds/60),s=voiceSeconds%60;const tEl=qs(timerId);if(tEl)tEl.textContent=`${m}:${s<10?'0'+s:s}`;if(voiceSeconds>=120)stopVoice(ctx);},1000));
         toast('🎤 Запись началась...','gold');
     } catch(e){toast('❌ Нет доступа к микрофону','red');}
@@ -2682,304 +2675,72 @@ window.stopVoice=async function(ctx){
     const ind=qs(indId);if(ind)ind.classList.remove('show');
     if(ctx==='chat') setChatTypingState('idle');
     if(ctx==='dm') setDmTypingState('idle');
+    if(ctx==='news') setNewsTypingState('idle');
     await new Promise(r=>setTimeout(r,200));
-    voiceRecordedBlob=new Blob(voiceChunks,{type:'audio/webm'});
-    voiceRecordedUrl=URL.createObjectURL(voiceRecordedBlob);
-    showVoicePreview(ctx);
+    const blob=new Blob(voiceChunks,{type:'audio/webm'});
+    const reader=new FileReader();
+    reader.onload=async()=>{
+        const dataUrl=reader.result;
+        // Store for preview
+        window._voicePreviewData = { ctx, dataUrl };
+        // Show preview UI
+        showVoicePreview(ctx, dataUrl);
+    };
+    reader.readAsDataURL(blob);
     voiceRecorder=null; voiceChunks=[];
+};
+
+window.showVoicePreview=function(ctx, dataUrl){
+    const {indId}=voiceUiIds(ctx);
+    const ind=qs(indId);
+    if(ind){
+        ind.innerHTML = `
+            <div class="rec-dot-anim" style="background:var(--primary);"></div>
+            <span style="font-size:11px;color:var(--primary);flex:1;margin-left:4px;">Прослушайте перед отправкой</span>
+            <button class="rec-stop-btn" onclick="sendVoicePreview()">📤 Отправить</button>
+            <button class="rec-cancel-btn" onclick="cancelVoicePreview()">🔄 Перезаписать</button>
+            <audio id="voicePreviewAudio" src="${dataUrl}" controls style="width:100%;margin-top:8px;max-width:200px;"></audio>
+        `;
+        ind.classList.add('show');
+    }
+    // Auto-play preview
+    setTimeout(() => {
+        const audio = qs('voicePreviewAudio');
+        if(audio) audio.play().catch(()=>{});
+    }, 100);
+};
+
+window.sendVoicePreview=async function(){
+    if(!window._voicePreviewData) return;
+    const { ctx, dataUrl } = window._voicePreviewData;
+    if(ctx==='chat') await sendChatMsg(null,dataUrl,'voice');
+    else if(ctx==='dm') await sendDmMsg(null,dataUrl,'voice');
+    else if(ctx==='news') await sendNewsDiscussionMsg(null,dataUrl,'voice');
+    else if(ctx==='wall'){await pushWallPostMedia('voice',dataUrl);}
+    toast('🎤 Голосовое отправлено','green');
+    window._voicePreviewData = null;
+    const {indId}=voiceUiIds(ctx);
+    const ind=qs(indId);
+    if(ind) ind.classList.remove('show');
+};
+
+window.cancelVoicePreview=function(){
+    window._voicePreviewData = null;
+    const ctx = voiceCtx;
+    const {indId}=voiceUiIds(ctx);
+    const ind=qs(indId);
+    if(ind) ind.classList.remove('show');
+    toast('🗑 Запись отменена','red');
 };
 window.cancelVoice=function(ctx){
     if(voiceRecorder&&voiceRecorder.state!=='inactive'){voiceRecorder.stop();voiceRecorder.stream.getTracks().forEach(t=>t.stop());}
     clearInterval(voiceInterval); voiceRecorder=null; voiceChunks=[];
-    voiceRecordedBlob=null; voiceRecordedUrl=null;
-    voiceEffect='normal';
     const {indId}=voiceUiIds(ctx);
     const ind=qs(indId);if(ind)ind.classList.remove('show');
     if(ctx==='chat') setChatTypingState('idle');
     if(ctx==='dm') setDmTypingState('idle');
+    if(ctx==='news') setNewsTypingState('idle');
     toast('🗑 Запись отменена','red');
-};
-function showVoicePreview(ctx){
-    if(!voiceRecordedUrl) return;
-    const modal=document.createElement('div');
-    modal.id='voicePreviewModal';
-    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;';
-    modal.onclick=(e)=>{if(e.target===modal)closeVoicePreview(ctx);};
-    modal.innerHTML=`
-        <div style="background:#131b24;border-radius:24px;padding:24px;width:100%;max-width:400px;margin:16px;animation:scaleIn .2s ease-out;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <div style="font-weight:900;font-size:18px;">🎤 Голосовое сообщение</div>
-                <span style="cursor:pointer;font-size:20px;" onclick="closeVoicePreview('${ctx}')">✕</span>
-            </div>
-            <audio id="voicePreviewAudio" controls src="${voiceRecordedUrl}" style="width:100%;margin-bottom:16px;"></audio>
-            <div style="margin-bottom:16px;">
-                <div style="font-weight:800;font-size:14px;margin-bottom:8px;">🎨 Эффект голоса</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button class="voice-effect-btn ${voiceEffect==='normal'?'active':''}" onclick="setVoiceEffect('normal')">Обычный</button>
-                    <button class="voice-effect-btn ${voiceEffect==='chipmunk'?'active':''}" onclick="setVoiceEffect('chipmunk')">🐿 Белка</button>
-                    <button class="voice-effect-btn ${voiceEffect==='deep'?'active':''}" onclick="setVoiceEffect('deep')">🎵 Глубокий</button>
-                </div>
-            </div>
-            <div style="display:flex;gap:10px;">
-                <button class="btn btn-ghost" style="flex:1;" onclick="closeVoicePreview('${ctx}')">Отмена</button>
-                <button class="btn btn-primary" style="flex:1;" onclick="sendVoiceMessage('${ctx}')">📤 Отправить</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-window.closeVoicePreview=function(ctx){
-    const modal=qs('voicePreviewModal');
-    if(modal)modal.remove();
-    voiceRecordedBlob=null;
-    voiceRecordedUrl=null;
-    voiceEffect='normal';
-};
-window.setVoiceEffect=function(effect){
-    voiceEffect=effect;
-    const audio=qs('voicePreviewAudio');
-    if(!audio||!voiceRecordedUrl) return;
-    audio.playbackRate=effect==='chipmunk'?1.5:effect==='deep'?0.75:1;
-    document.querySelectorAll('.voice-effect-btn').forEach(btn=>btn.classList.remove('active'));
-    event.target.classList.add('active');
-};
-window.sendVoiceMessage=async function(ctx){
-    if(!voiceRecordedBlob) return;
-    let processedBlob=voiceRecordedBlob;
-    if(voiceEffect!=='normal'){
-        // Apply effect by adjusting playback rate during encoding
-        const audioContext=new (window.AudioContext||window.webkitAudioContext)();
-        const arrayBuffer=await voiceRecordedBlob.arrayBuffer();
-        const audioBuffer=await audioContext.decodeAudioData(arrayBuffer);
-        const offlineCtx=new OfflineAudioContext(audioBuffer.numberOfChannels,audioBuffer.length,audioBuffer.sampleRate);
-        const source=offlineCtx.createBufferSource();
-        source.buffer=audioBuffer;
-        source.playbackRate.value=voiceEffect==='chipmunk'?1.5:voiceEffect==='deep'?0.75:1;
-        source.connect(offlineCtx.destination);
-        source.start(0);
-        const renderedBuffer=await offlineCtx.startRendering();
-        const wavBuffer=audioBufferToWav(renderedBuffer);
-        processedBlob=new Blob([wavBuffer],{type:'audio/wav'});
-    }
-    const reader=new FileReader();
-    reader.onload=async()=>{
-        const dataUrl=reader.result;
-        closeVoicePreview(ctx);
-        if(ctx==='chat') await sendChatMsg(null,dataUrl,'voice');
-        else if(ctx==='dm') await sendDmMsg(null,dataUrl,'voice');
-        else if(ctx==='wall'){await pushWallPostMedia('voice',dataUrl);return;}
-        toast('🎤 Голосовое отправлено','green');
-    };
-    reader.readAsDataURL(processedBlob);
-};
-function audioBufferToWav(buffer){
-    const numChannels=buffer.numberOfChannels;
-    const sampleRate=buffer.sampleRate;
-    const format=1;
-    const bitDepth=16;
-    const bytesPerSample=bitDepth/8;
-    const blockAlign=numChannels*bytesPerSample;
-    const dataSize=buffer.length*blockAlign;
-    const buffer2=new ArrayBuffer(44+dataSize);
-    const view=new DataView(buffer2);
-    const writeString=(view,offset,string)=>{
-        for(let i=0;i<string.length;i++)view.setUint8(offset+i,string.charCodeAt(i));
-    };
-    writeString(view,0,'RIFF');
-    view.setUint32(4,36+dataSize,true);
-    writeString(view,8,'WAVE');
-    writeString(view,12,'fmt ');
-    view.setUint32(16,16,true);
-    view.setUint16(20,format,true);
-    view.setUint16(22,numChannels,true);
-    view.setUint32(24,sampleRate,true);
-    view.setUint32(28,sampleRate*blockAlign,true);
-    view.setUint16(32,blockAlign,true);
-    view.setUint16(34,bitDepth,true);
-    writeString(view,36,'data');
-    view.setUint32(40,dataSize,true);
-    const channels=[];
-    for(let i=0;i<numChannels;i++)channels.push(buffer.getChannelData(i));
-    let offset=44;
-    for(let i=0;i<buffer.length;i++){
-        for(let channel=0;channel<numChannels;channel++){
-            const sample=Math.max(-1,Math.min(1,channels[channel][i]));
-            const intSample=sample<0?sample*0x8000:sample*0x7FFF;
-            view.setInt16(offset,intSample,true);
-            offset+=2;
-        }
-    }
-    return buffer2;
-};
-
-// ─── CUSTOM VOICE PLAYER ──────────────────
-function fmtVoiceTime(s){const m=Math.floor(s/60);const sec=Math.floor(s%60);return `${m}:${sec<10?'0'+sec:sec}`;}
-window.toggleVoicePlayer=function(vpId){
-    const el=document.getElementById(vpId);if(!el)return;
-    const audio=el.querySelector('audio');if(!audio)return;
-    const btn=el.querySelector('.voice-player-btn');
-    if(audio.paused){audio.play().catch(()=>{});if(btn)btn.textContent='⏸';}
-    else{audio.pause();if(btn)btn.textContent='▶';}
-};
-window.onVoiceMeta=function(vpId,audio){
-    const el=document.getElementById(vpId);if(!el)return;
-    const dur=el.querySelector('.vp-dur');if(dur)dur.textContent=fmtVoiceTime(audio.duration||0);
-};
-window.onVoiceTime=function(vpId,audio){
-    const el=document.getElementById(vpId);if(!el)return;
-    const cur=el.querySelector('.vp-cur');if(cur)cur.textContent=fmtVoiceTime(audio.currentTime||0);
-    const fill=el.querySelector('.voice-player-fill');
-    if(fill&&audio.duration){const pct=(audio.currentTime/audio.duration)*100;fill.style.width=pct+'%';}
-};
-window.onVoiceEnd=function(vpId,audio){
-      const el=document.getElementById(vpId);if(!el)return;
-      const btn=el.querySelector('.voice-player-btn');if(btn)btn.textContent='▶';
-      const fill=el.querySelector('.voice-player-fill');if(fill)fill.style.width='0%';
-      const cur=el.querySelector('.vp-cur');if(cur)cur.textContent='0:00';
-      audio.currentTime=0;
-  };
-
-  // Drag-to-seek functionality for voice player
-  let voiceDragging = null;
-  let voiceDragAudio = null;
-  
-  window.startVoiceDrag=function(vpId,e){
-      const el=document.getElementById(vpId);if(!el)return;
-      const audio=el.querySelector('audio');if(!audio||!audio.duration)return;
-      voiceDragging=vpId;
-      voiceDragAudio=audio;
-      e.preventDefault();
-  };
-  
-  window.onVoiceDrag=function(e){
-      if(!voiceDragging||!voiceDragAudio)return;
-      e.preventDefault(); // prevent page scroll while dragging
-      const el=document.getElementById(voiceDragging);
-      if(!el)return;
-      const bar=el.querySelector('.voice-player-bar');
-      if(!bar)return;
-      const rect=bar.getBoundingClientRect();
-      const clientX=e.touches ? e.touches[0].clientX : e.clientX;
-      const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
-      voiceDragAudio.currentTime=pct*voiceDragAudio.duration;
-      const fill=el.querySelector('.voice-player-fill');
-      if(fill)fill.style.width=(pct*100)+'%';
-      const cur=el.querySelector('.vp-cur');
-      if(cur)cur.textContent=fmtVoiceTime(voiceDragAudio.currentTime||0);
-  };
-  
-  window.endVoiceDrag=function(){
-      voiceDragging=null;
-      voiceDragAudio=null;
-  };
-
-  window.seekVoicePlayer=function(vpId,e){
-      const el=document.getElementById(vpId);if(!el)return;
-      const audio=el.querySelector('audio');if(!audio||!audio.duration)return;
-      const bar=el.querySelector('.voice-player-bar');
-      if(!bar)return;
-      const rect=bar.getBoundingClientRect();
-      const clientX=e.touches ? e.touches[0].clientX : e.clientX;
-      const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
-      audio.currentTime=pct*audio.duration;
-      const fill=el.querySelector('.voice-player-fill');
-      if(fill)fill.style.width=(pct*100)+'%';
-      const cur=el.querySelector('.vp-cur');
-      if(cur)cur.textContent=fmtVoiceTime(audio.currentTime||0);
-  };
-
-  // Add global event listeners for drag
-  document.addEventListener('mousemove',window.onVoiceDrag);
-  document.addEventListener('mouseup',window.endVoiceDrag);
-  // touchmove already has passive:false so onVoiceDrag can preventDefault
-  document.addEventListener('touchend',window.endVoiceDrag);
-function fmtCvpTime(s){const m=Math.floor(s/60);const sec=Math.floor(s%60);return `${m}:${sec<10?'0'+sec:sec}`;}
-window.toggleCvpPlay=function(cvpId){
-    const el=document.getElementById(cvpId);if(!el)return;
-    const video=el.querySelector('video');if(!video)return;
-    const overlay=el.querySelector('.cvp-overlay');
-    const ctrlBtn=el.querySelector('.cvp-ctrl-btn');
-    if(video.paused){
-        video.muted=false;video.play().catch(()=>{});
-        el.classList.add('playing');
-        if(overlay){overlay.classList.add('hidden');overlay.querySelector('.cvp-play-ico').textContent='⏸';}
-        if(ctrlBtn)ctrlBtn.textContent='⏸';
-    } else {
-        video.pause();
-        el.classList.remove('playing');
-        if(overlay){overlay.classList.remove('hidden');overlay.querySelector('.cvp-play-ico').textContent='▶';}
-        if(ctrlBtn)ctrlBtn.textContent='▶';
-    }
-};
-window.onCvpMeta=function(cvpId,video){
-    const el=document.getElementById(cvpId);if(!el)return;
-    const dur=el.querySelector('.cvp-dur');if(dur)dur.textContent=fmtCvpTime(video.duration||0);
-};
-window.onCvpTime=function(cvpId,video){
-    const el=document.getElementById(cvpId);if(!el)return;
-    const cur=el.querySelector('.cvp-cur');if(cur)cur.textContent=fmtCvpTime(video.currentTime||0);
-    const fill=el.querySelector('.cvp-bar-fill');
-    if(fill&&video.duration){fill.style.width=((video.currentTime/video.duration)*100)+'%';}
-};
-window.onCvpEnd=function(cvpId,video){
-    const el=document.getElementById(cvpId);if(!el)return;
-    el.classList.remove('playing');
-    const overlay=el.querySelector('.cvp-overlay');if(overlay){overlay.classList.remove('hidden');overlay.querySelector('.cvp-play-ico').textContent='▶';}
-    const ctrlBtn=el.querySelector('.cvp-ctrl-btn');if(ctrlBtn)ctrlBtn.textContent='▶';
-    const fill=el.querySelector('.cvp-bar-fill');if(fill)fill.style.width='0%';
-    const cur=el.querySelector('.cvp-cur');if(cur)cur.textContent='0:00';
-    video.currentTime=0;
-};
-window.seekCvp=function(cvpId,e){
-    const el=document.getElementById(cvpId);if(!el)return;
-    const video=el.querySelector('video');if(!video||!video.duration)return;
-    const bar=el.querySelector('.cvp-bar');if(!bar)return;
-    const rect=bar.getBoundingClientRect();
-    const clientX=e.touches ? e.touches[0].clientX : e.clientX;
-    const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
-    video.currentTime=pct*video.duration;
-};
-window.toggleCvpFullscreen=function(cvpId){
-    const el=document.getElementById(cvpId);if(!el)return;
-    const video=el.querySelector('video');if(!video)return;
-    if(video.requestFullscreen)video.requestFullscreen();
-    else if(video.webkitRequestFullscreen)video.webkitRequestFullscreen();
-    else if(video.webkitEnterFullscreen)video.webkitEnterFullscreen();
-};
-// Video circle player
-window.toggleCvc=function(cvcId){
-    const el=document.getElementById(cvcId);if(!el)return;
-    const video=el.querySelector('video');if(!video)return;
-    const overlay=el.querySelector('.cvp-circle-overlay');
-    if(video.paused){
-        video.muted=false;video.play().catch(()=>{});
-        if(overlay){overlay.classList.add('hidden');overlay.querySelector('.cvp-circle-ico').textContent='⏸';}
-    } else {
-        video.pause();
-        if(overlay){overlay.classList.remove('hidden');overlay.querySelector('.cvp-circle-ico').textContent='▶';}
-    }
-};
-window.seekCvc=function(cvcId,e){
-    const el=document.getElementById(cvcId);if(!el)return;
-    const video=el.querySelector('video');if(!video||!video.duration)return;
-    const bar=el.querySelector('.cvp-circle-bar');if(!bar)return;
-    const rect=bar.getBoundingClientRect();
-    const clientX=e.touches ? e.touches[0].clientX : e.clientX;
-    const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
-    video.currentTime=pct*video.duration;
-};
-window.onCvcMeta=function(cvcId,video){video.currentTime=0.1;};
-window.onCvcTime=function(cvcId,video){
-    const el=document.getElementById(cvcId);if(!el)return;
-    const fill=el.querySelector('.cvp-circle-bar-fill');
-    if(fill&&video.duration){fill.style.width=((video.currentTime/video.duration)*100)+'%';}
-};
-window.onCvcEnd=function(cvcId,video){
-    const el=document.getElementById(cvcId);if(!el)return;
-    const overlay=el.querySelector('.cvp-circle-overlay');
-    if(overlay){overlay.classList.remove('hidden');overlay.querySelector('.cvp-circle-ico').textContent='▶';}
-    const fill=el.querySelector('.cvp-circle-bar-fill');if(fill)fill.style.width='0%';
-    video.currentTime=0;
 };
 
 // ─── ACTIVE ORDERS ────────────────────────
@@ -3534,9 +3295,8 @@ window.recalcShop=function(){
     if(delivNote) delivNote.style.display = hasItems ? 'block' : 'none';
 };
 window.buyShop=async function(){
-    const uSnap=await get(userRef(currentNick));const u=uSnap.val();
-    if(u.job===JOB_MIGRANT)return toast('❌ Мигрантам нельзя заказывать доставку','red');
     if(!await requireSpendable())return;
+    const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
     const b=parseInt(qs('sB').value)||0,p=parseInt(qs('sP').value)||0,l=parseInt(qs('sL').value)||0,k=parseInt(qs('sK').value)||0;
     if(b+p+l+k<=0)return toast('⚠️ Выберите товары','gold');
     const addr=qs('sAddr').value.trim();
@@ -3602,14 +3362,13 @@ async function geocodeAddress(query){try{const res=await fetch(`https://nominati
 
 // ─── TAXI ORDER ───────────────────────────
 window.orderTaxi=async function(){
-    const uSnap=await get(userRef(currentNick));
-    const u=uSnap.val();
-    if(u.job===JOB_MIGRANT)return toast('❌ Мигрантам нельзя заказывать такси','red');
     if(!await requireSpendable())return;
     const from=qs('tFrom').value.trim(),to=qs('tTo').value.trim(),basePrice=parseInt(qs('tPrice').textContent)||0,dist=parseFloat(qs('tDist').textContent)||0;
     if(!from||!to)return toast('⚠️ Укажите маршрут','gold');if(basePrice<=0)return toast('⚠️ Выберите точки','gold');
     
     // Apply subscription discount
+    const uSnap=await get(userRef(currentNick));
+    const u=uSnap.val()||{};
     const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasUltra = u.subscription === 'ultra' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     let discountPercent = 0;
@@ -3776,9 +3535,6 @@ window.cancelOrder=async function(id){
 
 // ─── BANK ─────────────────────────────────
 window.doTransfer=async function(){
-    const uSnap=await get(userRef(currentNick));
-    const u=uSnap.val();
-    if(u.job===JOB_MIGRANT)return toast('❌ Мигрантам нельзя переводить деньги','red');
     if(!await requireSpendable())return;
     const to=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
     if(!to)return toast('⚠️ Введите никнейм','gold');if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
@@ -3793,6 +3549,11 @@ window.doTransfer=async function(){
     // Check if recipient account is verified
     if(!toSnap.val().accountVerified) {
         return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
+    }
+    
+    // Migrant restriction: cannot send transfers
+    if(isMigrant(fromUser)) {
+        return toast('❌ Мигранты не могут переводить деньги','red');
     }
     
     if(!toSnap.exists())return toast('❌ Не найден','red');
@@ -3903,7 +3664,7 @@ window.closeHistoryModal=function(){qs('historyModal').classList.remove('open');
 
 // ─── GENERAL CHAT ─────────────────────────
 function getPendingPhotos(ctx){return pendingPhotoQueues[ctx] || (pendingPhotoQueues[ctx]=[]);}
-function pendingQueueEl(ctx){return qs(ctx==='chat'?'chatPhotoQueue':'dmPhotoQueue');}
+function pendingQueueEl(ctx){return qs(ctx==='chat'?'chatPhotoQueue':ctx==='news'?'newsPhotoQueue':'dmPhotoQueue');}
 function renderPendingPhotos(ctx){
     const el=pendingQueueEl(ctx); if(!el) return;
     const items=getPendingPhotos(ctx);
@@ -3928,7 +3689,8 @@ window.sendPendingPhotos=async function(ctx){
     renderPendingPhotos(ctx);
     for(const item of items){
         if(ctx==='chat') await sendChatMsg(item.caption||null,item.dataUrl,'image');
-        else await sendDmMsg(item.caption||null,item.dataUrl,'image');
+        else if(ctx==='dm') await sendDmMsg(item.caption||null,item.dataUrl,'image');
+        else if(ctx==='news') await sendNewsDiscussionMsg(item.caption||null,item.dataUrl,'image');
     }
     toast('📤 Фото отправлены','green');
 };
@@ -3936,20 +3698,35 @@ window.sendPendingPhotos=async function(ctx){
 window.sendChat=async function(){
     const inp=qs('chatInput');const text=inp.value.trim();if(!text)return;
     await sendChatMsg(text,null,null);inp.value='';
-    cancelReply();
     setChatTypingState('idle');
 };
 async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     const uSnap=await get(userRef(currentNick));const u=uSnap.val();
+    
+    // Check if user is a migrant
+    if(isMigrant(u)) {
+        return toast('❌ Мигранты не могут писать в чат. Обратитесь к мэру.', 'red');
+    }
+    
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
     if(msgType) msg.msgType=msgType;
     if(!text&&!mediaData) return;
-    if(replyToMsg && !replyToMsg.isDm) {
-        msg.replyTo = { msgId: replyToMsg.msgId, nick: replyToMsg.nick, text: replyToMsg.text };
+    
+    // Optimistic UI update - add to local cache immediately
+    const tempId = 'temp_' + Date.now();
+    lastChatMsgs[tempId] = msg;
+    renderChat(lastChatMsgs);
+    
+    try {
+        await push(chatRef(),msg);
+    } catch(e) {
+        // If Firebase fails, remove from local cache
+        delete lastChatMsgs[tempId];
+        renderChat(lastChatMsgs);
+        toast('❌ Не удалось отправить сообщение', 'red');
     }
-    await push(chatRef(),msg);
 }
 
 // ─── DM MESSENGER ─────────────────────────
@@ -4164,55 +3941,45 @@ window.closeDmChat=function(){
 window.sendDm=async function(){
     const inp=qs('dmInput');const text=inp.value.trim();if(!text||!currentDmNick)return;
     await sendDmMsg(text,null,null);inp.value='';
-    cancelReply();
     setDmTypingState('idle');
 };
 async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(!currentDmNick)return;
     const uSnap=await get(userRef(currentNick));const u=uSnap.val();
+    
+    // Check if user is a migrant
+    if(isMigrant(u)) {
+        return toast('❌ Мигранты не могут отправлять сообщения. Обратитесь к мэру.', 'red');
+    }
+    
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
     if(msgType) msg.msgType=msgType;
-    if(replyToMsg && replyToMsg.isDm) {
-        msg.replyTo = { msgId: replyToMsg.msgId, nick: replyToMsg.nick, text: replyToMsg.text };
-    }
     const key=dmKey(currentNick,currentDmNick);
-    await push(dmRef(key),msg);
-    // Notification is handled by the recipient's inbox listener to avoid duplicates
-}
-
-// ─── USER PROFILE MODAL ───────────────────
-function buildWallEmojiIfNeeded(){
-    const el=qs('wallEmojiPanel');if(!el||el.dataset.built)return;
-    el.dataset.built='1';
-    const grid=document.createElement('div');grid.className='emoji-grid';
-    EMOJI_LIST.forEach(em=>{const btn=document.createElement('button');btn.className='ep-btn';btn.textContent=em;btn.onclick=()=>{const inp=qs('wallInput');if(!inp)return;inp.value+=em;inp.focus();};grid.appendChild(btn);});
-    el.appendChild(grid);
-}
-function wallPostBodyHtml(p){
-    let body='';
-    if(p.text)body+=`<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;">${escHtml(p.text)}</div>`;
-    if(p.msgType==='image'&&p.mediaData)body+=`<img src="${escHtml(p.mediaData)}" style="max-width:100%;border-radius:12px;margin-top:8px;cursor:pointer;" onclick="openImgViewer('${jsEsc(p.mediaData)}')">`;
-    if(p.msgType==='video'&&p.mediaData)body+=`<video src="${escHtml(p.mediaData)}" controls playsinline webkit-playsinline style="max-width:100%;border-radius:12px;margin-top:8px;"></video>`;
-    if(p.msgType==='video_circle'&&p.mediaData)body+=`<div class="msg-media-wrap" style="margin-top:8px;"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(p.mediaData)}')" style="background:#111;"><video preload="none" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(p.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
-    if(p.msgType==='voice'&&p.mediaData){
-        const vpId = 'vp_wall_' + Math.random().toString(36).substr(2, 9);
-        body+=`<div class="voice-player" id="${vpId}" style="margin-top:8px;">
-            <button class="voice-player-btn" onclick="event.stopPropagation();toggleVoicePlayer('${vpId}')">▶</button>
-            <div class="voice-player-track">
-                <div class="voice-player-bar" onmousedown="event.stopPropagation();startVoiceDrag('${vpId}',event)" ontouchstart="event.stopPropagation();startVoiceDrag('${vpId}',event)" onclick="event.stopPropagation();seekVoicePlayer('${vpId}',event)">
-                    <div class="voice-player-fill"></div>
-                </div>
-                <div class="voice-player-times">
-                    <span class="vp-cur">0:00</span>
-                    <span class="vp-dur">0:00</span>
-                </div>
-            </div>
-            <audio preload="metadata" onloadedmetadata="onVoiceMeta('${vpId}',this)" ontimeupdate="onVoiceTime('${vpId}',this)" onended="onVoiceEnd('${vpId}',this)" style="display:none;"><source src="${escHtml(p.mediaData)}"></audio>
-        </div>`;
+    
+    // Optimistic UI update - add to local cache immediately
+    const tempId = 'temp_' + Date.now();
+    lastDmMsgs[tempId] = msg;
+    renderDmMessages(lastDmMsgs);
+    
+    try {
+        await push(dmRef(key),msg);
+        let notifText;
+        if(msgType==='voice') notifText=`🎤 ${currentNick}: Голосовое сообщение`;
+        else if(msgType==='video_circle') notifText=`⭕ ${currentNick}: Видеосообщение`;
+        else if(msgType==='image') notifText=`🖼 ${currentNick}: Фото`;
+        else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
+        else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
+        if(currentDmNick!==currentNick){
+            await pushNotification(currentDmNick,notifText,'messages');
+        }
+    } catch(e) {
+        // If Firebase fails, remove from local cache
+        delete lastDmMsgs[tempId];
+        renderDmMessages(lastDmMsgs);
+        toast('❌ Не удалось отправить сообщение', 'red');
     }
-    return body;
 }
 function wallPostCardHtml(ownerNick, postId, p){
     const canDelete = ownerNick === currentNick;
@@ -4260,7 +4027,7 @@ window.onWallMediaPick=async function(e){
     const f=e.target.files[0];e.target.value='';
     if(!f)return;
     if(f.type.startsWith('image/')){wallMediaPending={type:'image',dataUrl:await compressImage(f,900,0.82)};qs('wallMediaPreview').textContent='📷 Фото готово';qs('wallMediaPreview').style.display='block';return;}
-    if(f.type.startsWith('video/')&&f.size<15*1024*1024){toast('🎬 Видео...','gold');wallMediaPending={type:'video',dataUrl:await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);})};qs('wallMediaPreview').textContent='🎬 Видео готово';qs('wallMediaPreview').style.display='block';return;}
+    if(f.type.startsWith('video/')&&f.size<100*1024*1024){toast('🎬 Видео...','gold');wallMediaPending={type:'video',dataUrl:await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);})};qs('wallMediaPreview').textContent='🎬 Видео готово';qs('wallMediaPreview').style.display='block';return;}
     toast('❌ Файл слишком большой или не поддерживается','red');
 };
 window.publishWallPost=async function(){
@@ -4529,8 +4296,8 @@ async function checkDailyTaskCondition(taskId, u, ordersVal, marketVal, chatVal,
         case 'chat': return Object.values(chatVal||{}).some(m=>m.nick===currentNick&&localDateKey(m.createdAt||0)===today);
         case 'wall': return Object.values(wallVal||{}).some(p=>localDateKey(p.createdAt||0)===today);
         case 'transfer': return Object.values(txVal||{}).some(tx=>tx.type==='out'&&tx.date===new Date().toLocaleDateString('ru')&&tx.desc&&tx.desc.startsWith('Перевод пользователю'));
-        case 'shop': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='shop'&&localDateKey(o.createdAt||0)===today);
-        case 'taxi_req': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='taxi'&&localDateKey(o.createdAt||0)===today);
+        case 'shop': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='shop');
+        case 'taxi_req': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='taxi');
         case 'market_browse': return true; // just opening tasks page counts
         case 'dm': return Object.values(dmVal||{}).some(m=>m.nick===currentNick&&localDateKey(m.createdAt||0)===today);
         default: return false;
@@ -4835,17 +4602,22 @@ function marketCard(l,isMine, isArchived=false){
 }
 window.publishListing=async function(){
     const title=qs('mktTitle').value.trim();
-    const negotiable=qs('mktNegotiable')?.checked;
-    const cat=qs('mktCategory').value;
-    const price=cat==='work' ? 0 : (negotiable?0:(parseInt(qs('mktPrice').value)||0));
-    const salaryHint=(qs('mktSalaryHint')?.value||'').trim();
-    if(!title)return toast('⚠️ Название','gold');
-    if(cat!=='work' && !negotiable && price<=0)return toast('⚠️ Укажите цену или отметьте «договорная»','gold');
-    if(cat==='work' && !salaryHint)return toast('⚠️ Для вакансии укажите оплату','gold');
+    const desc=qs('mktDesc').value.trim();
+    const price=parseInt(qs('mktPrice').value)||0;
+    const negotiable=qs('mktNegotiable')?.checked||false;
+    const salaryHint=qs('mktSalaryHint')?.value.trim()||'';
+    const cat=qs('mktCat')?.value||'other';
+    if(!title||!desc)return toast('⚠️ Заполните название и описание','gold');
+    if(cat!=='work' && cat!=='service' && price<0)return toast('⚠️ Цена','gold');
     
     // Проверяем лимит объявлений в месяц
     const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
+    
+    // Migrant restriction: cannot create marketplace listings
+    if(isMigrant(u)) {
+        return toast('❌ Мигранты не могут создавать объявления на маркетплейсе','red');
+    }
     const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const subscription = isSubActive ? (u.subscription || 'none') : 'none';
     const listingsThisMonth = u.listingsThisMonth || 0;
@@ -4894,8 +4666,6 @@ window.cancelMeeting=async function(id){const snap=await get(listingRef(id));if(
 window.goToChat=function(nick){navTo('messages');setTimeout(()=>{switchMsgTab(1);setTimeout(()=>openDmChat(nick),200);},200);};
 window.declineListing=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return;const l=snap.val();await update(listingRef(id),{status:'active',buyer:null});await pushNotification(l.buyer,`❌ ${l.seller} отказал`,'market');toast('❌ Отклонено','red');};
 window.confirmPurchase=async function(id){
-    const uSnap=await get(userRef(currentNick));const u=uSnap.val();
-    if(u.job===JOB_MIGRANT)return toast('❌ Мигрантам нельзя покупать на маркетплейсе','red');
     if(!await requireSpendable())return;
     const snap=await get(listingRef(id));if(!snap.exists())return;
     const l=snap.val();
@@ -4992,8 +4762,6 @@ function renderLeaderboard(users){
 
 // ─── JOBS ─────────────────────────────────
 window.sendApp=async function(){
-    const uSnap=await get(userRef(currentNick));const u=uSnap.val();
-    if(u.job===JOB_MIGRANT)return toast('❌ Мигрантам нельзя устраиваться на работу','red');
     const target=qs('jSel').value;
     const appText=qs('jAppText').value.trim();
     const snap=await get(appsRef());
@@ -5108,21 +4876,7 @@ function renderAdminUsers(users){
 }
 function renderAdminOrders(orders){const el=qs('adminOrders');if(!el)return;const arr=Object.entries(orders||{}).map(([id,o])=>({...o,id}));const cnt=qs('adminOrderCount');if(cnt)cnt.textContent=arr.length;el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':arr.map(o=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;font-size:13px;"><b>${o.type==='taxi'?'🛵 Такси':'📦 Доставка'}</b> · ${escHtml(o.info)}<br>Клиент: ${escHtml(o.client)} · ${o.price}₽${o.worker?` · Курьер: ${escHtml(o.worker)}`:'·  <span style="color:var(--muted)">Ожидает</span>'}<button class="btn btn-red btn-sm" style="margin-top:8px;" onclick="adminDeleteOrder('${o.id}')">Удалить</button></div>`).join('');}
 function renderAdminUserSelect(users){const sel=qs('adminTarget');if(!sel)return;const cur=sel.value;sel.innerHTML=Object.keys(users).map(n=>`<option value="${n}">${n}</option>`).join('');if(cur)sel.value=cur;}
-function isMigrant(nick){const u=allUsersCache[nick];return u&&u.job===JOB_MIGRANT;}
-window.adminAssignRole=async function(){
-    const target=qs('adminTarget').value;
-    const role=qs('adminRoleSelect').value;
-    if(!target||!role)return toast('⚠️ Выберите жителя и роль','gold');
-    if(target===currentNick&&role===JOB_MIGRANT)return toast('❌ Нельзя назначить себе роль мигранта','red');
-    if(target===ADMIN)return toast('❌ Нельзя менять роль администратору','red');
-    try{
-        await update(userRef(target),{job:role});
-        toast(`🎭 Роль "${role}" назначена для ${target}`,'green');
-        qs('adminRoleSelect').value='';
-    }catch(e){
-        toast('❌ Ошибка назначения роли','red');
-    }
-};
+function renderAdminRoleSelect(users){const sel=qs('adminRoleTarget');if(!sel)return;const cur=sel.value;sel.innerHTML=Object.keys(users).map(n=>`<option value="${n}">${n}</option>`).join('');if(cur)sel.value=cur;}
 function renderAdminJanitorSubmissions(subs){
     const el=qs('janitorAdminList');if(!el)return;
     const pending=Object.values(subs||{}).filter(s=>s.status==='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -5157,7 +4911,7 @@ window.rejectJanitorSubmission=async function(id){
 };
 async function renderAdmin(){
     const[uSnap,oSnap,aSnap,jSnap]=await Promise.all([get(ref(db,'users')),get(ordersRef()),get(appsRef()),get(janitorSubsRef())]);
-    renderAdminUsers(uSnap.val()||{});renderAdminOrders(oSnap.val()||{});renderAdminApps(aSnap.val()||{});renderAdminJanitorSubmissions(jSnap.val()||{});renderAdminUserSelect(uSnap.val()||{});renderUnverifiedAccounts();
+    renderAdminUsers(uSnap.val()||{});renderAdminOrders(oSnap.val()||{});renderAdminApps(aSnap.val()||{});renderAdminJanitorSubmissions(jSnap.val()||{});renderAdminUserSelect(uSnap.val()||{});renderAdminRoleSelect(uSnap.val()||{});renderUnverifiedAccounts();
 }
 window.approveApp=async function(id,ok){
     const snap=await get(appRef(id));if(!snap.exists())return;
@@ -5178,8 +4932,6 @@ window.adminMoney=async function(){
     const target=qs('adminTarget').value,amt=parseInt(qs('adminAmt').value)||0;
     if(!target)return toast('⚠️ Выберите жителя','gold');if(amt===0)return toast('⚠️ Сумма','gold');
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
-    const user=snap.val();
-    if(amt>0&&user.job===JOB_MIGRANT)return toast('❌ Мигрантам нельзя получать деньги','red');
     
     try {
         // Вызываем Cloud Function с fallback
@@ -5253,7 +5005,24 @@ window.adminFineWorker=async function(){
         toast(`❌ ${message}`,'red');
     }
 };
-window.adminDeleteOrder=async function(id){await remove(orderRef(id));toast('🗑 Удалено','gold');};
+window.adminDeleteOrder=async function(id){
+    if(currentNick!==ADMIN)return;
+    await remove(orderRef(id));
+    toast('🗑 Заказ удалён','green');
+    renderAdmin();
+};
+window.setUserRole=async function(role){
+    if(currentNick!==ADMIN)return;
+    const target=qs('adminRoleTarget').value;
+    if(!target)return toast('⚠️ Выберите жителя','gold');
+    if(target===ADMIN)return toast('❌ Нельзя менять статус мэра','red');
+    const snap=await get(userRef(target));
+    if(!snap.exists())return toast('❌ Не найден','red');
+    await update(userRef(target),{job:role});
+    await pushNotification(target,`🛂 Ваш статус изменён на: ${role}`,'system');
+    toast(`✅ ${target} → ${role}`,'green');
+    renderAdmin();
+};
 window.adminFireWorker=async function(){
     const target=qs('adminTarget').value;
     if(!target)return toast('⚠️ Выберите жителя','gold');
@@ -5308,101 +5077,116 @@ const NEWS_CATEGORIES = {
     general: { emoji: '📢', label: 'Общее' },
     event: { emoji: '🎉', label: 'Событие' },
     alert: { emoji: '🚨', label: 'Важное' },
-    update: { emoji: '🔄', label: 'Обновление' }
+    update: { emoji: '🔄', label: 'Обновление' },
+    meteorology: { emoji: '🌦', label: 'Метеорология' },
+    announcement: { emoji: '📣', label: 'Объявление' }
 };
-function canPublishNews(){
+let currentNewsTab = 'village';
+let currentNewsId = null;
+let currentNewsMsgListener = null;
+let currentNewsReadListener = null;
+let currentNewsPeerTypingListener = null;
+let currentNewsMsgs = {};
+let newsReadCache = {};
+function newsDiscussionRef(id){ return ref(db, `newsDiscussions/${id}/messages`); }
+function newsDiscussionReadRef(id, nick){ return ref(db, `newsDiscussions/${id}/lastRead/${nick}`); }
+function newsReadRef(nick){ return ref(db, `users/${nick}/newsRead`); }
+function canPublishNews(scope='village'){
     const me = allUsersCache[currentNick];
     if(!me) return false;
-    return currentNick === ADMIN || me.job === JOB_JOURNALIST;
+    if(currentNick === ADMIN) return true;
+    if(scope === 'lands') return false;
+    return me.job === JOB_JOURNALIST;
 }
+function isNewsRead(id){
+    const me = allUsersCache[currentNick];
+    return !!(me && me.newsRead && me.newsRead[id]);
+}
+async function markNewsRead(id){
+    if(!currentNick || !id) return;
+    const patch = {};
+    patch[`newsRead.${id}`] = Date.now();
+    try { await update(userRef(currentNick), patch); } catch(e){}
+}
+window.switchNewsTab = function(tab){
+    currentNewsTab = tab === 'lands' ? 'lands' : 'village';
+    const scopeSel = qs('newsScope');
+    if(scopeSel) scopeSel.value = currentNewsTab;
+    qs('newsTabVillage')?.classList.toggle('active', currentNewsTab === 'village');
+    qs('newsTabLands')?.classList.toggle('active', currentNewsTab === 'lands');
+    qs('newsPanelVillage')?.classList.toggle('active', currentNewsTab === 'village');
+    qs('newsPanelLands')?.classList.toggle('active', currentNewsTab === 'lands');
+    renderNews();
+};
+
+window.canPublishNews = canPublishNews;
+window.handleNewsVideo = async function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.size > 100*1024*1024) return toast('❌ Видео слишком большое (макс. 100 МБ)', 'red');
+    toast('🎬 Загружаем видео...', 'gold');
+    try {
+        const dataUrl = await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});
+        window._newsVideoData = dataUrl;
+        const vid = qs('newsVideoEl');
+        if(vid){ vid.src=dataUrl; qs('newsVideoPreview').style.display='block'; }
+        toast('✅ Видео готово', 'green');
+    } catch(err) { toast('❌ Не удалось загрузить видео', 'red'); }
+    e.target.value = '';
+};
 window.handleNewsPhoto = async function(e){
     const file = e.target.files[0];
     if(!file) return;
     try {
-        if(file.type.startsWith('video/')){
-            toast('🎬 Загружаем видео...', 'gold');
-            const dataUrl = await new Promise((res, rej) => {
-                const r = new FileReader();
-                r.onload = () => res(r.result);
-                r.onerror = () => rej('err');
-                r.readAsDataURL(file);
-            });
-            const video = qs('newsVideoPreview');
-            const img = qs('newsImageImg');
-            video.src = dataUrl;
-            video.style.display = 'block';
-            img.style.display = 'none';
-            video.parentElement.style.display = 'block';
-            window._newsPhotoData = dataUrl;
-            window._newsMediaType = 'video';
-        } else {
-            toast('📷 Сжимаем фото...', 'gold');
-            const dataUrl = await compressImage(file, 1200, 0.85);
-            const img = qs('newsImageImg');
-            const video = qs('newsVideoPreview');
-            img.src = dataUrl;
-            img.style.display = 'block';
-            video.style.display = 'none';
-            img.parentElement.style.display = 'block';
-            window._newsPhotoData = dataUrl;
-            window._newsMediaType = 'image';
-        }
+        toast('📷 Сжимаем фото...', 'gold');
+        const dataUrl = await compressImage(file, 1200, 0.85);
+        const img = qs('newsImageImg');
+        img.src = dataUrl;
+        img.parentElement.style.display = 'block';
+        // Store in hidden input
+        window._newsPhotoData = dataUrl;
     } catch(err) {
-        toast('❌ Не удалось загрузить файл', 'red');
+        toast('❌ Не удалось загрузить фото', 'red');
     }
     e.target.value = '';
 };
 window.publishNews = async function(){
-      try {
-          if(!canPublishNews()) return toast('⚠️ Только администратор или журналист могут публиковать новости', 'red');
-          const title = qs('newsTitle').value.trim();
-          const content = qs('newsContent').value.trim();
-          const category = qs('newsCategory').value;
-          const imageUrl = window._newsPhotoData || qs('newsImage').value.trim() || null;
-          const mediaType = window._newsMediaType || (qs('newsImage').value.trim() && qs('newsImage').value.trim().match(/\.(mp4|webm|ogg)$/i) ? 'video' : 'image');
-          if(!title) return toast('⚠️ Напишите заголовок новости', 'gold');
-          if(!content) return toast('⚠️ Напишите текст новости', 'gold');
-          const id = genId();
-          const newsItem = {
-              id,
-              title,
-              content,
-              category,
-              imageUrl,
-              mediaType,
-              author: currentNick,
-              authorJob: allUsersCache[currentNick]?.job || 'Житель',
-              createdAt: Date.now(),
-              date: new Date().toLocaleDateString('ru'),
-              time: nowTime()
-          };
-          await set(newsItemRef(id), newsItem);
-          toast('✅ Новость опубликована!', 'green');
-          qs('newsTitle').value = '';
-          qs('newsContent').value = '';
-          qs('newsImage').value = '';
-          window._newsPhotoData = null;
-          window._newsMediaType = null;
-          qs('newsImagePreview').style.display = 'none';
-          qs('newsImageImg').style.display = 'none';
-          qs('newsVideoPreview').style.display = 'none';
-          qs('newsVideoPreview').src = '';
-          // Send notification to all users
-          try{
-              const allSnap=await get(ref(db,'users'));
-              const allU=allSnap.val()||{};
-              for(const[nick,usr]of Object.entries(allU)){
-                  if(nick!==currentNick){
-                      await pushNotification(nick,`📰 Новость опубликована: ${title}`,'news');
-                  }
-              }
-          }catch(e){}
-          renderNews();
-      } catch (error) {
-          console.error('Ошибка публикации новости:', error);
-          toast('❌ Ошибка при публикации: ' + (error.message || 'Неизвестная ошибка'), 'red');
-      }
-  };
+    const scope = qs('newsScope') ? qs('newsScope').value : currentNewsTab;
+    if(!canPublishNews(scope)) return toast(scope === 'lands' ? '❌ Только Денис может публиковать новости Капанёвских земель' : '❌ Только Денис и Журналисты могут публиковать новости', 'red');
+    const title = qs('newsTitle').value.trim();
+    const content = qs('newsContent').value.trim();
+    const category = qs('newsCategory').value;
+    const imageUrl = window._newsPhotoData || qs('newsImage').value.trim() || null;
+    const videoUrl = window._newsVideoData || null;
+    if(!title) return toast('⚠️ Укажите заголовок новости', 'gold');
+    if(!content) return toast('⚠️ Укажите текст новости', 'gold');
+    const id = genId();
+    const newsItem = {
+        id,
+        scope,
+        title,
+        content,
+        category,
+        imageUrl,
+        videoUrl,
+        author: currentNick,
+        authorJob: allUsersCache[currentNick]?.job || 'Житель',
+        createdAt: Date.now(),
+        date: new Date().toLocaleDateString('ru'),
+        time: nowTime()
+    };
+    await set(newsItemRef(id), newsItem);
+    toast('📰 Новость опубликована!', 'green');
+    qs('newsTitle').value = '';
+    qs('newsContent').value = '';
+    qs('newsImage').value = '';
+    window._newsPhotoData = null;
+    window._newsVideoData = null;
+    qs('newsImagePreview').style.display = 'none';
+    if(qs('newsVideoPreview')) qs('newsVideoPreview').style.display = 'none';
+    if(qs('newsVideoEl')) qs('newsVideoEl').src = '';
+    renderNews();
+};
 window.deleteNews = async function(id){
     if(!confirm('Удалить эту новость?')) return;
     const snap = await get(newsItemRef(id));
@@ -5416,226 +5200,237 @@ window.deleteNews = async function(id){
     toast('🗑 Новость удалена', 'gold');
     renderNews();
 };
-window.postNewsComment = async function(newsId){
-    const input = qs(`newsCommentInput_${newsId}`);
-    const text = input.value.trim();
-    if(!text) return toast('⚠️ Напишите комментарий', 'gold');
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val();
-    const comment = {
-        id: genId(),
-        nick: currentNick,
-        avatar: u?.avatar || DEFAULT_AVATAR_URL,
-        text,
-        createdAt: Date.now(),
-        time: nowTime()
-    };
-    await push(newsCommentsRef(newsId), comment);
-    input.value = '';
-    toast('💬 Комментарий добавлен', 'green');
-    renderNewsComments(newsId);
-};
-window.renderNewsComments = async function(newsId){
-    const el = curPage === 'newsDiscussion' ? qs('newsDiscussionComments') : qs(`newsComments_${newsId}`);
-    if(!el) return;
-    try {
-        const snap = await get(newsCommentsRef(newsId));
-        const comments = snap.val() || {};
-        const arr = Object.values(comments).sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
-        if(arr.length === 0) {
-            el.innerHTML = '<div style="color:var(--muted);font-size:11px;">Нет комментариев</div>';
-            return;
-        }
-        el.innerHTML = arr.map(c => {
-            const online = allUsersCache[c.nick] ? isUserOnline(allUsersCache[c.nick]) : false;
-            const isAuthor = c.nick === currentNick;
-            const isAdmin = currentNick === ADMIN;
-            const canEdit = isAuthor || isAdmin;
-            return `<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
-                <div class="av-wrap-sm ${online?'online':''}" style="flex-shrink:0;"><img src="${escHtml(c.avatar||DEFAULT_AVATAR_URL)}" style="width:28px;height:28px;border-radius:8px;object-fit:cover;"><div class="online-dot"></div></div>
-                <div style="flex:1;min-width:0;">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <span style="font-weight:800;font-size:12px;color:var(--primary);">${escHtml(c.nick)}</span>
-                        <span style="font-size:10px;color:var(--muted);">${c.time}</span>
-                        <span style="font-size:10px;color:var(--muted);margin-left:auto;">${canEdit ? `<button type="button" class="msg-action-btn" style="font-size:10px;padding:2px 6px;" onclick="editNewsComment('${jsEsc(newsId)}','${jsEsc(c.id)}')">✏️</button><button type="button" class="msg-action-btn" style="font-size:10px;padding:2px 6px;color:var(--red);" onclick="deleteNewsComment('${jsEsc(newsId)}','${jsEsc(c.id)}')">🗑</button>` : ''}</span>
-                    </div>
-                    <div style="font-size:12px;line-height:1.4;word-break:break-word;">${escHtml(c.text)}</div>
-                </div>
-            </div>`;
-        }).join('');
-    } catch(e) {
-        console.error('Error loading comments:', e);
-        el.innerHTML = '<div style="color:var(--muted);font-size:11px;">Ошибка загрузки</div>';
-    }
-};
-window.replyNewsComment = function(newsId, commentId, nick, text){
-    const input = qs(`newsCommentInput_${newsId}`);
-    if(input){
-        const previewText = text.length > 30 ? text.slice(0, 27) + '...' : text;
-        input.placeholder = `Ответ для ${nick}: ${previewText}`;
-        input.focus();
-        input.dataset.replyTo = commentId;
-    }
-};
-window.deleteNewsComment = async function(newsId, commentId){
-    if(!confirm('Удалить комментарий?')) return;
-    try {
-        const snap = await get(newsCommentsRef(newsId));
-        const comments = snap.val() || {};
-        const commentEntry = Object.entries(comments).find(([key, c]) => c.id === commentId);
-        if(!commentEntry) return toast('❌ Комментарий не найден', 'red');
-        const [firebaseKey, comment] = commentEntry;
-        if(comment.nick !== currentNick && currentNick !== ADMIN) return toast('❌ Нет прав', 'red');
-        await remove(ref(db, `news/${newsId}/comments/${firebaseKey}`));
-        toast('🗑 Комментарий удалён', 'green');
-        renderNewsComments(newsId);
-    } catch(e) {
-        toast('❌ Не удалось удалить', 'red');
-    }
-};
-window.editNewsComment = async function(newsId, commentId){
-    const newText = prompt('Изменить комментарий:');
-    if(newText === null) return;
-    const trimmed = newText.trim();
-    if(!trimmed) return toast('⚠️ Текст не может быть пустым', 'gold');
-    try {
-        const snap = await get(newsCommentsRef(newsId));
-        const comments = snap.val() || {};
-        const commentEntry = Object.entries(comments).find(([key, c]) => c.id === commentId);
-        if(!commentEntry) return toast('❌ Комментарий не найден', 'red');
-        const [firebaseKey, comment] = commentEntry;
-        if(comment.nick !== currentNick && currentNick !== ADMIN) return toast('❌ Нет прав', 'red');
-        await update(ref(db, `news/${newsId}/comments/${firebaseKey}`), { text: trimmed, edited: true });
-        toast('✅ Комментарий изменён', 'green');
-        renderNewsComments(newsId);
-    } catch(e) {
-        toast('❌ Не удалось изменить', 'red');
-    }
-};
 window.renderNews = async function(){
-    // Show/hide editor panel based on permissions
     const editorPanel = qs('newsEditorPanel');
+    const scopeSel = qs('newsScope');
+    if(scopeSel) scopeSel.value = currentNewsTab;
     if(editorPanel) {
-        editorPanel.style.display = canPublishNews() ? 'block' : 'none';
+        editorPanel.style.display = canPublishNews(currentNewsTab) ? 'block' : 'none';
     }
-    const el = qs('newsList');
-    if(!el) return;
+    const panels = {
+        village: qs('newsListVillage'),
+        lands: qs('newsListLands')
+    };
     try {
         const snap = await get(newsRef());
         const all = snap.val() || {};
         const sorted = Object.values(all).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
-        if(sorted.length === 0) {
-            el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет новостей</div>';
-            return;
-        }
-        el.innerHTML = sorted.map(item => {
-            const catInfo = NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general;
-            const canDelete = item.author === currentNick || currentNick === ADMIN;
-            return `<div class="news-card" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;">
-                <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <span style="font-size:12px;background:var(--surface2);padding:4px 8px;border-radius:8px;color:var(--primary);">${catInfo.emoji} ${catInfo.label}</span>
-                    <span style="font-size:11px;color:var(--muted);">${item.date} · ${item.time}</span>
-                    ${canDelete ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);" onclick="deleteNews('${jsEsc(item.id)}')">🗑</button>` : ''}
-                </div>
-                <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
-                ${item.imageUrl ? (item.mediaType === 'video' ? `<video src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;" controls playsinline></video>` : `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">`) : ''}
-                <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
-                <div style="margin-top:10px;font-size:11px;color:var(--muted);">
-                    Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
-                </div>
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-                    <button class="btn btn-ghost btn-sm" onclick="openNewsDiscussion('${jsEsc(item.id)}')" style="width:100%;text-align:center;">💬 Открыть обсуждение</button>
-                </div>
-            </div>`;
-        }).join('');
+        const byScope = {
+            village: sorted.filter(item => (item.scope || 'village') === 'village'),
+            lands: sorted.filter(item => item.scope === 'lands')
+        };
+        const renderList = (list, scope) => {
+            const el = panels[scope];
+            if(!el) return;
+            if(!list.length) {
+                el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет новостей</div>';
+                return;
+            }
+            el.innerHTML = list.map(item => {
+                const catInfo = NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general;
+                const canDelete = item.author === currentNick || currentNick === ADMIN;
+                const unread = !isNewsRead(item.id);
+                return `<div class="news-card card" style="padding:14px;margin-bottom:12px;">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+                        <span class="news-scope-badge">${scope === 'village' ? '🏘️ Посёлок' : '🌲 Капанёвские земли'}</span>
+                        <span style="font-size:12px;background:var(--surface2);padding:4px 8px;border-radius:8px;color:var(--primary);">${catInfo.emoji} ${catInfo.label}</span>
+                        <span style="font-size:11px;color:var(--muted);">${item.date} · ${item.time}</span>
+                        ${unread ? '<span class="news-badge-new">Новая</span>' : ''}
+                        ${canDelete ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);" onclick="deleteNews('${jsEsc(item.id)}')">🗑</button>` : `<div style="margin-left:auto;"></div>`}
+                    </div>
+                    <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
+                    ${item.imageUrl ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
+                    ${item.videoUrl ? `<video controls playsinline webkit-playsinline preload="metadata" style="width:100%;max-height:240px;border-radius:var(--r-sm);margin-bottom:10px;display:block;"><source src="${escHtml(item.videoUrl)}"></video>` : ''}
+                    <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
+                    <div style="margin-top:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span>Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}</span>
+                        <button type="button" class="btn btn-primary btn-sm news-discuss-btn" onclick="openNewsDiscussion('${jsEsc(item.id)}')">Открыть обсуждение</button>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+        renderList(byScope.village, 'village');
+        renderList(byScope.lands, 'lands');
     } catch(e) {
         console.error('Error loading news:', e);
-        el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Ошибка загрузки новостей</div>';
+        ['newsListVillage','newsListLands'].forEach(id=>{ const el=qs(id); if(el) el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Ошибка загрузки новостей</div>'; });
     }
 };
 
 // ─── NEWS DISCUSSION ──────────────────────
-let currentNewsDiscussionId = null;
-window.openNewsDiscussion = function(newsId){
-    currentNewsDiscussionId = newsId;
+function newsMsgPreview(m){
+    if(m.msgType==='voice') return `🎤 ${m.nick === currentNick ? 'Вы' : (displayNick(allUsersCache[m.nick]) || m.nick)}: Голосовое сообщение`;
+    if(m.msgType==='video_circle') return `⭕ ${m.nick === currentNick ? 'Вы' : (displayNick(allUsersCache[m.nick]) || m.nick)}: Видеосообщение`;
+    if(m.msgType==='image') return `🖼 ${m.nick === currentNick ? 'Вы' : (displayNick(allUsersCache[m.nick]) || m.nick)}: Фото`;
+    if(m.msgType==='video') return `🎬 ${m.nick === currentNick ? 'Вы' : (displayNick(allUsersCache[m.nick]) || m.nick)}: Видео`;
+    const txt = (m.text || m.caption || '').trim();
+    const preview = txt.length > 54 ? txt.slice(0, 51) + '...' : txt;
+    return `${m.nick === currentNick ? 'Вы' : (displayNick(allUsersCache[m.nick]) || m.nick)}: ${preview}`;
+}
+window.openNewsDiscussion = async function(id){
+    const snap = await get(newsItemRef(id));
+    if(!snap.exists()) return toast('❌ Новость не найдена', 'red');
+    currentNewsId = id;
+    const item = snap.val();
+    await markNewsRead(id);
+    qs('newsDiscussionHeader').innerHTML = `
+        <div class="card" style="margin-bottom:0;">
+            <div class="news-discussion-meta">
+                <span class="news-scope-badge">${item.scope === 'lands' ? '🌲 Капанёвские земли' : '🏘️ Посёлок'}</span>
+                <span class="news-scope-badge">${(NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general).emoji} ${(NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general).label}</span>
+                <span class="news-scope-badge">${escHtml(item.date || '')} · ${escHtml(item.time || '')}</span>
+            </div>
+            <div style="font-weight:900;font-size:18px;margin:10px 0 8px;">${escHtml(item.title || '')}</div>
+            ${item.imageUrl ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
+            ${item.videoUrl ? `<video controls playsinline webkit-playsinline preload="metadata" style="width:100%;max-height:240px;border-radius:var(--r-sm);margin-bottom:10px;display:block;"><source src="${escHtml(item.videoUrl)}"></video>` : ''}
+            <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content || '')}</div>
+            <div style="margin-top:10px;font-size:11px;color:var(--muted);">
+                Автор: <b style="color:var(--text);">${escHtml(item.author || '')}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
+            </div>
+        </div>`;
+    qs('newsDiscussionMeta').innerHTML = `<span class="news-scope-badge">💬 Обсуждение</span>`;
     navTo('newsDiscussion');
+    attachNewsDiscussion();
 };
-window.renderNewsDiscussion = async function(){
-    if(!currentNewsDiscussionId) return;
-    const contentEl = qs('newsDiscussionContent');
-    const commentsEl = qs('newsDiscussionComments');
-    if(!contentEl || !commentsEl) return;
+function detachNewsDiscussion(){
+    if(currentNewsMsgListener){ off(currentNewsMsgListener.ref,'value',currentNewsMsgListener.fn); currentNewsMsgListener = null; }
+    if(currentNewsReadListener){ off(currentNewsReadListener.ref,'value',currentNewsReadListener.fn); currentNewsReadListener = null; }
+}
+function attachNewsDiscussion(){
+    if(!currentNewsId) return;
+    detachNewsDiscussion();
+    const msgRef = newsDiscussionRef(currentNewsId);
+    const msgFn = snap => {
+        currentNewsMsgs = snap.val() || {};
+        if(curPage === 'newsDiscussion') renderNewsDiscussionMessages(currentNewsMsgs);
+    };
+    onValue(msgRef, msgFn);
+    currentNewsMsgListener = { ref: msgRef, fn: msgFn };
+    const readRef = newsDiscussionReadRef(currentNewsId, currentNick);
+    const readFn = async snap => {
+        const val = snap.val() || 0;
+        if(curPage === 'newsDiscussion') renderNewsDiscussionMessages(currentNewsMsgs);
+        if(val < Date.now()) {
+            try { await set(readRef, Date.now()); } catch(e){}
+        }
+    };
+    onValue(readRef, readFn);
+    currentNewsReadListener = { ref: readRef, fn: readFn };
+}
+function updateNewsDiscussionHeaderState(){
+    const item = qs('newsDiscussionHeader');
+    if(!item) return;
+}
+window.closeNewsDiscussion = function(){
+    detachNewsDiscussion();
+    currentNewsId = null;
+    currentNewsMsgs = {};
+    navTo('news');
+};
+window.renderNewsDiscussionMessages = function(msgs){
+    const el = qs('newsDiscussionMessages');
+    if(!el || !currentNewsId) return;
+    const entries = Object.entries(msgs || {}).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-100);
+    const sig = entries.map(([id,m])=>`${id}:${m.createdAt||0}:${m.text||''}:${m.msgType||''}:${m.mediaData?1:0}:${m.edited?1:0}`).join('|') + '|r:' + JSON.stringify(chatReadStates || {});
+    // Always render if element is empty or signature doesn't match
+    if(el.dataset.sig === sig && el.innerHTML !== '') return;
+    el.dataset.sig = sig;
+    let lastDateStr = '';
+    el.innerHTML = entries.map(([msgId, m]) => {
+        const isMe = m.nick === currentNick;
+        const edited = m.edited ? `<span style="font-size:9px;color:var(--muted);margin-left:4px;">(изм.)</span>` : '';
+        const ts = m.createdAt || 0;
+        const msgDateStr = ts ? new Date(ts).toLocaleDateString('ru', {day:'numeric',month:'long',year:'numeric'}) : '';
+        let separator = '';
+        if(msgDateStr && msgDateStr !== lastDateStr){ lastDateStr = msgDateStr; separator = `<div class="chat-date-separator"><span>${msgDateStr}</span></div>`; }
+        const avSrc = safeAvatar(m.nick, m.avatar);
+        return separator + `<div class="chat-msg ${isMe ? 'me' : ''}" data-msgid="${jsEsc(msgId)}">
+            <div style="position:relative;display:inline-block;">
+                <img class="chat-av" src="${escHtml(avSrc)}" style="cursor:pointer;" loading="lazy" onclick="openImgViewer(this.src)" onerror="this.src='${DEFAULT_AVATAR_URL}'">
+            </div>
+            <div class="chat-msg-body">
+                ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
+                <div class="chat-bubble" id="newsbubble_${jsEsc(msgId)}">
+                    <div onclick="event.stopPropagation()">${mediaHtml(m)}</div>${edited}
+                    <div class="chat-time">${escHtml(m.time||'')}</div>
+                </div>
+                ${msgActionsHtml('news', msgId, m, isMe)}
+                ${msgEditHtml('news', msgId, m)}
+            </div>
+        </div>`;
+    }).join('');
+};
+window.sendNewsMsg = async function(){
+    const inp = qs('newsInput');
+    const text = (inp?.value || '').trim();
+    if(!currentNewsId || (!text && !getPendingPhotos('news').length)) return;
+    if(text) inp.value = '';
+    setNewsTypingState('idle');
+    await sendNewsDiscussionMsg(text, null, null);
+};
+window.sendNewsDiscussionMsg = async function(text, mediaData, msgType){
+    if(!currentNewsId) return;
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val();
+    const msg = { nick: currentNick, avatar: u?.avatar || DEFAULT_AVATAR_URL, time: nowTime(), createdAt: Date.now() };
+    if(text) { msg.text = text; if(mediaData) msg.caption = text; }
+    if(mediaData) msg.mediaData = mediaData;
+    if(msgType) msg.msgType = msgType;
+    
+    // Optimistic UI update - add to local cache immediately
+    const tempId = 'temp_' + Date.now();
+    currentNewsMsgs[tempId] = msg;
+    renderNewsDiscussionMessages(currentNewsMsgs);
     
     try {
-        // Load news item
-        const newsSnap = await get(newsItemRef(currentNewsDiscussionId));
-        if(!newsSnap.exists()){
-            contentEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Новость не найдена</div>';
-            return;
-        }
-        const item = newsSnap.val();
-        const catInfo = NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general;
-        
-        contentEl.innerHTML = `
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                <span style="font-size:12px;background:var(--surface2);padding:4px 8px;border-radius:8px;color:var(--primary);">${catInfo.emoji} ${catInfo.label}</span>
-                <span style="font-size:11px;color:var(--muted);">${item.date} · ${item.time}</span>
-            </div>
-            <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
-            ${item.imageUrl ? (item.mediaType === 'video' ? `<video src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;" controls playsinline></video>` : `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">`) : ''}
-            <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
-            <div style="margin-top:10px;font-size:11px;color:var(--muted);">
-                Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
-            </div>
-        `;
-        
-        // Load comments
-        renderNewsComments(currentNewsDiscussionId);
+        await push(newsDiscussionRef(currentNewsId), msg);
     } catch(e) {
-        console.error('Error loading news discussion:', e);
-        contentEl.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Ошибка загрузки</div>';
+        // If Firebase fails, remove from local cache
+        delete currentNewsMsgs[tempId];
+        renderNewsDiscussionMessages(currentNewsMsgs);
+        toast('❌ Не удалось отправить сообщение', 'red');
     }
 };
-window.postDiscussionComment = async function(){
-    const input = qs('newsDiscussionInput');
-    const text = input.value.trim();
-    if(!text) return toast('⚠️ Напишите комментарий', 'gold');
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val();
-    const comment = {
-        id: genId(),
-        nick: currentNick,
-        avatar: u?.avatar || DEFAULT_AVATAR_URL,
-        text,
-        createdAt: Date.now(),
-        time: nowTime()
-    };
-    await push(newsCommentsRef(currentNewsDiscussionId), comment);
-    input.value = '';
-    toast('💬 Комментарий добавлен', 'green');
-    renderNewsComments(currentNewsDiscussionId);
+window.deleteNewsMsg = async function(msgId){
+    try {
+        // Мгновенно убираем элемент из DOM
+        const el = document.querySelector(`#newsDiscussionMessages [data-msgid="${msgId}"]`);
+        if(el) el.remove();
+        await remove(ref(db, `newsDiscussions/${currentNewsId}/messages/${msgId}`));
+    } catch(e){ toast('❌ Не удалось удалить сообщение', 'red'); }
 };
+window.startEditNews = function(msgId, oldText){
+    const actions = qs(`newsactions_${msgId}`); if(actions) actions.style.display='none';
+    const area = qs(`newsedit_${msgId}`); if(area) area.style.display='block';
+    const ta = qs(`newseditText_${msgId}`);
+    if(ta){ ta.value = oldText.replace(/&#39;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); ta.focus(); }
+};
+window.cancelEditNews = function(msgId){ const area = qs(`newsedit_${msgId}`); if(area) area.style.display='none'; };
+window.saveEditNews = async function(msgId){
+    const ta = qs(`newseditText_${msgId}`); const newText = ta ? ta.value.trim() : '';
+    if(!newText) return;
+    await update(ref(db, `newsDiscussions/${currentNewsId}/messages/${msgId}`), { text: newText, edited: true });
+    const area = qs(`newsedit_${msgId}`); if(area) area.style.display='none';
+};
+window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-// ─── NAVIGATION ───────────────────────────
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,newsDiscussion:9};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
     for(let i=0;i<9;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
-    // Only scroll to top for non-chat pages to prevent chat jump
-    if(id!=='messages') window.scrollTo(0,0);
+    window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
     if(id==='messages') get(chatRef()).then(s=>renderChat(s.val()||{}));
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
-    if(id==='newsDiscussion') renderNewsDiscussion();
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
     if(id==='tasks') renderTasks();
     if(id==='jobs') renderJobAppStatus();
-    if(id==='news') renderNews();
+    if(id==='news') { currentNewsTab = currentNewsTab || 'village'; renderNews(); }
+    if(id==='newsDiscussion') { const el=qs('newsDiscussionMessages'); if(el) renderNewsDiscussionMessages(currentNewsMsgs); }
     if(id==='taxi') setTimeout(()=>window.initTaxiMap(),100);
     if(id==='driverPage') setTimeout(()=>{if(driverTrackMapObj)driverTrackMapObj.invalidateSize();},450);
     if(id==='janitorPage') renderJanitorPage();
@@ -5681,46 +5476,88 @@ function restoreScrollState(el, state){
         el.scrollTop = Math.max(0, state.top + delta);
     }
 }
+// ─── CUSTOM VOICE PLAYER ──────────────────
+function _capAudio(pid){ const el = document.getElementById(pid); return el ? el.querySelector('audio') : null; }
+function _capFmtTime(s){ s=Math.floor(s||0); const m=Math.floor(s/60),sec=s%60; return `${m}:${sec<10?'0'+sec:sec}`; }
+window.capToggle = function(pid){
+    const a = _capAudio(pid); if(!a) return;
+    // Pause all other players first
+    document.querySelectorAll('.chat-audio-player audio').forEach(au=>{ if(au!==a&&!au.paused){au.pause();}});
+    document.querySelectorAll('.cap-play-btn').forEach(b=>{ if(b.closest('.chat-audio-player')?.id !== pid) b.textContent='▶'; });
+    if(a.paused){ 
+        setPlaybackAudioRoute();
+        a.play().catch(()=>{}); 
+        document.querySelector(`#${pid} .cap-play-btn`).textContent='⏸';
+        document.querySelector(`#${pid} .chat-audio-player`).classList.add('playing');
+    }
+    else { 
+        a.pause(); 
+        document.querySelector(`#${pid} .cap-play-btn`).textContent='▶';
+        document.querySelector(`#${pid} .chat-audio-player`).classList.remove('playing');
+    }
+};
+window.capMeta = function(pid){
+    const a = _capAudio(pid); if(!a||!isFinite(a.duration)) return;
+    const sc = document.querySelector(`#${pid} .cap-scrubber`); if(sc) sc.max = a.duration;
+    const ti = document.getElementById(pid+'_time'); if(ti) ti.textContent = _capFmtTime(a.duration);
+    const durTi = document.getElementById(pid+'_duration'); if(durTi) durTi.textContent = _capFmtTime(a.duration);
+};
+window.capTick = function(pid){
+    const a = _capAudio(pid); if(!a) return;
+    const sc = document.querySelector(`#${pid} .cap-scrubber`);
+    if(sc && !sc._seeking) sc.value = a.currentTime;
+    const ti = document.getElementById(pid+'_time');
+    if(ti) ti.textContent = _capFmtTime(a.duration - a.currentTime);
+    // Update progress bar visual
+    const progress = document.querySelector(`#${pid} .cap-progress`);
+    if(progress && a.duration) {
+        const pct = (a.currentTime / a.duration) * 100;
+        progress.style.width = pct + '%';
+    }
+};
+window.capSeek = function(pid, val){
+    const a = _capAudio(pid); if(!a) return;
+    const sc = document.querySelector(`#${pid} .cap-scrubber`);
+    if(sc) sc._seeking = true;
+    a.currentTime = parseFloat(val);
+    if(sc) setTimeout(() => sc._seeking = false, 100);
+};
+window.capEnded = function(pid){
+    const btn = document.querySelector(`#${pid} .cap-play-btn`); if(btn) btn.textContent='▶';
+    const sc = document.querySelector(`#${pid} .cap-scrubber`); if(sc) sc.value = 0;
+    const a = _capAudio(pid);
+    const ti = document.getElementById(pid+'_time');
+    if(ti && a && isFinite(a.duration)) ti.textContent = _capFmtTime(a.duration);
+    const progress = document.querySelector(`#${pid} .cap-progress`);
+    if(progress) progress.style.width = '0%';
+    document.querySelector(`#${pid} .chat-audio-player`).classList.remove('playing');
+};
+
 function mediaHtml(m){
     const caption = escHtml(m.caption || m.text || '');
     let html='';
     if(caption) html += `<div class="msg-caption">${caption}</div>`;
     if(m.msgType==='image' || (!m.msgType && m.mediaData && /^data:image\//.test(m.mediaData))){
-        html += `<div class="msg-media-wrap"><img class="msg-media-img" src="${escHtml(m.mediaData)}" loading="lazy" decoding="async" onclick="openImgViewer('${jsEsc(m.mediaData)}')" alt="Фото"></div>`;
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><img class="msg-media-img" src="${escHtml(m.mediaData)}" loading="lazy" decoding="async" onclick="openImgViewer('${jsEsc(m.mediaData)}')" alt="Фото"></div>`;
     } else if(m.msgType==='video'){
-        const cvpId = 'cvp_' + Math.random().toString(36).substr(2, 9);
-        html += `<div class="cvp-wrap" id="${cvpId}" onclick="event.stopPropagation();">
-            <video src="${escHtml(m.mediaData)}" preload="metadata" playsinline webkit-playsinline onloadedmetadata="onCvpMeta('${cvpId}',this)" ontimeupdate="onCvpTime('${cvpId}',this)" onended="onCvpEnd('${cvpId}',this)" style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;"></video>
-            <div class="cvp-overlay" onclick="event.stopPropagation();toggleCvpPlay('${cvpId}')"><div class="cvp-play-ico">▶</div></div>
-            <div class="cvp-controls">
-                <button class="cvp-ctrl-btn" onclick="event.stopPropagation();toggleCvpPlay('${cvpId}')">▶</button>
-                <div class="cvp-bar" onclick="event.stopPropagation();seekCvp('${cvpId}',event)"><div class="cvp-bar-fill"></div></div>
-                <span class="cvp-time cvp-cur">0:00</span>/<span class="cvp-time cvp-dur">0:00</span>
-                <button class="cvp-ctrl-btn" onclick="event.stopPropagation();toggleCvpFullscreen('${cvpId}')">⛶</button>
-            </div>
-        </div>`;
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div style="position:relative;display:inline-block;width:100%;"><video class="msg-media-video" controls playsinline webkit-playsinline preload="metadata" style="cursor:pointer;" onclick="this.requestFullscreen&&this.requestFullscreen()"><source src="${escHtml(m.mediaData)}"></video></div></div>`;
     } else if(m.msgType==='video_circle'){
-        const cvcId = 'cvc_' + Math.random().toString(36).substr(2, 9);
-        html += `<div class="cvp-circle-wrap" id="${cvcId}" onclick="event.stopPropagation();toggleCvc('${cvcId}')">
-            <video src="${escHtml(m.mediaData)}" preload="metadata" playsinline webkit-playsinline loop muted onloadedmetadata="onCvcMeta('${cvcId}',this)" ontimeupdate="onCvcTime('${cvcId}',this)" onended="onCvcEnd('${cvcId}',this)" style="width:100%;height:100%;object-fit:cover;"></video>
-            <div class="cvp-circle-overlay"><div class="cvp-circle-ico">▶</div></div>
-            <div class="cvp-circle-bar" onclick="event.stopPropagation();seekCvc('${cvcId}',event)"><div class="cvp-circle-bar-fill"></div></div>
-        </div>`;
+        // Use a static thumbnail div to avoid flicker — play only on tap via viewer
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(m.mediaData)}')" style="background:#111;"><video preload="metadata" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(m.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
     } else if(m.msgType==='voice'){
-        const vpId = 'vp_' + Math.random().toString(36).substr(2, 9);
-        html += `<div class="voice-player" id="${vpId}" style="margin-top:4px;">
-            <button class="voice-player-btn" onclick="event.stopPropagation();toggleVoicePlayer('${vpId}')">▶</button>
-            <div class="voice-player-track">
-                <div class="voice-player-bar" onmousedown="event.stopPropagation();startVoiceDrag('${vpId}',event)" ontouchstart="event.stopPropagation();startVoiceDrag('${vpId}',event)" onclick="event.stopPropagation();seekVoicePlayer('${vpId}',event)">
-                    <div class="voice-player-fill"></div>
+        const pid = 'vp_' + (Math.random().toString(36).slice(2));
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="chat-audio-player" id="${pid}">
+            <button class="cap-play-btn" onclick="capToggle('${pid}')">▶</button>
+            <div class="cap-scrub-wrap">
+                <div class="cap-progress-bg">
+                    <div class="cap-progress"></div>
                 </div>
-                <div class="voice-player-times">
-                    <span class="vp-cur">0:00</span>
-                    <span class="vp-dur">0:00</span>
-                </div>
+                <input type="range" class="cap-scrubber" value="0" min="0" step="0.01" oninput="capSeek('${pid}',this.value)">
+                <div class="cap-time" id="${pid}_time">0:00</div>
+                <div class="cap-duration" id="${pid}_duration">0:00</div>
             </div>
-            <audio preload="metadata" onloadedmetadata="onVoiceMeta('${vpId}',this)" ontimeupdate="onVoiceTime('${vpId}',this)" onended="onVoiceEnd('${vpId}',this)" style="display:none;"><source src="${escHtml(m.mediaData)}"></audio>
-        </div>`;
+            <audio preload="none" src="${escHtml(m.mediaData)}" onloadedmetadata="capMeta('${pid}')" ontimeupdate="capTick('${pid}')" onended="capEnded('${pid}')" style="display:none;"></audio>
+        </div></div>`;
     } else if(m.msgType==='gift_subscription'){
         html += `<div class="msg-text">🎁 ${escHtml(m.text || 'Подарок подписки')}</div>`;
     } else if(!caption && m.mediaData){
@@ -5729,116 +5566,36 @@ function mediaHtml(m){
     return html || `<div class="msg-text"></div>`;
 }
 function msgActionsHtml(kind, msgId, m, isMe){
+    if(!isMe) return '';
     const text = jsEsc(m.text || '');
-    return `<div class="msg-actions" id="${kind==='chat'?'gcactions_':'actions_'}${msgId}">
-        ${isMe ? `${!m.msgType ? `<button type="button" class="msg-action-btn" onclick="event.stopPropagation();${kind==='chat'?'startEditChat':'startEditDm'}('${jsEsc(msgId)}','${text}')">✏️</button>` : ''}
-        <button type="button" class="msg-action-btn" style="color:var(--red);" onclick="event.stopPropagation();${kind==='chat'?'deleteChat':'deleteDm'}('${jsEsc(msgId)}')">🗑</button>` : ''}
+    const editFn = kind==='chat' ? 'startEditChat' : kind==='dm' ? 'startEditDm' : 'startEditNews';
+    const delFn  = kind==='chat' ? 'deleteChat' : kind==='dm' ? 'deleteDm' : 'deleteNewsMsg';
+    const idPrefix = kind==='chat' ? 'gcactions_' : kind==='dm' ? 'actions_' : 'newsactions_';
+    return `<div class="msg-actions" id="${idPrefix}${msgId}">
+        ${!m.msgType ? `<button type="button" class="msg-action-btn" onclick="event.stopPropagation();${editFn}('${jsEsc(msgId)}','${text}')">✏️</button>` : ''}
+        <button type="button" class="msg-action-btn" style="color:var(--red);" onclick="event.stopPropagation();${delFn}('${jsEsc(msgId)}')">🗑</button>
     </div>`;
 }
-let replyToMsg = null; // Store the message being replied to
-function replyPreviewHtml(m){
-    if(!m.replyTo) return '';
-    const replyNick = m.replyTo.nick || '?';
-    const replyText = (m.replyTo.text || '').length > 30 ? (m.replyTo.text || '').slice(0, 27) + '...' : (m.replyTo.text || '');
-    const replyMsgId = m.replyTo.msgId || '';
-    return `<div class="reply-quote" onclick="scrollToMessage('${jsEsc(replyMsgId)}')">
-        <div class="reply-quote-nick">↩️ ${escHtml(displayNick(allUsersCache[replyNick]) || replyNick)}</div>
-        <div class="reply-quote-text">${escHtml(replyText)}</div>
-    </div>`;
-}
-window.scrollToMessage = function(msgId){
-    if(!msgId) return;
-    // Try to find the message in chat
-    const chatMsg = document.querySelector(`#chatMessages .chat-msg[data-msgid="${jsEsc(msgId)}"]`);
-    if(chatMsg){
-        chatMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        // Highlight the message briefly
-        const bubble = chatMsg.querySelector('.chat-bubble');
-        if(bubble){
-            bubble.style.transition = 'background-color 0.3s ease';
-            const originalBg = bubble.style.backgroundColor;
-            bubble.style.backgroundColor = 'rgba(34,211,165,0.3)';
-            setTimeout(() => {
-                bubble.style.backgroundColor = originalBg;
-            }, 1000);
-        }
-        return;
-    }
-    // Try to find the message in DM
-    const dmMsg = document.querySelector(`#dmMessages .chat-msg[data-msgid="${jsEsc(msgId)}"]`);
-    if(dmMsg){
-        dmMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        // Highlight the message briefly
-        const bubble = dmMsg.querySelector('.chat-bubble');
-        if(bubble){
-            bubble.style.transition = 'background-color 0.3s ease';
-            const originalBg = bubble.style.backgroundColor;
-            bubble.style.backgroundColor = 'rgba(34,211,165,0.3)';
-            setTimeout(() => {
-                bubble.style.backgroundColor = originalBg;
-            }, 1000);
-        }
-        return;
-    }
-    toast('⚠️ Сообщение не найдено (возможно, оно было удалено)','gold');
-};
+function replyPreviewHtml(m){ return ''; }
 function msgEditHtml(kind, msgId, m){
     if(m.msgType) return '';
-    const textareaId = kind==='chat' ? `gceditText_${msgId}` : `editText_${msgId}`;
-    const areaId = kind==='chat' ? `gcedit_${msgId}` : `edit_${msgId}`;
-    const saveFn = kind==='chat' ? 'saveEditChat' : 'saveEditDm';
-    const cancelFn = kind==='chat' ? 'cancelEditChat' : 'cancelEditDm';
-    return `<div class="msg-edit-area" id="${areaId}" onclick="event.stopPropagation()">
-        <textarea id="${textareaId}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();${saveFn}('${jsEsc(msgId)}');}">${escHtml(m.text||'')}</textarea>
-        <div class="edit-btns"><button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation();${saveFn}('${jsEsc(msgId)}')">💾</button><button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();${cancelFn}('${jsEsc(msgId)}')">✕</button></div>
+    const textareaId = kind==='chat' ? `gceditText_${msgId}` : kind==='dm' ? `editText_${msgId}` : `newseditText_${msgId}`;
+    const areaId = kind==='chat' ? `gcedit_${msgId}` : kind==='dm' ? `edit_${msgId}` : `newsedit_${msgId}`;
+    const saveFn = kind==='chat' ? 'saveEditChat' : kind==='dm' ? 'saveEditDm' : 'saveEditNews';
+    const cancelFn = kind==='chat' ? 'cancelEditChat' : kind==='dm' ? 'cancelEditDm' : 'cancelEditNews';
+    return `<div class="msg-edit-area" id="${areaId}">
+        <textarea style="min-height:44px;font-size:13px;margin:0;" id="${textareaId}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();${saveFn}('${jsEsc(msgId)}');}">${escHtml(m.text||'')}</textarea>
+        <div class="edit-btns"><button type="button" class="btn btn-primary btn-sm" onclick="${saveFn}('${jsEsc(msgId)}')">💾</button><button type="button" class="btn btn-ghost btn-sm" onclick="${cancelFn}('${jsEsc(msgId)}')">✕</button></div>
     </div>`;
 }
 
 // ─── CHAT RENDER / DELETE FIXES ───────────
 let _chatRenderPending = false;
 let _chatRenderTimeout = null;
-let _isUserInteracting = false;
-let _interactionTimeout = null;
-
-// Track user interaction to prevent re-renders
-function markUserInteraction(){
-    _isUserInteracting = true;
-    if(_interactionTimeout) clearTimeout(_interactionTimeout);
-    _interactionTimeout = setTimeout(() => {
-        _isUserInteracting = false;
-    }, 3000); // Wait 3 seconds after last interaction before allowing re-renders
-}
-
-// Add interaction listeners to chat container - try immediately and also on DOM ready
-function setupChatInteractionListeners(){
-    const chatEl = qs('chatMessages');
-    if(chatEl){
-        chatEl.addEventListener('mousedown', markUserInteraction);
-        chatEl.addEventListener('touchstart', markUserInteraction, {passive:true});
-        // Do NOT add click listener — it causes delayed re-render jumps
-    }
-}
-
-// Try immediately in case element already exists
-setupChatInteractionListeners();
-
-// Also try on DOM ready
-if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', setupChatInteractionListeners);
-} else {
-    setupChatInteractionListeners();
-}
 
 window.renderChat = async function(msgs){
     lastChatMsgs = msgs || {};
     const el = qs('chatMessages'); if(!el) return;
-    
-    // Skip render if user is interacting
-    if(_isUserInteracting) return;
-    
-    // Skip render if any audio or video is currently playing in chat
-    const playingMedia = el.querySelector('audio:not([paused]), video:not([paused])');
-    if(playingMedia && !playingMedia.paused && !playingMedia.ended) return;
     
     // Debounce render for performance on iPhone
     if(_chatRenderPending) {
@@ -5851,6 +5608,12 @@ window.renderChat = async function(msgs){
     
     requestAnimationFrame(async () => {
         const scroll = preserveScrollState(el);
+        const entries = Object.entries(lastChatMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-60);
+        
+        // Always render if element is empty or signature doesn't match
+        const sig = entries.map(([id,m])=>`${id}:${m.createdAt||0}:${m.text||''}:${m.msgType||''}:${m.mediaData?1:0}:${m.edited?1:0}`).join('|');
+        if(el.dataset.sig === sig && el.innerHTML !== '') return;
+        el.dataset.sig = sig;
         
         // Get current user's chat bubble style
         let myBubbleStyle = '';
@@ -5861,7 +5624,6 @@ window.renderChat = async function(msgs){
             if(hasActiveSub) myBubbleStyle = u.chatBubbleStyle || '';
         } catch(e) {}
         
-        const entries = Object.entries(lastChatMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-60);
         let lastDateStr = '';
         const html = entries.map(([msgId, m]) => {
             const isMe = m.nick === currentNick;
@@ -5937,7 +5699,7 @@ window.renderChat = async function(msgs){
                     <div class="${bubbleClass}" id="gcbubble_${jsEsc(msgId)}">
                         ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
                         ${replyPreviewHtml(m)}
-                        ${mediaHtml(m)}${edited}
+                        <div onclick="event.stopPropagation()">${mediaHtml(m)}</div>${edited}
                         <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
                     </div>
                     ${msgActionsHtml('chat', msgId, m, isMe)}
@@ -5952,6 +5714,9 @@ window.renderChat = async function(msgs){
 };
 window.deleteChat = async function(msgId){
     try { 
+        // Мгновенно убираем элемент из DOM
+        const el = document.querySelector(`[data-msgid="${msgId}"]`);
+        if(el) el.remove();
         // Добавляем ID удаленного сообщения в Set
         window._recentlyDeletedMsgs = window._recentlyDeletedMsgs || new Set();
         window._recentlyDeletedMsgs.add(msgId);
@@ -5967,9 +5732,7 @@ window.startEditChat = function(msgId, oldText){
     const actions = qs(`gcactions_${msgId}`); if(actions) actions.style.display='none';
     const area = qs(`gcedit_${msgId}`); if(area) area.style.display='block';
     const ta = qs(`gceditText_${msgId}`);
-    if(ta){ ta.value = oldText.replace(/&#39;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-        setTimeout(()=>{try{ta.focus({preventScroll:true});}catch(e){ta.focus();}if(area)area.scrollIntoView({behavior:'smooth',block:'nearest'});},100);
-    }
+    if(ta){ ta.value = oldText.replace(/&#39;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); ta.focus(); }
 };
 window.cancelEditChat = function(msgId){ const area = qs(`gcedit_${msgId}`); if(area) area.style.display='none'; };
 window.saveEditChat = async function(msgId){
@@ -5977,55 +5740,6 @@ window.saveEditChat = async function(msgId){
     if(!newText) return;
     await update(ref(db, `chat/${msgId}`), { text: newText, edited: true });
     const area = qs(`gcedit_${msgId}`); if(area) area.style.display='none';
-};
-window.startReplyChat = function(msgId, nick, text){
-    replyToMsg = { msgId, nick, text };
-    const replyPreview = qs('chatReplyPreview');
-    if(replyPreview){
-        const displayNickName = displayNick(allUsersCache[nick]) || nick;
-        const previewText = text.length > 50 ? text.slice(0, 47) + '...' : text;
-        replyPreview.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-left:3px solid var(--primary);border-radius:8px;margin-bottom:8px;">
-            <span style="font-size:12px;">↩️</span>
-            <div style="flex:1;min-width:0;">
-                <div style="font-weight:800;font-size:12px;color:var(--primary);">${escHtml(displayNickName)}</div>
-                <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(previewText)}</div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="cancelReply()" style="padding:4px 8px;font-size:12px;">✕</button>
-        </div>`;
-        replyPreview.style.display = 'block';
-    }
-    const input = qs('chatInput');
-    if(input) input.focus();
-};
-window.startReplyDm = function(msgId, nick, text){
-    replyToMsg = { msgId, nick, text, isDm: true };
-    const replyPreview = qs('dmReplyPreview');
-    if(replyPreview){
-        const displayNickName = displayNick(allUsersCache[nick]) || nick;
-        const previewText = text.length > 50 ? text.slice(0, 47) + '...' : text;
-        replyPreview.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-left:3px solid var(--primary);border-radius:8px;margin-bottom:8px;">
-            <span style="font-size:12px;">↩️</span>
-            <div style="flex:1;min-width:0;">
-                <div style="font-weight:800;font-size:12px;color:var(--primary);">${escHtml(displayNickName)}</div>
-                <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(previewText)}</div>
-            </div>
-            <button class="btn btn-ghost btn-sm" onclick="cancelReply()" style="padding:4px 8px;font-size:12px;">✕</button>
-        </div>`;
-        replyPreview.style.display = 'block';
-    }
-    const input = qs('dmInput');
-    if(input) input.focus();
-};
-window.cancelReply = function(){
-    replyToMsg = null;
-    const chatPreview = qs('chatReplyPreview');
-    if(chatPreview) chatPreview.style.display = 'none';
-    const dmPreview = qs('dmReplyPreview');
-    if(dmPreview) dmPreview.style.display = 'none';
-};
-window.startQuickReplyDm = function(){
-    const input = qs('dmInput');
-    if(input) input.focus();
 };
 
 // ─── DM RENDER / DELETE FIXES ─────────────
@@ -6035,10 +5749,6 @@ let _dmRenderTimeout = null;
 window.renderDmMessages = async function(msgs){
     lastDmMsgs = msgs || {};
     const el = qs('dmMessages'); if(!el) return;
-    
-    // Skip render if any audio or video is currently playing in DM
-    const playingMedia = el.querySelector('audio:not([paused]), video:not([paused])');
-    if(playingMedia && !playingMedia.paused && !playingMedia.ended) return;
     
     // Debounce render for performance on iPhone
     if(_dmRenderPending) {
@@ -6051,7 +5761,11 @@ window.renderDmMessages = async function(msgs){
     
     requestAnimationFrame(async () => {
         const scroll = preserveScrollState(el);
-        
+        const entries = Object.entries(lastDmMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-80);
+        const sig = entries.map(([id,m])=>`${id}:${m.createdAt||0}:${m.text||''}:${m.msgType||''}:${m.mediaData?1:0}:${m.edited?1:0}`).join('|') + '|peer:' + String(dmPeerReadTs || 0);
+        // Always render if element is empty or signature doesn't match
+        if(el.dataset.sig === sig && el.innerHTML !== '') return;
+        el.dataset.sig = sig;
         // Get current user's chat bubble style
         let myBubbleStyle = '';
         try {
@@ -6061,7 +5775,6 @@ window.renderDmMessages = async function(msgs){
             if(hasActiveSub) myBubbleStyle = u.chatBubbleStyle || '';
         } catch(e) {}
         
-        const entries = Object.entries(lastDmMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-80);
         let lastDateStr = '';
         const html = entries.map(([msgId, m]) => {
             const isMe = m.nick === currentNick;
@@ -6133,7 +5846,7 @@ window.renderDmMessages = async function(msgs){
                     ${!isMe ? `<div class="chat-sender" style="cursor:pointer;" onclick="openUserProfile('${jsEsc(m.nick)}')">${escHtml(displayNick(allUsersCache[m.nick]) || m.nick)}</div>` : ''}
                     <div class="${bubbleClass}" id="bubble_${jsEsc(msgId)}">
                         ${replyPreviewHtml(m)}
-                        ${mediaHtml(m)}${edited}
+                        <div onclick="event.stopPropagation()">${mediaHtml(m)}</div>${edited}
                         <div class="chat-time">${escHtml(m.time||'')}</div>${readLine}
                     </div>
                     ${msgActionsHtml('dm', msgId, m, isMe)}
@@ -6149,6 +5862,9 @@ window.renderDmMessages = async function(msgs){
 window.deleteDm = async function(msgId){
     try { 
         if(currentDmNick){
+            // Мгновенно убираем элемент из DOM
+            const el = document.querySelector(`#dmMessages [data-msgid="${msgId}"]`);
+            if(el) el.remove();
             // Добавляем ID удаленного сообщения в Set
             window._recentlyDeletedMsgs = window._recentlyDeletedMsgs || new Set();
             window._recentlyDeletedMsgs.add(msgId);
@@ -6165,9 +5881,7 @@ window.startEditDm = function(msgId, oldText){
     const actions = qs(`actions_${msgId}`); if(actions) actions.style.display='none';
     const area = qs(`edit_${msgId}`); if(area) area.style.display='block';
     const ta = qs(`editText_${msgId}`);
-    if(ta){ ta.value = oldText.replace(/&#39;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-        setTimeout(()=>{try{ta.focus({preventScroll:true});}catch(e){ta.focus();}if(area)area.scrollIntoView({behavior:'smooth',block:'nearest'});},100);
-    }
+    if(ta){ ta.value = oldText.replace(/&#39;/g,"'").replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'); ta.focus(); }
 };
 window.cancelEditDm = function(msgId){ const area = qs(`edit_${msgId}`); if(area) area.style.display='none'; };
 window.saveEditDm = async function(msgId){
@@ -6290,14 +6004,17 @@ let vcMediaRecorder = null;
 let vcChunks = [];
 let vcTimerInterval = null;
 let vcClosing = false, vcSwitchPending = false;
-let vcRecordedFacingMode = null;
 const VC_MAX_SEC_OVERRIDE = 30;
 
 function vcApplyLiveStyles(v){
     if(!v) return;
     v.style.display = 'block';
-    // Никогда не зеркалим видео — что видит камера, то и записывается
-    v.style.setProperty('transform', 'none', 'important');
+    // Если камера фронтальная, принудительно разворачиваем её обратно
+    if (vcFacingMode === 'user') {
+        v.style.setProperty('transform', 'scaleX(-1)', 'important');
+    } else {
+        v.style.setProperty('transform', 'none', 'important');
+    }
     v.style.objectFit = 'cover';
 }
 window.applyVcZoom = async function(val){
@@ -6364,8 +6081,9 @@ function finalizeVcRecording(){
         play.setAttribute('webkit-playsinline', '');
         play.muted = false;
         play.volume = 1;
-        // Никогда не зеркалим видео при воспроизведении
-        play.style.setProperty('transform', 'none', 'important');
+        // Убираем зеркальное отражение у превью — видео снято как есть
+        play.style.removeProperty('transform');
+        play.style.removeProperty('-webkit-transform');
         play.style.objectFit = 'cover';
         play.play().catch(()=>{});
     }
@@ -6373,7 +6091,6 @@ function finalizeVcRecording(){
 }
 function startVcRecording(){
     if(!vcStream) throw new Error('Камера недоступна');
-    vcRecordedFacingMode = vcFacingMode;
     const vOpts = { mimeType: vcMime(), videoBitsPerSecond: 450000 };
     try { vcMediaRecorder = new MediaRecorder(vcStream, vOpts); } catch(e) { vcMediaRecorder = new MediaRecorder(vcStream, { mimeType: vcMime() }); }
     vcMediaRecorder.ondataavailable = e => { if(e.data && e.data.size) vcChunks.push(e.data); };
@@ -6496,6 +6213,7 @@ window.sendVcMsg = async function(){
         closeVcModal();
         if(vcTargetCtx === 'chat') await sendChatMsg(null, dataUrl, 'video_circle');
         else if(vcTargetCtx === 'dm') await sendDmMsg(null, dataUrl, 'video_circle');
+        else if(vcTargetCtx === 'news') await sendNewsDiscussionMsg(null, dataUrl, 'video_circle');
         else if(vcTargetCtx === 'wall') await pushWallPostMedia('video_circle', dataUrl);
         if(vcTargetCtx !== 'wall') toast('⭕ Видеосообщение отправлено', 'green');
     };
@@ -6877,7 +6595,7 @@ window.sendGiftSubscription = async function(){
 
   document.addEventListener('touchend', function(e){
     // Не перехватываем клики по нативным интерактивным элементам — кнопки, инпуты, ссылки
-    const interactive = e.target && e.target.closest && e.target.closest('button, a, input, textarea, select, label, [role="button"], .msg-action-btn, .media-ico-btn, .media-bar-btn, .jump-date-text, .msg-tab, .bn-item, .btn, .chat-msg, .chat-bubble, .chat-av, .chat-sender, .msg-media-wrap, .voice-player, .voice-player-btn, .voice-player-bar, .cvp-wrap, .cvp-ctrl-btn, .cvp-overlay, .cvp-bar, .cvp-circle-wrap, .cvp-circle-overlay');
+    const interactive = e.target && e.target.closest && e.target.closest('button, a, input, textarea, select, label, [role="button"], .msg-action-btn, .media-ico-btn, .media-bar-btn, .jump-date-text, .msg-tab, .bn-item, .btn');
     if (interactive) return;
     const target = e.target && e.target.closest && e.target.closest(tappableSelector);
     if (!target) return;
@@ -6927,14 +6645,3 @@ window.sendGiftSubscription = async function(){
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
