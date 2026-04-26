@@ -30,7 +30,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(34,211,165,.07) 0%,transparent 70%),
                radial-gradient(ellipse 50% 50% at 85% 75%,rgba(251,191,36,.06) 0%,transparent 70%);}
 .container{width:100%;max-width:490px;padding:0 12px;position:relative;z-index:1;}
-.g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:900;}
+.g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;padding-top:max(0px, env(safe-area-inset-top));z-index:900;}
 .h-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
 .h-avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .h-avatar:hover{transform:scale(1.08);}
@@ -45,13 +45,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm{position:relative;display:block;flex-shrink:0;align-self:flex-start;}
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
-.bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(8,1fr);padding:8px 0 10px;z-index:900;}
-.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:7.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.2px;padding:0 1px;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(8,1fr);padding:8px 0 calc(10px + env(safe-area-inset-bottom, 0px));z-index:900;padding-bottom:max(10px, env(safe-area-inset-bottom, 0px));}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:7.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.2px;padding:0 1px;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;min-height:44px;min-width:44px;justify-content:center;}
 .bn-item .ico{font-size:20px;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
 .bn-item.sel .ico{transform:scale(1.15);}
 .bn-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
-.page-wrap{padding-top:76px;padding-bottom:env(safe-area-inset-bottom,0px);}
+.page-wrap{padding-top:calc(76px + env(safe-area-inset-top, 0px));padding-bottom:calc(80px + env(safe-area-inset-bottom, 0px));}
 .section{display:none;animation:fadeUp .35s ease-out;}
 .section.active{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
@@ -864,10 +864,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <button class="jump-date-text" onclick="openJumpToDate('chat')" data-chat-context="chat" title="Перейти к дате" type="button">📅 Перейти к дате</button>
             </div>
             <div id="chatWrapper" style="position:relative;">
-            <div id="chatLoading" style="display:none;text-align:center;padding:20px 0;color:var(--muted);font-size:13px;">
-                <div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0 auto 8px;"></div>
-                Загрузка сообщений...
-            </div>
             <div id="chatMessages"></div>
             </div>
             <div class="emoji-panel" id="chatEmojiPanel"></div>
@@ -2095,10 +2091,10 @@ function attachListeners() {
     onValue(aRef,aFn); listeners.apps={ref:aRef,fn:aFn};
 
     const cRef=chatRef();
-    const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages')renderChat(lastChatMsgs);};
+    const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);};
     onValue(cRef,cFn); listeners.chat={ref:cRef,fn:cFn};
-    // Initial render of chat
-    get(cRef).then(snap=>{lastChatMsgs=snap.val()||{};if(curPage==='messages')renderChat(lastChatMsgs);});
+    // Initial render of chat - always load data even if not on messages page yet
+    get(cRef).then(snap=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);});
     const chatTypingRef = ref(db, 'typing/chat');
     const chatTypingFn = (snap) => {
         if(curPage==='messages'&&document.querySelector('#msgPanel0.active')){
@@ -2117,8 +2113,8 @@ function attachListeners() {
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
-        if(curPage==='messages') renderChat(lastChatMsgs);
-        if(curPage==='messages') renderDmUserList(users);
+        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
+        if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
         if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
         if(curPage==='tasks') renderTasks();
     };
@@ -2600,6 +2596,9 @@ window.openVideoViewer=function(src){
     v.setAttribute('webkit-playsinline', '');
     v.muted = false;
     v.volume = 1;
+    // Remove any transforms to ensure video plays as recorded
+    v.style.removeProperty('transform');
+    v.style.removeProperty('-webkit-transform');
     lockBodyScroll();
     qs('videoViewer').classList.add('open');
     v.play().catch(()=>{});
@@ -5426,10 +5425,7 @@ window.navTo=function(id){
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
-    if(id==='messages') {
-        const loadingEl = qs('chatLoading'); if(loadingEl) loadingEl.style.display = 'block';
-        get(chatRef()).then(s=>renderChat(s.val()||{}));
-    }
+    if(id==='messages') { renderChat(lastChatMsgs); get(chatRef()).then(s=>{lastChatMsgs=s.val()||{};renderChat(lastChatMsgs);}); }
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
@@ -5493,7 +5489,10 @@ window.capToggle = function(pid){
     document.querySelectorAll('.cap-play-btn').forEach(b=>{ if(b.closest('.chat-audio-player')?.id !== pid) b.textContent='▶'; });
     if(a.paused){ 
         setPlaybackAudioRoute();
-        a.play().catch(()=>{}); 
+        a.play().catch((e)=>{
+            console.error('Audio play error:', e);
+            toast('❌ Не удалось воспроизвести голосовое', 'red');
+        }); 
         document.querySelector(`#${pid} .cap-play-btn`).textContent='⏸';
         document.querySelector(`#${pid} .chat-audio-player`).classList.add('playing');
     }
@@ -5549,14 +5548,8 @@ function mediaHtml(m){
     } else if(m.msgType==='video'){
         html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div style="position:relative;display:inline-block;width:100%;"><video class="msg-media-video" controls playsinline webkit-playsinline preload="metadata" style="cursor:pointer;" onclick="this.requestFullscreen&&this.requestFullscreen()"><source src="${escHtml(m.mediaData)}"></video></div></div>`;
     } else if(m.msgType==='video_circle'){
-        // Parse camera facing mode from media data (format: dataUrl|facingMode)
-        const videoParts = (m.mediaData || '').split('|');
-        const videoUrl = videoParts[0] || m.mediaData;
-        const facingMode = videoParts[1] || 'user';
-        // Apply transform based on camera facing mode
-        const transformStyle = facingMode === 'user' ? 'transform:scaleX(-1);' : 'transform:none;';
         // Use a static thumbnail div to avoid flicker — play only on tap via viewer
-        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(videoUrl)}')" style="background:#111;"><video preload="metadata" playsinline webkit-playsinline style="pointer-events:none;${transformStyle}"><source src="${escHtml(videoUrl)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
+        html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="msg-video-wrap" onclick="openVideoViewer('${jsEsc(m.mediaData)}')" style="background:#111;"><video preload="metadata" playsinline webkit-playsinline style="pointer-events:none;"><source src="${escHtml(m.mediaData)}"></video><div class="vc-play-overlay">▶</div></div></div>`;
     } else if(m.msgType==='voice'){
         const pid = 'vp_' + (Math.random().toString(36).slice(2));
         html += `<div class="msg-media-wrap" onclick="event.stopPropagation()"><div class="chat-audio-player" id="${pid}">
@@ -5609,7 +5602,11 @@ let _chatRenderTimeout = null;
 window.renderChat = async function(msgs){
     lastChatMsgs = msgs || {};
     const el = qs('chatMessages'); if(!el) return;
-    const loadingEl = qs('chatLoading'); if(loadingEl) loadingEl.style.display = 'none';
+    
+    // Show loading indicator if no messages yet
+    if(!msgs || Object.keys(msgs).length === 0) {
+        el.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;padding:20px;color:var(--muted);font-size:13px;"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin-right:8px;"></div>Загрузка сообщений...</div>';
+    }
     
     // Debounce render for performance on iPhone
     if(_chatRenderPending) {
@@ -5763,6 +5760,11 @@ let _dmRenderTimeout = null;
 window.renderDmMessages = async function(msgs){
     lastDmMsgs = msgs || {};
     const el = qs('dmMessages'); if(!el) return;
+    
+    // Show loading indicator if no messages yet
+    if(!msgs || Object.keys(msgs).length === 0) {
+        el.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;padding:20px;color:var(--muted);font-size:13px;"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin-right:8px;"></div>Загрузка сообщений...</div>';
+    }
     
     // Debounce render for performance on iPhone
     if(_dmRenderPending) {
@@ -6018,6 +6020,7 @@ let vcMediaRecorder = null;
 let vcChunks = [];
 let vcTimerInterval = null;
 let vcClosing = false, vcSwitchPending = false;
+let vcRecordedFacingMode = null; // Track which camera was used for recording
 const VC_MAX_SEC_OVERRIDE = 30;
 
 function vcApplyLiveStyles(v){
@@ -6095,9 +6098,15 @@ function finalizeVcRecording(){
         play.setAttribute('webkit-playsinline', '');
         play.muted = false;
         play.volume = 1;
-        // Убираем зеркальное отражение у превью — видео снято как есть
-        play.style.removeProperty('transform');
-        play.style.removeProperty('-webkit-transform');
+        // Apply transform based on which camera was used for recording
+        // Front camera (user) needs to be mirrored for preview to match what user saw
+        if (vcRecordedFacingMode === 'user') {
+            play.style.setProperty('transform', 'scaleX(-1)', 'important');
+            play.style.setProperty('-webkit-transform', 'scaleX(-1)', 'important');
+        } else {
+            play.style.removeProperty('transform');
+            play.style.removeProperty('-webkit-transform');
+        }
         play.style.objectFit = 'cover';
         play.play().catch(()=>{});
     }
@@ -6105,6 +6114,8 @@ function finalizeVcRecording(){
 }
 function startVcRecording(){
     if(!vcStream) throw new Error('Камера недоступна');
+    // Record which camera was used for this recording
+    vcRecordedFacingMode = vcFacingMode;
     const vOpts = { mimeType: vcMime(), videoBitsPerSecond: 450000 };
     try { vcMediaRecorder = new MediaRecorder(vcStream, vOpts); } catch(e) { vcMediaRecorder = new MediaRecorder(vcStream, { mimeType: vcMime() }); }
     vcMediaRecorder.ondataavailable = e => { if(e.data && e.data.size) vcChunks.push(e.data); };
@@ -6224,13 +6235,11 @@ window.sendVcMsg = async function(){
     const reader = new FileReader();
     reader.onload = async () => {
         const dataUrl = reader.result;
-        // Store camera facing mode with the video data to apply correct transform on playback
-        const videoData = dataUrl + '|' + vcFacingMode;
         closeVcModal();
-        if(vcTargetCtx === 'chat') await sendChatMsg(null, videoData, 'video_circle');
-        else if(vcTargetCtx === 'dm') await sendDmMsg(null, videoData, 'video_circle');
-        else if(vcTargetCtx === 'news') await sendNewsDiscussionMsg(null, videoData, 'video_circle');
-        else if(vcTargetCtx === 'wall') await pushWallPostMedia('video_circle', videoData);
+        if(vcTargetCtx === 'chat') await sendChatMsg(null, dataUrl, 'video_circle');
+        else if(vcTargetCtx === 'dm') await sendDmMsg(null, dataUrl, 'video_circle');
+        else if(vcTargetCtx === 'news') await sendNewsDiscussionMsg(null, dataUrl, 'video_circle');
+        else if(vcTargetCtx === 'wall') await pushWallPostMedia('video_circle', dataUrl);
         if(vcTargetCtx !== 'wall') toast('⭕ Видеосообщение отправлено', 'green');
     };
     reader.readAsDataURL(blob);
