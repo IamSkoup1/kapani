@@ -1205,8 +1205,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <textarea id="wallInput" placeholder="Что нового в Капани?" style="min-height:72px;"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
             <label class="file-upload-btn" for="wallMediaInp" style="margin:0;flex:1;min-width:120px;">📎 Фото / видео</label>
-            <button type="button" class="btn btn-ghost btn-sm" style="margin:0;flex:1;min-width:120px;" onclick="startVoice('wall')">🎤 Голос</button>
-            <button type="button" class="btn btn-ghost btn-sm" style="margin:0;flex:1;min-width:120px;" onclick="openVcModal('wall')">⭕ Видео</button>
         </div>
         <input type="file" id="wallMediaInp" accept="image/*,video/*" onchange="onWallMediaPick(event)">
         <div class="rec-indicator" id="wallRecInd">
