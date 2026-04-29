@@ -32,7 +32,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .container{width:100%;max-width:490px;padding:0 12px;position:relative;z-index:1;}
 .g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:900;}
 .h-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
-.h-avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.h-avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);transition:.2s;}
 .h-avatar:hover{transform:scale(1.08);}
 .h-name{font-weight:800;font-size:14px;line-height:1.2;}
 .h-job{font-size:11px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
@@ -46,8 +46,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
 .bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(8,1fr);padding:8px 0 10px;z-index:900;}
-.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:7.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.2px;padding:0 1px;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
-.bn-item .ico{font-size:20px;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:7.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.2px;padding:0 1px;position:relative;}
+.bn-item .ico{font-size:20px;transition:.2s;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
 .bn-item.sel .ico{transform:scale(1.15);}
 .bn-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
@@ -55,18 +55,18 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .section{display:none;animation:fadeUp .35s ease-out;}
 .section.active{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;backdrop-filter:blur(12px);box-shadow:var(--shadow);transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;backdrop-filter:blur(12px);box-shadow:var(--shadow);transition:.2s;}
 .card:hover{border-color:rgba(255,255,255,0.14);}
 .card-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:16px;}
 #authSection{padding-top:20px;}
 .logo-card{text-align:center;padding:40px 24px 32px;background:linear-gradient(145deg,rgba(34,211,165,.06),rgba(251,191,36,.04));border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;}
 .logo-title{font-family:'Unbounded',sans-serif;font-size:38px;font-weight:900;background:linear-gradient(135deg,var(--primary),var(--gold));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
 .logo-sub{color:var(--muted);margin-top:10px;font-size:14px;}
-input,textarea,select{width:100%;padding:14px 16px;margin:8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;transition:.2s;outline:none;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+input,textarea,select{width:100%;padding:14px 16px;margin:8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;transition:.2s;outline:none;}
 input:focus,textarea:focus,select:focus{border-color:var(--primary);background:rgba(34,211,165,.06);}
 textarea{resize:vertical;min-height:80px;}
 select option{background:#1a2332;}
-.btn{width:100%;padding:16px;border:none;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.btn{width:100%;padding:16px;border:none;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:.2s;}
 .btn:active{transform:scale(.96);}
 .btn-primary{background:linear-gradient(135deg,var(--primary),#0fa87e);color:#0c1117;}
 .btn-gold{background:linear-gradient(135deg,var(--gold),#d97706);color:#0c1117;}
@@ -97,12 +97,12 @@ select option{background:#1a2332;}
 .total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--pri-dim);border-radius:var(--r-sm);margin:12px 0;border:1px solid rgba(34,211,165,.25);font-weight:900;}
 .total-val{font-size:22px;color:var(--primary);}
 .msg-tabs{display:flex;gap:8px;margin-bottom:14px;}
-.msg-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.msg-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
 .msg-tab.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
 .msg-panel{display:none;}
 .msg-panel.active{display:block;}
-#chatMessages,#dmMessages{height:30dvh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;isolation:isolate;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);}
-.chat-msg{display:flex;gap:10px;align-items:flex-start;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+#chatMessages,#dmMessages{height:30dvh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;position:relative;}
+.chat-msg{display:flex;gap:10px;align-items:flex-start;}
 .chat-msg.me{flex-direction:row-reverse;}
 .chat-av{width:32px;height:32px;border-radius:10px;object-fit:cover;flex-shrink:0;display:block;}
 .chat-bubble{max-width:75%;padding:10px 14px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);font-size:13px;line-height:1.4;word-break:break-word;}
@@ -111,7 +111,7 @@ select option{background:#1a2332;}
 .chat-time{font-size:10px;color:var(--muted);margin-top:3px;}
 .chat-input-row{display:flex;gap:6px;margin-top:8px;align-items:center;}
 .chat-input-row input{margin:0;flex:1;}
-.dm-user-row{width:100%;text-align:left;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;transition:.2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;color:var(--text);-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.dm-user-row{width:100%;text-align:left;font-family:'Nunito',sans-serif;display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;transition:.2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;color:var(--text);}
 .dm-user-row:hover{border-color:var(--primary);background:var(--pri-dim);}
 .dm-user-av{width:40px;height:40px;border-radius:12px;object-fit:cover;flex-shrink:0;}
 .dm-user-info{flex:1;min-width:0;}
@@ -120,11 +120,11 @@ select option{background:#1a2332;}
 .dm-back{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--primary);font-weight:800;font-size:13px;margin-bottom:12px;background:none;border:none;padding:0;font-family:'Nunito',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 .dm-header-row{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px;}
 .market-tabs{display:flex;gap:8px;margin-bottom:14px;}
-.market-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.market-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;}
 .market-tab.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
 .market-panel{display:none;}
 .market-panel.active{display:block;}
-.market-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;transition:.2s;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
+.market-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;transition:.2s;}
 .market-card:hover{border-color:rgba(255,255,255,.14);}
 .market-img{width:100%;height:180px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:12px;background:var(--surface2);}
 .market-title{font-weight:900;font-size:16px;margin-bottom:4px;}
@@ -643,7 +643,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 /* Fix message actions appearing and buttons clickable */
 .msg-actions{
     pointer-events:auto;
-    display:flex;
+    display:none;
     gap:6px;
     flex-wrap:wrap;
     align-items:center;
@@ -673,8 +673,9 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .msg-action-btn{padding:8px 12px;font-size:12px;}
 .msg-edit-area textarea{min-height:58px;}
 @media (hover:none){
+    /* On touch devices show action buttons but NOT edit area */
     .msg-actions{display:flex!important;opacity:1!important;visibility:visible!important;}
-    .msg-edit-area{display:block;}
+    .msg-edit-area{display:none!important;}
 }
 .news-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 .news-tab{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;}
@@ -862,8 +863,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div class="media-bar" id="chatMediaBar">
                 <label class="media-bar-btn" for="chatFileInp">📷 Фото/Видео</label>
                 <input type="file" id="chatFileInp" accept="image/*,video/*" multiple onchange="handleMediaFile(event,'chat')">
-                <button class="media-bar-btn" onclick="startVoice('chat')">🎤 Голосовое</button>
-                <button class="media-bar-btn" onclick="openVcModal('chat')">⭕ Видеосообщение</button>
+                
+                
             </div>
             <div class="media-queue" id="chatPhotoQueue"></div>
             <div class="rec-indicator" id="chatRecInd">
@@ -915,8 +916,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <div class="media-bar" id="dmMediaBar">
                     <label class="media-bar-btn" for="dmFileInp">📷 Фото/Видео</label>
                     <input type="file" id="dmFileInp" accept="image/*,video/*" multiple onchange="handleMediaFile(event,'dm')">
-                    <button class="media-bar-btn" onclick="startVoice('dm')">🎤 Голосовое</button>
-                    <button class="media-bar-btn" onclick="openVcModal('dm')">⭕ Видеосообщение</button>
+                    
+                    
                 </div>
                 <div class="media-queue" id="dmPhotoQueue"></div>
                 <div class="rec-indicator" id="dmRecInd">
@@ -1347,8 +1348,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="media-bar" id="newsMediaBar">
             <label class="media-bar-btn" for="newsFileInp">📷 Фото/Видео</label>
             <input type="file" id="newsFileInp" accept="image/*,video/*" multiple onchange="handleMediaFile(event,'news')">
-            <button class="media-bar-btn" onclick="startVoice('news')">🎤 Голосовое</button>
-            <button class="media-bar-btn" onclick="openVcModal('news')">⭕ Видеосообщение</button>
+            
+            
         </div>
         <div class="media-queue" id="newsPhotoQueue"></div>
         <div class="rec-indicator" id="newsRecInd">
@@ -5551,7 +5552,7 @@ function msgEditHtml(kind, msgId, m){
     const areaId = kind==='chat' ? `gcedit_${msgId}` : kind==='dm' ? `edit_${msgId}` : `newsedit_${msgId}`;
     const saveFn = kind==='chat' ? 'saveEditChat' : kind==='dm' ? 'saveEditDm' : 'saveEditNews';
     const cancelFn = kind==='chat' ? 'cancelEditChat' : kind==='dm' ? 'cancelEditDm' : 'cancelEditNews';
-    return `<div class="msg-edit-area" id="${areaId}">
+    return `<div class="msg-edit-area" id="${areaId}" style="display:none;">
         <textarea style="min-height:44px;font-size:13px;margin:0;" id="${textareaId}" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();${saveFn}('${jsEsc(msgId)}');}">${escHtml(m.text||'')}</textarea>
         <div class="edit-btns"><button type="button" class="btn btn-primary btn-sm" onclick="${saveFn}('${jsEsc(msgId)}')">💾</button><button type="button" class="btn btn-ghost btn-sm" onclick="${cancelFn}('${jsEsc(msgId)}')">✕</button></div>
     </div>`;
@@ -6567,15 +6568,9 @@ window.sendGiftSubscription = async function(){
     '.media-bar-btn', '.jump-date-text', '.market-tab', '.msg-tab', '.btn', '.notif-item'
   ].join(', ');
 
-  document.addEventListener('touchend', function(e){
-    // Не перехватываем клики по нативным интерактивным элементам — кнопки, инпуты, ссылки
-    const interactive = e.target && e.target.closest && e.target.closest('button, a, input, textarea, select, label, [role="button"], .msg-action-btn, .media-ico-btn, .media-bar-btn, .jump-date-text, .msg-tab, .bn-item, .btn');
-    if (interactive) return;
-    const target = e.target && e.target.closest && e.target.closest(tappableSelector);
-    if (!target) return;
-    e.preventDefault();
-    try { target.click(); } catch (err) {}
-  }, { passive: false, capture: true });
+  // Note: Removed aggressive touchend handler that was causing iOS freezes.
+  // Touch events are now handled natively through proper touch-action CSS and 
+  // -webkit-tap-highlight-color:transparent on interactive elements.
 
   const clearBlockingLayers = () => {
     ['loadingOverlay', 'notifPopup'].forEach(id => {
