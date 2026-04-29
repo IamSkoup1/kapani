@@ -1741,7 +1741,7 @@ async function fallbackCreateOrder(data) {
         originalPrice: data.originalPrice || data.price,
         discountApplied: data.discountApplied || 0,
         address: data.address || '',
-        status: 'pending',
+        status: 'waiting',
         createdAt: Date.now(),
         clientLat: data.clientLat || null,
         clientLng: data.clientLng || null,
@@ -1762,7 +1762,7 @@ async function fallbackTakeOrder(data) {
     if(!snap.exists()) throw new Error('Заказ не найден');
     const o = snap.val();
     if(o.client === currentNick) throw new Error('Нельзя брать свой заказ');
-    if(o.status !== 'pending') throw new Error('Заказ уже в работе');
+    if(o.status !== 'waiting') throw new Error('Заказ уже в работе');
     if(o.worker) throw new Error('Уже есть исполнитель');
     
     await update(orderRef(data.orderId), { worker: currentNick, status: 'in_progress' });
@@ -1798,7 +1798,7 @@ async function fallbackCancelOrder(data) {
         // If balance is less than penalty, deduct all available
         const actualPenalty = Math.min(penalty, currentBalance);
         await update(userRef(currentNick), { balance: currentBalance - actualPenalty });
-        await update(orderRef(data.orderId), { worker: null, status: 'pending', abandonedAt: Date.now() });
+        await update(orderRef(data.orderId), { worker: null, status: 'waiting', abandonedAt: Date.now() });
         return { success: true, penalty: actualPenalty };
     }
     throw new Error('Нет прав для отмены');
