@@ -1263,6 +1263,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <button class="btn btn-primary" id="pushEnableBtn" onclick="handlePushBtn()">🔔 Включить</button>
         <div style="font-size:11px;text-align:center;margin-top:8px;" id="pushStatusText"></div>
         <div id="pushSettingsContainer" style="display:none;margin-top:12px;"></div>
+    <div id="profileBusinesses" style="margin-top:14px;display:none;"></div>
 
     </div>
     <div class="card">
@@ -1306,6 +1307,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div id="profileDescription" style="margin-top:8px;font-size:13px;color:var(--text);line-height:1.4;text-align:center;display:none;"></div>
             <div id="vpfSubscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;text-align:center;display:none;"></div>
             <div class="upm-online" id="vpfOnline" style="justify-content:center;margin-top:8px;"><div class="upm-dot"></div><span></span></div>
+            <div id="vpfBusinesses" style="width:100%;margin-top:14px;display:none;"></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
                 <button class="btn btn-primary btn-sm" type="button" onclick="visitorProfileDm()" style="flex:1;">💬 Написать</button>
                 <button class="btn btn-gold btn-sm" type="button" onclick="visitorProfileTransfer()" style="flex:1;">💸 Перевести</button>
@@ -1440,7 +1442,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="business-panel" id="bizPanel2">
         <div class="business-section-card">
             <div class="card-title">📝 Заявка на создание бизнеса</div>
-            <div class="business-mini" style="margin-bottom:10px;">Заполните все поля — заявка уйдёт в мэрию на проверку.</div>
+            <div class="business-mini" style="margin-bottom:10px;">Заполните заявку — контакты, телефоны и ссылки тут не нужны. Остальное добавите уже внутри бизнеса после одобрения.</div>
             <div class="business-form-grid">
                 <input class="full" type="text" id="bizAppName" placeholder="Название бизнеса" maxlength="60">
                 <select id="bizAppCategory" class="full">
@@ -1473,31 +1475,19 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                     <div id="bizAppGalleryPreview" class="business-upload-preview"></div>
                 </div>
 
-                <input type="text" id="bizAppAddress" placeholder="Адрес" maxlength="120">
-                <input type="text" id="bizAppHours" placeholder="График работы" maxlength="60">
-                <input type="text" id="bizAppPhone" placeholder="Контакт / телефон" maxlength="40">
-                <input type="text" id="bizAppWebsite" placeholder="Сайт / соцсети" maxlength="120">
-                <textarea class="full" id="bizAppServices" placeholder="Услуги через запятую" style="min-height:72px;"></textarea>
                 <div class="full business-section-card" style="margin:0;padding:14px;">
                     <div class="card-title" style="margin-bottom:10px;">🛍️ Услуги / товары</div>
-                    <div class="business-mini">Добавляйте карточки по одной: название, картинка, описание и цена.</div>
+                    <div class="business-mini">Добавляйте только карточки: название, картинка, описание и цена. Никаких телефонов, ссылок и внешних контактов тут не нужно.</div>
                     <div id="bizDraftProductsList" class="business-product-list" style="margin-top:10px;"></div>
                     <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="addBusinessDraftProduct()">➕ Добавить карточку</button>
                 </div>
-                <textarea class="full" id="bizAppDesc" placeholder="Описание бизнеса" style="min-height:110px;"></textarea>
-
-                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
-                    <input type="checkbox" id="bizAppDelivery" style="width:auto;margin:0 8px 0 0;"> Разрешить доставку / заказы
-                </label>
-
+                <textarea class="full" id="bizAppDesc" placeholder="Краткое описание бизнеса" style="min-height:110px;"></textarea>
                 <div class="business-section-card full" style="margin:0;padding:14px;">
-                    <div class="card-title" style="margin-bottom:10px;">👷 Роли до открытия бизнеса</div>
-                    <div class="business-mini">Добавьте любые роли заранее: сотрудник, санитар, доставщик и так далее.</div>
-                    <div id="bizDraftRolesList" style="margin-top:10px;"></div>
-                    <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="addBusinessDraftRole()">➕ Добавить роль</button>
+                    <div class="card-title" style="margin-bottom:10px;">👷 Рабочие места</div>
+                    <div class="business-mini">Если бизнесу нужны сотрудники, роли можно добавить уже после открытия в самом бизнесе.</div>
                 </div>
             </div>
-            <button class="btn btn-primary" style="margin-top:10px;" onclick="submitBusinessApplication()">📨 Отправить в мэрию</button>
+            <button type="button" class="btn btn-primary" id="bizSubmitBtn" style="margin-top:10px;" onclick="window.submitBusinessApplication && window.submitBusinessApplication(); return false;">📨 Отправить в мэрию</button>
         </div>
     </div>
 
@@ -2569,6 +2559,7 @@ function updateHeader(u) {
     const bottomNav=qs('bottomNav'); if(bottomNav) bottomNav.style.gridTemplateColumns=isJanitor?'repeat(9,1fr)':'repeat(8,1fr)';
     const vDisp=qs('vehicleDisplay');
     if(vDisp){if(u.vehicle){vDisp.style.display='block';vDisp.textContent='🛵 '+u.vehicle;}else vDisp.style.display='none';}
+    renderUserBusinessesBlock(u, 'profileBusinesses');
     const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=(u.job&&u.job!=='Житель')?'block':'none';
     if(isDriver&&qs('vehicleInput')) qs('vehicleInput').value=u.vehicle||'';
 }
@@ -4345,6 +4336,7 @@ window.openUserProfile=async function(nick){
     }
     
     qs('upmStats').innerHTML = (subscriptionHtml ? `<div style="grid-column:1/-1;text-align:center;margin-bottom:8px;">${subscriptionHtml}</div>` : '') + `<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:11px;color:var(--muted);">@${escHtml(u.nick)}</div><div class="sl">Логин</div></div><div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:16px;">${escHtml(u.job||'Житель')}</div><div class="sl">Должность</div></div>${u.vehicle?`<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:14px;">🛵 ${escHtml(u.vehicle)}</div><div class="sl">Транспорт</div></div>`:''}`;
+    renderUserBusinessesBlock(u, 'upmBusinesses');
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,12);
     const wallHtml=posts.length?`<div style="margin-top:16px;"><div style="font-weight:900;font-size:12px;color:var(--muted);margin-bottom:8px;">📰 Лента</div>${posts.map(p=>wallPostCardHtml(nick,p.id||'',p)).join('')}</div>`:'';
@@ -4428,6 +4420,7 @@ async function renderVisitorProfilePage(nick){
         else if(u.profileBgEffect === 'dragon') profileBgEffect.classList.add('profile-bg-dragon');
     }
     
+    renderUserBusinessesBlock(u, 'vpfBusinesses');
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     qs('vpfWall').innerHTML=posts.length?posts.map(p=>wallPostCardHtml(nick,p.id||'',p)).join(''):'<div style="color:var(--muted);font-size:13px;">Пока пусто</div>';
@@ -7072,6 +7065,75 @@ function renderBusinessAdminPreview(){
 }
 window.renderBizAdminPreview = renderBusinessAdminPreview;
 
+function collectBusinessProfileCards(user){
+    const cards = [];
+    const seen = new Set();
+    const addCard = (id, meta = {}) => {
+        if(!id) return;
+        const key = String(id);
+        if(seen.has(key)) return;
+        seen.add(key);
+        const b = businessCache[id] || {};
+        cards.push({
+            id: key,
+            title: meta.title || b.title || 'Без названия',
+            category: meta.category || b.category || 'other',
+            icon: meta.icon || b.icon || DEFAULT_AVATAR_URL,
+            role: meta.role || ''
+        });
+    };
+
+    if(user && user.ownedBusinesses && typeof user.ownedBusinesses === 'object'){
+        Object.entries(user.ownedBusinesses).forEach(([id, meta]) => addCard(id, meta || {}));
+    }
+    if(user && user.businessRoles && typeof user.businessRoles === 'object'){
+        Object.values(user.businessRoles).forEach(role => {
+            if(role && role.businessId){
+                addCard(role.businessId, {
+                    title: role.businessTitle || '',
+                    category: role.category || '',
+                    role: role.roleName ? `Роль: ${role.roleName}` : 'Сотрудник'
+                });
+            }
+        });
+    }
+    if(user && user.businessOwnerId){
+        addCard(user.businessOwnerId, { role: 'Владелец' });
+    }
+    return cards;
+}
+
+function renderUserBusinessesBlock(user, targetId){
+    const el = qs(targetId);
+    if(!el) return;
+    const cards = collectBusinessProfileCards(user);
+    if(!cards.length){
+        el.style.display = 'none';
+        el.innerHTML = '';
+        return;
+    }
+    el.style.display = 'block';
+    el.innerHTML = `
+        <div class="business-section-card">
+            <div class="card-title">🏢 Бизнесы</div>
+            <div class="business-grid">
+                ${cards.map(b => `
+                    <div class="business-card" style="padding:12px 14px;">
+                        <div class="business-top" style="align-items:center;">
+                            <img class="business-icon" src="${escHtml(b.icon)}" alt="">
+                            <div style="flex:1;min-width:0;">
+                                <div class="business-title" style="font-size:15px;">${escHtml(b.title)}</div>
+                                <div class="business-sub">${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'other')}${b.role ? ` · ${escHtml(b.role)}` : ''}</div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" type="button" onclick="openBusinessFromProfile('${jsEsc(b.id)}')">Открыть</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
 function currentBusinessData(){
     return currentBusinessId ? (businessCache[currentBusinessId] || null) : null;
 }
@@ -7523,121 +7585,101 @@ function renderBizPage(){
 }
 window.renderBizPage = renderBizPage;
 window.submitBusinessApplication = async function(){
-    const title = qs('bizAppName').value.trim();
-    const category = qs('bizAppCategory').value || 'other';
-    const address = qs('bizAppAddress').value.trim();
-    const hours = qs('bizAppHours').value.trim();
-    const phone = qs('bizAppPhone').value.trim();
-    const website = qs('bizAppWebsite').value.trim();
-    const services = normalizeBusinessList(qs('bizAppServices').value);
-    const description = qs('bizAppDesc').value.trim();
-    const deliveryEnabled = !!qs('bizAppDelivery').checked;
+    try{
+        const title = (qs('bizAppName')?.value || '').trim();
+        const category = qs('bizAppCategory')?.value || 'other';
+        const description = (qs('bizAppDesc')?.value || '').trim();
 
-    const roleDrafts = businessAppDraft.roles.map((role, idx) => ({
-        name: (qs(`bizDraftRoleName_${idx}`)?.value || '').trim(),
-        description: (qs(`bizDraftRoleDesc_${idx}`)?.value || '').trim(),
-        autoPay: !!qs(`bizDraftRoleAuto_${idx}`)?.checked,
-        salaryAmount: parseInt(qs(`bizDraftRoleAmt_${idx}`)?.value) || 0,
-        salaryPeriod: qs(`bizDraftRolePeriod_${idx}`)?.value || 'contract'
-    })).filter(r => r.name || r.description || r.salaryAmount || r.autoPay);
+        const productDrafts = businessAppDraft.products.map((item, idx) => ({
+            name: (qs(`bizDraftProductName_${idx}`)?.value || '').trim(),
+            description: (qs(`bizDraftProductDesc_${idx}`)?.value || '').trim(),
+            price: parseInt(qs(`bizDraftProductPrice_${idx}`)?.value) || 0,
+            imageFile: item.imageFile || null,
+            imagePreview: item.imagePreview || ''
+        })).filter(p => p.name || p.description || p.price || p.imageFile);
 
-    const productDrafts = businessAppDraft.products.map((item, idx) => ({
-        name: (qs(`bizDraftProductName_${idx}`)?.value || '').trim(),
-        description: (qs(`bizDraftProductDesc_${idx}`)?.value || '').trim(),
-        price: parseInt(qs(`bizDraftProductPrice_${idx}`)?.value) || 0,
-        imageFile: item.imageFile || null,
-        imagePreview: item.imagePreview || ''
-    })).filter(p => p.name || p.description || p.price || p.imageFile);
+        if(!title) return toast('⚠️ Укажите название бизнеса', 'gold');
+        if(!description) return toast('⚠️ Укажите описание бизнеса', 'gold');
+        if(!businessAppDraft.iconFile) return toast('⚠️ Выберите иконку из галереи', 'gold');
+        if(!productDrafts.length) return toast('⚠️ Добавьте хотя бы одну карточку товара / услуги', 'gold');
 
-    if(!title || !description || !address) return toast('⚠️ Заполните название, описание и адрес', 'gold');
-    if(!businessAppDraft.iconFile) return toast('⚠️ Выберите иконку из галереи', 'gold');
-    if(!businessAppDraft.galleryFiles.length) return toast('⚠️ Добавьте хотя бы одно изображение или видео', 'gold');
-    if(!productDrafts.length) return toast('⚠️ Добавьте хотя бы одну карточку товара / услуги', 'gold');
-
-    for(const r of roleDrafts){
-        if(!r.name) return toast('⚠️ У роли должно быть название', 'gold');
-    }
-    for(const p of productDrafts){
-        if(!p.name) return toast('⚠️ У карточки должно быть название', 'gold');
-        if(p.price < 0) return toast('⚠️ Цена не может быть отрицательной', 'gold');
-    }
-
-    const snap = await get(businessAppsRef());
-    const apps = snap.val() || {};
-    const already = Object.values(apps).some(a => a.applicant === currentNick && (a.status || 'new') === 'new');
-    if(already) return toast('⚠️ У вас уже есть активная заявка', 'gold');
-
-    const uploadIcon = async () => {
-        if(businessAppDraft.iconFile) return await uploadBlobToStorage(businessAppDraft.iconFile, 'businesses/icon');
-        return '';
-    };
-
-    const uploadGallery = async () => {
-        const urls = [];
-        for(const file of businessAppDraft.galleryFiles){
-            const url = await uploadBlobToStorage(file, 'businesses/gallery');
-            urls.push(url);
+        for(const p of productDrafts){
+            if(!p.name) return toast('⚠️ У карточки должно быть название', 'gold');
+            if(p.price < 0) return toast('⚠️ Цена не может быть отрицательной', 'gold');
         }
-        return urls;
-    };
 
-    const uploadProducts = async () => {
-        const out = [];
-        for(const item of productDrafts){
-            const image = item.imageFile ? await uploadBlobToStorage(item.imageFile, 'businesses/products') : '';
-            out.push({
-                id: genId(),
-                name: item.name,
-                description: item.description,
-                price: Number(item.price || 0),
-                image: image || item.imagePreview || ''
-            });
-        }
-        return out;
-    };
+        const snap = await get(businessAppsRef());
+        const apps = snap.val() || {};
+        const already = Object.values(apps).some(a => a && a.applicant === currentNick && (a.status || 'new') === 'new');
+        if(already) return toast('⚠️ У вас уже есть активная заявка', 'gold');
 
-    const [iconUrl, galleryUrls, products] = await Promise.all([uploadIcon(), uploadGallery(), uploadProducts()]);
+        const uploadIcon = async () => {
+            if(businessAppDraft.iconFile) return await uploadBlobToStorage(businessAppDraft.iconFile, 'businesses/icon');
+            return '';
+        };
 
-    const id = genId();
-    await set(businessAppRef(id), {
-        id,
-        applicant: currentNick,
-        title,
-        category,
-        icon: iconUrl || DEFAULT_AVATAR_URL,
-        gallery: galleryUrls,
-        address,
-        hours,
-        phone,
-        website,
-        services,
-        products,
-        description,
-        deliveryEnabled,
-        roles: roleDrafts.map((r, idx) => ({ id: genId(), order: idx, ...r })),
-        status:'new',
-        createdAt: Date.now()
-    });
+        const uploadGallery = async () => {
+            const urls = [];
+            for(const file of businessAppDraft.galleryFiles){
+                const url = await uploadBlobToStorage(file, 'businesses/gallery');
+                urls.push(url);
+            }
+            return urls;
+        };
 
-    await pushNotification(currentNick, `🏢 Заявка на бизнес "${title}" отправлена в мэрию`, 'system');
-    toast('🏢 Заявка отправлена', 'green');
-    ['bizAppName','bizAppAddress','bizAppHours','bizAppPhone','bizAppWebsite','bizAppServices','bizAppDesc'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
-    const cat=qs('bizAppCategory'); if(cat) cat.value='other';
-    const chk=qs('bizAppDelivery'); if(chk) chk.checked=false;
-    clearBusinessIconDraft();
-    businessAppDraft.galleryFiles = [];
-    clearBusinessDraftPreviews();
-    businessAppDraft.products = [];
-    businessAppDraft.roles = [];
-    renderBusinessDraftGalleryPreview();
-    renderBusinessDraftProducts();
-    renderBusinessDraftRoles();
-    addBusinessDraftProduct();
-    addBusinessDraftRole();
-    renderBizPage();
+        const uploadProducts = async () => {
+            const out = [];
+            for(const item of productDrafts){
+                const image = item.imageFile ? await uploadBlobToStorage(item.imageFile, 'businesses/products') : '';
+                out.push({
+                    id: genId(),
+                    name: item.name,
+                    description: item.description,
+                    price: Number(item.price || 0),
+                    image: image || item.imagePreview || ''
+                });
+            }
+            return out;
+        };
+
+        const [iconUrl, galleryUrls, products] = await Promise.all([uploadIcon(), uploadGallery(), uploadProducts()]);
+
+        const id = genId();
+        await set(businessAppRef(id), {
+            id,
+            applicant: currentNick,
+            title,
+            category,
+            icon: iconUrl || DEFAULT_AVATAR_URL,
+            gallery: galleryUrls,
+            products,
+            description,
+            deliveryEnabled: false,
+            roles: [],
+            status:'new',
+            createdAt: Date.now()
+        });
+
+        await pushNotification(currentNick, `🏢 Заявка на бизнес "${title}" отправлена в мэрию`, 'system');
+        toast('🏢 Заявка отправлена', 'green');
+        ['bizAppName','bizAppDesc'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
+        const cat=qs('bizAppCategory'); if(cat) cat.value='other';
+        clearBusinessIconDraft();
+        businessAppDraft.galleryFiles = [];
+        clearBusinessDraftPreviews();
+        businessAppDraft.products = [];
+        renderBusinessDraftGalleryPreview();
+        renderBusinessDraftProducts();
+        addBusinessDraftProduct();
+        renderBizPage();
+    }catch(err){
+        console.error('submitBusinessApplication failed', err);
+        toast('❌ Не удалось отправить заявку', 'red');
+    }
 };
 
 window.reviewBusinessApplication = async function(id, ok){
+
     const snap = await get(businessAppRef(id));
     if(!snap.exists()) return;
     const app = snap.val() || {};
@@ -7891,6 +7933,22 @@ async function maybeRunBusinessAutoPayroll(b){
         }
     }catch(e){}
 }
+
+
+window.addEventListener('load', () => {
+    const btn = qs('bizSubmitBtn');
+    if(btn && !btn.dataset.boundBizSubmit){
+        btn.dataset.boundBizSubmit = '1';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if(typeof window.submitBusinessApplication === 'function'){
+                window.submitBusinessApplication();
+            } else {
+                toast('❌ Функция подачи заявки ещё загружается', 'red');
+            }
+        });
+    }
+});
 
 </script>
 
