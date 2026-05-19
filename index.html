@@ -377,62 +377,6 @@ input[type=file]{display:none;}
 .tracking-card{background:var(--surface);border:1px solid rgba(34,211,165,.3);border-radius:var(--r);padding:16px;margin-bottom:14px;}
 .tracking-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
 
-
-/* === BANK ACCOUNTS & TERMINALS === */
-.bank-overview{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-bottom:14px;}
-.bank-total-box{background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.04));border:1px solid rgba(34,211,165,.22);border-radius:var(--r-sm);padding:14px;}
-.bank-total-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:900;}
-.bank-total-value{font-size:26px;font-weight:900;color:var(--primary);margin-top:4px;}
-.bank-active-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;display:flex;flex-direction:column;justify-content:space-between;}
-.bank-active-name{font-size:15px;font-weight:900;}
-.bank-active-note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.35;}
-.bank-accounts-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;}
-.bank-account-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;transition:.2s;}
-.bank-account-card.active{border-color:var(--primary);background:var(--pri-dim);box-shadow:0 0 0 1px rgba(34,211,165,.12) inset;}
-.bank-account-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
-.bank-account-name{font-size:15px;font-weight:900;}
-.bank-account-balance{font-size:20px;font-weight:900;color:var(--gold);margin-top:2px;}
-.bank-account-meta{font-size:11px;color:var(--muted);margin-top:2px;}
-.bank-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-.bank-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800;color:var(--text);}
-.bank-chip.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
-.bank-form-grid{display:grid;grid-template-columns:1fr;gap:8px;}
-.bank-small-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px;}
-.bank-terminal-card{background:linear-gradient(145deg,rgba(251,191,36,.08),rgba(251,191,36,.03));border:1px solid rgba(251,191,36,.25);border-radius:var(--r);padding:16px;margin-bottom:12px;}
-.bank-terminal-live{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
-.bank-terminal-amount{font-size:28px;font-weight:900;color:var(--gold);}
-.bank-terminal-code{font-family:monospace;letter-spacing:2px;font-size:18px;font-weight:900;color:var(--text);background:rgba(255,255,255,.05);padding:8px 12px;border-radius:12px;display:inline-block;}
-.bank-terminal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
-.bank-terminal-list{display:flex;flex-direction:column;gap:10px;}
-.bank-terminal-row{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
-.bank-terminal-row-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
-.bank-terminal-row-title{font-weight:900;font-size:14px;}
-.bank-terminal-row-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35;}
-.bank-terminal-row-amt{font-weight:900;font-size:18px;color:var(--gold);white-space:nowrap;}
-.bank-terminal-row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-.bank-modal, .bank-pay-modal, .bank-anim-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9991;display:none;align-items:center;justify-content:center;padding:16px;}
-.bank-modal.open,.bank-pay-modal.open,.bank-anim-modal.open{display:flex;}
-.bank-modal-sheet,.bank-pay-sheet,.bank-anim-sheet{width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);animation:sheetUp .25s ease-out;}
-.bank-modal-sheet{max-width:430px;}
-.bank-pay-sheet{max-width:460px;}
-.bank-anim-sheet{max-width:360px;text-align:center;padding:28px 22px;}
-.bank-modal-title{font-size:18px;font-weight:900;margin-bottom:12px;}
-.bank-modal-code-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
-.bank-modal-code{flex:1;min-width:0;font-family:monospace;font-size:22px;font-weight:900;letter-spacing:3px;text-align:center;background:rgba(255,255,255,.05);padding:12px;border-radius:14px;border:1px solid var(--border);}
-.bank-modal-amount{font-size:30px;font-weight:900;color:var(--gold);margin-bottom:8px;}
-.bank-modal-status{font-size:13px;color:var(--muted);line-height:1.45;}
-.bank-modal-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;}
-.bank-pay-amount{font-size:28px;font-weight:900;color:var(--gold);margin:6px 0 12px;}
-.bank-pay-desc{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:10px;}
-.bank-anim-icon{font-size:44px;line-height:1;margin-bottom:10px;}
-.bank-anim-title{font-size:18px;font-weight:900;margin-bottom:8px;}
-.bank-anim-amt{font-size:34px;font-weight:900;margin:8px 0;}
-.bank-anim-amt.in{color:var(--primary);}
-.bank-anim-amt.out{color:var(--red);}
-.bank-anim-sub{font-size:12px;color:var(--muted);line-height:1.4;}
-.bank-terminal-pulse{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;}
-.bank-terminal-pulse .pulse{background:var(--gold);}
-
 /* === EMOJI PICKER === */
 .emoji-panel{display:none;max-height:180px;overflow-y:auto;margin-bottom:8px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;background:var(--surface2);animation:fadeUp .2s ease-out;scrollbar-width:thin;}
 .emoji-panel.open{display:block;}
@@ -1103,59 +1047,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <!-- BANK -->
 <div id="bank" class="section">
     <div class="card">
-        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-            <span>🏦 Счета банка</span>
-            <button class="btn btn-ghost btn-sm" onclick="renderBankPage()">Обновить</button>
-        </div>
-        <div class="bank-overview">
-            <div class="bank-total-box">
-                <div class="bank-total-label">Общий баланс</div>
-                <div class="bank-total-value" id="bankTotalBalance">0 ₽</div>
-            </div>
-            <div class="bank-active-box">
-                <div>
-                    <div class="bank-total-label">Активный счет</div>
-                    <div class="bank-active-name" id="bankActiveName">Основной</div>
-                    <div class="bank-active-note" id="bankActiveNote">С этого счета будут списываться переводы и оплата терминалов.</div>
-                </div>
-                <div class="bank-chip active" id="bankActiveChip">Основной</div>
-            </div>
-        </div>
-        <div class="bank-form-grid" style="margin-top:10px;">
-            <input type="text" id="newBankAccountName" maxlength="24" placeholder="Название нового счета, например «Накопления»">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-primary btn-sm" onclick="createBankAccount()">➕ Добавить счет</button>
-                <button class="btn btn-ghost btn-sm" onclick="renderBankPage()">🔄 Синхронизировать</button>
-            </div>
-            <div class="bank-small-note">Можно создать ещё до 5 дополнительных счетов. По умолчанию уже есть «Основной».</div>
-        </div>
-        <div class="bank-accounts-grid" id="bankAccountsList"></div>
-    </div>
-
-    <div class="card">
         <div class="card-title">💸 Перевод денег</div>
-        <div class="bank-small-note" style="margin-top:-2px;">Перевод списывается с выбранного счета. Получатель зачисляется на свой активный счет.</div>
-        <select id="bFromAccount" style="margin-top:10px;"></select>
         <input type="text" id="bTo" placeholder="Никнейм получателя" autocomplete="off" required minlength="2" maxlength="20">
         <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
     </div>
-
-    <div class="card">
-        <div class="card-title">🏧 Создать терминал</div>
-        <input type="number" id="terminalAmount" placeholder="Сумма к оплате (₽)" min="1" step="1">
-        <button class="btn btn-gold" onclick="createBankTerminal()">Создать терминал</button>
-        <div class="bank-small-note">Создаётся экран ожидания оплаты. Другой человек открывает сайт, вводит код терминала и подтверждает платёж со своего счета.</div>
-    </div>
-
-    <div class="card">
-        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-            <span>📡 Активные терминалы</span>
-            <span class="bank-terminal-pulse"><span class="pulse"></span> Онлайн</span>
-        </div>
-        <div id="bankTerminalsList" class="bank-terminal-list"><div style="color:var(--muted);font-size:13px;">Пока нет активных терминалов</div></div>
-    </div>
-
     <div class="card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
             <span>📋 Последние переводы</span>
@@ -1184,51 +1080,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
 </div>
 
-<div id="bankTerminalWaitModal" class="bank-modal" onclick="if(event.target===this)closeBankTerminalWaitModal()">
-    <div class="bank-modal-sheet" onclick="event.stopPropagation()">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
-            <div class="bank-modal-title">🏧 Терминал создан</div>
-            <button class="bank-modal-close" onclick="closeBankTerminalWaitModal()">✕</button>
-        </div>
-        <div class="bank-modal-status" id="bankTerminalWaitStatus">Ожидаем оплату...</div>
-        <div class="bank-modal-amount" id="bankTerminalWaitAmount">0 ₽</div>
-        <div class="bank-modal-code-row">
-            <div class="bank-modal-code" id="bankTerminalWaitCode">------</div>
-            <button class="btn btn-ghost btn-sm" onclick="copyBankTerminalCode()">Копировать</button>
-        </div>
-        <div class="bank-small-note" id="bankTerminalWaitMeta" style="margin-top:10px;">Сумма и код терминала отображаются на втором телефоне.</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
-            <button class="btn btn-red btn-sm" onclick="cancelBankTerminal()">Отменить терминал</button>
-            <button class="btn btn-ghost btn-sm" onclick="closeBankTerminalWaitModal()">Скрыть</button>
-        </div>
-    </div>
-</div>
-
-<div id="bankPayModal" class="bank-pay-modal" onclick="if(event.target===this)closeBankPayModal()">
-    <div class="bank-pay-sheet" onclick="event.stopPropagation()">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
-            <div class="bank-modal-title">📲 Оплата терминала</div>
-            <button class="bank-modal-close" onclick="closeBankPayModal()">✕</button>
-        </div>
-        <div class="bank-pay-desc" id="bankPayDesc">Введите код терминала и подтвердите оплату.</div>
-        <div class="bank-pay-amount" id="bankPayAmount">0 ₽</div>
-        <select id="bankPayAccountSelect" style="margin-top:10px;"></select>
-        <input type="text" id="bankPayCodeInput" placeholder="Код терминала" maxlength="12">
-        <button class="btn btn-primary" onclick="payBankTerminalByCode()">Оплатить</button>
-        <div class="bank-small-note" id="bankPayMeta" style="margin-top:10px;">После оплаты обе страницы вернутся обратно автоматически.</div>
-    </div>
-</div>
-
-<div id="bankPaymentAnim" class="bank-anim-modal">
-    <div class="bank-anim-sheet">
-        <div class="bank-anim-icon" id="bankAnimIcon">💸</div>
-        <div class="bank-anim-title" id="bankAnimTitle">Платёж</div>
-        <div class="bank-anim-amt out" id="bankAnimAmount">−0 ₽</div>
-        <div class="bank-anim-sub" id="bankAnimText">Возвращаемся в сайт...</div>
-    </div>
-</div>
-
-<!-- RATINGS -->
 <!-- RATINGS -->
 <div id="ratings" class="section">
     <div class="card"><div class="card-title">🏆 Рейтинг жителей</div><div id="lbList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div></div>
@@ -2049,78 +1900,6 @@ function toast(text, type='green') {
 }
 function hideLoading() { const ov=qs('loadingOverlay'); if(ov) ov.style.display='none'; }
 
-
-function normalizeBankAccounts(user){
-    const map = {};
-    const src = user && user.bankAccounts && typeof user.bankAccounts === 'object' ? user.bankAccounts : null;
-    if(src){
-        for(const [key, val] of Object.entries(src)){
-            if(!val) continue;
-            const id = String(val.id || key || BANK_DEFAULT_ACCOUNT_ID);
-            map[id] = {
-                id,
-                name: val.name || (id === BANK_DEFAULT_ACCOUNT_ID ? BANK_DEFAULT_ACCOUNT_NAME : `Счёт ${Object.keys(map).length + 1}`),
-                balance: Number(val.balance || 0),
-                createdAt: val.createdAt || Date.now()
-            };
-        }
-    }
-    if(!map[BANK_DEFAULT_ACCOUNT_ID]){
-        map[BANK_DEFAULT_ACCOUNT_ID] = {
-            id: BANK_DEFAULT_ACCOUNT_ID,
-            name: BANK_DEFAULT_ACCOUNT_NAME,
-            balance: Number(user && user.balance || 0),
-            createdAt: user && user.createdAt ? user.createdAt : Date.now()
-        };
-    }
-    return map;
-}
-function bankAccountsArray(user){
-    return Object.values(normalizeBankAccounts(user)).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-}
-function bankActiveAccountId(user){
-    const map = normalizeBankAccounts(user);
-    if(user && user.activeBankAccountId && map[user.activeBankAccountId]) return user.activeBankAccountId;
-    return map[BANK_DEFAULT_ACCOUNT_ID] ? BANK_DEFAULT_ACCOUNT_ID : Object.keys(map)[0];
-}
-function bankAccountTotal(user){
-    return bankAccountsArray(user).reduce((sum, acc)=>sum + (Number(acc.balance)||0), 0);
-}
-function bankAccountLabel(acc){
-    if(!acc) return '—';
-    return `${acc.name || BANK_DEFAULT_ACCOUNT_NAME} · ${Number(acc.balance||0).toLocaleString()} ₽`;
-}
-function bankPatchForDelta(user, accountId, delta){
-    const map = normalizeBankAccounts(user);
-    const id = accountId && map[accountId] ? accountId : bankActiveAccountId(user);
-    map[id] = {
-        ...(map[id] || { id, name: id === BANK_DEFAULT_ACCOUNT_ID ? BANK_DEFAULT_ACCOUNT_NAME : 'Счёт' }),
-        id,
-        balance: Number(map[id]?.balance || 0) + Number(delta || 0)
-    };
-    return { bankAccounts: map, balance: bankAccountTotal({ bankAccounts: map }), activeBankAccountId: id };
-}
-async function reconcileBankLedgerForUser(nick, user){
-    if(!nick || !user) return;
-    const map = normalizeBankAccounts(user);
-    const active = bankActiveAccountId(user);
-    const otherTotal = Object.values(map).filter(acc => acc.id !== BANK_DEFAULT_ACCOUNT_ID).reduce((sum, acc)=>sum + (Number(acc.balance)||0), 0);
-    const desiredMain = Number(user.balance || 0) - otherTotal;
-    const main = map[BANK_DEFAULT_ACCOUNT_ID] || { id: BANK_DEFAULT_ACCOUNT_ID, name: BANK_DEFAULT_ACCOUNT_NAME, balance: 0, createdAt: Date.now() };
-    const changed = !user.bankAccounts || !user.bankAccounts[BANK_DEFAULT_ACCOUNT_ID] || Number(main.balance || 0) !== desiredMain || user.activeBankAccountId !== active;
-    if(!changed) return;
-    map[BANK_DEFAULT_ACCOUNT_ID] = { ...main, id: BANK_DEFAULT_ACCOUNT_ID, name: main.name || BANK_DEFAULT_ACCOUNT_NAME, balance: desiredMain };
-    await update(userRef(nick), { bankAccounts: map, activeBankAccountId: active });
-}
-function bankTerminalCode(){
-    return Math.random().toString(36).slice(2, 8).toUpperCase();
-}
-function bankTerminalRef(id){ return ref(db, `bankTerminals/${id}`); }
-function bankTerminalsRef(){ return ref(db, 'bankTerminals'); }
-function bankTerminalDisplayCode(code){
-    return String(code || '').replace(/[^A-Z0-9]/g,'');
-}
-
 // ─── ONLINE PRESENCE ──────────────────────
 async function updateOnlineStatus() {
     if(!currentNick) return;
@@ -2179,13 +1958,6 @@ const janitorSubRef = (id) => ref(db, `janitorSubmissions/${id}`);
 const wallRef = (nick) => ref(db, `walls/${nick}`);
 const newsRef = () => ref(db, 'news');
 const newsItemRef = (id) => ref(db, `news/${id}`);
-
-const BANK_MAX_ACCOUNTS = 6;
-const BANK_DEFAULT_ACCOUNT_ID = 'main';
-const BANK_DEFAULT_ACCOUNT_NAME = 'Основной';
-let lastBankTerminalsCache = {};
-let activeBankTerminalId = null;
-let bankAnimTimer = null;
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
@@ -2261,11 +2033,7 @@ window.handleAuth = async function() {
                 displayName:'',accountFrozen:false,rewardedAvatar:false,rewardedWall:false,
                 createdAt: now,
                 totalEarned: 0,
-                accountVerified: false, // New accounts need mayor approval
-                bankAccounts: {
-                    main: { id: 'main', name: BANK_DEFAULT_ACCOUNT_NAME, balance: 0, createdAt: now }
-                },
-                activeBankAccountId: 'main'
+                accountVerified: false // New accounts need mayor approval
             });
             
             // Send notification to mayor about new account
@@ -2311,16 +2079,7 @@ window.logout = function() {
 // ─── REAL-TIME LISTENERS ──────────────────
 function attachListeners() {
     const uRef=userRef(currentNick);
-    const uFn=async (snap)=>{
-        if(snap.exists()){
-            const u=snap.val();
-            await syncJanitorTaskState(u);
-            updateHeader(u);
-            updateFrozenOverlay(u);
-            await reconcileBankLedgerForUser(currentNick, u);
-            if(curPage==='bank') renderBankPage();
-        }
-    };
+    const uFn=async (snap)=>{if(snap.exists()){const u=snap.val();await syncJanitorTaskState(u);updateHeader(u);updateFrozenOverlay(u);}};
     onValue(uRef,uFn); listeners.user={ref:uRef,fn:uFn};
 
     const oRef=ordersRef();
@@ -2357,29 +2116,12 @@ function attachListeners() {
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
-        if(curPage==='bank') renderBankPage();
         if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
         if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
         if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
         if(curPage==='tasks') renderTasks();
     };
     onValue(allRef,allFn); listeners.allUsers={ref:allRef,fn:allFn};
-
-    const bankTermRef = bankTerminalsRef();
-    const bankTermFn = (snap) => {
-        const terminals = snap.val() || {};
-        const prev = lastBankTerminalsCache || {};
-        lastBankTerminalsCache = terminals;
-        if(curPage === 'bank') renderActiveTerminals(terminals);
-        Object.values(terminals).forEach(t => {
-            const before = prev[t.id];
-            if(t && t.creator === currentNick && t.status === 'paid' && (!before || before.status !== 'paid')){
-                if(qs('bankTerminalWaitModal') && qs('bankTerminalWaitModal').classList.contains('open')) closeBankTerminalWaitModal();
-                showBankMoneyAnimation('in', t.amount || 0, t.payerName || t.payer || 'плательщика');
-            }
-        });
-    };
-    onValue(bankTermRef, bankTermFn); listeners.bankTerminals={ref:bankTermRef,fn:bankTermFn};
 
     let notifInit=false, lastNotifCount=0;
     const nRef=notifRef(currentNick);
@@ -3799,307 +3541,43 @@ window.doTransfer=async function(){
     if(!await requireSpendable())return;
     const to=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
     if(!to)return toast('⚠️ Введите никнейм','gold');if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
-
-    const [fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
-    if(!fromSnap.exists() || !toSnap.exists()) return toast('❌ Не найден','red');
+    
+    // Check if sender account is verified
+    const[fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
     const fromUser = fromSnap.val();
     const toUser = toSnap.val();
     if(isMigrantUser(fromUser)) return toast(`🚫 ${ROLE_MIGRANT}: переводы недоступны`,'red');
     if(isMigrantUser(toUser)) return toast(`🚫 Нельзя переводить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
-    if(!fromUser.accountVerified) return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
-    if(!toUser.accountVerified) return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
-
-    const senderAccounts = normalizeBankAccounts(fromUser);
-    const recipientAccounts = normalizeBankAccounts(toUser);
-    const fromSel = qs('bFromAccount') ? qs('bFromAccount').value : '';
-    const senderAccountId = fromSel && senderAccounts[fromSel] ? fromSel : bankActiveAccountId(fromUser);
-    const recipientAccountId = bankActiveAccountId(toUser);
-    if(Number(senderAccounts[senderAccountId]?.balance || 0) < amt) return toast('❌ Недостаточно средств на выбранном счете','red');
-
+    if(!fromUser.accountVerified) {
+        return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
+    }
+    
+    // Check if recipient account is verified
+    if(!toUser.accountVerified) {
+        return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
+    }
+    
+    if(!toSnap.exists())return toast('❌ Не найден','red');
+    
     try {
-        const senderPatch = bankPatchForDelta(fromUser, senderAccountId, -amt);
-        const recipientPatch = bankPatchForDelta(toUser, recipientAccountId, amt);
-        await update(userRef(currentNick), senderPatch);
-        await update(userRef(to), recipientPatch);
-        await logTx(currentNick, { type:'out', who: to, amt, desc:`Перевод пользователю ${to}` });
-        await logTx(to, { type:'in', who: currentNick, amt, desc:`Перевод от ${currentNick}` });
-        await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
-        qs('bTo').value='';qs('bAmt').value='';
-        toast(`💸 ${amt}₽ → ${to}`,'green');
-        renderRecentTransfers();
-        renderFinancialStats();
-        renderBankPage();
+        // Вызываем Cloud Function с fallback
+        const result = await callFunctionWithFallback('transferMoney', { 
+            toUid: to, 
+            amount: amt, 
+            description: `Перевод пользователю ${to}` 
+        }, fallbackTransferMoney);
+        
+        if (result.success) {
+            // Only notify recipient, not sender
+            await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
+            qs('bTo').value='';qs('bAmt').value='';toast(`💸 ${amt}₽ → ${to}`,'green');renderRecentTransfers();renderFinancialStats();
+        }
     } catch (error) {
         console.error('Ошибка перевода:', error);
         const message = error.message || 'Ошибка при выполнении перевода';
         toast(`❌ ${message}`,'red');
     }
 };
-
-window.createBankAccount = async function(){
-    if(!await requireNotMigrant('счета банка недоступны')) return;
-    const snap = await get(userRef(currentNick));
-    const u = snap.val();
-    if(!u) return toast('❌ Пользователь не найден', 'red');
-    const accounts = bankAccountsArray(u);
-    if(accounts.length >= BANK_MAX_ACCOUNTS) return toast('⚠️ Достигнут лимит: 6 счетов (1 основной + 5 дополнительных)','gold');
-    const nameInput = qs('newBankAccountName');
-    const name = (nameInput ? nameInput.value.trim() : '') || `Счёт ${accounts.length + 1}`;
-    const id = `acc_${genId().slice(-8)}`;
-    const map = normalizeBankAccounts(u);
-    map[id] = { id, name, balance: 0, createdAt: Date.now() };
-    await update(userRef(currentNick), { bankAccounts: map, activeBankAccountId: id });
-    if(nameInput) nameInput.value = '';
-    toast(`✅ Создан счет «${name}»`,'green');
-    if(curPage==='bank') renderBankPage();
-};
-
-function renderBankAccountsPanel(user){
-    const accounts = bankAccountsArray(user);
-    const activeId = bankActiveAccountId(user);
-    const total = Number(user && user.balance || bankAccountTotal(user) || 0);
-    const totalEl = qs('bankTotalBalance');
-    if(totalEl) totalEl.textContent = `${total.toLocaleString()} ₽`;
-    const active = accounts.find(a => a.id === activeId) || accounts[0];
-    if(qs('bankActiveName')) qs('bankActiveName').textContent = active ? active.name : BANK_DEFAULT_ACCOUNT_NAME;
-    if(qs('bankActiveChip')) qs('bankActiveChip').textContent = active ? active.name : BANK_DEFAULT_ACCOUNT_NAME;
-    if(qs('bankActiveNote')) qs('bankActiveNote').textContent = active ? `Баланс выбранного счета: ${Number(active.balance||0).toLocaleString()} ₽` : 'Счетов пока нет';
-    const list = qs('bankAccountsList');
-    if(list){
-        list.innerHTML = accounts.map(acc => {
-            const isActive = acc.id === activeId;
-            return `<div class="bank-account-card ${isActive ? 'active' : ''}">
-                <div class="bank-account-top">
-                    <div>
-                        <div class="bank-account-name">${escHtml(acc.name || BANK_DEFAULT_ACCOUNT_NAME)}${acc.id===BANK_DEFAULT_ACCOUNT_ID ? ' <span class="bank-chip active" style="margin-left:6px;">Основной</span>' : ''}</div>
-                        <div class="bank-account-meta">ID: ${escHtml(acc.id)}</div>
-                    </div>
-                    <div class="bank-account-balance">${Number(acc.balance||0).toLocaleString()} ₽</div>
-                </div>
-                <div class="bank-account-actions">
-                    <button class="btn ${isActive ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="setActiveBankAccount('${jsEsc(acc.id)}')">${isActive ? 'Активный' : 'Сделать активным'}</button>
-                </div>
-            </div>`;
-        }).join('') || '<div style="color:var(--muted);font-size:13px;">Пока нет счетов</div>';
-    }
-    const fromSel = qs('bFromAccount');
-    if(fromSel){
-        fromSel.innerHTML = accounts.map(acc => `<option value="${escHtml(acc.id)}"${acc.id===activeId?' selected':''}>${escHtml(acc.name)} — ${Number(acc.balance||0).toLocaleString()} ₽</option>`).join('');
-    }
-    const paySel = qs('bankPayAccountSelect');
-    if(paySel){
-        paySel.innerHTML = accounts.map(acc => `<option value="${escHtml(acc.id)}"${acc.id===activeId?' selected':''}>${escHtml(acc.name)} — ${Number(acc.balance||0).toLocaleString()} ₽</option>`).join('');
-    }
-}
-
-window.setActiveBankAccount = async function(id){
-    if(!id) return;
-    const snap = await get(userRef(currentNick));
-    const u = snap.val();
-    if(!u) return;
-    const map = normalizeBankAccounts(u);
-    if(!map[id]) return toast('❌ Счет не найден','red');
-    await update(userRef(currentNick), { activeBankAccountId: id });
-    toast(`✅ Активный счет: ${map[id].name}`,'green');
-    if(curPage==='bank') renderBankPage();
-};
-
-function openBankTerminalWaitModal(terminal){
-    activeBankTerminalId = terminal && terminal.id ? terminal.id : null;
-    if(qs('bankTerminalWaitModal')) qs('bankTerminalWaitModal').classList.add('open');
-    if(qs('bankTerminalWaitAmount')) qs('bankTerminalWaitAmount').textContent = `${Number(terminal.amount||0).toLocaleString()} ₽`;
-    if(qs('bankTerminalWaitCode')) qs('bankTerminalWaitCode').textContent = terminal.code || '------';
-    if(qs('bankTerminalWaitStatus')) qs('bankTerminalWaitStatus').textContent = `Терминал #${terminal.code} ждёт оплату`;
-    if(qs('bankTerminalWaitMeta')) qs('bankTerminalWaitMeta').textContent = `Создан на счёте «${terminal.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME}». После оплаты деньги уйдут на этот счет.`;
-    lockBodyScroll();
-}
-
-window.closeBankTerminalWaitModal = function(){
-    activeBankTerminalId = null;
-    if(qs('bankTerminalWaitModal')) qs('bankTerminalWaitModal').classList.remove('open');
-    unlockBodyScroll();
-};
-
-window.copyBankTerminalCode = async function(){
-    const code = qs('bankTerminalWaitCode') ? qs('bankTerminalWaitCode').textContent.trim() : '';
-    if(!code) return;
-    try{
-        await navigator.clipboard.writeText(code);
-        toast('Код терминала скопирован','green');
-    }catch(e){
-        toast('Не удалось скопировать код','gold');
-    }
-};
-
-window.cancelBankTerminal = async function(){
-    if(!activeBankTerminalId) return;
-    if(!confirm('Отменить терминал?')) return;
-    await remove(bankTerminalRef(activeBankTerminalId));
-    closeBankTerminalWaitModal();
-    toast('🗑 Терминал отменён','gold');
-};
-
-window.createBankTerminal = async function(){
-    if(!await requireNotMigrant('терминалы недоступны')) return;
-    const amt = parseInt(qs('terminalAmount') ? qs('terminalAmount').value : '0', 10) || 0;
-    if(amt <= 0) return toast('⚠️ Введите сумму','gold');
-    const snap = await get(userRef(currentNick));
-    const u = snap.val();
-    if(!u) return toast('❌ Пользователь не найден','red');
-    if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: терминалы недоступны`,'red');
-    if(!u.accountVerified) return toast('❌ Ваш аккаунт не подтверждён мэрией','red');
-    const activeId = bankActiveAccountId(u);
-    const accounts = normalizeBankAccounts(u);
-    const active = accounts[activeId] || accounts[BANK_DEFAULT_ACCOUNT_ID];
-    const code = bankTerminalCode();
-    const id = genId();
-    const terminal = {
-        id,
-        code,
-        amount: amt,
-        creator: currentNick,
-        creatorName: displayNick(u) || currentNick,
-        creatorAccountId: activeId,
-        creatorAccountName: active ? active.name : BANK_DEFAULT_ACCOUNT_NAME,
-        status: 'waiting',
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-    };
-    await set(bankTerminalRef(id), terminal);
-    if(qs('terminalAmount')) qs('terminalAmount').value = '';
-    openBankTerminalWaitModal(terminal);
-    toast('🏧 Терминал создан','green');
-};
-
-function closeBankPayModal(){
-    if(qs('bankPayModal')) qs('bankPayModal').classList.remove('open');
-    unlockBodyScroll();
-    activeBankTerminalId = null;
-}
-
-function openBankPayModal(terminal){
-    activeBankTerminalId = terminal && terminal.id ? terminal.id : null;
-    const payAmount = qs('bankPayAmount');
-    const payDesc = qs('bankPayDesc');
-    const payMeta = qs('bankPayMeta');
-    if(payAmount) payAmount.textContent = `${Number(terminal.amount||0).toLocaleString()} ₽`;
-    if(payDesc) payDesc.textContent = `Оплата терминала ${terminal.code} от пользователя ${terminal.creatorName || terminal.creator}.`;
-    if(payMeta) payMeta.textContent = `Средства будут списаны с выбранного счета и зачислены на счет «${terminal.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME}».`;
-    if(qs('bankPayCodeInput')) qs('bankPayCodeInput').value = terminal.code || '';
-    if(qs('bankPayModal')) qs('bankPayModal').classList.add('open');
-    lockBodyScroll();
-    renderBankAccountsPanel(allUsersCache[currentNick] || {});
-}
-
-window.payBankTerminalByCode = async function(){
-    const code = bankTerminalDisplayCode(qs('bankPayCodeInput') ? qs('bankPayCodeInput').value : '');
-    if(!code) return toast('⚠️ Введите код терминала','gold');
-    const snap = await get(bankTerminalsRef());
-    const all = snap.val() || {};
-    const terminal = Object.values(all).find(t => t && t.status === 'waiting' && bankTerminalDisplayCode(t.code) === code);
-    if(!terminal) return toast('❌ Терминал не найден или уже оплачен','red');
-    if(terminal.creator === currentNick) return toast('⚠️ Нельзя платить самому себе','gold');
-    const payAcc = qs('bankPayAccountSelect') ? qs('bankPayAccountSelect').value : bankActiveAccountId(allUsersCache[currentNick] || {});
-    await payBankTerminal(terminal.id, payAcc);
-};
-
-window.payBankTerminal = async function(id, payerAccountId){
-    if(!await requireNotMigrant('оплата терминалов недоступна')) return;
-    if(!await requireSpendable()) return;
-    const tSnap = await get(bankTerminalRef(id));
-    if(!tSnap.exists()) return toast('❌ Терминал не найден','red');
-    const terminal = tSnap.val();
-    if(terminal.status !== 'waiting') return toast('⚠️ Терминал уже оплачен','gold');
-    if(terminal.creator === currentNick) return toast('⚠️ Нельзя платить самому себе','gold');
-    const [payerSnap, creatorSnap] = await Promise.all([get(userRef(currentNick)), get(userRef(terminal.creator))]);
-    if(!payerSnap.exists() || !creatorSnap.exists()) return toast('❌ Пользователь не найден','red');
-    const payer = payerSnap.val();
-    const creator = creatorSnap.val();
-    if(!payer.accountVerified) return toast('❌ Ваш аккаунт не подтверждён мэрией','red');
-    if(!creator.accountVerified) return toast('❌ Аккаунт получателя не подтверждён мэрией','red');
-    if(isMigrantUser(payer)) return toast(`🚫 ${ROLE_MIGRANT}: оплата недоступна`,'red');
-    if(isMigrantUser(creator)) return toast(`🚫 Нельзя платить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
-    const payerMap = normalizeBankAccounts(payer);
-    const creatorMap = normalizeBankAccounts(creator);
-    const fromId = payerAccountId && payerMap[payerAccountId] ? payerAccountId : bankActiveAccountId(payer);
-    const toId = terminal.creatorAccountId && creatorMap[terminal.creatorAccountId] ? terminal.creatorAccountId : bankActiveAccountId(creator);
-    const amount = Number(terminal.amount || 0);
-    if(Number(payerMap[fromId]?.balance || 0) < amount) return toast('❌ Недостаточно средств на выбранном счете','red');
-    const payerPatch = bankPatchForDelta(payer, fromId, -amount);
-    const creatorPatch = bankPatchForDelta(creator, toId, amount);
-    await update(userRef(currentNick), payerPatch);
-    await update(userRef(terminal.creator), creatorPatch);
-    await update(bankTerminalRef(id), { status:'paid', payer: currentNick, payerName: displayNick(payer) || currentNick, payerAccountId: fromId, paidAt: Date.now(), updatedAt: Date.now() });
-    await logTx(currentNick, { type:'out', who: terminal.creator, amt: amount, desc: `Оплата через терминал #${terminal.code}` });
-    await logTx(terminal.creator, { type:'in', who: currentNick, amt: amount, desc: `Получено через терминал #${terminal.code}` });
-    await pushNotification(currentNick, `💸 Оплата терминала ${amount}₽`, 'money');
-    await pushNotification(terminal.creator, `💰 ${currentNick} оплатил терминал ${amount}₽`, 'money');
-    closeBankPayModal();
-    showBankMoneyAnimation('out', amount, terminal.creatorName || terminal.creator);
-    toast(`✅ Оплата ${amount.toLocaleString()} ₽ отправлена`,'green');
-    if(activeBankTerminalId === id) activeBankTerminalId = null;
-};
-
-function showBankMoneyAnimation(direction, amount, counterparty){
-    const box = qs('bankPaymentAnim');
-    if(!box) return;
-    const isIn = direction === 'in';
-    if(qs('bankAnimIcon')) qs('bankAnimIcon').textContent = isIn ? '💰' : '💸';
-    if(qs('bankAnimTitle')) qs('bankAnimTitle').textContent = isIn ? 'Деньги получены' : 'Платёж выполнен';
-    if(qs('bankAnimAmount')) {
-        qs('bankAnimAmount').className = `bank-anim-amt ${isIn ? 'in' : 'out'}`;
-        qs('bankAnimAmount').textContent = `${isIn ? '+' : '−'}${Number(amount||0).toLocaleString()} ₽`;
-    }
-    if(qs('bankAnimText')) qs('bankAnimText').textContent = isIn ? `Счёт пополнен от ${counterparty || 'плательщика'}.` : 'Возвращаемся на сайт...';
-    box.classList.add('open');
-    clearTimeout(bankAnimTimer);
-    bankAnimTimer = setTimeout(() => {
-        box.classList.remove('open');
-    }, 2200);
-}
-
-function renderActiveTerminals(terminals){
-    const el = qs('bankTerminalsList');
-    if(!el) return;
-    const arr = Object.values(terminals || {}).filter(t => t && t.status === 'waiting').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    if(!arr.length){
-        el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Пока нет активных терминалов</div>';
-        return;
-    }
-    el.innerHTML = arr.map(t => {
-        const mine = t.creator === currentNick;
-        return `<div class="bank-terminal-row">
-            <div class="bank-terminal-row-top">
-                <div>
-                    <div class="bank-terminal-row-title">${mine ? 'Ваш терминал' : escHtml(t.creatorName || t.creator)}</div>
-                    <div class="bank-terminal-row-sub">Код: <b>${escHtml(t.code)}</b> · Счет: ${escHtml(t.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME)}</div>
-                    <div class="bank-terminal-row-sub">Создан: ${escHtml(new Date(t.createdAt || Date.now()).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}))}</div>
-                </div>
-                <div class="bank-terminal-row-amt">${Number(t.amount||0).toLocaleString()} ₽</div>
-            </div>
-            <div class="bank-terminal-row-actions">
-                ${mine ? `<button class="btn btn-red btn-sm" onclick="cancelBankTerminalById('${jsEsc(t.id)}')">Отменить</button><button class="btn btn-ghost btn-sm" onclick="openBankTerminalWaitModal({id:'${jsEsc(t.id)}',code:'${jsEsc(t.code)}',amount:${Number(t.amount||0)},creatorAccountName:'${jsEsc(t.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME)}'})">Открыть</button>` : `<button class="btn btn-primary btn-sm" onclick="openBankPayModal({id:'${jsEsc(t.id)}',code:'${jsEsc(t.code)}',amount:${Number(t.amount||0)},creator:'${jsEsc(t.creator)}',creatorName:'${jsEsc(t.creatorName || t.creator)}',creatorAccountId:'${jsEsc(t.creatorAccountId || BANK_DEFAULT_ACCOUNT_ID)}',creatorAccountName:'${jsEsc(t.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME)}'})">Оплатить</button>`}
-            </div>
-        </div>`;
-    }).join('');
-}
-
-window.cancelBankTerminalById = async function(id){
-    if(!id) return;
-    if(!confirm('Отменить этот терминал?')) return;
-    await remove(bankTerminalRef(id));
-    if(activeBankTerminalId === id) closeBankTerminalWaitModal();
-    toast('🗑 Терминал отменён','gold');
-};
-
-function renderBankPage(){
-    const user = allUsersCache[currentNick] || null;
-    if(!user) return;
-    renderBankAccountsPanel(user);
-    renderRecentTransfers();
-    renderFinancialStats();
-    renderActiveTerminals(lastBankTerminalsCache);
-}
 async function renderRecentTransfers(){
     const el=qs('txHistory');if(!el)return;const snap=await get(txLogRef(currentNick));
     const arr=Object.values(snap.val()||{}).sort((a,b)=>(b.ts||'').localeCompare(a.ts||'')).slice(0,5);
@@ -5965,7 +5443,7 @@ window.navTo=function(id){
     }
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
-    if(id==='bank') renderBankPage();
+    if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
     if(id==='tasks') renderTasks();
     if(id==='jobs') renderJobAppStatus();
