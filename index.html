@@ -134,6 +134,49 @@ select option{background:#1a2332;}
 .market-seller img{width:24px;height:24px;border-radius:8px;object-fit:cover;}
 .market-status-sold{background:var(--red-dim);color:var(--red);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 .market-status-pending{background:var(--gold-dim);color:var(--gold);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.business-tabs{display:flex;gap:8px;margin-bottom:14px;}
+.business-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;}
+.business-tab.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
+.business-panel{display:none;}
+.business-panel.active{display:block;}
+.business-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+.business-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:.2s;}
+.business-card:hover{border-color:var(--primary);background:var(--pri-dim);}
+.business-top{display:flex;gap:12px;align-items:flex-start;}
+.business-icon{width:56px;height:56px;border-radius:16px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--surface2);}
+.business-title{font-weight:900;font-size:16px;line-height:1.2;}
+.business-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+.business-desc{font-size:13px;color:var(--text);line-height:1.5;margin-top:10px;}
+.business-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.business-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text);}
+.business-pill.primary{background:var(--pri-dim);border-color:rgba(34,211,165,.25);color:var(--primary);}
+.business-pill.gold{background:var(--gold-dim);border-color:rgba(251,191,36,.25);color:var(--gold);}
+.business-pill.red{background:var(--red-dim);border-color:rgba(248,113,113,.25);color:var(--red);}
+.business-detail{border:1px solid rgba(34,211,165,.22);background:linear-gradient(145deg,rgba(34,211,165,.06),rgba(251,191,36,.03));}
+.business-detail-header{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
+.business-gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0;}
+.business-gallery img,.business-gallery video{width:100%;height:120px;object-fit:cover;border-radius:14px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;}
+.business-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.business-actions .btn{padding:12px 14px;font-size:12px;}
+.business-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.business-form-grid .full{grid-column:1/-1;}
+.business-mini{font-size:11px;color:var(--muted);line-height:1.45;}
+.business-role-item,.business-staff-item,.business-ledger-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;}
+.business-role-row,.business-staff-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.business-terminal{background:linear-gradient(135deg,rgba(34,211,165,.08),rgba(34,211,165,.03));border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:12px;margin-top:10px;}
+.business-terminal-code{font-family:monospace;font-size:18px;font-weight:900;letter-spacing:1px;color:var(--primary);}
+.business-section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px;}
+.business-empty{color:var(--muted);font-size:13px;text-align:center;padding:18px 0;}
+.business-upload-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.business-upload-preview.single{grid-template-columns:1fr;}
+.business-upload-thumb{position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface2);min-height:86px;}
+.business-upload-thumb img,.business-upload-thumb video{width:100%;height:100%;object-fit:cover;display:block;}
+.business-upload-thumb .del{position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(0,0,0,.72);color:#fff;font-weight:900;cursor:pointer;}
+.business-draft-role{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-top:8px;}
+.business-draft-role-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;}
+.business-draft-role-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.business-draft-role-grid .full{grid-column:1/-1;}
+
 #taxiMap{width:100%;height:320px;border-radius:var(--r-sm);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
 .taxi-point-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
 .taxi-point-row input{flex:1;margin:0;}
@@ -793,9 +836,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <button class="bn-item" id="bn3" onclick="navTo('tasks')" aria-label="Перейти к заданиям"><span class="ico">🗂</span>Задания</button>
     <button class="bn-item" id="bn4" onclick="navTo('bank')" aria-label="Перейти в банк"><span class="ico">💰</span>Банк</button>
     <button class="bn-item" id="bn5" onclick="navTo('news')" aria-label="Перейти к новостям"><span class="ico">📰</span>Новости</button>
-    <button class="bn-item" id="bn6" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
-    <button class="bn-item" id="bn7" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
-    <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
+    <button class="bn-item" id="bn6" onclick="navTo('businesses')" aria-label="Перейти в бизнесы"><span class="ico">🏢</span>Бизнесы</button>
+    <button class="bn-item" id="bn7" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
+    <button class="bn-item" id="bn8" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
+    <button class="bn-item" id="bn9" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
 </div>
 
 <div class="container">
@@ -823,7 +867,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="quick-card" onclick="navTo('shop')" role="button" tabindex="0" aria-label="Перейти в магазин"><div class="qico">🛒</div><div class="qlbl">Магазин</div><div class="qsub">Ресурсы поселка</div></div>
         <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
-        <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
+                <div class="quick-card" onclick="navTo('businesses')" role="button" tabindex="0" aria-label="Перейти к бизнесам"><div class="qico">🏢</div><div class="qlbl">Бизнесы</div><div class="qsub">Магазины и центры</div></div>
+<div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
     </div>
     <div id="homeOrders"></div>
     <div id="workerSection" style="display:none">
@@ -1332,6 +1377,105 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
 </div>
 
+<!-- BUSINESSES -->
+<div id="businesses" class="section">
+    <div class="business-tabs">
+        <button class="business-tab active" id="bizTab0" onclick="switchBusinessTab(0)">🏪 Каталог</button>
+        <button class="business-tab" id="bizTab1" onclick="switchBusinessTab(1)">⭐ Мои</button>
+        <button class="business-tab" id="bizTab2" onclick="switchBusinessTab(2)">➕ Заявка</button>
+    </div>
+
+    <div class="business-panel active" id="bizPanel0">
+        <div class="business-section-card">
+            <div class="card-title">🔎 Поиск и фильтр</div>
+            <input type="text" id="bizSearch" placeholder="Название, адрес, услуги..." oninput="renderBizPage()">
+            <select id="bizFilter" onchange="renderBizPage()">
+                <option value="all">Все категории</option>
+                <option value="shop">🛒 Магазин</option>
+                <option value="service">🤝 Услуги</option>
+                <option value="center">🏢 Центр</option>
+                <option value="food">🍔 Еда</option>
+                <option value="other">📦 Другое</option>
+            </select>
+            <div class="stats-row" id="businessStats"></div>
+        </div>
+        <div id="businessList" class="business-grid">
+            <div class="business-empty">Загрузка бизнеса...</div>
+        </div>
+    </div>
+
+    <div class="business-panel" id="bizPanel1">
+        <div class="business-section-card">
+            <div class="card-title">👔 Мои бизнесы</div>
+            <div id="myBusinessList" class="business-grid"><div class="business-empty">Пока нет управляемых бизнесов</div></div>
+        </div>
+        <div class="business-section-card">
+            <div class="card-title">💳 Быстрый доступ</div>
+            <div class="business-mini">Здесь можно открыть свой бизнес, управлять балансом, терминалом, ролями и сотрудниками.</div>
+        </div>
+    </div>
+
+    <div class="business-panel" id="bizPanel2">
+        <div class="business-section-card">
+            <div class="card-title">📝 Заявка на создание бизнеса</div>
+            <div class="business-mini" style="margin-bottom:10px;">Заполните все поля — заявка уйдёт в мэрию на проверку.</div>
+            <div class="business-form-grid">
+                <input class="full" type="text" id="bizAppName" placeholder="Название бизнеса" maxlength="60">
+                <select id="bizAppCategory" class="full">
+                    <option value="shop">🛒 Магазин</option>
+                    <option value="service">🤝 Услуги</option>
+                    <option value="center">🏢 Центр</option>
+                    <option value="food">🍔 Еда</option>
+                    <option value="other" selected>📦 Другое</option>
+                </select>
+
+                <div class="full">
+                    <label class="file-upload-btn" for="bizAppIconFile">🖼 Выбрать иконку из галереи</label>
+                    <input type="file" id="bizAppIconFile" accept="image/*" onchange="handleBusinessIconPick(event)">
+                    <div class="business-mini" style="margin-top:6px;">Иконка берётся только из файла — без URL.</div>
+                    <div id="bizAppIconPreviewWrap" style="display:none;margin-top:10px;">
+                        <div class="business-mini" style="margin-bottom:6px;">Предпросмотр иконки</div>
+                        <div class="business-upload-preview single">
+                            <div class="business-upload-thumb" style="height:120px;">
+                                <img id="bizAppIconPreview" alt="Иконка бизнеса">
+                                <button type="button" class="del" onclick="clearBusinessIconDraft()">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="full">
+                    <label class="file-upload-btn" for="bizAppGalleryFile">🖼️🎬 Добавить изображения и видео</label>
+                    <input type="file" id="bizAppGalleryFile" accept="image/*,video/*" multiple onchange="handleBusinessGalleryPick(event)">
+                    <div class="business-mini" style="margin-top:6px;">Можно выбрать несколько файлов сразу.</div>
+                    <div id="bizAppGalleryPreview" class="business-upload-preview"></div>
+                </div>
+
+                <input type="text" id="bizAppAddress" placeholder="Адрес" maxlength="120">
+                <input type="text" id="bizAppHours" placeholder="График работы" maxlength="60">
+                <input type="text" id="bizAppPhone" placeholder="Контакт / телефон" maxlength="40">
+                <input type="text" id="bizAppWebsite" placeholder="Сайт / соцсети" maxlength="120">
+                <textarea class="full" id="bizAppServices" placeholder="Услуги через запятую" style="min-height:72px;"></textarea>
+                <textarea class="full" id="bizAppDesc" placeholder="Описание бизнеса" style="min-height:110px;"></textarea>
+
+                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
+                    <input type="checkbox" id="bizAppDelivery" style="width:auto;margin:0 8px 0 0;"> Разрешить доставку / заказы
+                </label>
+
+                <div class="business-section-card full" style="margin:0;padding:14px;">
+                    <div class="card-title" style="margin-bottom:10px;">👷 Роли до открытия бизнеса</div>
+                    <div class="business-mini">Добавьте любые роли заранее: сотрудник, санитар, доставщик и так далее.</div>
+                    <div id="bizDraftRolesList" style="margin-top:10px;"></div>
+                    <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="addBusinessDraftRole()">➕ Добавить роль</button>
+                </div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:10px;" onclick="submitBusinessApplication()">📨 Отправить в мэрию</button>
+        </div>
+    </div>
+
+    <div id="businessDetailPanel" class="business-section-card business-detail" style="display:none;"></div>
+</div>
+
 <!-- NEWS DISCUSSION -->
 <div id="newsDiscussion" class="section">
     <div class="card">
@@ -1434,6 +1578,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card"><div class="card-title">📋 Заявки на работу</div><div id="appList"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card"><div class="card-title">🆕 Новые аккаунты (на подтверждение)</div><div id="unverifiedAccounts"><div style="color:var(--muted);font-size:13px;">Нет неподтверждённых аккаунтов</div></div></div>
     <div class="card"><div class="card-title">🧹 Отчёты уборщиков (на проверке)</div><div id="janitorAdminList"><div style="color:var(--muted);font-size:13px;">Нет отчётов</div></div></div>
+    <div class="card"><div class="card-title">🏢 Заявки на бизнесы (на проверке)</div><div id="businessAdminList"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card">
         <div class="card-title">💳 Управление балансом</div>
         <select id="adminTarget" style="margin-bottom:8px;"></select>
@@ -1594,6 +1739,9 @@ let shopMapObj = null, shopMarker = null, shopAddrCoords = null;
 let currentDmNick = null;
 let dmListeners = {};
 let viewingProfileNick = null;
+let businessCache = {};
+let businessAppsCache = {};
+let currentBusinessId = '';
 let dmPeerReadTs = 0;
 let lastMarketListings = {};
 let dmConvoMeta = {};
@@ -1952,6 +2100,11 @@ const dmRef     = (key)  => ref(db, `dms/${key}/messages`);
 const marketRef = ()     => ref(db, 'marketplace');
 const listingRef= (id)   => ref(db, `marketplace/${id}`);
 const notifRef  = (nick) => ref(db, `users/${nick}/notifications`);
+const businessesRef = () => ref(db, 'businesses');
+const businessRef = (id) => ref(db, `businesses/${id}`);
+const businessAppsRef = () => ref(db, 'businessApplications');
+const businessAppRef = (id) => ref(db, `businessApplications/${id}`);
+const businessLedgerRef = (id) => ref(db, `businessLedger/${id}`);
 const txLogRef  = (nick) => ref(db, `users/${nick}/txlog`);
 const janitorSubsRef = () => ref(db, 'janitorSubmissions');
 const janitorSubRef = (id) => ref(db, `janitorSubmissions/${id}`);
@@ -2153,6 +2306,14 @@ function attachListeners() {
     const mRef=marketRef();
     const mFn=(snap)=>{if(curPage==='market')renderMarket(snap.val()||{});};
     onValue(mRef,mFn); listeners.market={ref:mRef,fn:mFn};
+
+    const bizRef=businessesRef();
+    const bizFn=(snap)=>{businessCache=snap.val()||{}; if(curPage==='businesses') renderBizPage();};
+    onValue(bizRef,bizFn); listeners.businesses={ref:bizRef,fn:bizFn};
+
+    const bizAppsRef=businessAppsRef();
+    const bizAppsFn=(snap)=>{businessAppsCache=snap.val()||{}; if(curPage==='businesses') renderBizPage(); if(curPage==='adminPage') renderBizAdminPreview();};
+    onValue(bizAppsRef,bizAppsFn); listeners.businessApps={ref:bizAppsRef,fn:bizAppsFn};
 
     const dmInboxRef=ref(db,'dms');
     let dmInboxInit=false; let dmLastMsgIds={};
@@ -4876,6 +5037,7 @@ window.submitJanitorDone=async function(){
 
 // ─── ADMIN ────────────────────────────────
 function renderAdminApps(apps){const pending=Object.values(apps||{}).filter(a=>a.status==='new');qs('appList').innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':pending.map(a=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;"><b>${escHtml(a.from)}</b> → ${escHtml(a.target)}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="approveApp('${a.id}',true)">✅</button><button class="btn btn-red btn-sm" onclick="approveApp('${a.id}',false)">❌</button></div></div>`).join('');}
+function renderBizAdminPreview(){ renderBusinessAdminPreview(); }
 function renderAdminUsers(users){
     const el=qs('allUsersList');if(!el)return;
     el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);const canDelete=u.nick!==ADMIN;return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;"><div class="av-wrap-sm ${online?'online':''}" style="cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(u.job||'Житель')} · ${(u.balance||0).toLocaleString()}₽</div></div>${canDelete?`<button class="btn btn-red btn-sm" style="margin-left:8px;padding:6px 10px;font-size:11px;" onclick="event.stopPropagation();adminDeleteAccount('${escHtml(u.nick)}')">🗑</button>`:''}</div>`;}).join('');
@@ -5423,11 +5585,11 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,businesses:6,subscription:7,profile:8,janitorPage:9};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
-    for(let i=0;i<9;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
+    for(let i=0;i<10;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
     window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
@@ -5443,6 +5605,7 @@ window.navTo=function(id){
     }
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
+    if(id==='businesses') renderBizPage();
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
     if(id==='tasks') renderTasks();
@@ -5456,27 +5619,32 @@ window.navTo=function(id){
 
 // ─── INIT ─────────────────────────────────
 const _loadingTimeout=setTimeout(()=>hideLoading(),2500);
-function hideLoadingSafe(){clearTimeout(_loadingTimeout);hideLoading();}
+function hideLoadingSafe(){try{clearTimeout(_loadingTimeout);}catch(e){} hideLoading();}
 window.addEventListener('load', ()=>{
     setTimeout(hideLoadingSafe, 300);
 }, {once:true});
 if(currentNick){
     try { startApp(); } catch(e) { console.error(e); toast('⚠️ Ошибка запуска интерфейса','red'); hideLoadingSafe(); }
-    // Добавляем таймаут для Firebase запроса, чтобы сайт не висел бесконечно
-    const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Firebase request timeout')), 10000)
-    );
-    Promise.race([get(userRef(currentNick)), timeoutPromise]).then(snap=>{
-        if(!snap.exists()){
-            sessionStorage.removeItem('kp_s');
-            localStorage.removeItem('kp_s');
-            localStorage.removeItem('kp_auth');
-            currentNick=null;
-            location.reload();
-            return;
-        }
+    // При file:// не делаем жёсткую перепроверку с reload: это часто зацикливает локальный запуск.
+    if(location.protocol === 'file:'){
         hideLoadingSafe();
-    }).catch(e=>{console.error(e); hideLoadingSafe();});
+    } else {
+        // Добавляем таймаут для Firebase запроса, чтобы сайт не висел бесконечно
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Firebase request timeout')), 10000)
+        );
+        Promise.race([get(userRef(currentNick)), timeoutPromise]).then(snap=>{
+            if(!snap.exists()){
+                sessionStorage.removeItem('kp_s');
+                localStorage.removeItem('kp_s');
+                localStorage.removeItem('kp_auth');
+                currentNick=null;
+                location.reload();
+                return;
+            }
+            hideLoadingSafe();
+        }).catch(e=>{console.error(e); hideLoadingSafe();});
+    }
 } else {hideLoadingSafe();}
 if(curPage==='tasks') renderTasks();
 
@@ -6477,6 +6645,810 @@ window.sendGiftSubscription = async function(){
     // Update header balance
     updateHeader_balance({...giver, balance: (giver.balance || 0) - price});
 };
+
+
+// ─── BUSINESSES ───────────────────────────
+const BUSINESS_AUTO_PERIOD = {
+    daily: 24 * 60 * 60 * 1000,
+    weekly: 7 * 24 * 60 * 60 * 1000,
+    monthly: 30 * 24 * 60 * 60 * 1000,
+    contract: Infinity
+};
+
+function normalizeBusinessList(v){
+    return String(v || '')
+        .split(/[\n,;]/)
+        .map(s => s.trim())
+        .filter(Boolean);
+}
+
+function businessMediaList(b){
+    const list = [];
+    if(b.icon) list.push(b.icon);
+    const gallery = Array.isArray(b.gallery) ? b.gallery : normalizeBusinessList(b.gallery);
+    gallery.forEach(x => { if(x && !list.includes(x)) list.push(x); });
+    return list;
+}
+
+const BUSINESS_CATEGORY_LABELS = {
+    shop: '🛒 Магазин',
+    service: '🤝 Услуги',
+    center: '🏢 Центр',
+    food: '🍔 Еда',
+    other: '📦 Другое'
+};
+
+let businessAppDraft = {
+    iconFile: null,
+    iconPreview: '',
+    galleryFiles: [],
+    galleryPreviews: [],
+    roles: []
+};
+
+function businessRolePeriodLabel(v){
+    const map = { daily:'в день', weekly:'в неделю', monthly:'в месяц', contract:'по договору' };
+    return map[v] || v || 'по договору';
+}
+
+function clearBusinessDraftPreviews(){
+    businessAppDraft.galleryPreviews.forEach(u => { try{ URL.revokeObjectURL(u); }catch(e){} });
+    businessAppDraft.galleryPreviews = [];
+}
+
+function clearBusinessIconDraft(){
+    try{ if(businessAppDraft.iconPreview) URL.revokeObjectURL(businessAppDraft.iconPreview); }catch(e){}
+    businessAppDraft.iconFile = null;
+    businessAppDraft.iconPreview = '';
+    const inp = qs('bizAppIconFile'); if(inp) inp.value = '';
+    const img = qs('bizAppIconPreview'); const wrap = qs('bizAppIconPreviewWrap');
+    if(img) img.removeAttribute('src');
+    if(wrap) wrap.style.display = 'none';
+}
+
+window.clearBusinessIconDraft = clearBusinessIconDraft;
+
+function renderBusinessDraftIconPreview(){
+    const img = qs('bizAppIconPreview');
+    const wrap = qs('bizAppIconPreviewWrap');
+    if(!img || !wrap) return;
+    if(!businessAppDraft.iconPreview){
+        wrap.style.display = 'none';
+        img.removeAttribute('src');
+        return;
+    }
+    img.src = businessAppDraft.iconPreview;
+    wrap.style.display = 'block';
+}
+
+function renderBusinessDraftGalleryPreview(){
+    const wrap = qs('bizAppGalleryPreview');
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    const items = businessAppDraft.galleryFiles.map((file, idx) => {
+        const preview = businessAppDraft.galleryPreviews[idx];
+        const isVideo = file.type.startsWith('video/');
+        return `<div class="business-upload-thumb" style="height:92px;">${isVideo ? `<video src="${escHtml(preview)}" muted playsinline></video>` : `<img src="${escHtml(preview)}" alt="">`}<button type="button" class="del" onclick="removeBusinessGalleryItem(${idx})">✕</button></div>`;
+    }).join('');
+    wrap.innerHTML = items || '<div class="business-empty" style="grid-column:1/-1;">Файлы не выбраны</div>';
+}
+
+window.removeBusinessGalleryItem = function(idx){
+    const file = businessAppDraft.galleryFiles[idx];
+    const preview = businessAppDraft.galleryPreviews[idx];
+    if(preview) { try{ URL.revokeObjectURL(preview); }catch(e){} }
+    businessAppDraft.galleryFiles.splice(idx,1);
+    businessAppDraft.galleryPreviews.splice(idx,1);
+    renderBusinessDraftGalleryPreview();
+};
+
+window.handleBusinessIconPick = async function(e){
+    const file = (e.target.files || [])[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')) return toast('❌ Иконка должна быть изображением','red');
+    if(file.size > 10 * 1024 * 1024) return toast('❌ Иконка слишком большая (макс. 10 МБ)','red');
+    clearBusinessIconDraft();
+    businessAppDraft.iconFile = file;
+    businessAppDraft.iconPreview = URL.createObjectURL(file);
+    renderBusinessDraftIconPreview();
+};
+
+window.handleBusinessGalleryPick = async function(e){
+    const files = Array.from(e.target.files || []);
+    if(!files.length) return;
+    e.target.value = '';
+    for(const file of files){
+        if(!file.type.startsWith('image/') && !file.type.startsWith('video/')) continue;
+        const maxMb = file.type.startsWith('video/') ? 60 : 10;
+        if(file.size > maxMb * 1024 * 1024){
+            toast(`❌ Файл слишком большой (макс. ${maxMb} МБ)`, 'red');
+            continue;
+        }
+        businessAppDraft.galleryFiles.push(file);
+        businessAppDraft.galleryPreviews.push(URL.createObjectURL(file));
+    }
+    renderBusinessDraftGalleryPreview();
+};
+
+function addBusinessDraftRole(role = {}){
+    businessAppDraft.roles.push({
+        name: role.name || '',
+        description: role.description || '',
+        salaryAmount: role.salaryAmount ?? '',
+        salaryPeriod: role.salaryPeriod || 'contract',
+        autoPay: !!role.autoPay
+    });
+    renderBusinessDraftRoles();
+}
+window.addBusinessDraftRole = addBusinessDraftRole;
+
+if (document.getElementById('bizDraftRolesList') && !businessAppDraft.roles.length) { addBusinessDraftRole(); }
+
+function removeBusinessDraftRole(idx){
+    businessAppDraft.roles.splice(idx,1);
+    renderBusinessDraftRoles();
+}
+window.removeBusinessDraftRole = removeBusinessDraftRole;
+
+function renderBusinessDraftRoles(){
+    const wrap = qs('bizDraftRolesList');
+    if(!wrap) return;
+    if(!businessAppDraft.roles.length){
+        wrap.innerHTML = '<div class="business-empty">Пока нет ролей</div>';
+        return;
+    }
+    wrap.innerHTML = businessAppDraft.roles.map((role, idx) => `
+        <div class="business-draft-role">
+            <div class="business-draft-role-head">
+                <div style="font-weight:900;">Роль ${idx + 1}</div>
+                <button type="button" class="btn btn-red btn-sm" style="width:auto;padding:8px 12px;" onclick="removeBusinessDraftRole(${idx})">Удалить</button>
+            </div>
+            <div class="business-draft-role-grid">
+                <input class="full" type="text" id="bizDraftRoleName_${idx}" placeholder="Название роли" value="${escHtml(role.name || '')}">
+                <textarea class="full" id="bizDraftRoleDesc_${idx}" placeholder="Описание роли" style="min-height:64px;">${escHtml(role.description || '')}</textarea>
+                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
+                    <input type="checkbox" id="bizDraftRoleAuto_${idx}" style="width:auto;margin:0 8px 0 0;" ${role.autoPay ? 'checked' : ''}> Автоматическая зарплата
+                </label>
+                <input type="number" id="bizDraftRoleAmt_${idx}" placeholder="Сумма зарплаты" value="${escHtml(String(role.salaryAmount ?? ''))}">
+                <select id="bizDraftRolePeriod_${idx}">
+                    <option value="contract" ${role.salaryPeriod === 'contract' ? 'selected' : ''}>По договору</option>
+                    <option value="daily" ${role.salaryPeriod === 'daily' ? 'selected' : ''}>В день</option>
+                    <option value="weekly" ${role.salaryPeriod === 'weekly' ? 'selected' : ''}>В неделю</option>
+                    <option value="monthly" ${role.salaryPeriod === 'monthly' ? 'selected' : ''}>В месяц</option>
+                </select>
+            </div>
+        </div>
+    `).join('');
+}
+
+function businessMatchesFilter(b, query, filter){
+    const q = (query || '').trim().toLowerCase();
+    const text = [
+        b.title, b.address, b.description,
+        ...(Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services)),
+        b.category, b.hours, b.phone, b.website
+    ].join(' ').toLowerCase();
+    if(filter !== 'all' && String(b.category || 'other') !== filter) return false;
+    if(q && !text.includes(q)) return false;
+    return true;
+}
+
+function switchBusinessTab(idx){
+    document.querySelectorAll('.business-tab').forEach((btn,i)=>btn.classList.toggle('active', i===idx));
+    document.querySelectorAll('.business-panel').forEach((p,i)=>p.classList.toggle('active', i===idx));
+    if(idx===0 || idx===1) renderBizPage();
+}
+window.switchBusinessTab = switchBusinessTab;
+
+function renderBusinessSummary(){
+    const stats = qs('businessStats');
+    if(!stats) return;
+    const arr = Object.values(businessCache || {}).filter(Boolean);
+    stats.innerHTML = `
+        <div class="stat-box"><div class="sv" style="color:var(--primary)">${arr.length}</div><div class="sl">Бизнесов</div></div>
+        <div class="stat-box"><div class="sv" style="color:var(--gold)">${arr.filter(b => b.owner === currentNick).length}</div><div class="sl">Моих</div></div>
+        <div class="stat-box"><div class="sv" style="color:var(--primary)">${arr.filter(b => b.deliveryEnabled).length}</div><div class="sl">С доставкой</div></div>
+    `;
+}
+
+function businessCardHtml(b, isOwner=false){
+    const services = Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services);
+    const gallery = businessMediaList(b);
+    const delivery = b.deliveryEnabled ? '<span class="business-pill primary">🚚 Доставка</span>' : '<span class="business-pill">🏷️ Без доставки</span>';
+    return `<div class="business-card" onclick="openBusinessDetail('${jsEsc(b.id)}')">
+        <div class="business-top">
+            <img class="business-icon" src="${escHtml(gallery[0] || b.icon || DEFAULT_AVATAR_URL)}" alt="">
+            <div style="flex:1;min-width:0;">
+                <div class="business-title">${escHtml(b.title || 'Без названия')}</div>
+                <div class="business-sub">${escHtml(b.address || 'Адрес не указан')} · ${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'other')}</div>
+                <div class="business-badges">
+                    ${delivery}
+                    <span class="business-pill">${gallery.length ? `${gallery.length} фото` : 'Без фото'}</span>
+                    ${isOwner ? '<span class="business-pill gold">👑 Мой</span>' : ''}
+                </div>
+            </div>
+        </div>
+        <div class="business-desc">${escHtml((b.description || '').slice(0, 180) || 'Описание не заполнено')}</div>
+        <div class="business-badges">
+            ${(services.slice(0,4).map(s=>`<span class="business-pill">${escHtml(s)}</span>`).join(''))}
+        </div>
+    </div>`;
+}
+
+function renderBusinessAdminPreview(){
+    const el = qs('businessAdminList');
+    if(!el) return;
+    const pending = Object.values(businessAppsCache || {}).filter(a => a && (a.status || 'new') === 'new').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    el.innerHTML = pending.length ? pending.map(a => `
+        <div class="business-role-item">
+            <div class="business-role-row">
+                <div style="min-width:0;flex:1;">
+                    <div style="font-weight:900;">${escHtml(a.title || 'Без названия')}</div>
+                    <div class="business-mini">${escHtml(a.address || 'Адрес не указан')} · ${escHtml(a.category || 'other')}</div>
+                </div>
+                <div class="business-pill gold">🕒 На проверке</div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px;">${escHtml((a.description || '').slice(0, 120))}</div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+                <button class="btn btn-primary btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', true)">✅</button>
+                <button class="btn btn-red btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', false)">❌</button>
+            </div>
+        </div>
+    `).join('') : '<div class="business-empty">Нет заявок</div>';
+}
+window.renderBizAdminPreview = renderBusinessAdminPreview;
+
+function currentBusinessData(){
+    return currentBusinessId ? (businessCache[currentBusinessId] || null) : null;
+}
+
+async function loadBusinessLedger(id){
+    const el = qs(`bizLedger_${id}`);
+    if(!el) return;
+    try{
+        const snap = await get(businessLedgerRef(id));
+        const ledger = snap.val() || {};
+        const arr = Object.entries(ledger).map(([key,v]) => ({...v, key})).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,8);
+        el.innerHTML = arr.length ? arr.map(tx => `
+            <div class="business-ledger-item">
+                <div class="business-role-row">
+                    <div style="min-width:0;flex:1;">
+                        <div style="font-weight:900;">${escHtml(tx.desc || tx.type || 'Операция')}</div>
+                        <div class="business-mini">${escHtml(tx.from || tx.to || '')} · ${new Date(Number(tx.ts || Date.now())).toLocaleString('ru-RU')}</div>
+                    </div>
+                    <div class="business-pill ${tx.type==='out' ? 'red' : 'primary'}">${tx.type==='out' ? '−' : '+'}${Math.abs(Number(tx.amount || tx.amt || 0))} ₽</div>
+                </div>
+            </div>
+        `).join('') : '<div class="business-empty">Пока нет операций</div>';
+    }catch(e){
+        el.innerHTML = '<div class="business-empty">Не удалось загрузить операции</div>';
+    }
+}
+
+async function writeBusinessLedger(id, entry){
+    try{ await push(businessLedgerRef(id), {...entry, ts: Date.now()}); }catch(e){}
+}
+
+function openBusinessDetail(id){
+    currentBusinessId = id;
+    renderBizPage();
+    const det = qs('businessDetailPanel');
+    if(det) det.scrollIntoView({behavior:'smooth', block:'start'});
+}
+window.openBusinessDetail = openBusinessDetail;
+
+function closeBusinessDetail(){
+    currentBusinessId = '';
+    renderBizPage();
+}
+window.closeBusinessDetail = closeBusinessDetail;
+
+function renderBizPage(){
+    renderBusinessSummary();
+
+    const all = Object.values(businessCache || {}).filter(Boolean).sort((a,b)=>(b.approvedAt||b.createdAt||0)-(a.approvedAt||a.createdAt||0));
+    const query = qs('bizSearch')?.value || '';
+    const filter = qs('bizFilter')?.value || 'all';
+    const filtered = all.filter(b => businessMatchesFilter(b, query, filter));
+
+    const listEl = qs('businessList');
+    if(listEl){
+        listEl.innerHTML = filtered.length ? filtered.map(b => businessCardHtml(b, b.owner === currentNick)).join('') : '<div class="business-empty">Ничего не найдено</div>';
+    }
+
+    const myEl = qs('myBusinessList');
+    if(myEl){
+        const mine = all.filter(b => b.owner === currentNick || (b.staff && b.staff[currentNick]));
+        myEl.innerHTML = mine.length ? mine.map(b => businessCardHtml(b, true)).join('') : '<div class="business-empty">Пока нет управляемых бизнесов</div>';
+    }
+
+    const detail = qs('businessDetailPanel');
+    if(!detail) return;
+
+    const b = currentBusinessData();
+    if(!b){
+        detail.style.display = 'none';
+        detail.innerHTML = '';
+        return;
+    }
+    detail.style.display = 'block';
+
+    const gallery = businessMediaList(b);
+    const services = Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services);
+    const roles = b.roles || {};
+    const staff = b.staff || {};
+    const isOwner = b.owner === currentNick;
+    const terminal = b.activeTerminal && b.activeTerminal.status !== 'closed'
+        ? `<div class="business-terminal"><div class="business-mini">Активный терминал</div><div class="business-terminal-code">${escHtml(b.activeTerminal.code || '')}</div><div class="business-mini">Сумма: ${Number(b.activeTerminal.amount || 0)} ₽ · До ${new Date(Number(b.activeTerminal.expiresAt || 0)).toLocaleString('ru-RU')}</div></div>`
+        : `<div class="business-terminal"><div class="business-mini">Терминал не создан</div></div>`;
+
+    detail.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">
+            <button class="btn btn-ghost btn-sm" onclick="closeBusinessDetail()">← Назад</button>
+            <div class="business-pill primary">${escHtml(b.category || 'business')}</div>
+        </div>
+        <div class="business-detail-header">
+            <img class="business-icon" src="${escHtml(gallery[0] || b.icon || DEFAULT_AVATAR_URL)}" alt="" style="width:72px;height:72px;border-radius:20px;">
+            <div style="flex:1;min-width:0;">
+                <div class="business-title" style="font-size:20px;">${escHtml(b.title || 'Без названия')}</div>
+                <div class="business-sub">${escHtml(b.address || '')}</div>
+                <div class="business-badges" style="margin-top:8px;">
+                    <span class="business-pill gold">💼 Владелец: ${escHtml(b.owner || '?')}</span>
+                    ${b.deliveryEnabled ? '<span class="business-pill primary">🚚 Доставка доступна</span>' : '<span class="business-pill">🚫 Доставка выключена</span>'}
+                    <span class="business-pill">💰 Счёт: ${Number(b.balance || 0)} ₽</span>
+                </div>
+            </div>
+        </div>
+        ${gallery.length ? `<div class="business-gallery">${gallery.slice(0,4).map(src => `<img src="${escHtml(src)}" onclick="openImgViewer('${jsEsc(src)}')">`).join('')}</div>` : ''}
+        <div class="business-desc">${escHtml(b.description || 'Описание не заполнено')}</div>
+        <div class="business-badges" style="margin-top:10px;">
+            ${services.map(s => `<span class="business-pill">${escHtml(s)}</span>`).join('')}
+            ${b.hours ? `<span class="business-pill">${escHtml(b.hours)}</span>` : ''}
+            ${b.phone ? `<span class="business-pill">${escHtml(b.phone)}</span>` : ''}
+            ${b.website ? `<span class="business-pill">${escHtml(b.website)}</span>` : ''}
+        </div>
+        ${terminal}
+        <div class="business-actions">
+            ${b.deliveryEnabled ? `<button class="btn btn-primary" onclick="buyFromBusiness('${jsEsc(b.id)}')">🛒 Купить / заказать</button>` : `<button class="btn btn-ghost" disabled>Доставка выключена</button>`}
+            <button class="btn btn-gold" onclick="payBusinessTerminal('${jsEsc(b.id)}')">💳 Оплатить терминалом</button>
+        </div>
+        ${isOwner ? `
+            <div class="business-section-card" style="margin-top:12px;">
+                <div class="card-title">💼 Управление бизнесом</div>
+                <div class="business-form-grid">
+                    <input type="number" id="bizMoneyAmt_${jsEsc(b.id)}" placeholder="Сумма (+внести / −снять)">
+                    <button class="btn btn-primary full" onclick="moveBusinessMoney('${jsEsc(b.id)}')">💰 Изменить счёт</button>
+                    <input type="text" id="bizEmpNick_${jsEsc(b.id)}" placeholder="Ник сотрудника">
+                    <input type="number" id="bizEmpAmt_${jsEsc(b.id)}" placeholder="Выплата сотруднику">
+                    <button class="btn btn-gold full" onclick="payBusinessEmployee('${jsEsc(b.id)}')">📤 Перевести сотруднику</button>
+                </div>
+                <div class="business-terminal">
+                    <div class="business-mini">Создать терминал</div>
+                    <input type="number" id="bizTermAmt_${jsEsc(b.id)}" placeholder="Сумма терминала">
+                    <button class="btn btn-primary" onclick="createBusinessTerminal('${jsEsc(b.id)}')" style="margin-top:8px;">Создать код</button>
+                </div>
+                <div class="business-terminal">
+                    <div class="business-mini">Авто-зарплата и роли</div>
+                    <div class="business-form-grid" style="margin-top:8px;">
+                        <input type="text" id="bizRoleName_${jsEsc(b.id)}" placeholder="Название роли">
+                        <input type="number" id="bizRoleAmt_${jsEsc(b.id)}" placeholder="Сумма зарплаты">
+                        <select id="bizRolePeriod_${jsEsc(b.id)}">
+                            <option value="contract">По договору</option>
+                            <option value="daily">В день</option>
+                            <option value="weekly">В неделю</option>
+                            <option value="monthly">В месяц</option>
+                        </select>
+                        <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
+                            <input type="checkbox" id="bizRoleAuto_${jsEsc(b.id)}" style="width:auto;margin:0 8px 0 0;"> Автоматическая зарплата
+                        </label>
+                        <textarea class="full" id="bizRoleDesc_${jsEsc(b.id)}" placeholder="Описание роли" style="min-height:72px;"></textarea>
+                        <button class="btn btn-primary full" onclick="createBusinessRole('${jsEsc(b.id)}')">➕ Добавить роль</button>
+                    </div>
+                    <div style="margin-top:10px;">
+                        ${Object.entries(roles).length ? Object.entries(roles).map(([rid,r]) => `
+                            <div class="business-role-item">
+                                <div class="business-role-row">
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-weight:900;">${escHtml(r.name || 'Без названия')}</div>
+                                        <div class="business-mini">${escHtml(r.description || 'Без описания')}</div>
+                                    </div>
+                                    <div class="business-pill ${r.autoPay ? 'primary' : 'gold'}">${escHtml(r.salaryAmount || 0)}₽ · ${escHtml(r.autoPay ? businessRolePeriodLabel(r.salaryPeriod) : 'ручная') }</div>
+                                </div>
+                                <div class="business-mini" style="margin-top:8px;">Назначить сотрудника</div>
+                                <div style="display:flex;gap:8px;margin-top:8px;">
+                                    <input type="text" id="bizAssignNick_${jsEsc(b.id)}_${jsEsc(rid)}" placeholder="Ник" style="margin:0;">
+                                    <button class="btn btn-ghost btn-sm" onclick="assignBusinessRole('${jsEsc(b.id)}','${jsEsc(rid)}')">Назначить</button>
+                                </div>
+                                <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end;">
+                                    <button class="btn btn-red btn-sm" onclick="deleteBusinessRole('${jsEsc(b.id)}','${jsEsc(rid)}')">Удалить</button>
+                                </div>
+                            </div>
+                        `).join('') : '<div class="business-empty">Пока нет ролей</div>'}
+                    </div>
+                </div>
+                <div class="business-terminal">
+                    <div class="business-mini">Сотрудники</div>
+                    <div style="margin-top:8px;">
+                        ${Object.entries(staff).length ? Object.entries(staff).map(([nick,info]) => `
+                            <div class="business-staff-item">
+                                <div class="business-staff-row">
+                                    <div style="min-width:0;flex:1;">
+                                        <div style="font-weight:900;">${escHtml(nick)}</div>
+                                        <div class="business-mini">${escHtml(info.roleName || 'Сотрудник')}</div>
+                                    </div>
+                                    <button class="btn btn-ghost btn-sm" onclick="removeBusinessStaff('${jsEsc(b.id)}','${jsEsc(nick)}')">Убрать</button>
+                                </div>
+                            </div>
+                        `).join('') : '<div class="business-empty">Пока нет сотрудников</div>'}
+                    </div>
+                </div>
+                <div class="business-terminal">
+                    ${terminal}
+                </div>
+                <div class="business-mini" style="margin-top:8px;">🧾 Последние операции</div>
+                <div id="bizLedger_${jsEsc(b.id)}" style="margin-top:8px;">${loadingHtml('Загрузка операций...')}</div>
+            </div>
+        ` : `
+            <div class="business-section-card" style="margin-top:12px;">
+                <div class="card-title">💳 Покупка</div>
+                <div class="business-form-grid">
+                    <input type="number" id="bizBuyAmt_${jsEsc(b.id)}" placeholder="Сумма покупки">
+                    <input type="text" id="bizBuyDesc_${jsEsc(b.id)}" placeholder="Что покупаете?">
+                    <button class="btn btn-primary full" onclick="buyFromBusiness('${jsEsc(b.id)}')">🛒 Оплатить и отправить заказ</button>
+                </div>
+                <div class="business-mini" style="margin-top:8px;">Если владелец включил доставку, заказ попадёт бизнесу и средства уйдут на его счёт.</div>
+            </div>
+            <div class="business-terminal" style="margin-top:12px;">
+                <div class="business-mini">Введите код терминала, чтобы оплатить</div>
+                <div class="business-form-grid" style="margin-top:8px;">
+                    <input type="text" id="bizPayCode_${jsEsc(b.id)}" placeholder="Код терминала">
+                    <button class="btn btn-gold" onclick="payBusinessTerminal('${jsEsc(b.id)}')">Оплатить</button>
+                </div>
+            </div>
+        `}
+    `;
+    loadBusinessLedger(b.id);
+    maybeRunBusinessAutoPayroll(b);
+}
+window.renderBizPage = renderBizPage;
+
+window.submitBusinessApplication = async function(){
+    const title = qs('bizAppName').value.trim();
+    const category = qs('bizAppCategory').value || 'other';
+    const address = qs('bizAppAddress').value.trim();
+    const hours = qs('bizAppHours').value.trim();
+    const phone = qs('bizAppPhone').value.trim();
+    const website = qs('bizAppWebsite').value.trim();
+    const services = normalizeBusinessList(qs('bizAppServices').value);
+    const description = qs('bizAppDesc').value.trim();
+    const deliveryEnabled = !!qs('bizAppDelivery').checked;
+
+    const roleDrafts = businessAppDraft.roles.map((role, idx) => ({
+        name: (qs(`bizDraftRoleName_${idx}`)?.value || '').trim(),
+        description: (qs(`bizDraftRoleDesc_${idx}`)?.value || '').trim(),
+        autoPay: !!qs(`bizDraftRoleAuto_${idx}`)?.checked,
+        salaryAmount: parseInt(qs(`bizDraftRoleAmt_${idx}`)?.value) || 0,
+        salaryPeriod: qs(`bizDraftRolePeriod_${idx}`)?.value || 'contract'
+    })).filter(r => r.name || r.description || r.salaryAmount || r.autoPay);
+
+    if(!title || !description || !address) return toast('⚠️ Заполните название, описание и адрес', 'gold');
+    if(!businessAppDraft.iconFile) return toast('⚠️ Выберите иконку из галереи', 'gold');
+    if(!businessAppDraft.galleryFiles.length) return toast('⚠️ Добавьте хотя бы одно изображение или видео', 'gold');
+
+    for(const r of roleDrafts){
+        if(!r.name) return toast('⚠️ У роли должно быть название', 'gold');
+    }
+
+    const snap = await get(businessAppsRef());
+    const apps = snap.val() || {};
+    const already = Object.values(apps).some(a => a.applicant === currentNick && (a.status || 'new') === 'new');
+    if(already) return toast('⚠️ У вас уже есть активная заявка', 'gold');
+
+    const uploadIcon = async () => {
+        if(businessAppDraft.iconFile) return await uploadBlobToStorage(businessAppDraft.iconFile, 'businesses/icon');
+        return '';
+    };
+
+    const uploadGallery = async () => {
+        const urls = [];
+        for(const file of businessAppDraft.galleryFiles){
+            const url = await uploadBlobToStorage(file, 'businesses/gallery');
+            urls.push(url);
+        }
+        return urls;
+    };
+
+    const [iconUrl, galleryUrls] = await Promise.all([uploadIcon(), uploadGallery()]);
+
+    const id = genId();
+    await set(businessAppRef(id), {
+        id,
+        applicant: currentNick,
+        title,
+        category,
+        icon: iconUrl || DEFAULT_AVATAR_URL,
+        gallery: galleryUrls,
+        address,
+        hours,
+        phone,
+        website,
+        services,
+        description,
+        deliveryEnabled,
+        roles: roleDrafts.map((r, idx) => ({ id: genId(), order: idx, ...r })),
+        status:'new',
+        createdAt: Date.now()
+    });
+
+    await pushNotification(currentNick, `🏢 Заявка на бизнес "${title}" отправлена в мэрию`, 'system');
+    toast('🏢 Заявка отправлена', 'green');
+    ['bizAppName','bizAppAddress','bizAppHours','bizAppPhone','bizAppWebsite','bizAppServices','bizAppDesc'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
+    const cat=qs('bizAppCategory'); if(cat) cat.value='other';
+    const chk=qs('bizAppDelivery'); if(chk) chk.checked=false;
+    clearBusinessIconDraft();
+    businessAppDraft.galleryFiles = [];
+    clearBusinessDraftPreviews();
+    businessAppDraft.roles = [];
+    renderBusinessDraftGalleryPreview();
+    renderBusinessDraftRoles();
+    addBusinessDraftRole();
+    renderBizPage();
+};
+
+window.reviewBusinessApplication = async function(id, ok){
+    const snap = await get(businessAppRef(id));
+    if(!snap.exists()) return;
+    const app = snap.val() || {};
+    if(!ok){
+        await update(businessAppRef(id), { status:'rejected', reviewedAt: Date.now(), reviewedBy: currentNick });
+        await pushNotification(app.applicant, `❌ Заявка на бизнес "${app.title || id}" отклонена`, 'system');
+        toast('Заявка отклонена', 'red');
+        renderBusinessAdminPreview();
+        return;
+    }
+    const rolesObj = {};
+    (app.roles || []).forEach((r, idx) => {
+        const rid = r.id || genId();
+        rolesObj[rid] = {
+            id: rid,
+            order: Number.isFinite(r.order) ? r.order : idx,
+            name: r.name || 'Без названия',
+            description: r.description || '',
+            salaryAmount: Number(r.salaryAmount || 0),
+            salaryPeriod: r.salaryPeriod || 'contract',
+            autoPay: !!r.autoPay
+        };
+    });
+
+    const business = {
+        id,
+        title: app.title || 'Без названия',
+        category: app.category || 'other',
+        icon: app.icon || DEFAULT_AVATAR_URL,
+        gallery: app.gallery || [],
+        address: app.address || '',
+        hours: app.hours || '',
+        phone: app.phone || '',
+        website: app.website || '',
+        services: app.services || [],
+        description: app.description || '',
+        deliveryEnabled: !!app.deliveryEnabled,
+        applicant: app.applicant,
+        owner: app.applicant,
+        balance: 0,
+        staff: {},
+        roles: rolesObj,
+        activeTerminal: null,
+        createdAt: app.createdAt || Date.now(),
+        approvedAt: Date.now()
+    };
+    await set(businessRef(id), business);
+    await update(userRef(app.applicant), {
+        job: 'Бизнесмен',
+        businessOwnerId: id,
+        [`ownedBusinesses/${id}`]: { title: business.title, category: business.category, createdAt: Date.now() }
+    });
+    await update(businessAppRef(id), { status:'approved', reviewedAt: Date.now(), reviewedBy: currentNick, businessId: id });
+    await pushNotification(app.applicant, `✅ Бизнес "${business.title}" одобрен! Теперь вы — Бизнесмен.`, 'system');
+    toast(`✅ "${business.title}" одобрен`, 'green');
+    renderBusinessAdminPreview();
+};
+
+window.createBusinessRole = async function(id){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
+    const name = qs(`bizRoleName_${id}`).value.trim();
+    const desc = qs(`bizRoleDesc_${id}`).value.trim();
+    const salaryAmount = parseInt(qs(`bizRoleAmt_${id}`).value) || 0;
+    const salaryPeriod = qs(`bizRolePeriod_${id}`).value || 'contract';
+    const autoPay = !!qs(`bizRoleAuto_${id}`).checked;
+    if(!name) return toast('⚠️ Укажите название роли', 'gold');
+    if(autoPay && salaryAmount <= 0) return toast('⚠️ Укажите сумму автоматической зарплаты', 'gold');
+    const rid = genId();
+    await update(businessRef(id), { [`roles/${rid}`]: { id: rid, name, description: desc, salaryAmount, salaryPeriod, autoPay } });
+    toast('Роль добавлена', 'green');
+    renderBizPage();
+};
+
+window.assignBusinessRole = async function(id, rid){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
+    const nick = qs(`bizAssignNick_${id}_${rid}`).value.trim();
+    if(!nick) return toast('⚠️ Укажите ник', 'gold');
+    const role = (b.roles || {})[rid];
+    if(!role) return toast('⚠️ Роль не найдена', 'gold');
+    const uSnap = await get(userRef(nick));
+    if(!uSnap.exists()) return toast('❌ Пользователь не найден', 'red');
+    await update(businessRef(id), { [`staff/${nick}`]: { nick, roleId: rid, roleName: role.name, joinedAt: Date.now() } });
+    await update(userRef(nick), { job: 'Бизнесмен', [`businessRoles/${id}`]: { businessId: id, businessTitle: b.title || '', roleId: rid, roleName: role.name } });
+    await pushNotification(nick, `🏢 Вас назначили на роль "${role.name}" в бизнесе "${b.title || id}"`, 'system');
+    toast('Сотрудник назначен', 'green');
+    renderBizPage();
+};
+
+window.deleteBusinessRole = async function(id, rid){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
+    if(!confirm('Удалить роль?')) return;
+    const patch = { [`roles/${rid}`]: null };
+    Object.entries(b.staff || {}).forEach(([nick,info]) => { if(info && info.roleId === rid) patch[`staff/${nick}`] = null; });
+    await update(businessRef(id), patch);
+    toast('Роль удалена', 'gold');
+    renderBizPage();
+};
+
+window.removeBusinessStaff = async function(id, nick){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
+    if(!confirm(`Убрать ${nick} из сотрудников?`)) return;
+    await update(businessRef(id), { [`staff/${nick}`]: null });
+    await update(userRef(nick), { [`businessRoles/${id}`]: null });
+    toast('Сотрудник удалён', 'gold');
+    renderBizPage();
+};
+
+window.moveBusinessMoney = async function(id){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
+    const amt = parseInt(qs(`bizMoneyAmt_${id}`).value) || 0;
+    if(amt === 0) return toast('⚠️ Укажите сумму', 'gold');
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    const currentBalance = Number(b.balance || 0);
+    const ownerBalance = Number(u.balance || 0);
+    if(amt > 0 && ownerBalance < amt) return toast('❌ Недостаточно личных средств', 'red');
+    if(amt < 0 && currentBalance < Math.abs(amt)) return toast('❌ Недостаточно средств бизнеса', 'red');
+    await update(userRef(currentNick), { balance: ownerBalance - amt });
+    await update(businessRef(id), { balance: currentBalance + amt });
+    await writeBusinessLedger(id, { type: amt > 0 ? 'in' : 'out', amount: Math.abs(amt), from: amt > 0 ? currentNick : 'business', desc: amt > 0 ? 'Пополнение владельцем' : 'Снятие владельцем' });
+    await logTx(currentNick, { type: amt > 0 ? 'out' : 'in', who: b.title || 'Бизнес', amt: Math.abs(amt), desc: amt > 0 ? `Пополнение бизнеса ${b.title || id}` : `Снятие из бизнеса ${b.title || id}` });
+    toast('Баланс бизнеса обновлён', 'green');
+    renderBizPage();
+};
+
+window.payBusinessEmployee = async function(id){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
+    const nick = qs(`bizEmpNick_${id}`).value.trim();
+    const amt = parseInt(qs(`bizEmpAmt_${id}`).value) || 0;
+    if(!nick || amt <= 0) return toast('⚠️ Укажите ник и сумму', 'gold');
+    const uSnap = await get(userRef(nick));
+    if(!uSnap.exists()) return toast('❌ Пользователь не найден', 'red');
+    if((b.balance || 0) < amt) return toast('❌ Недостаточно средств бизнеса', 'red');
+    const u = uSnap.val() || {};
+    await update(businessRef(id), { balance: (b.balance || 0) - amt });
+    await update(userRef(nick), { balance: (u.balance || 0) + amt });
+    await writeBusinessLedger(id, { type:'out', amount: amt, to: nick, desc: `Выплата сотруднику ${nick}` });
+    await logTx(nick, { type:'in', who: b.title || 'Бизнес', amt, desc: `Выплата от ${b.title || id}` });
+    await pushNotification(nick, `💰 Выплата от бизнеса "${b.title || id}": ${amt}₽`, 'money');
+    toast('Перевод сотруднику выполнен', 'green');
+    renderBizPage();
+};
+
+window.createBusinessTerminal = async function(id){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
+    const amt = parseInt(qs(`bizTermAmt_${id}`).value) || 0;
+    if(amt <= 0) return toast('⚠️ Укажите сумму терминала', 'gold');
+    const code = `BUS-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const term = { code, amount: amt, createdAt: Date.now(), expiresAt: Date.now() + 10 * 60 * 1000, by: currentNick, status: 'open' };
+    await update(businessRef(id), { activeTerminal: term });
+    await writeBusinessLedger(id, { type:'in', amount: amt, from: currentNick, desc: `Создан терминал ${code}` });
+    toast(`Терминал создан: ${code}`, 'green');
+    renderBizPage();
+};
+
+window.buyFromBusiness = async function(id){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    const amt = parseInt(qs(`bizBuyAmt_${id}`).value) || 0;
+    const desc = qs(`bizBuyDesc_${id}`).value.trim() || 'Покупка';
+    if(amt <= 0) return toast('⚠️ Укажите сумму', 'gold');
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    if((u.balance || 0) < amt) return toast('❌ Недостаточно средств', 'red');
+    if(!b.deliveryEnabled) return toast('🚫 Владелец ещё не включил доставку', 'red');
+    await update(userRef(currentNick), { balance: (u.balance || 0) - amt });
+    await update(businessRef(id), { balance: (b.balance || 0) + amt });
+    await writeBusinessLedger(id, { type:'in', amount: amt, from: currentNick, desc });
+    await logTx(currentNick, { type:'out', who: b.title || 'Бизнес', amt, desc: `${desc} · ${b.title || id}` });
+    await pushNotification(b.owner, `🛍 Новый заказ в "${b.title || id}" на ${amt}₽`, 'market');
+    toast('Заказ оплачен', 'green');
+    renderBizPage();
+};
+
+window.payBusinessTerminal = async function(id){
+    const bSnap = await get(businessRef(id));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    const code = (qs(`bizPayCode_${id}`)?.value || '').trim().toUpperCase();
+    const terminal = b.activeTerminal || {};
+    if(!terminal.code) return toast('⚠️ Терминал не создан', 'gold');
+    if(terminal.status !== 'open') return toast('⚠️ Терминал закрыт', 'gold');
+    if(code !== String(terminal.code || '').toUpperCase()) return toast('❌ Неверный код терминала', 'red');
+    if(Number(terminal.expiresAt || 0) < Date.now()) return toast('⌛ Терминал уже истёк', 'red');
+    const amt = Number(terminal.amount || 0);
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    if((u.balance || 0) < amt) return toast('❌ Недостаточно средств', 'red');
+    await update(userRef(currentNick), { balance: (u.balance || 0) - amt });
+    await update(businessRef(id), { balance: (b.balance || 0) + amt, activeTerminal: { ...terminal, status: 'closed', closedAt: Date.now(), paidBy: currentNick } });
+    await writeBusinessLedger(id, { type:'in', amount: amt, from: currentNick, desc: `Терминал ${terminal.code}` });
+    await logTx(currentNick, { type:'out', who: b.title || 'Бизнес', amt, desc: `Оплата терминалом ${terminal.code}` });
+    await pushNotification(b.owner, `💳 Оплата через терминал: ${amt}₽ в "${b.title || id}"`, 'money');
+    toast('Оплата прошла', 'green');
+    renderBizPage();
+};
+
+async function maybeRunBusinessAutoPayroll(b){
+    try{
+        if(!b || b.owner !== currentNick) return;
+        const roles = b.roles || {};
+        const staff = b.staff || {};
+        let changes = {};
+        let any = false;
+        for(const [nick, info] of Object.entries(staff)){
+            const role = roles[info.roleId];
+            if(!role || !role.autoPay) continue;
+            const period = BUSINESS_AUTO_PERIOD[role.salaryPeriod || 'contract'];
+            if(!isFinite(period)) continue;
+            const last = Number((b.autoPaidAt && b.autoPaidAt[info.roleId] && b.autoPaidAt[info.roleId][nick]) || 0);
+            if(Date.now() - last < period) continue;
+            const amt = Number(role.salaryAmount || 0);
+            if(amt <= 0 || (b.balance || 0) < amt) continue;
+            const uSnap = await get(userRef(nick));
+            if(!uSnap.exists()) continue;
+            const u = uSnap.val() || {};
+            await update(userRef(nick), { balance: (u.balance || 0) + amt });
+            await logTx(nick, { type:'in', who: b.title || 'Бизнес', amt, desc: `Авто-зарплата: ${role.name || 'роль'}` });
+            await writeBusinessLedger(id, { type:'out', amount: amt, to: nick, desc: `Авто-зарплата ${role.name || 'роль'}` });
+            changes[`autoPaidAt/${info.roleId}/${nick}`] = Date.now();
+            b.balance = (b.balance || 0) - amt;
+            any = true;
+            await pushNotification(nick, `💰 Авто-зарплата от "${b.title || b.id}": ${amt}₽`, 'money');
+        }
+        if(any){
+            changes.balance = b.balance || 0;
+            await update(businessRef(b.id), changes);
+        }
+    }catch(e){}
+}
+
 </script>
 
 <script>
