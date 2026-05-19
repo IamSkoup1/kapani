@@ -134,71 +134,6 @@ select option{background:#1a2332;}
 .market-seller img{width:24px;height:24px;border-radius:8px;object-fit:cover;}
 .market-status-sold{background:var(--red-dim);color:var(--red);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 .market-status-pending{background:var(--gold-dim);color:var(--gold);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
-.business-tabs{display:flex;gap:8px;margin-bottom:14px;}
-.business-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;}
-.business-tab.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
-.business-panel{display:none;}
-.business-panel.active{display:block;}
-.business-grid{display:grid;grid-template-columns:1fr;gap:12px;}
-.business-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;cursor:pointer;transition:.2s;}
-.business-card:hover{border-color:var(--primary);background:var(--pri-dim);}
-.business-top{display:flex;gap:12px;align-items:flex-start;}
-.business-icon{width:56px;height:56px;border-radius:16px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--surface2);}
-.business-title{font-weight:900;font-size:16px;line-height:1.2;}
-.business-sub{font-size:12px;color:var(--muted);margin-top:3px;}
-.business-desc{font-size:13px;color:var(--text);line-height:1.5;margin-top:10px;}
-.business-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
-.business-pill{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text);}
-.business-pill.primary{background:var(--pri-dim);border-color:rgba(34,211,165,.25);color:var(--primary);}
-.business-pill.gold{background:var(--gold-dim);border-color:rgba(251,191,36,.25);color:var(--gold);}
-.business-pill.red{background:var(--red-dim);border-color:rgba(248,113,113,.25);color:var(--red);}
-.business-detail{border:1px solid rgba(34,211,165,.22);background:linear-gradient(145deg,rgba(34,211,165,.06),rgba(251,191,36,.03));}
-.business-detail-header{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;}
-.business-gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0;}
-.business-gallery img,.business-gallery video{width:100%;height:120px;object-fit:cover;border-radius:14px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;}
-.business-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
-.business-actions .btn{padding:12px 14px;font-size:12px;}
-.business-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.business-form-grid .full{grid-column:1/-1;}
-.business-mini{font-size:11px;color:var(--muted);line-height:1.45;}
-.business-role-item,.business-staff-item,.business-ledger-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;}
-.business-role-row,.business-staff-row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
-.business-terminal{background:linear-gradient(135deg,rgba(34,211,165,.08),rgba(34,211,165,.03));border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:12px;margin-top:10px;}
-.business-terminal-code{font-family:monospace;font-size:18px;font-weight:900;letter-spacing:1px;color:var(--primary);}
-.business-section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px;}
-.business-empty{color:var(--muted);font-size:13px;text-align:center;padding:18px 0;}
-.business-upload-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
-.business-upload-preview.single{grid-template-columns:1fr;}
-.business-upload-thumb{position:relative;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface2);min-height:86px;}
-.business-upload-thumb img,.business-upload-thumb video{width:100%;height:100%;object-fit:cover;display:block;}
-.business-upload-thumb .del{position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(0,0,0,.72);color:#fff;font-weight:900;cursor:pointer;}
-.business-draft-role{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-top:8px;}
-.business-draft-role-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;}
-.business-draft-role-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.business-draft-role-grid .full{grid-column:1/-1;}
-.business-product-list{display:grid;gap:10px;}
-.business-product-card{display:flex;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;align-items:flex-start;}
-.business-product-img{width:72px;height:72px;border-radius:14px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--surface);}
-.business-product-body{flex:1;min-width:0;}
-.business-product-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
-.business-product-title{font-weight:900;font-size:15px;line-height:1.2;}
-.business-product-price{font-weight:900;color:var(--gold);margin-top:4px;}
-.business-product-desc{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45;}
-.business-product-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-.business-cart-box{background:linear-gradient(145deg,rgba(251,191,36,.08),rgba(34,211,165,.05));border:1px solid rgba(251,191,36,.2);border-radius:var(--r);padding:14px;margin-top:12px;}
-.business-cart-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
-.business-cart-row:last-child{border-bottom:none;}
-.business-cart-name{font-weight:800;font-size:13px;}
-.business-cart-sub{font-size:11px;color:var(--muted);}
-.business-cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0 6px;font-weight:900;}
-.business-order-list{display:grid;gap:10px;}
-.business-order-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
-.business-order-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
-.business-order-meta{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45;}
-.business-order-items{margin-top:8px;display:grid;gap:6px;}
-.business-order-item{font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
-.business-order-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-
 #taxiMap{width:100%;height:320px;border-radius:var(--r-sm);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
 .taxi-point-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
 .taxi-point-row input{flex:1;margin:0;}
@@ -441,6 +376,62 @@ input[type=file]{display:none;}
 #trackingMap,#driverTrackMap{width:100%;height:320px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border);}
 .tracking-card{background:var(--surface);border:1px solid rgba(34,211,165,.3);border-radius:var(--r);padding:16px;margin-bottom:14px;}
 .tracking-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+
+
+/* === BANK ACCOUNTS & TERMINALS === */
+.bank-overview{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-bottom:14px;}
+.bank-total-box{background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.04));border:1px solid rgba(34,211,165,.22);border-radius:var(--r-sm);padding:14px;}
+.bank-total-label{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:900;}
+.bank-total-value{font-size:26px;font-weight:900;color:var(--primary);margin-top:4px;}
+.bank-active-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;display:flex;flex-direction:column;justify-content:space-between;}
+.bank-active-name{font-size:15px;font-weight:900;}
+.bank-active-note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.35;}
+.bank-accounts-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px;}
+.bank-account-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;transition:.2s;}
+.bank-account-card.active{border-color:var(--primary);background:var(--pri-dim);box-shadow:0 0 0 1px rgba(34,211,165,.12) inset;}
+.bank-account-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.bank-account-name{font-size:15px;font-weight:900;}
+.bank-account-balance{font-size:20px;font-weight:900;color:var(--gold);margin-top:2px;}
+.bank-account-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.bank-account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.bank-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800;color:var(--text);}
+.bank-chip.active{background:var(--pri-dim);border-color:var(--primary);color:var(--primary);}
+.bank-form-grid{display:grid;grid-template-columns:1fr;gap:8px;}
+.bank-small-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px;}
+.bank-terminal-card{background:linear-gradient(145deg,rgba(251,191,36,.08),rgba(251,191,36,.03));border:1px solid rgba(251,191,36,.25);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.bank-terminal-live{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.bank-terminal-amount{font-size:28px;font-weight:900;color:var(--gold);}
+.bank-terminal-code{font-family:monospace;letter-spacing:2px;font-size:18px;font-weight:900;color:var(--text);background:rgba(255,255,255,.05);padding:8px 12px;border-radius:12px;display:inline-block;}
+.bank-terminal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.bank-terminal-list{display:flex;flex-direction:column;gap:10px;}
+.bank-terminal-row{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
+.bank-terminal-row-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.bank-terminal-row-title{font-weight:900;font-size:14px;}
+.bank-terminal-row-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.35;}
+.bank-terminal-row-amt{font-weight:900;font-size:18px;color:var(--gold);white-space:nowrap;}
+.bank-terminal-row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.bank-modal, .bank-pay-modal, .bank-anim-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9991;display:none;align-items:center;justify-content:center;padding:16px;}
+.bank-modal.open,.bank-pay-modal.open,.bank-anim-modal.open{display:flex;}
+.bank-modal-sheet,.bank-pay-sheet,.bank-anim-sheet{width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);animation:sheetUp .25s ease-out;}
+.bank-modal-sheet{max-width:430px;}
+.bank-pay-sheet{max-width:460px;}
+.bank-anim-sheet{max-width:360px;text-align:center;padding:28px 22px;}
+.bank-modal-title{font-size:18px;font-weight:900;margin-bottom:12px;}
+.bank-modal-code-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
+.bank-modal-code{flex:1;min-width:0;font-family:monospace;font-size:22px;font-weight:900;letter-spacing:3px;text-align:center;background:rgba(255,255,255,.05);padding:12px;border-radius:14px;border:1px solid var(--border);}
+.bank-modal-amount{font-size:30px;font-weight:900;color:var(--gold);margin-bottom:8px;}
+.bank-modal-status{font-size:13px;color:var(--muted);line-height:1.45;}
+.bank-modal-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.1);border:none;border-radius:50%;width:40px;height:40px;font-size:20px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;}
+.bank-pay-amount{font-size:28px;font-weight:900;color:var(--gold);margin:6px 0 12px;}
+.bank-pay-desc{font-size:13px;color:var(--muted);line-height:1.45;margin-bottom:10px;}
+.bank-anim-icon{font-size:44px;line-height:1;margin-bottom:10px;}
+.bank-anim-title{font-size:18px;font-weight:900;margin-bottom:8px;}
+.bank-anim-amt{font-size:34px;font-weight:900;margin:8px 0;}
+.bank-anim-amt.in{color:var(--primary);}
+.bank-anim-amt.out{color:var(--red);}
+.bank-anim-sub{font-size:12px;color:var(--muted);line-height:1.4;}
+.bank-terminal-pulse{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;}
+.bank-terminal-pulse .pulse{background:var(--gold);}
 
 /* === EMOJI PICKER === */
 .emoji-panel{display:none;max-height:180px;overflow-y:auto;margin-bottom:8px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;background:var(--surface2);animation:fadeUp .2s ease-out;scrollbar-width:thin;}
@@ -858,10 +849,9 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <button class="bn-item" id="bn3" onclick="navTo('tasks')" aria-label="Перейти к заданиям"><span class="ico">🗂</span>Задания</button>
     <button class="bn-item" id="bn4" onclick="navTo('bank')" aria-label="Перейти в банк"><span class="ico">💰</span>Банк</button>
     <button class="bn-item" id="bn5" onclick="navTo('news')" aria-label="Перейти к новостям"><span class="ico">📰</span>Новости</button>
-    <button class="bn-item" id="bn6" onclick="navTo('businesses')" aria-label="Перейти в бизнесы"><span class="ico">🏢</span>Бизнесы</button>
-    <button class="bn-item" id="bn7" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
-    <button class="bn-item" id="bn8" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
-    <button class="bn-item" id="bn9" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
+    <button class="bn-item" id="bn6" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
+    <button class="bn-item" id="bn7" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
+    <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
 </div>
 
 <div class="container">
@@ -889,8 +879,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="quick-card" onclick="navTo('shop')" role="button" tabindex="0" aria-label="Перейти в магазин"><div class="qico">🛒</div><div class="qlbl">Магазин</div><div class="qsub">Ресурсы поселка</div></div>
         <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
-                <div class="quick-card" onclick="navTo('businesses')" role="button" tabindex="0" aria-label="Перейти к бизнесам"><div class="qico">🏢</div><div class="qlbl">Бизнесы</div><div class="qsub">Магазины и центры</div></div>
-<div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
+        <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
     </div>
     <div id="homeOrders"></div>
     <div id="workerSection" style="display:none">
@@ -1114,11 +1103,59 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <!-- BANK -->
 <div id="bank" class="section">
     <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <span>🏦 Счета банка</span>
+            <button class="btn btn-ghost btn-sm" onclick="renderBankPage()">Обновить</button>
+        </div>
+        <div class="bank-overview">
+            <div class="bank-total-box">
+                <div class="bank-total-label">Общий баланс</div>
+                <div class="bank-total-value" id="bankTotalBalance">0 ₽</div>
+            </div>
+            <div class="bank-active-box">
+                <div>
+                    <div class="bank-total-label">Активный счет</div>
+                    <div class="bank-active-name" id="bankActiveName">Основной</div>
+                    <div class="bank-active-note" id="bankActiveNote">С этого счета будут списываться переводы и оплата терминалов.</div>
+                </div>
+                <div class="bank-chip active" id="bankActiveChip">Основной</div>
+            </div>
+        </div>
+        <div class="bank-form-grid" style="margin-top:10px;">
+            <input type="text" id="newBankAccountName" maxlength="24" placeholder="Название нового счета, например «Накопления»">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" onclick="createBankAccount()">➕ Добавить счет</button>
+                <button class="btn btn-ghost btn-sm" onclick="renderBankPage()">🔄 Синхронизировать</button>
+            </div>
+            <div class="bank-small-note">Можно создать ещё до 5 дополнительных счетов. По умолчанию уже есть «Основной».</div>
+        </div>
+        <div class="bank-accounts-grid" id="bankAccountsList"></div>
+    </div>
+
+    <div class="card">
         <div class="card-title">💸 Перевод денег</div>
+        <div class="bank-small-note" style="margin-top:-2px;">Перевод списывается с выбранного счета. Получатель зачисляется на свой активный счет.</div>
+        <select id="bFromAccount" style="margin-top:10px;"></select>
         <input type="text" id="bTo" placeholder="Никнейм получателя" autocomplete="off" required minlength="2" maxlength="20">
         <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
     </div>
+
+    <div class="card">
+        <div class="card-title">🏧 Создать терминал</div>
+        <input type="number" id="terminalAmount" placeholder="Сумма к оплате (₽)" min="1" step="1">
+        <button class="btn btn-gold" onclick="createBankTerminal()">Создать терминал</button>
+        <div class="bank-small-note">Создаётся экран ожидания оплаты. Другой человек открывает сайт, вводит код терминала и подтверждает платёж со своего счета.</div>
+    </div>
+
+    <div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <span>📡 Активные терминалы</span>
+            <span class="bank-terminal-pulse"><span class="pulse"></span> Онлайн</span>
+        </div>
+        <div id="bankTerminalsList" class="bank-terminal-list"><div style="color:var(--muted);font-size:13px;">Пока нет активных терминалов</div></div>
+    </div>
+
     <div class="card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
             <span>📋 Последние переводы</span>
@@ -1147,6 +1184,51 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
 </div>
 
+<div id="bankTerminalWaitModal" class="bank-modal" onclick="if(event.target===this)closeBankTerminalWaitModal()">
+    <div class="bank-modal-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
+            <div class="bank-modal-title">🏧 Терминал создан</div>
+            <button class="bank-modal-close" onclick="closeBankTerminalWaitModal()">✕</button>
+        </div>
+        <div class="bank-modal-status" id="bankTerminalWaitStatus">Ожидаем оплату...</div>
+        <div class="bank-modal-amount" id="bankTerminalWaitAmount">0 ₽</div>
+        <div class="bank-modal-code-row">
+            <div class="bank-modal-code" id="bankTerminalWaitCode">------</div>
+            <button class="btn btn-ghost btn-sm" onclick="copyBankTerminalCode()">Копировать</button>
+        </div>
+        <div class="bank-small-note" id="bankTerminalWaitMeta" style="margin-top:10px;">Сумма и код терминала отображаются на втором телефоне.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+            <button class="btn btn-red btn-sm" onclick="cancelBankTerminal()">Отменить терминал</button>
+            <button class="btn btn-ghost btn-sm" onclick="closeBankTerminalWaitModal()">Скрыть</button>
+        </div>
+    </div>
+</div>
+
+<div id="bankPayModal" class="bank-pay-modal" onclick="if(event.target===this)closeBankPayModal()">
+    <div class="bank-pay-sheet" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
+            <div class="bank-modal-title">📲 Оплата терминала</div>
+            <button class="bank-modal-close" onclick="closeBankPayModal()">✕</button>
+        </div>
+        <div class="bank-pay-desc" id="bankPayDesc">Введите код терминала и подтвердите оплату.</div>
+        <div class="bank-pay-amount" id="bankPayAmount">0 ₽</div>
+        <select id="bankPayAccountSelect" style="margin-top:10px;"></select>
+        <input type="text" id="bankPayCodeInput" placeholder="Код терминала" maxlength="12">
+        <button class="btn btn-primary" onclick="payBankTerminalByCode()">Оплатить</button>
+        <div class="bank-small-note" id="bankPayMeta" style="margin-top:10px;">После оплаты обе страницы вернутся обратно автоматически.</div>
+    </div>
+</div>
+
+<div id="bankPaymentAnim" class="bank-anim-modal">
+    <div class="bank-anim-sheet">
+        <div class="bank-anim-icon" id="bankAnimIcon">💸</div>
+        <div class="bank-anim-title" id="bankAnimTitle">Платёж</div>
+        <div class="bank-anim-amt out" id="bankAnimAmount">−0 ₽</div>
+        <div class="bank-anim-sub" id="bankAnimText">Возвращаемся в сайт...</div>
+    </div>
+</div>
+
+<!-- RATINGS -->
 <!-- RATINGS -->
 <div id="ratings" class="section">
     <div class="card"><div class="card-title">🏆 Рейтинг жителей</div><div id="lbList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div></div>
@@ -1263,7 +1345,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <button class="btn btn-primary" id="pushEnableBtn" onclick="handlePushBtn()">🔔 Включить</button>
         <div style="font-size:11px;text-align:center;margin-top:8px;" id="pushStatusText"></div>
         <div id="pushSettingsContainer" style="display:none;margin-top:12px;"></div>
-    <div id="profileBusinesses" style="margin-top:14px;display:none;"></div>
 
     </div>
     <div class="card">
@@ -1307,7 +1388,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div id="profileDescription" style="margin-top:8px;font-size:13px;color:var(--text);line-height:1.4;text-align:center;display:none;"></div>
             <div id="vpfSubscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;text-align:center;display:none;"></div>
             <div class="upm-online" id="vpfOnline" style="justify-content:center;margin-top:8px;"><div class="upm-dot"></div><span></span></div>
-            <div id="vpfBusinesses" style="width:100%;margin-top:14px;display:none;"></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
                 <button class="btn btn-primary btn-sm" type="button" onclick="visitorProfileDm()" style="flex:1;">💬 Написать</button>
                 <button class="btn btn-gold btn-sm" type="button" onclick="visitorProfileTransfer()" style="flex:1;">💸 Перевести</button>
@@ -1399,99 +1479,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div id="newsListLands"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
         </div>
     </div>
-</div>
-
-<!-- BUSINESSES -->
-<div id="businesses" class="section">
-    <div class="business-tabs">
-        <button class="business-tab active" id="bizTab0" onclick="switchBusinessTab(0)">🏪 Каталог</button>
-        <button class="business-tab" id="bizTab1" onclick="switchBusinessTab(1)">⭐ Мои</button>
-        <button class="business-tab" id="bizTab2" onclick="switchBusinessTab(2)">➕ Заявка</button>
-    </div>
-
-    <div class="business-panel active" id="bizPanel0">
-        <div class="business-section-card">
-            <div class="card-title">🔎 Поиск и фильтр</div>
-            <input type="text" id="bizSearch" placeholder="Название, адрес, услуги..." oninput="renderBizPage()">
-            <select id="bizFilter" onchange="renderBizPage()">
-                <option value="all">Все категории</option>
-                <option value="shop">🛒 Магазин</option>
-                <option value="service">🤝 Услуги</option>
-                <option value="center">🏢 Центр</option>
-                <option value="food">🍔 Еда</option>
-                <option value="other">📦 Другое</option>
-            </select>
-            <div class="stats-row" id="businessStats"></div>
-        </div>
-        <div id="businessList" class="business-grid">
-            <div class="business-empty">Загрузка бизнеса...</div>
-        </div>
-    </div>
-
-    <div class="business-panel" id="bizPanel1">
-        <div class="business-section-card">
-            <div class="card-title">👔 Мои бизнесы</div>
-            <div id="myBusinessList" class="business-grid"><div class="business-empty">Пока нет управляемых бизнесов</div></div>
-        </div>
-        <div class="business-section-card">
-            <div class="card-title">💳 Быстрый доступ</div>
-            <div class="business-mini">Здесь можно открыть свой бизнес, управлять балансом, терминалом, ролями и сотрудниками.</div>
-        </div>
-    </div>
-
-    <div class="business-panel" id="bizPanel2">
-        <div class="business-section-card">
-            <div class="card-title">📝 Заявка на создание бизнеса</div>
-            <div class="business-mini" style="margin-bottom:10px;">Заполните заявку — контакты, телефоны и ссылки тут не нужны. Остальное добавите уже внутри бизнеса после одобрения.</div>
-            <div class="business-form-grid">
-                <input class="full" type="text" id="bizAppName" placeholder="Название бизнеса" maxlength="60">
-                <select id="bizAppCategory" class="full">
-                    <option value="shop">🛒 Магазин</option>
-                    <option value="service">🤝 Услуги</option>
-                    <option value="center">🏢 Центр</option>
-                    <option value="food">🍔 Еда</option>
-                    <option value="other" selected>📦 Другое</option>
-                </select>
-
-                <div class="full">
-                    <label class="file-upload-btn" for="bizAppIconFile">🖼 Выбрать иконку из галереи</label>
-                    <input type="file" id="bizAppIconFile" accept="image/*" onchange="handleBusinessIconPick(event)">
-                    <div class="business-mini" style="margin-top:6px;">Иконка берётся только из файла — без URL.</div>
-                    <div id="bizAppIconPreviewWrap" style="display:none;margin-top:10px;">
-                        <div class="business-mini" style="margin-bottom:6px;">Предпросмотр иконки</div>
-                        <div class="business-upload-preview single">
-                            <div class="business-upload-thumb" style="height:120px;">
-                                <img id="bizAppIconPreview" alt="Иконка бизнеса">
-                                <button type="button" class="del" onclick="clearBusinessIconDraft()">✕</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="full">
-                    <label class="file-upload-btn" for="bizAppGalleryFile">🖼️🎬 Добавить изображения и видео</label>
-                    <input type="file" id="bizAppGalleryFile" accept="image/*,video/*" multiple onchange="handleBusinessGalleryPick(event)">
-                    <div class="business-mini" style="margin-top:6px;">Можно выбрать несколько файлов сразу.</div>
-                    <div id="bizAppGalleryPreview" class="business-upload-preview"></div>
-                </div>
-
-                <div class="full business-section-card" style="margin:0;padding:14px;">
-                    <div class="card-title" style="margin-bottom:10px;">🛍️ Услуги / товары</div>
-                    <div class="business-mini">Добавляйте только карточки: название, картинка, описание и цена. Никаких телефонов, ссылок и внешних контактов тут не нужно.</div>
-                    <div id="bizDraftProductsList" class="business-product-list" style="margin-top:10px;"></div>
-                    <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="addBusinessDraftProduct()">➕ Добавить карточку</button>
-                </div>
-                <textarea class="full" id="bizAppDesc" placeholder="Краткое описание бизнеса" style="min-height:110px;"></textarea>
-                <div class="business-section-card full" style="margin:0;padding:14px;">
-                    <div class="card-title" style="margin-bottom:10px;">👷 Рабочие места</div>
-                    <div class="business-mini">Если бизнесу нужны сотрудники, роли можно добавить уже после открытия в самом бизнесе.</div>
-                </div>
-            </div>
-            <button type="button" class="btn btn-primary" id="bizSubmitBtn" style="margin-top:10px;" onclick="window.submitBusinessApplication && window.submitBusinessApplication(); return false;">📨 Отправить в мэрию</button>
-        </div>
-    </div>
-
-    <div id="businessDetailPanel" class="business-section-card business-detail" style="display:none;"></div>
 </div>
 
 <!-- NEWS DISCUSSION -->
@@ -1596,7 +1583,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card"><div class="card-title">📋 Заявки на работу</div><div id="appList"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card"><div class="card-title">🆕 Новые аккаунты (на подтверждение)</div><div id="unverifiedAccounts"><div style="color:var(--muted);font-size:13px;">Нет неподтверждённых аккаунтов</div></div></div>
     <div class="card"><div class="card-title">🧹 Отчёты уборщиков (на проверке)</div><div id="janitorAdminList"><div style="color:var(--muted);font-size:13px;">Нет отчётов</div></div></div>
-    <div class="card"><div class="card-title">🏢 Заявки на бизнесы (на проверке)</div><div id="businessAdminList"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card">
         <div class="card-title">💳 Управление балансом</div>
         <select id="adminTarget" style="margin-bottom:8px;"></select>
@@ -1757,9 +1743,6 @@ let shopMapObj = null, shopMarker = null, shopAddrCoords = null;
 let currentDmNick = null;
 let dmListeners = {};
 let viewingProfileNick = null;
-let businessCache = {};
-let businessAppsCache = {};
-let currentBusinessId = '';
 let dmPeerReadTs = 0;
 let lastMarketListings = {};
 let dmConvoMeta = {};
@@ -2066,6 +2049,78 @@ function toast(text, type='green') {
 }
 function hideLoading() { const ov=qs('loadingOverlay'); if(ov) ov.style.display='none'; }
 
+
+function normalizeBankAccounts(user){
+    const map = {};
+    const src = user && user.bankAccounts && typeof user.bankAccounts === 'object' ? user.bankAccounts : null;
+    if(src){
+        for(const [key, val] of Object.entries(src)){
+            if(!val) continue;
+            const id = String(val.id || key || BANK_DEFAULT_ACCOUNT_ID);
+            map[id] = {
+                id,
+                name: val.name || (id === BANK_DEFAULT_ACCOUNT_ID ? BANK_DEFAULT_ACCOUNT_NAME : `Счёт ${Object.keys(map).length + 1}`),
+                balance: Number(val.balance || 0),
+                createdAt: val.createdAt || Date.now()
+            };
+        }
+    }
+    if(!map[BANK_DEFAULT_ACCOUNT_ID]){
+        map[BANK_DEFAULT_ACCOUNT_ID] = {
+            id: BANK_DEFAULT_ACCOUNT_ID,
+            name: BANK_DEFAULT_ACCOUNT_NAME,
+            balance: Number(user && user.balance || 0),
+            createdAt: user && user.createdAt ? user.createdAt : Date.now()
+        };
+    }
+    return map;
+}
+function bankAccountsArray(user){
+    return Object.values(normalizeBankAccounts(user)).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+}
+function bankActiveAccountId(user){
+    const map = normalizeBankAccounts(user);
+    if(user && user.activeBankAccountId && map[user.activeBankAccountId]) return user.activeBankAccountId;
+    return map[BANK_DEFAULT_ACCOUNT_ID] ? BANK_DEFAULT_ACCOUNT_ID : Object.keys(map)[0];
+}
+function bankAccountTotal(user){
+    return bankAccountsArray(user).reduce((sum, acc)=>sum + (Number(acc.balance)||0), 0);
+}
+function bankAccountLabel(acc){
+    if(!acc) return '—';
+    return `${acc.name || BANK_DEFAULT_ACCOUNT_NAME} · ${Number(acc.balance||0).toLocaleString()} ₽`;
+}
+function bankPatchForDelta(user, accountId, delta){
+    const map = normalizeBankAccounts(user);
+    const id = accountId && map[accountId] ? accountId : bankActiveAccountId(user);
+    map[id] = {
+        ...(map[id] || { id, name: id === BANK_DEFAULT_ACCOUNT_ID ? BANK_DEFAULT_ACCOUNT_NAME : 'Счёт' }),
+        id,
+        balance: Number(map[id]?.balance || 0) + Number(delta || 0)
+    };
+    return { bankAccounts: map, balance: bankAccountTotal({ bankAccounts: map }), activeBankAccountId: id };
+}
+async function reconcileBankLedgerForUser(nick, user){
+    if(!nick || !user) return;
+    const map = normalizeBankAccounts(user);
+    const active = bankActiveAccountId(user);
+    const otherTotal = Object.values(map).filter(acc => acc.id !== BANK_DEFAULT_ACCOUNT_ID).reduce((sum, acc)=>sum + (Number(acc.balance)||0), 0);
+    const desiredMain = Number(user.balance || 0) - otherTotal;
+    const main = map[BANK_DEFAULT_ACCOUNT_ID] || { id: BANK_DEFAULT_ACCOUNT_ID, name: BANK_DEFAULT_ACCOUNT_NAME, balance: 0, createdAt: Date.now() };
+    const changed = !user.bankAccounts || !user.bankAccounts[BANK_DEFAULT_ACCOUNT_ID] || Number(main.balance || 0) !== desiredMain || user.activeBankAccountId !== active;
+    if(!changed) return;
+    map[BANK_DEFAULT_ACCOUNT_ID] = { ...main, id: BANK_DEFAULT_ACCOUNT_ID, name: main.name || BANK_DEFAULT_ACCOUNT_NAME, balance: desiredMain };
+    await update(userRef(nick), { bankAccounts: map, activeBankAccountId: active });
+}
+function bankTerminalCode(){
+    return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+function bankTerminalRef(id){ return ref(db, `bankTerminals/${id}`); }
+function bankTerminalsRef(){ return ref(db, 'bankTerminals'); }
+function bankTerminalDisplayCode(code){
+    return String(code || '').replace(/[^A-Z0-9]/g,'');
+}
+
 // ─── ONLINE PRESENCE ──────────────────────
 async function updateOnlineStatus() {
     if(!currentNick) return;
@@ -2118,19 +2173,19 @@ const dmRef     = (key)  => ref(db, `dms/${key}/messages`);
 const marketRef = ()     => ref(db, 'marketplace');
 const listingRef= (id)   => ref(db, `marketplace/${id}`);
 const notifRef  = (nick) => ref(db, `users/${nick}/notifications`);
-const businessesRef = () => ref(db, 'businesses');
-const businessRef = (id) => ref(db, `businesses/${id}`);
-const businessAppsRef = () => ref(db, 'businessApplications');
-const businessAppRef = (id) => ref(db, `businessApplications/${id}`);
-const businessLedgerRef = (id) => ref(db, `businessLedger/${id}`);
-const businessOrdersRef = (id) => ref(db, `businessOrders/${id}`);
-const businessOrderRef = (bid, oid) => ref(db, `businessOrders/${bid}/${oid}`);
 const txLogRef  = (nick) => ref(db, `users/${nick}/txlog`);
 const janitorSubsRef = () => ref(db, 'janitorSubmissions');
 const janitorSubRef = (id) => ref(db, `janitorSubmissions/${id}`);
 const wallRef = (nick) => ref(db, `walls/${nick}`);
 const newsRef = () => ref(db, 'news');
 const newsItemRef = (id) => ref(db, `news/${id}`);
+
+const BANK_MAX_ACCOUNTS = 6;
+const BANK_DEFAULT_ACCOUNT_ID = 'main';
+const BANK_DEFAULT_ACCOUNT_NAME = 'Основной';
+let lastBankTerminalsCache = {};
+let activeBankTerminalId = null;
+let bankAnimTimer = null;
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
@@ -2206,7 +2261,11 @@ window.handleAuth = async function() {
                 displayName:'',accountFrozen:false,rewardedAvatar:false,rewardedWall:false,
                 createdAt: now,
                 totalEarned: 0,
-                accountVerified: false // New accounts need mayor approval
+                accountVerified: false, // New accounts need mayor approval
+                bankAccounts: {
+                    main: { id: 'main', name: BANK_DEFAULT_ACCOUNT_NAME, balance: 0, createdAt: now }
+                },
+                activeBankAccountId: 'main'
             });
             
             // Send notification to mayor about new account
@@ -2252,7 +2311,16 @@ window.logout = function() {
 // ─── REAL-TIME LISTENERS ──────────────────
 function attachListeners() {
     const uRef=userRef(currentNick);
-    const uFn=async (snap)=>{if(snap.exists()){const u=snap.val();await syncJanitorTaskState(u);updateHeader(u);updateFrozenOverlay(u);}};
+    const uFn=async (snap)=>{
+        if(snap.exists()){
+            const u=snap.val();
+            await syncJanitorTaskState(u);
+            updateHeader(u);
+            updateFrozenOverlay(u);
+            await reconcileBankLedgerForUser(currentNick, u);
+            if(curPage==='bank') renderBankPage();
+        }
+    };
     onValue(uRef,uFn); listeners.user={ref:uRef,fn:uFn};
 
     const oRef=ordersRef();
@@ -2289,13 +2357,29 @@ function attachListeners() {
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
-        if(curPage==='subscription') renderSubscription();
+        if(curPage==='bank') renderBankPage();
         if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
         if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
         if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
         if(curPage==='tasks') renderTasks();
     };
     onValue(allRef,allFn); listeners.allUsers={ref:allRef,fn:allFn};
+
+    const bankTermRef = bankTerminalsRef();
+    const bankTermFn = (snap) => {
+        const terminals = snap.val() || {};
+        const prev = lastBankTerminalsCache || {};
+        lastBankTerminalsCache = terminals;
+        if(curPage === 'bank') renderActiveTerminals(terminals);
+        Object.values(terminals).forEach(t => {
+            const before = prev[t.id];
+            if(t && t.creator === currentNick && t.status === 'paid' && (!before || before.status !== 'paid')){
+                if(qs('bankTerminalWaitModal') && qs('bankTerminalWaitModal').classList.contains('open')) closeBankTerminalWaitModal();
+                showBankMoneyAnimation('in', t.amount || 0, t.payerName || t.payer || 'плательщика');
+            }
+        });
+    };
+    onValue(bankTermRef, bankTermFn); listeners.bankTerminals={ref:bankTermRef,fn:bankTermFn};
 
     let notifInit=false, lastNotifCount=0;
     const nRef=notifRef(currentNick);
@@ -2327,14 +2411,6 @@ function attachListeners() {
     const mRef=marketRef();
     const mFn=(snap)=>{if(curPage==='market')renderMarket(snap.val()||{});};
     onValue(mRef,mFn); listeners.market={ref:mRef,fn:mFn};
-
-    const bizRef=businessesRef();
-    const bizFn=(snap)=>{businessCache=snap.val()||{}; if(curPage==='businesses') renderBizPage();};
-    onValue(bizRef,bizFn); listeners.businesses={ref:bizRef,fn:bizFn};
-
-    const bizAppsRef=businessAppsRef();
-    const bizAppsFn=(snap)=>{businessAppsCache=snap.val()||{}; if(curPage==='businesses') renderBizPage(); if(curPage==='adminPage') renderBizAdminPreview();};
-    onValue(bizAppsRef,bizAppsFn); listeners.businessApps={ref:bizAppsRef,fn:bizAppsFn};
 
     const dmInboxRef=ref(db,'dms');
     let dmInboxInit=false; let dmLastMsgIds={};
@@ -2559,7 +2635,6 @@ function updateHeader(u) {
     const bottomNav=qs('bottomNav'); if(bottomNav) bottomNav.style.gridTemplateColumns=isJanitor?'repeat(9,1fr)':'repeat(8,1fr)';
     const vDisp=qs('vehicleDisplay');
     if(vDisp){if(u.vehicle){vDisp.style.display='block';vDisp.textContent='🛵 '+u.vehicle;}else vDisp.style.display='none';}
-    renderUserBusinessesBlock(u, 'profileBusinesses');
     const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=(u.job&&u.job!=='Житель')?'block':'none';
     if(isDriver&&qs('vehicleInput')) qs('vehicleInput').value=u.vehicle||'';
 }
@@ -3724,43 +3799,307 @@ window.doTransfer=async function(){
     if(!await requireSpendable())return;
     const to=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
     if(!to)return toast('⚠️ Введите никнейм','gold');if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
-    
-    // Check if sender account is verified
-    const[fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
+
+    const [fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
+    if(!fromSnap.exists() || !toSnap.exists()) return toast('❌ Не найден','red');
     const fromUser = fromSnap.val();
     const toUser = toSnap.val();
     if(isMigrantUser(fromUser)) return toast(`🚫 ${ROLE_MIGRANT}: переводы недоступны`,'red');
     if(isMigrantUser(toUser)) return toast(`🚫 Нельзя переводить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
-    if(!fromUser.accountVerified) {
-        return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
-    }
-    
-    // Check if recipient account is verified
-    if(!toUser.accountVerified) {
-        return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
-    }
-    
-    if(!toSnap.exists())return toast('❌ Не найден','red');
-    
+    if(!fromUser.accountVerified) return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
+    if(!toUser.accountVerified) return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
+
+    const senderAccounts = normalizeBankAccounts(fromUser);
+    const recipientAccounts = normalizeBankAccounts(toUser);
+    const fromSel = qs('bFromAccount') ? qs('bFromAccount').value : '';
+    const senderAccountId = fromSel && senderAccounts[fromSel] ? fromSel : bankActiveAccountId(fromUser);
+    const recipientAccountId = bankActiveAccountId(toUser);
+    if(Number(senderAccounts[senderAccountId]?.balance || 0) < amt) return toast('❌ Недостаточно средств на выбранном счете','red');
+
     try {
-        // Вызываем Cloud Function с fallback
-        const result = await callFunctionWithFallback('transferMoney', { 
-            toUid: to, 
-            amount: amt, 
-            description: `Перевод пользователю ${to}` 
-        }, fallbackTransferMoney);
-        
-        if (result.success) {
-            // Only notify recipient, not sender
-            await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
-            qs('bTo').value='';qs('bAmt').value='';toast(`💸 ${amt}₽ → ${to}`,'green');renderRecentTransfers();renderFinancialStats();
-        }
+        const senderPatch = bankPatchForDelta(fromUser, senderAccountId, -amt);
+        const recipientPatch = bankPatchForDelta(toUser, recipientAccountId, amt);
+        await update(userRef(currentNick), senderPatch);
+        await update(userRef(to), recipientPatch);
+        await logTx(currentNick, { type:'out', who: to, amt, desc:`Перевод пользователю ${to}` });
+        await logTx(to, { type:'in', who: currentNick, amt, desc:`Перевод от ${currentNick}` });
+        await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
+        qs('bTo').value='';qs('bAmt').value='';
+        toast(`💸 ${amt}₽ → ${to}`,'green');
+        renderRecentTransfers();
+        renderFinancialStats();
+        renderBankPage();
     } catch (error) {
         console.error('Ошибка перевода:', error);
         const message = error.message || 'Ошибка при выполнении перевода';
         toast(`❌ ${message}`,'red');
     }
 };
+
+window.createBankAccount = async function(){
+    if(!await requireNotMigrant('счета банка недоступны')) return;
+    const snap = await get(userRef(currentNick));
+    const u = snap.val();
+    if(!u) return toast('❌ Пользователь не найден', 'red');
+    const accounts = bankAccountsArray(u);
+    if(accounts.length >= BANK_MAX_ACCOUNTS) return toast('⚠️ Достигнут лимит: 6 счетов (1 основной + 5 дополнительных)','gold');
+    const nameInput = qs('newBankAccountName');
+    const name = (nameInput ? nameInput.value.trim() : '') || `Счёт ${accounts.length + 1}`;
+    const id = `acc_${genId().slice(-8)}`;
+    const map = normalizeBankAccounts(u);
+    map[id] = { id, name, balance: 0, createdAt: Date.now() };
+    await update(userRef(currentNick), { bankAccounts: map, activeBankAccountId: id });
+    if(nameInput) nameInput.value = '';
+    toast(`✅ Создан счет «${name}»`,'green');
+    if(curPage==='bank') renderBankPage();
+};
+
+function renderBankAccountsPanel(user){
+    const accounts = bankAccountsArray(user);
+    const activeId = bankActiveAccountId(user);
+    const total = Number(user && user.balance || bankAccountTotal(user) || 0);
+    const totalEl = qs('bankTotalBalance');
+    if(totalEl) totalEl.textContent = `${total.toLocaleString()} ₽`;
+    const active = accounts.find(a => a.id === activeId) || accounts[0];
+    if(qs('bankActiveName')) qs('bankActiveName').textContent = active ? active.name : BANK_DEFAULT_ACCOUNT_NAME;
+    if(qs('bankActiveChip')) qs('bankActiveChip').textContent = active ? active.name : BANK_DEFAULT_ACCOUNT_NAME;
+    if(qs('bankActiveNote')) qs('bankActiveNote').textContent = active ? `Баланс выбранного счета: ${Number(active.balance||0).toLocaleString()} ₽` : 'Счетов пока нет';
+    const list = qs('bankAccountsList');
+    if(list){
+        list.innerHTML = accounts.map(acc => {
+            const isActive = acc.id === activeId;
+            return `<div class="bank-account-card ${isActive ? 'active' : ''}">
+                <div class="bank-account-top">
+                    <div>
+                        <div class="bank-account-name">${escHtml(acc.name || BANK_DEFAULT_ACCOUNT_NAME)}${acc.id===BANK_DEFAULT_ACCOUNT_ID ? ' <span class="bank-chip active" style="margin-left:6px;">Основной</span>' : ''}</div>
+                        <div class="bank-account-meta">ID: ${escHtml(acc.id)}</div>
+                    </div>
+                    <div class="bank-account-balance">${Number(acc.balance||0).toLocaleString()} ₽</div>
+                </div>
+                <div class="bank-account-actions">
+                    <button class="btn ${isActive ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="setActiveBankAccount('${jsEsc(acc.id)}')">${isActive ? 'Активный' : 'Сделать активным'}</button>
+                </div>
+            </div>`;
+        }).join('') || '<div style="color:var(--muted);font-size:13px;">Пока нет счетов</div>';
+    }
+    const fromSel = qs('bFromAccount');
+    if(fromSel){
+        fromSel.innerHTML = accounts.map(acc => `<option value="${escHtml(acc.id)}"${acc.id===activeId?' selected':''}>${escHtml(acc.name)} — ${Number(acc.balance||0).toLocaleString()} ₽</option>`).join('');
+    }
+    const paySel = qs('bankPayAccountSelect');
+    if(paySel){
+        paySel.innerHTML = accounts.map(acc => `<option value="${escHtml(acc.id)}"${acc.id===activeId?' selected':''}>${escHtml(acc.name)} — ${Number(acc.balance||0).toLocaleString()} ₽</option>`).join('');
+    }
+}
+
+window.setActiveBankAccount = async function(id){
+    if(!id) return;
+    const snap = await get(userRef(currentNick));
+    const u = snap.val();
+    if(!u) return;
+    const map = normalizeBankAccounts(u);
+    if(!map[id]) return toast('❌ Счет не найден','red');
+    await update(userRef(currentNick), { activeBankAccountId: id });
+    toast(`✅ Активный счет: ${map[id].name}`,'green');
+    if(curPage==='bank') renderBankPage();
+};
+
+function openBankTerminalWaitModal(terminal){
+    activeBankTerminalId = terminal && terminal.id ? terminal.id : null;
+    if(qs('bankTerminalWaitModal')) qs('bankTerminalWaitModal').classList.add('open');
+    if(qs('bankTerminalWaitAmount')) qs('bankTerminalWaitAmount').textContent = `${Number(terminal.amount||0).toLocaleString()} ₽`;
+    if(qs('bankTerminalWaitCode')) qs('bankTerminalWaitCode').textContent = terminal.code || '------';
+    if(qs('bankTerminalWaitStatus')) qs('bankTerminalWaitStatus').textContent = `Терминал #${terminal.code} ждёт оплату`;
+    if(qs('bankTerminalWaitMeta')) qs('bankTerminalWaitMeta').textContent = `Создан на счёте «${terminal.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME}». После оплаты деньги уйдут на этот счет.`;
+    lockBodyScroll();
+}
+
+window.closeBankTerminalWaitModal = function(){
+    activeBankTerminalId = null;
+    if(qs('bankTerminalWaitModal')) qs('bankTerminalWaitModal').classList.remove('open');
+    unlockBodyScroll();
+};
+
+window.copyBankTerminalCode = async function(){
+    const code = qs('bankTerminalWaitCode') ? qs('bankTerminalWaitCode').textContent.trim() : '';
+    if(!code) return;
+    try{
+        await navigator.clipboard.writeText(code);
+        toast('Код терминала скопирован','green');
+    }catch(e){
+        toast('Не удалось скопировать код','gold');
+    }
+};
+
+window.cancelBankTerminal = async function(){
+    if(!activeBankTerminalId) return;
+    if(!confirm('Отменить терминал?')) return;
+    await remove(bankTerminalRef(activeBankTerminalId));
+    closeBankTerminalWaitModal();
+    toast('🗑 Терминал отменён','gold');
+};
+
+window.createBankTerminal = async function(){
+    if(!await requireNotMigrant('терминалы недоступны')) return;
+    const amt = parseInt(qs('terminalAmount') ? qs('terminalAmount').value : '0', 10) || 0;
+    if(amt <= 0) return toast('⚠️ Введите сумму','gold');
+    const snap = await get(userRef(currentNick));
+    const u = snap.val();
+    if(!u) return toast('❌ Пользователь не найден','red');
+    if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: терминалы недоступны`,'red');
+    if(!u.accountVerified) return toast('❌ Ваш аккаунт не подтверждён мэрией','red');
+    const activeId = bankActiveAccountId(u);
+    const accounts = normalizeBankAccounts(u);
+    const active = accounts[activeId] || accounts[BANK_DEFAULT_ACCOUNT_ID];
+    const code = bankTerminalCode();
+    const id = genId();
+    const terminal = {
+        id,
+        code,
+        amount: amt,
+        creator: currentNick,
+        creatorName: displayNick(u) || currentNick,
+        creatorAccountId: activeId,
+        creatorAccountName: active ? active.name : BANK_DEFAULT_ACCOUNT_NAME,
+        status: 'waiting',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    };
+    await set(bankTerminalRef(id), terminal);
+    if(qs('terminalAmount')) qs('terminalAmount').value = '';
+    openBankTerminalWaitModal(terminal);
+    toast('🏧 Терминал создан','green');
+};
+
+function closeBankPayModal(){
+    if(qs('bankPayModal')) qs('bankPayModal').classList.remove('open');
+    unlockBodyScroll();
+    activeBankTerminalId = null;
+}
+
+function openBankPayModal(terminal){
+    activeBankTerminalId = terminal && terminal.id ? terminal.id : null;
+    const payAmount = qs('bankPayAmount');
+    const payDesc = qs('bankPayDesc');
+    const payMeta = qs('bankPayMeta');
+    if(payAmount) payAmount.textContent = `${Number(terminal.amount||0).toLocaleString()} ₽`;
+    if(payDesc) payDesc.textContent = `Оплата терминала ${terminal.code} от пользователя ${terminal.creatorName || terminal.creator}.`;
+    if(payMeta) payMeta.textContent = `Средства будут списаны с выбранного счета и зачислены на счет «${terminal.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME}».`;
+    if(qs('bankPayCodeInput')) qs('bankPayCodeInput').value = terminal.code || '';
+    if(qs('bankPayModal')) qs('bankPayModal').classList.add('open');
+    lockBodyScroll();
+    renderBankAccountsPanel(allUsersCache[currentNick] || {});
+}
+
+window.payBankTerminalByCode = async function(){
+    const code = bankTerminalDisplayCode(qs('bankPayCodeInput') ? qs('bankPayCodeInput').value : '');
+    if(!code) return toast('⚠️ Введите код терминала','gold');
+    const snap = await get(bankTerminalsRef());
+    const all = snap.val() || {};
+    const terminal = Object.values(all).find(t => t && t.status === 'waiting' && bankTerminalDisplayCode(t.code) === code);
+    if(!terminal) return toast('❌ Терминал не найден или уже оплачен','red');
+    if(terminal.creator === currentNick) return toast('⚠️ Нельзя платить самому себе','gold');
+    const payAcc = qs('bankPayAccountSelect') ? qs('bankPayAccountSelect').value : bankActiveAccountId(allUsersCache[currentNick] || {});
+    await payBankTerminal(terminal.id, payAcc);
+};
+
+window.payBankTerminal = async function(id, payerAccountId){
+    if(!await requireNotMigrant('оплата терминалов недоступна')) return;
+    if(!await requireSpendable()) return;
+    const tSnap = await get(bankTerminalRef(id));
+    if(!tSnap.exists()) return toast('❌ Терминал не найден','red');
+    const terminal = tSnap.val();
+    if(terminal.status !== 'waiting') return toast('⚠️ Терминал уже оплачен','gold');
+    if(terminal.creator === currentNick) return toast('⚠️ Нельзя платить самому себе','gold');
+    const [payerSnap, creatorSnap] = await Promise.all([get(userRef(currentNick)), get(userRef(terminal.creator))]);
+    if(!payerSnap.exists() || !creatorSnap.exists()) return toast('❌ Пользователь не найден','red');
+    const payer = payerSnap.val();
+    const creator = creatorSnap.val();
+    if(!payer.accountVerified) return toast('❌ Ваш аккаунт не подтверждён мэрией','red');
+    if(!creator.accountVerified) return toast('❌ Аккаунт получателя не подтверждён мэрией','red');
+    if(isMigrantUser(payer)) return toast(`🚫 ${ROLE_MIGRANT}: оплата недоступна`,'red');
+    if(isMigrantUser(creator)) return toast(`🚫 Нельзя платить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
+    const payerMap = normalizeBankAccounts(payer);
+    const creatorMap = normalizeBankAccounts(creator);
+    const fromId = payerAccountId && payerMap[payerAccountId] ? payerAccountId : bankActiveAccountId(payer);
+    const toId = terminal.creatorAccountId && creatorMap[terminal.creatorAccountId] ? terminal.creatorAccountId : bankActiveAccountId(creator);
+    const amount = Number(terminal.amount || 0);
+    if(Number(payerMap[fromId]?.balance || 0) < amount) return toast('❌ Недостаточно средств на выбранном счете','red');
+    const payerPatch = bankPatchForDelta(payer, fromId, -amount);
+    const creatorPatch = bankPatchForDelta(creator, toId, amount);
+    await update(userRef(currentNick), payerPatch);
+    await update(userRef(terminal.creator), creatorPatch);
+    await update(bankTerminalRef(id), { status:'paid', payer: currentNick, payerName: displayNick(payer) || currentNick, payerAccountId: fromId, paidAt: Date.now(), updatedAt: Date.now() });
+    await logTx(currentNick, { type:'out', who: terminal.creator, amt: amount, desc: `Оплата через терминал #${terminal.code}` });
+    await logTx(terminal.creator, { type:'in', who: currentNick, amt: amount, desc: `Получено через терминал #${terminal.code}` });
+    await pushNotification(currentNick, `💸 Оплата терминала ${amount}₽`, 'money');
+    await pushNotification(terminal.creator, `💰 ${currentNick} оплатил терминал ${amount}₽`, 'money');
+    closeBankPayModal();
+    showBankMoneyAnimation('out', amount, terminal.creatorName || terminal.creator);
+    toast(`✅ Оплата ${amount.toLocaleString()} ₽ отправлена`,'green');
+    if(activeBankTerminalId === id) activeBankTerminalId = null;
+};
+
+function showBankMoneyAnimation(direction, amount, counterparty){
+    const box = qs('bankPaymentAnim');
+    if(!box) return;
+    const isIn = direction === 'in';
+    if(qs('bankAnimIcon')) qs('bankAnimIcon').textContent = isIn ? '💰' : '💸';
+    if(qs('bankAnimTitle')) qs('bankAnimTitle').textContent = isIn ? 'Деньги получены' : 'Платёж выполнен';
+    if(qs('bankAnimAmount')) {
+        qs('bankAnimAmount').className = `bank-anim-amt ${isIn ? 'in' : 'out'}`;
+        qs('bankAnimAmount').textContent = `${isIn ? '+' : '−'}${Number(amount||0).toLocaleString()} ₽`;
+    }
+    if(qs('bankAnimText')) qs('bankAnimText').textContent = isIn ? `Счёт пополнен от ${counterparty || 'плательщика'}.` : 'Возвращаемся на сайт...';
+    box.classList.add('open');
+    clearTimeout(bankAnimTimer);
+    bankAnimTimer = setTimeout(() => {
+        box.classList.remove('open');
+    }, 2200);
+}
+
+function renderActiveTerminals(terminals){
+    const el = qs('bankTerminalsList');
+    if(!el) return;
+    const arr = Object.values(terminals || {}).filter(t => t && t.status === 'waiting').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(!arr.length){
+        el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Пока нет активных терминалов</div>';
+        return;
+    }
+    el.innerHTML = arr.map(t => {
+        const mine = t.creator === currentNick;
+        return `<div class="bank-terminal-row">
+            <div class="bank-terminal-row-top">
+                <div>
+                    <div class="bank-terminal-row-title">${mine ? 'Ваш терминал' : escHtml(t.creatorName || t.creator)}</div>
+                    <div class="bank-terminal-row-sub">Код: <b>${escHtml(t.code)}</b> · Счет: ${escHtml(t.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME)}</div>
+                    <div class="bank-terminal-row-sub">Создан: ${escHtml(new Date(t.createdAt || Date.now()).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}))}</div>
+                </div>
+                <div class="bank-terminal-row-amt">${Number(t.amount||0).toLocaleString()} ₽</div>
+            </div>
+            <div class="bank-terminal-row-actions">
+                ${mine ? `<button class="btn btn-red btn-sm" onclick="cancelBankTerminalById('${jsEsc(t.id)}')">Отменить</button><button class="btn btn-ghost btn-sm" onclick="openBankTerminalWaitModal({id:'${jsEsc(t.id)}',code:'${jsEsc(t.code)}',amount:${Number(t.amount||0)},creatorAccountName:'${jsEsc(t.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME)}'})">Открыть</button>` : `<button class="btn btn-primary btn-sm" onclick="openBankPayModal({id:'${jsEsc(t.id)}',code:'${jsEsc(t.code)}',amount:${Number(t.amount||0)},creator:'${jsEsc(t.creator)}',creatorName:'${jsEsc(t.creatorName || t.creator)}',creatorAccountId:'${jsEsc(t.creatorAccountId || BANK_DEFAULT_ACCOUNT_ID)}',creatorAccountName:'${jsEsc(t.creatorAccountName || BANK_DEFAULT_ACCOUNT_NAME)}'})">Оплатить</button>`}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+window.cancelBankTerminalById = async function(id){
+    if(!id) return;
+    if(!confirm('Отменить этот терминал?')) return;
+    await remove(bankTerminalRef(id));
+    if(activeBankTerminalId === id) closeBankTerminalWaitModal();
+    toast('🗑 Терминал отменён','gold');
+};
+
+function renderBankPage(){
+    const user = allUsersCache[currentNick] || null;
+    if(!user) return;
+    renderBankAccountsPanel(user);
+    renderRecentTransfers();
+    renderFinancialStats();
+    renderActiveTerminals(lastBankTerminalsCache);
+}
 async function renderRecentTransfers(){
     const el=qs('txHistory');if(!el)return;const snap=await get(txLogRef(currentNick));
     const arr=Object.values(snap.val()||{}).sort((a,b)=>(b.ts||'').localeCompare(a.ts||'')).slice(0,5);
@@ -4336,7 +4675,6 @@ window.openUserProfile=async function(nick){
     }
     
     qs('upmStats').innerHTML = (subscriptionHtml ? `<div style="grid-column:1/-1;text-align:center;margin-bottom:8px;">${subscriptionHtml}</div>` : '') + `<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:11px;color:var(--muted);">@${escHtml(u.nick)}</div><div class="sl">Логин</div></div><div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:16px;">${escHtml(u.job||'Житель')}</div><div class="sl">Должность</div></div>${u.vehicle?`<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:14px;">🛵 ${escHtml(u.vehicle)}</div><div class="sl">Транспорт</div></div>`:''}`;
-    renderUserBusinessesBlock(u, 'upmBusinesses');
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,12);
     const wallHtml=posts.length?`<div style="margin-top:16px;"><div style="font-weight:900;font-size:12px;color:var(--muted);margin-bottom:8px;">📰 Лента</div>${posts.map(p=>wallPostCardHtml(nick,p.id||'',p)).join('')}</div>`:'';
@@ -4420,7 +4758,6 @@ async function renderVisitorProfilePage(nick){
         else if(u.profileBgEffect === 'dragon') profileBgEffect.classList.add('profile-bg-dragon');
     }
     
-    renderUserBusinessesBlock(u, 'vpfBusinesses');
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     qs('vpfWall').innerHTML=posts.length?posts.map(p=>wallPostCardHtml(nick,p.id||'',p)).join(''):'<div style="color:var(--muted);font-size:13px;">Пока пусто</div>';
@@ -5061,7 +5398,6 @@ window.submitJanitorDone=async function(){
 
 // ─── ADMIN ────────────────────────────────
 function renderAdminApps(apps){const pending=Object.values(apps||{}).filter(a=>a.status==='new');qs('appList').innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':pending.map(a=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;"><b>${escHtml(a.from)}</b> → ${escHtml(a.target)}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="approveApp('${a.id}',true)">✅</button><button class="btn btn-red btn-sm" onclick="approveApp('${a.id}',false)">❌</button></div></div>`).join('');}
-function renderBizAdminPreview(){ renderBusinessAdminPreview(); }
 function renderAdminUsers(users){
     const el=qs('allUsersList');if(!el)return;
     el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);const canDelete=u.nick!==ADMIN;return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;"><div class="av-wrap-sm ${online?'online':''}" style="cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(u.job||'Житель')} · ${(u.balance||0).toLocaleString()}₽</div></div>${canDelete?`<button class="btn btn-red btn-sm" style="margin-left:8px;padding:6px 10px;font-size:11px;" onclick="event.stopPropagation();adminDeleteAccount('${escHtml(u.nick)}')">🗑</button>`:''}</div>`;}).join('');
@@ -5609,11 +5945,11 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,businesses:6,subscription:7,profile:8,janitorPage:9};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
-    for(let i=0;i<10;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
+    for(let i=0;i<9;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
     window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
@@ -5629,8 +5965,7 @@ window.navTo=function(id){
     }
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
-    if(id==='businesses') renderBizPage();
-    if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
+    if(id==='bank') renderBankPage();
     if(id==='subscription') renderSubscription();
     if(id==='tasks') renderTasks();
     if(id==='jobs') renderJobAppStatus();
@@ -5643,32 +5978,27 @@ window.navTo=function(id){
 
 // ─── INIT ─────────────────────────────────
 const _loadingTimeout=setTimeout(()=>hideLoading(),2500);
-function hideLoadingSafe(){try{clearTimeout(_loadingTimeout);}catch(e){} hideLoading();}
+function hideLoadingSafe(){clearTimeout(_loadingTimeout);hideLoading();}
 window.addEventListener('load', ()=>{
     setTimeout(hideLoadingSafe, 300);
 }, {once:true});
 if(currentNick){
     try { startApp(); } catch(e) { console.error(e); toast('⚠️ Ошибка запуска интерфейса','red'); hideLoadingSafe(); }
-    // При file:// не делаем жёсткую перепроверку с reload: это часто зацикливает локальный запуск.
-    if(location.protocol === 'file:'){
+    // Добавляем таймаут для Firebase запроса, чтобы сайт не висел бесконечно
+    const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Firebase request timeout')), 10000)
+    );
+    Promise.race([get(userRef(currentNick)), timeoutPromise]).then(snap=>{
+        if(!snap.exists()){
+            sessionStorage.removeItem('kp_s');
+            localStorage.removeItem('kp_s');
+            localStorage.removeItem('kp_auth');
+            currentNick=null;
+            location.reload();
+            return;
+        }
         hideLoadingSafe();
-    } else {
-        // Добавляем таймаут для Firebase запроса, чтобы сайт не висел бесконечно
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Firebase request timeout')), 10000)
-        );
-        Promise.race([get(userRef(currentNick)), timeoutPromise]).then(snap=>{
-            if(!snap.exists()){
-                sessionStorage.removeItem('kp_s');
-                localStorage.removeItem('kp_s');
-                localStorage.removeItem('kp_auth');
-                currentNick=null;
-                location.reload();
-                return;
-            }
-            hideLoadingSafe();
-        }).catch(e=>{console.error(e); hideLoadingSafe();});
-    }
+    }).catch(e=>{console.error(e); hideLoadingSafe();});
 } else {hideLoadingSafe();}
 if(curPage==='tasks') renderTasks();
 
@@ -6669,1287 +6999,6 @@ window.sendGiftSubscription = async function(){
     // Update header balance
     updateHeader_balance({...giver, balance: (giver.balance || 0) - price});
 };
-
-
-// ─── BUSINESSES ───────────────────────────
-const BUSINESS_AUTO_PERIOD = {
-    daily: 24 * 60 * 60 * 1000,
-    weekly: 7 * 24 * 60 * 60 * 1000,
-    monthly: 30 * 24 * 60 * 60 * 1000,
-    contract: Infinity
-};
-
-function normalizeBusinessList(v){
-    return String(v || '')
-        .split(/[\n,;]/)
-        .map(s => s.trim())
-        .filter(Boolean);
-}
-
-function businessMediaList(b){
-    const list = [];
-    if(b.icon) list.push(b.icon);
-    const gallery = Array.isArray(b.gallery) ? b.gallery : normalizeBusinessList(b.gallery);
-    gallery.forEach(x => { if(x && !list.includes(x)) list.push(x); });
-    return list;
-}
-
-function normalizeBusinessProducts(v){
-    if(!Array.isArray(v)) return [];
-    return v.map((p, idx) => ({
-        id: p.id || `prod_${idx}_${Math.random().toString(36).slice(2, 7)}`,
-        name: p.name || p.title || 'Без названия',
-        description: p.description || '',
-        price: Number(p.price || p.amount || 0),
-        image: p.image || p.photo || p.icon || '',
-        type: p.type || 'product'
-    })).filter(p => p.name || p.description || p.price || p.image);
-}
-
-function businessProductsList(b){
-    return normalizeBusinessProducts(b?.products || []);
-}
-
-function businessMediaUrl(item){
-    return item?.image || item?.url || item?.icon || DEFAULT_AVATAR_URL;
-}
-
-const BUSINESS_CATEGORY_LABELS = {
-    shop: '🛒 Магазин',
-    service: '🤝 Услуги',
-    center: '🏢 Центр',
-    food: '🍔 Еда',
-    other: '📦 Другое'
-};
-
-let businessAppDraft = {
-    iconFile: null,
-    iconPreview: '',
-    galleryFiles: [],
-    galleryPreviews: [],
-    products: [],
-    roles: []
-};
-
-let businessCartState = {};
-
-function getBusinessCart(bizId){
-    if(!businessCartState[bizId]) businessCartState[bizId] = [];
-    return businessCartState[bizId];
-}
-
-function setBusinessCart(bizId, cart){
-    businessCartState[bizId] = cart.filter(it => it && Number(it.qty || 0) > 0);
-}
-
-function businessCartTotal(cart, products){
-    const map = new Map((products || []).map(p => [p.id, p]));
-    return (cart || []).reduce((sum, it) => {
-        const prod = map.get(it.id);
-        return sum + (Number(prod?.price || 0) * Number(it.qty || 0));
-    }, 0);
-}
-
-function businessRolePeriodLabel(v){
-    const map = { daily:'в день', weekly:'в неделю', monthly:'в месяц', contract:'по договору' };
-    return map[v] || v || 'по договору';
-}
-
-function clearBusinessDraftPreviews(){
-    businessAppDraft.galleryPreviews.forEach(u => { try{ URL.revokeObjectURL(u); }catch(e){} });
-    businessAppDraft.galleryPreviews = [];
-    (businessAppDraft.products || []).forEach(p => {
-        if(p && p.imagePreview){ try{ URL.revokeObjectURL(p.imagePreview); }catch(e){} }
-    });
-}
-
-function clearBusinessIconDraft(){
-    try{ if(businessAppDraft.iconPreview) URL.revokeObjectURL(businessAppDraft.iconPreview); }catch(e){}
-    businessAppDraft.iconFile = null;
-    businessAppDraft.iconPreview = '';
-    const inp = qs('bizAppIconFile'); if(inp) inp.value = '';
-    const img = qs('bizAppIconPreview'); const wrap = qs('bizAppIconPreviewWrap');
-    if(img) img.removeAttribute('src');
-    if(wrap) wrap.style.display = 'none';
-}
-
-window.clearBusinessIconDraft = clearBusinessIconDraft;
-
-function renderBusinessDraftIconPreview(){
-    const img = qs('bizAppIconPreview');
-    const wrap = qs('bizAppIconPreviewWrap');
-    if(!img || !wrap) return;
-    if(!businessAppDraft.iconPreview){
-        wrap.style.display = 'none';
-        img.removeAttribute('src');
-        return;
-    }
-    img.src = businessAppDraft.iconPreview;
-    wrap.style.display = 'block';
-}
-
-function renderBusinessDraftGalleryPreview(){
-    const wrap = qs('bizAppGalleryPreview');
-    if(!wrap) return;
-    wrap.innerHTML = '';
-    const items = businessAppDraft.galleryFiles.map((file, idx) => {
-        const preview = businessAppDraft.galleryPreviews[idx];
-        const isVideo = file.type.startsWith('video/');
-        return `<div class="business-upload-thumb" style="height:92px;">${isVideo ? `<video src="${escHtml(preview)}" muted playsinline></video>` : `<img src="${escHtml(preview)}" alt="">`}<button type="button" class="del" onclick="removeBusinessGalleryItem(${idx})">✕</button></div>`;
-    }).join('');
-    wrap.innerHTML = items || '<div class="business-empty" style="grid-column:1/-1;">Файлы не выбраны</div>';
-}
-
-window.removeBusinessGalleryItem = function(idx){
-    const file = businessAppDraft.galleryFiles[idx];
-    const preview = businessAppDraft.galleryPreviews[idx];
-    if(preview) { try{ URL.revokeObjectURL(preview); }catch(e){} }
-    businessAppDraft.galleryFiles.splice(idx,1);
-    businessAppDraft.galleryPreviews.splice(idx,1);
-    renderBusinessDraftGalleryPreview();
-};
-
-window.handleBusinessIconPick = async function(e){
-    const file = (e.target.files || [])[0];
-    if(!file) return;
-    if(!file.type.startsWith('image/')) return toast('❌ Иконка должна быть изображением','red');
-    if(file.size > 10 * 1024 * 1024) return toast('❌ Иконка слишком большая (макс. 10 МБ)','red');
-    clearBusinessIconDraft();
-    businessAppDraft.iconFile = file;
-    businessAppDraft.iconPreview = URL.createObjectURL(file);
-    renderBusinessDraftIconPreview();
-};
-
-window.handleBusinessGalleryPick = async function(e){
-    const files = Array.from(e.target.files || []);
-    if(!files.length) return;
-    e.target.value = '';
-    for(const file of files){
-        if(!file.type.startsWith('image/') && !file.type.startsWith('video/')) continue;
-        const maxMb = file.type.startsWith('video/') ? 60 : 10;
-        if(file.size > maxMb * 1024 * 1024){
-            toast(`❌ Файл слишком большой (макс. ${maxMb} МБ)`, 'red');
-            continue;
-        }
-        businessAppDraft.galleryFiles.push(file);
-        businessAppDraft.galleryPreviews.push(URL.createObjectURL(file));
-    }
-    renderBusinessDraftGalleryPreview();
-};
-
-function addBusinessDraftProduct(product = {}){
-    businessAppDraft.products.push({
-        name: product.name || '',
-        description: product.description || '',
-        price: product.price ?? '',
-        imageFile: product.imageFile || null,
-        imagePreview: product.imagePreview || '',
-    });
-    renderBusinessDraftProducts();
-}
-window.addBusinessDraftProduct = addBusinessDraftProduct;
-
-function removeBusinessDraftProduct(idx){
-    const item = businessAppDraft.products[idx];
-    if(item && item.imagePreview){ try{ URL.revokeObjectURL(item.imagePreview); }catch(e){} }
-    businessAppDraft.products.splice(idx,1);
-    renderBusinessDraftProducts();
-}
-window.removeBusinessDraftProduct = removeBusinessDraftProduct;
-
-window.handleBusinessDraftProductPick = function(e, idx){
-    const file = (e.target.files || [])[0];
-    if(!file) return;
-    if(!file.type.startsWith('image/')) return toast('❌ Картинка товара должна быть изображением','red');
-    if(file.size > 10 * 1024 * 1024) return toast('❌ Картинка слишком большая (макс. 10 МБ)','red');
-    const item = businessAppDraft.products[idx];
-    if(!item) return;
-    if(item.imagePreview){ try{ URL.revokeObjectURL(item.imagePreview); }catch(err){} }
-    item.imageFile = file;
-    item.imagePreview = URL.createObjectURL(file);
-    renderBusinessDraftProducts();
-};
-
-function renderBusinessDraftProducts(){
-    const wrap = qs('bizDraftProductsList');
-    if(!wrap) return;
-    if(!businessAppDraft.products.length){
-        wrap.innerHTML = '<div class="business-empty">Пока нет товаров / услуг</div>';
-        return;
-    }
-    wrap.innerHTML = businessAppDraft.products.map((item, idx) => `
-        <div class="business-draft-role">
-            <div class="business-draft-role-head">
-                <div style="font-weight:900;">Карточка ${idx + 1}</div>
-                <button type="button" class="btn btn-red btn-sm" style="width:auto;padding:8px 12px;" onclick="removeBusinessDraftProduct(${idx})">Удалить</button>
-            </div>
-            <div class="business-draft-role-grid">
-                <input class="full" type="text" id="bizDraftProductName_${idx}" placeholder="Название товара / услуги" value="${escHtml(item.name || '')}">
-                <input type="number" id="bizDraftProductPrice_${idx}" placeholder="Цена, ₽" value="${escHtml(String(item.price ?? ''))}">
-                <textarea class="full" id="bizDraftProductDesc_${idx}" placeholder="Описание" style="min-height:64px;">${escHtml(item.description || '')}</textarea>
-                <label class="file-upload-btn full" for="bizDraftProductFile_${idx}">🖼 Выбрать картинку</label>
-                <input type="file" id="bizDraftProductFile_${idx}" accept="image/*" onchange="handleBusinessDraftProductPick(event, ${idx})">
-                ${item.imagePreview ? `<div class="business-upload-preview single full"><div class="business-upload-thumb" style="height:150px;"><img src="${escHtml(item.imagePreview)}" alt=""></div></div>` : `<div class="business-empty full">Картинка не выбрана</div>`}
-            </div>
-        </div>
-    `).join('');
-}
-window.renderBusinessDraftProducts = renderBusinessDraftProducts;
-
-if (document.getElementById('bizDraftProductsList') && !businessAppDraft.products.length) { addBusinessDraftProduct(); }
-
-function addBusinessDraftRole(role = {}){
-    businessAppDraft.roles.push({
-        name: role.name || '',
-        description: role.description || '',
-        salaryAmount: role.salaryAmount ?? '',
-        salaryPeriod: role.salaryPeriod || 'contract',
-        autoPay: !!role.autoPay
-    });
-    renderBusinessDraftRoles();
-}
-window.addBusinessDraftRole = addBusinessDraftRole;
-
-if (document.getElementById('bizDraftRolesList') && !businessAppDraft.roles.length) { addBusinessDraftRole(); }
-if (document.getElementById('bizDraftProductsList') && !businessAppDraft.products.length) { addBusinessDraftProduct(); }
-
-function removeBusinessDraftRole(idx){
-    businessAppDraft.roles.splice(idx,1);
-    renderBusinessDraftRoles();
-}
-window.removeBusinessDraftRole = removeBusinessDraftRole;
-
-function renderBusinessDraftRoles(){
-    const wrap = qs('bizDraftRolesList');
-    if(!wrap) return;
-    if(!businessAppDraft.roles.length){
-        wrap.innerHTML = '<div class="business-empty">Пока нет ролей</div>';
-        return;
-    }
-    wrap.innerHTML = businessAppDraft.roles.map((role, idx) => `
-        <div class="business-draft-role">
-            <div class="business-draft-role-head">
-                <div style="font-weight:900;">Роль ${idx + 1}</div>
-                <button type="button" class="btn btn-red btn-sm" style="width:auto;padding:8px 12px;" onclick="removeBusinessDraftRole(${idx})">Удалить</button>
-            </div>
-            <div class="business-draft-role-grid">
-                <input class="full" type="text" id="bizDraftRoleName_${idx}" placeholder="Название роли" value="${escHtml(role.name || '')}">
-                <textarea class="full" id="bizDraftRoleDesc_${idx}" placeholder="Описание роли" style="min-height:64px;">${escHtml(role.description || '')}</textarea>
-                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
-                    <input type="checkbox" id="bizDraftRoleAuto_${idx}" style="width:auto;margin:0 8px 0 0;" ${role.autoPay ? 'checked' : ''}> Автоматическая зарплата
-                </label>
-                <input type="number" id="bizDraftRoleAmt_${idx}" placeholder="Сумма зарплаты" value="${escHtml(String(role.salaryAmount ?? ''))}">
-                <select id="bizDraftRolePeriod_${idx}">
-                    <option value="contract" ${role.salaryPeriod === 'contract' ? 'selected' : ''}>По договору</option>
-                    <option value="daily" ${role.salaryPeriod === 'daily' ? 'selected' : ''}>В день</option>
-                    <option value="weekly" ${role.salaryPeriod === 'weekly' ? 'selected' : ''}>В неделю</option>
-                    <option value="monthly" ${role.salaryPeriod === 'monthly' ? 'selected' : ''}>В месяц</option>
-                </select>
-            </div>
-        </div>
-    `).join('');
-}
-
-function businessMatchesFilter(b, query, filter){
-    const q = (query || '').trim().toLowerCase();
-    const products = businessProductsList(b).map(p => [p.name, p.description].join(' ')).join(' ');
-    const text = [
-        b.title, b.address, b.description,
-        ...(Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services)),
-        b.category, b.hours, b.phone, b.website,
-        products
-    ].join(' ').toLowerCase();
-    if(filter !== 'all' && String(b.category || 'other') !== filter) return false;
-    if(q && !text.includes(q)) return false;
-    return true;
-}
-
-function switchBusinessTab(idx){
-    document.querySelectorAll('.business-tab').forEach((btn,i)=>btn.classList.toggle('active', i===idx));
-    document.querySelectorAll('.business-panel').forEach((p,i)=>p.classList.toggle('active', i===idx));
-    if(idx===0 || idx===1) renderBizPage();
-}
-window.switchBusinessTab = switchBusinessTab;
-
-function renderBusinessSummary(){
-    const stats = qs('businessStats');
-    if(!stats) return;
-    const arr = Object.values(businessCache || {}).filter(Boolean);
-    stats.innerHTML = `
-        <div class="stat-box"><div class="sv" style="color:var(--primary)">${arr.length}</div><div class="sl">Бизнесов</div></div>
-        <div class="stat-box"><div class="sv" style="color:var(--gold)">${arr.filter(b => b.owner === currentNick).length}</div><div class="sl">Моих</div></div>
-        <div class="stat-box"><div class="sv" style="color:var(--primary)">${arr.filter(b => b.deliveryEnabled).length}</div><div class="sl">С доставкой</div></div>
-    `;
-}
-
-function businessCardHtml(b, isOwner=false){
-    const gallery = businessMediaList(b);
-    const products = businessProductsList(b);
-    return `<div class="business-card">
-        <div class="business-top">
-            <img class="business-icon" src="${escHtml(gallery[0] || b.icon || DEFAULT_AVATAR_URL)}" alt="">
-            <div style="flex:1;min-width:0;">
-                <div class="business-title">${escHtml(b.title || 'Без названия')}</div>
-                <div class="business-sub">${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'other')} · ${escHtml(b.address || 'Адрес не указан')}</div>
-                <div class="business-badges">
-                    <span class="business-pill ${b.deliveryEnabled ? 'primary' : ''}">${b.deliveryEnabled ? '🚚 Доставка' : '🏷️ Без доставки'}</span>
-                    <span class="business-pill">${products.length ? `${products.length} карточек` : 'Без товаров'}</span>
-                    ${isOwner ? '<span class="business-pill gold">👑 Мой</span>' : ''}
-                </div>
-            </div>
-            <button class="btn btn-primary btn-sm" type="button" onclick="event.stopPropagation(); openBusinessDetail('${jsEsc(b.id)}')">Открыть</button>
-        </div>
-    </div>`;
-}
-
-function businessApplicationPreviewHtml(a){
-    const gallery = businessMediaList(a);
-    const products = businessProductsList(a);
-    const services = Array.isArray(a.services) ? a.services : normalizeBusinessList(a.services);
-    const roles = Array.isArray(a.roles) ? a.roles : [];
-    return `
-        <div class="business-role-item" style="padding:16px;">
-            <div class="business-role-row">
-                <div style="min-width:0;flex:1;">
-                    <div style="font-weight:900;font-size:16px;">${escHtml(a.title || 'Без названия')}</div>
-                    <div class="business-mini">${escHtml(a.applicant || '—')} · ${escHtml(a.address || 'Адрес не указан')} · ${escHtml(BUSINESS_CATEGORY_LABELS[a.category || 'other'] || a.category || 'other')}</div>
-                </div>
-                <div class="business-pill gold">🕒 На проверке</div>
-            </div>
-            <div class="business-badges" style="margin-top:10px;">
-                ${a.deliveryEnabled ? '<span class="business-pill primary">🚚 Доставка</span>' : '<span class="business-pill">🏷️ Без доставки</span>'}
-                <span class="business-pill">${gallery.length ? `${gallery.length} медиа` : 'Без медиа'}</span>
-                <span class="business-pill">${products.length ? `${products.length} карточек` : 'Без карточек'}</span>
-            </div>
-            ${gallery.length ? `<div class="business-gallery" style="grid-template-columns:repeat(3,1fr);margin-top:10px;">${gallery.slice(0,6).map(src => `<img src="${escHtml(src)}" alt="">`).join('')}</div>` : ''}
-            <div style="font-size:13px;line-height:1.5;margin-top:10px;">${escHtml(a.description || 'Описание не заполнено')}</div>
-            ${services.length ? `<div class="business-badges" style="margin-top:10px;">${services.map(s=>`<span class="business-pill">${escHtml(s)}</span>`).join('')}</div>` : ''}
-            ${products.length ? `<div class="business-product-list" style="margin-top:12px;">${products.map(p => `
-                <div class="business-product-card">
-                    <img class="business-product-img" src="${escHtml(businessMediaUrl(p))}" alt="">
-                    <div class="business-product-body">
-                        <div class="business-product-head">
-                            <div>
-                                <div class="business-product-title">${escHtml(p.name || 'Без названия')}</div>
-                                <div class="business-product-price">${Number(p.price || 0)} ₽</div>
-                            </div>
-                        </div>
-                        <div class="business-product-desc">${escHtml(p.description || '')}</div>
-                    </div>
-                </div>
-            `).join('')}</div>` : ''}
-            ${roles.length ? `<div class="business-mini" style="margin-top:12px;font-weight:900;color:var(--text);">Роли</div><div style="margin-top:8px;">${roles.map(r=>`
-                <div class="business-role-item" style="margin-bottom:8px;">
-                    <div class="business-role-row">
-                        <div style="min-width:0;flex:1;">
-                            <div style="font-weight:900;">${escHtml(r.name || 'Без названия')}</div>
-                            <div class="business-mini">${escHtml(r.description || 'Без описания')}</div>
-                        </div>
-                        <div class="business-pill ${r.autoPay ? 'primary' : 'gold'}">${escHtml(r.salaryAmount || 0)}₽ · ${escHtml(r.autoPay ? businessRolePeriodLabel(r.salaryPeriod) : 'ручная')}</div>
-                    </div>
-                </div>
-            `).join('')}</div>` : ''}
-            <div style="display:flex;gap:8px;margin-top:12px;">
-                <button class="btn btn-primary btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', true)">Одобрить</button>
-                <button class="btn btn-red btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', false)">Отклонить</button>
-            </div>
-        </div>
-    `;
-}
-
-function renderBusinessAdminPreview(){
-    const el = qs('businessAdminList');
-    if(!el) return;
-    const pending = Object.values(businessAppsCache || {}).filter(a => a && (a.status || 'new') === 'new').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    el.innerHTML = pending.length ? pending.map(a => businessApplicationPreviewHtml(a)).join('') : '<div class="business-empty">Нет заявок</div>';
-}
-window.renderBizAdminPreview = renderBusinessAdminPreview;
-
-function collectBusinessProfileCards(user){
-    const cards = [];
-    const seen = new Set();
-    const addCard = (id, meta = {}) => {
-        if(!id) return;
-        const key = String(id);
-        if(seen.has(key)) return;
-        seen.add(key);
-        const b = businessCache[id] || {};
-        cards.push({
-            id: key,
-            title: meta.title || b.title || 'Без названия',
-            category: meta.category || b.category || 'other',
-            icon: meta.icon || b.icon || DEFAULT_AVATAR_URL,
-            role: meta.role || ''
-        });
-    };
-
-    if(user && user.ownedBusinesses && typeof user.ownedBusinesses === 'object'){
-        Object.entries(user.ownedBusinesses).forEach(([id, meta]) => addCard(id, meta || {}));
-    }
-    if(user && user.businessRoles && typeof user.businessRoles === 'object'){
-        Object.values(user.businessRoles).forEach(role => {
-            if(role && role.businessId){
-                addCard(role.businessId, {
-                    title: role.businessTitle || '',
-                    category: role.category || '',
-                    role: role.roleName ? `Роль: ${role.roleName}` : 'Сотрудник'
-                });
-            }
-        });
-    }
-    if(user && user.businessOwnerId){
-        addCard(user.businessOwnerId, { role: 'Владелец' });
-    }
-    return cards;
-}
-
-function renderUserBusinessesBlock(user, targetId){
-    const el = qs(targetId);
-    if(!el) return;
-    const cards = collectBusinessProfileCards(user);
-    if(!cards.length){
-        el.style.display = 'none';
-        el.innerHTML = '';
-        return;
-    }
-    el.style.display = 'block';
-    el.innerHTML = `
-        <div class="business-section-card">
-            <div class="card-title">🏢 Бизнесы</div>
-            <div class="business-grid">
-                ${cards.map(b => `
-                    <div class="business-card" style="padding:12px 14px;">
-                        <div class="business-top" style="align-items:center;">
-                            <img class="business-icon" src="${escHtml(b.icon)}" alt="">
-                            <div style="flex:1;min-width:0;">
-                                <div class="business-title" style="font-size:15px;">${escHtml(b.title)}</div>
-                                <div class="business-sub">${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'other')}${b.role ? ` · ${escHtml(b.role)}` : ''}</div>
-                            </div>
-                            <button class="btn btn-primary btn-sm" type="button" onclick="openBusinessFromProfile('${jsEsc(b.id)}')">Открыть</button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
-function currentBusinessData(){
-    return currentBusinessId ? (businessCache[currentBusinessId] || null) : null;
-}
-
-async function loadBusinessLedger(id){
-    const el = qs(`bizLedger_${id}`);
-    if(!el) return;
-    try{
-        const snap = await get(businessLedgerRef(id));
-        const ledger = snap.val() || {};
-        const arr = Object.entries(ledger).map(([key,v]) => ({...v, key})).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,8);
-        el.innerHTML = arr.length ? arr.map(tx => `
-            <div class="business-ledger-item">
-                <div class="business-role-row">
-                    <div style="min-width:0;flex:1;">
-                        <div style="font-weight:900;">${escHtml(tx.desc || tx.type || 'Операция')}</div>
-                        <div class="business-mini">${escHtml(tx.from || tx.to || '')} · ${new Date(Number(tx.ts || Date.now())).toLocaleString('ru-RU')}</div>
-                    </div>
-                    <div class="business-pill ${tx.type==='out' ? 'red' : 'primary'}">${tx.type==='out' ? '−' : '+'}${Math.abs(Number(tx.amount || tx.amt || 0))} ₽</div>
-                </div>
-            </div>
-        `).join('') : '<div class="business-empty">Пока нет операций</div>';
-    }catch(e){
-        el.innerHTML = '<div class="business-empty">Не удалось загрузить операции</div>';
-    }
-}
-
-async function writeBusinessLedger(id, entry){
-    try{ await push(businessLedgerRef(id), {...entry, ts: Date.now()}); }catch(e){}
-}
-
-async function loadBusinessOrders(id){
-    const el = qs(`bizOrders_${id}`);
-    if(!el) return;
-    try{
-        const snap = await get(businessOrdersRef(id));
-        const orders = snap.val() || {};
-        const arr = Object.entries(orders).map(([key,v]) => ({...v, key})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-        const b = currentBusinessData() || businessCache[id] || {};
-        const isOwnerView = b.owner === currentNick;
-        const visible = isOwnerView ? arr : arr.filter(o => o.buyer === currentNick);
-        if(!visible.length){
-            el.innerHTML = '<div class="business-empty">Пока нет заказов</div>';
-            return;
-        }
-        el.innerHTML = visible.map(o => {
-            const statusText = o.status === 'done' ? '✅ Завершён'
-                : o.status === 'ready' ? '📦 Готов'
-                : o.status === 'preparing' ? '👨‍🍳 В работе'
-                : '🕒 Новый';
-            const items = Array.isArray(o.items) ? o.items : [];
-            const canStart = isOwnerView && o.status === 'new';
-            const canReady = isOwnerView && o.status === 'preparing';
-            const canConfirm = !isOwnerView && o.buyer === currentNick && o.status === 'ready';
-            return `
-                <div class="business-order-card">
-                    <div class="business-order-head">
-                        <div>
-                            <div style="font-weight:900;">Заказ #${escHtml(o.id || o.key)}</div>
-                            <div class="business-order-meta">${escHtml(o.buyerName || o.buyer || '—')} · ${escHtml(o.method === 'delivery' ? 'Доставка' : 'Самовывоз')} · ${new Date(Number(o.createdAt || Date.now())).toLocaleString('ru-RU')}</div>
-                        </div>
-                        <div class="business-pill ${o.status === 'done' ? 'primary' : o.status === 'ready' ? 'gold' : 'red'}">${statusText}</div>
-                    </div>
-                    <div class="business-order-items">
-                        ${items.map(it => `<div class="business-order-item">${escHtml(it.name)} × ${Number(it.qty || 1)} · ${Number(it.price || 0)} ₽</div>`).join('')}
-                    </div>
-                    ${o.method === 'delivery' ? `<div class="business-order-meta">📍 Доставка: ${escHtml(o.address || '—')}</div>` : `<div class="business-order-meta">🏪 Самовывоз</div>`}
-                    ${o.notes ? `<div class="business-order-meta">📝 ${escHtml(o.notes)}</div>` : ''}
-                    <div class="business-cart-total"><span>Итого</span><span style="color:var(--gold);">${Number(o.total || 0)} ₽</span></div>
-                    <div class="business-order-actions">
-                        ${canStart ? `<button class="btn btn-primary btn-sm" onclick="setBusinessOrderStatus('${jsEsc(id)}','${jsEsc(o.id || o.key)}','preparing')">Взять в работу</button>` : ''}
-                        ${canReady ? `<button class="btn btn-gold btn-sm" onclick="setBusinessOrderStatus('${jsEsc(id)}','${jsEsc(o.id || o.key)}','ready')">Готово</button>` : ''}
-                        ${canConfirm ? `<button class="btn btn-primary btn-sm" onclick="confirmBusinessOrder('${jsEsc(id)}','${jsEsc(o.id || o.key)}')">Подтвердить получение</button>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }catch(e){
-        el.innerHTML = '<div class="business-empty">Не удалось загрузить заказы</div>';
-    }
-}
-
-function renderBusinessProductCards(products, bizId, isOwner=false){
-    const arr = Array.isArray(products) ? products : [];
-    if(!arr.length) return '<div class="business-empty">Пока нет карточек товаров / услуг</div>';
-    return `<div class="business-product-list">${arr.map((p, idx) => {
-        const pid = p.id || `p_${idx}`;
-        return `
-            <div class="business-product-card">
-                <img class="business-product-img" src="${escHtml(businessMediaUrl(p))}" alt="">
-                <div class="business-product-body">
-                    <div class="business-product-head">
-                        <div>
-                            <div class="business-product-title">${escHtml(p.name || 'Без названия')}</div>
-                            <div class="business-product-price">${Number(p.price || 0)} ₽</div>
-                        </div>
-                    </div>
-                    <div class="business-product-desc">${escHtml(p.description || '')}</div>
-                    <div class="business-product-actions">
-                        ${isOwner ? '' : `<button class="btn btn-primary btn-sm" onclick="addBusinessToCart('${jsEsc(bizId)}','${jsEsc(pid)}')">В корзину</button>`}
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('')}</div>`;
-}
-
-function renderBusinessCartPanel(bizId, b, products){
-    const cart = getBusinessCart(bizId);
-    const map = new Map((products || []).map(p => [String(p.id), p]));
-    const lines = cart.map(it => {
-        const prod = map.get(String(it.id));
-        if(!prod) return '';
-        return `
-            <div class="business-cart-row">
-                <div style="min-width:0;flex:1;">
-                    <div class="business-cart-name">${escHtml(prod.name || 'Без названия')}</div>
-                    <div class="business-cart-sub">${Number(prod.price || 0)} ₽ × ${Number(it.qty || 0)}</div>
-                </div>
-                <div style="display:flex;gap:6px;align-items:center;">
-                    <button class="btn btn-ghost btn-sm" style="padding:6px 10px;" onclick="decBusinessCartItem('${jsEsc(bizId)}','${jsEsc(prod.id)}')">−</button>
-                    <button class="btn btn-ghost btn-sm" style="padding:6px 10px;" onclick="incBusinessCartItem('${jsEsc(bizId)}','${jsEsc(prod.id)}')">+</button>
-                    <button class="btn btn-red btn-sm" style="padding:6px 10px;" onclick="removeBusinessCartItem('${jsEsc(bizId)}','${jsEsc(prod.id)}')">✕</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-    const total = businessCartTotal(cart, products);
-    return `
-        <div class="business-cart-box">
-            <div class="card-title" style="margin-bottom:10px;">🧺 Корзина</div>
-            ${lines || '<div class="business-empty" style="padding:8px 0;">Корзина пуста</div>'}
-            <div class="business-cart-total"><span>Сумма</span><span style="font-size:20px;color:var(--gold);">${total} ₽</span></div>
-            <div class="business-form-grid">
-                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
-                    <input type="radio" name="bizMethod_${jsEsc(bizId)}" value="pickup" checked style="width:auto;margin:0 8px 0 0;"> Заберу в заведении
-                </label>
-                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
-                    <input type="radio" name="bizMethod_${jsEsc(bizId)}" value="delivery" style="width:auto;margin:0 8px 0 0;"> Доставка
-                </label>
-                <input class="full" type="text" id="bizCustomerName_${jsEsc(bizId)}" placeholder="Имя">
-                <input class="full" type="text" id="bizCustomerAddress_${jsEsc(bizId)}" placeholder="Адрес доставки">
-                <textarea class="full" id="bizOrderNotes_${jsEsc(bizId)}" placeholder="Комментарий к заказу" style="min-height:72px;"></textarea>
-                <button class="btn btn-primary full" onclick="checkoutBusinessOrder('${jsEsc(bizId)}')">💳 Оплатить и оформить заказ</button>
-            </div>
-            <div class="business-mini" style="margin-top:8px;">При оплате деньги сразу списываются, а заказ уходит владельцу и сотрудникам.</div>
-        </div>
-    `;
-}
-
-window.addBusinessToCart = function(bizId, productId){
-    const b = businessCache[bizId];
-    if(!b) return;
-    const products = businessProductsList(b);
-    const prod = products.find(p => String(p.id) === String(productId));
-    if(!prod) return toast('❌ Товар не найден', 'red');
-    const cart = getBusinessCart(bizId);
-    const found = cart.find(it => String(it.id) === String(productId));
-    if(found) found.qty = Number(found.qty || 0) + 1;
-    else cart.push({id: prod.id, qty: 1});
-    setBusinessCart(bizId, cart);
-    toast('Добавлено в корзину', 'green');
-    if(currentBusinessId === bizId) renderBizPage();
-};
-window.incBusinessCartItem = function(bizId, productId){
-    const cart = getBusinessCart(bizId);
-    const found = cart.find(it => String(it.id) === String(productId));
-    if(found){ found.qty = Number(found.qty || 0) + 1; setBusinessCart(bizId, cart); if(currentBusinessId === bizId) renderBizPage(); }
-};
-window.decBusinessCartItem = function(bizId, productId){
-    const cart = getBusinessCart(bizId);
-    const found = cart.find(it => String(it.id) === String(productId));
-    if(found){ found.qty = Math.max(0, Number(found.qty || 0) - 1); setBusinessCart(bizId, cart); if(currentBusinessId === bizId) renderBizPage(); }
-};
-window.removeBusinessCartItem = function(bizId, productId){
-    const cart = getBusinessCart(bizId).filter(it => String(it.id) !== String(productId));
-    setBusinessCart(bizId, cart);
-    if(currentBusinessId === bizId) renderBizPage();
-};
-
-window.checkoutBusinessOrder = async function(bizId){
-    const bSnap = await get(businessRef(bizId));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    const products = businessProductsList(b);
-    const cart = getBusinessCart(bizId);
-    if(!cart.length) return toast('🧺 Корзина пуста', 'gold');
-    const total = businessCartTotal(cart, products);
-    if(total <= 0) return toast('⚠️ Неверная сумма', 'gold');
-
-    const method = (document.querySelector(`input[name="bizMethod_${bizId}"]:checked`)?.value || 'pickup');
-    const name = (qs(`bizCustomerName_${bizId}`)?.value || '').trim();
-    const address = (qs(`bizCustomerAddress_${bizId}`)?.value || '').trim();
-    const notes = (qs(`bizOrderNotes_${bizId}`)?.value || '').trim();
-
-    if(!name) return toast('⚠️ Укажите имя', 'gold');
-    if(method === 'delivery' && !address) return toast('⚠️ Укажите адрес доставки', 'gold');
-
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val() || {};
-    if((u.balance || 0) < total) return toast('❌ Недостаточно средств', 'red');
-    if(!confirm(`Оплатить заказ на ${total}₽?`)) return;
-
-    const orderId = genId();
-    const order = {
-        id: orderId,
-        businessId: bizId,
-        buyer: currentNick,
-        buyerName: name,
-        method,
-        address: method === 'delivery' ? address : '',
-        notes,
-        items: cart.map(it => {
-            const prod = products.find(p => String(p.id) === String(it.id));
-            return {
-                id: prod?.id || it.id,
-                name: prod?.name || 'Товар',
-                price: Number(prod?.price || 0),
-                qty: Number(it.qty || 1),
-                image: prod?.image || ''
-            };
-        }),
-        total,
-        status: 'new',
-        createdAt: Date.now()
-    };
-
-    const orderRefInst = push(businessOrdersRef(bizId));
-    await set(orderRefInst, order);
-
-    await update(userRef(currentNick), { balance: (u.balance || 0) - total });
-    await update(businessRef(bizId), { balance: Number(b.balance || 0) + total });
-    await writeBusinessLedger(bizId, { type:'in', amount: total, from: currentNick, desc: `Заказ #${orderId}` });
-    await logTx(currentNick, { type:'out', who: b.title || 'Бизнес', amt: total, desc: `Заказ #${orderId}` });
-
-    const mentions = new Set([b.owner, ...(Object.keys(b.staff || {}))]);
-    for(const nick of mentions){
-        if(nick) await pushNotification(nick, `🛍 Новый заказ #${orderId} в "${b.title || bizId}" на ${total}₽`, 'market');
-    }
-    businessCartState[bizId] = [];
-    toast('✅ Заказ оформлен и оплачен', 'green');
-    if(currentBusinessId === bizId) renderBizPage();
-};
-
-window.setBusinessOrderStatus = async function(bizId, orderId, status){
-    const bSnap = await get(businessRef(bizId));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    const oSnap = await get(businessOrderRef(bizId, orderId));
-    if(!oSnap.exists()) return;
-    const order = oSnap.val() || {};
-    const isStaff = b.owner === currentNick || !!(b.staff && b.staff[currentNick]);
-    if(!isStaff) return toast('❌ Нет доступа', 'red');
-    await update(businessOrderRef(bizId, orderId), { status, updatedAt: Date.now(), updatedBy: currentNick });
-    if(order.buyer) await pushNotification(order.buyer, `📦 Заказ #${orderId} получил статус: ${status}`, 'system');
-    if(currentBusinessId === bizId) renderBizPage();
-};
-
-window.confirmBusinessOrder = async function(bizId, orderId){
-    const oSnap = await get(businessOrderRef(bizId, orderId));
-    if(!oSnap.exists()) return;
-    const order = oSnap.val() || {};
-    if(order.buyer !== currentNick) return toast('❌ Это не ваш заказ', 'red');
-    await update(businessOrderRef(bizId, orderId), { status: 'done', confirmedAt: Date.now() });
-    await pushNotification(currentNick, `✅ Заказ #${orderId} подтверждён`, 'system');
-    if(currentBusinessId === bizId) renderBizPage();
-};
-
-function openBusinessDetail(id){
-    currentBusinessId = id;
-    renderBizPage();
-}
-window.openBusinessDetail = openBusinessDetail;
-
-function closeBusinessDetail(){
-    currentBusinessId = '';
-    renderBizPage();
-}
-window.closeBusinessDetail = closeBusinessDetail;
-
-function renderBizPage(){
-    renderBusinessSummary();
-
-    const all = Object.values(businessCache || {}).filter(Boolean).sort((a,b)=>(b.approvedAt||b.createdAt||0)-(a.approvedAt||a.createdAt||0));
-    const query = qs('bizSearch')?.value || '';
-    const filter = qs('bizFilter')?.value || 'all';
-    const filtered = all.filter(b => businessMatchesFilter(b, query, filter));
-
-    const listEl = qs('businessList');
-    if(listEl){
-        listEl.innerHTML = filtered.length ? filtered.map(b => businessCardHtml(b, b.owner === currentNick)).join('') : '<div class="business-empty">Ничего не найдено</div>';
-    }
-
-    const myEl = qs('myBusinessList');
-    if(myEl){
-        const mine = all.filter(b => b.owner === currentNick || (b.staff && b.staff[currentNick]));
-        myEl.innerHTML = mine.length ? mine.map(b => businessCardHtml(b, true)).join('') : '<div class="business-empty">Пока нет управляемых бизнесов</div>';
-    }
-
-    const detail = qs('businessDetailPanel');
-    if(!detail) return;
-
-    const b = currentBusinessData();
-    if(!b){
-        detail.style.display = 'none';
-        detail.innerHTML = '';
-        return;
-    }
-    detail.style.display = 'block';
-
-    const gallery = businessMediaList(b);
-    const services = Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services);
-    const products = businessProductsList(b);
-    const roles = b.roles || {};
-    const staff = b.staff || {};
-    const isOwner = b.owner === currentNick;
-    const terminal = b.activeTerminal && b.activeTerminal.status !== 'closed'
-        ? `<div class="business-terminal"><div class="business-mini">Активный терминал</div><div class="business-terminal-code">${escHtml(b.activeTerminal.code || '')}</div><div class="business-mini">Сумма: ${Number(b.activeTerminal.amount || 0)} ₽ · До ${new Date(Number(b.activeTerminal.expiresAt || 0)).toLocaleString('ru-RU')}</div></div>`
-        : `<div class="business-terminal"><div class="business-mini">Терминал не создан</div></div>`;
-    const cartSection = !isOwner ? renderBusinessCartPanel(b.id, b, products) : '';
-
-    detail.innerHTML = `
-        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">
-            <button class="btn btn-ghost btn-sm" onclick="closeBusinessDetail()">← Назад</button>
-            <div class="business-pill primary">${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'business')}</div>
-        </div>
-        <div class="business-detail-header">
-            <img class="business-icon" src="${escHtml(gallery[0] || b.icon || DEFAULT_AVATAR_URL)}" alt="" style="width:72px;height:72px;border-radius:20px;">
-            <div style="flex:1;min-width:0;">
-                <div class="business-title" style="font-size:20px;">${escHtml(b.title || 'Без названия')}</div>
-                <div class="business-sub">${escHtml(b.address || '')}</div>
-                <div class="business-badges" style="margin-top:8px;">
-                    <span class="business-pill gold">💼 Владелец: ${escHtml(b.owner || '?')}</span>
-                    ${b.deliveryEnabled ? '<span class="business-pill primary">🚚 Доставка доступна</span>' : '<span class="business-pill">🚫 Доставка выключена</span>'}
-                    <span class="business-pill">💰 Счёт: ${Number(b.balance || 0)} ₽</span>
-                </div>
-            </div>
-        </div>
-        ${gallery.length ? `<div class="business-gallery">${gallery.slice(0,4).map(src => `<img src="${escHtml(src)}" onclick="openImgViewer('${jsEsc(src)}')">`).join('')}</div>` : ''}
-        <div class="business-desc">${escHtml(b.description || 'Описание не заполнено')}</div>
-        <div class="business-badges" style="margin-top:10px;">
-            ${services.map(s => `<span class="business-pill">${escHtml(s)}</span>`).join('')}
-            ${b.hours ? `<span class="business-pill">${escHtml(b.hours)}</span>` : ''}
-            ${b.phone ? `<span class="business-pill">${escHtml(b.phone)}</span>` : ''}
-            ${b.website ? `<span class="business-pill">${escHtml(b.website)}</span>` : ''}
-        </div>
-
-        <div class="business-section-card" style="margin-top:12px;">
-            <div class="card-title">🛍️ Услуги / товары</div>
-            ${renderBusinessProductCards(products, b.id, isOwner)}
-        </div>
-
-        ${cartSection}
-
-        <div class="business-section-card" style="margin-top:12px;">
-            <div class="card-title">💳 Терминал</div>
-            ${terminal}
-            <div class="business-form-grid" style="margin-top:8px;">
-                <input type="text" id="bizPayCode_${jsEsc(b.id)}" placeholder="Код терминала">
-                <button class="btn btn-gold full" onclick="payBusinessTerminal('${jsEsc(b.id)}')">Оплатить терминалом</button>
-            </div>
-            <div class="business-mini" style="margin-top:8px;">Другой человек может оплатить через терминал, введя код на своём телефоне.</div>
-        </div>
-
-        ${isOwner ? `
-            <div class="business-section-card" style="margin-top:12px;">
-                <div class="card-title">💼 Управление бизнесом</div>
-                <div class="business-form-grid">
-                    <input type="number" id="bizMoneyAmt_${jsEsc(b.id)}" placeholder="Сумма (+внести / −снять)">
-                    <button class="btn btn-primary full" onclick="moveBusinessMoney('${jsEsc(b.id)}')">💰 Изменить счёт</button>
-                    <input type="text" id="bizEmpNick_${jsEsc(b.id)}" placeholder="Ник сотрудника">
-                    <input type="number" id="bizEmpAmt_${jsEsc(b.id)}" placeholder="Выплата сотруднику">
-                    <button class="btn btn-gold full" onclick="payBusinessEmployee('${jsEsc(b.id)}')">📤 Перевести сотруднику</button>
-                </div>
-                <div class="business-terminal">
-                    <div class="business-mini">Создать терминал</div>
-                    <input type="number" id="bizTermAmt_${jsEsc(b.id)}" placeholder="Сумма терминала">
-                    <button class="btn btn-primary" onclick="createBusinessTerminal('${jsEsc(b.id)}')" style="margin-top:8px;">Создать код</button>
-                </div>
-                <div class="business-terminal">
-                    <div class="business-mini">Авто-зарплата и роли</div>
-                    <div class="business-form-grid" style="margin-top:8px;">
-                        <input type="text" id="bizRoleName_${jsEsc(b.id)}" placeholder="Название роли">
-                        <input type="number" id="bizRoleAmt_${jsEsc(b.id)}" placeholder="Сумма зарплаты">
-                        <select id="bizRolePeriod_${jsEsc(b.id)}">
-                            <option value="contract">По договору</option>
-                            <option value="daily">В день</option>
-                            <option value="weekly">В неделю</option>
-                            <option value="monthly">В месяц</option>
-                        </select>
-                        <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
-                            <input type="checkbox" id="bizRoleAuto_${jsEsc(b.id)}" style="width:auto;margin:0 8px 0 0;"> Автоматическая зарплата
-                        </label>
-                        <textarea class="full" id="bizRoleDesc_${jsEsc(b.id)}" placeholder="Описание роли" style="min-height:72px;"></textarea>
-                        <button class="btn btn-primary full" onclick="createBusinessRole('${jsEsc(b.id)}')">➕ Добавить роль</button>
-                    </div>
-                    <div style="margin-top:10px;">
-                        ${Object.entries(roles).length ? Object.entries(roles).map(([rid,r]) => `
-                            <div class="business-role-item">
-                                <div class="business-role-row">
-                                    <div style="flex:1;min-width:0;">
-                                        <div style="font-weight:900;">${escHtml(r.name || 'Без названия')}</div>
-                                        <div class="business-mini">${escHtml(r.description || 'Без описания')}</div>
-                                    </div>
-                                    <div class="business-pill ${r.autoPay ? 'primary' : 'gold'}">${escHtml(r.salaryAmount || 0)}₽ · ${escHtml(r.autoPay ? businessRolePeriodLabel(r.salaryPeriod) : 'ручная')}</div>
-                                </div>
-                                <div class="business-mini" style="margin-top:8px;">Назначить сотрудника</div>
-                                <div style="display:flex;gap:8px;margin-top:8px;">
-                                    <input type="text" id="bizAssignNick_${jsEsc(b.id)}_${jsEsc(rid)}" placeholder="Ник" style="margin:0;">
-                                    <button class="btn btn-ghost btn-sm" onclick="assignBusinessRole('${jsEsc(b.id)}','${jsEsc(rid)}')">Назначить</button>
-                                </div>
-                                <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end;">
-                                    <button class="btn btn-red btn-sm" onclick="deleteBusinessRole('${jsEsc(b.id)}','${jsEsc(rid)}')">Удалить</button>
-                                </div>
-                            </div>
-                        `).join('') : '<div class="business-empty">Пока нет ролей</div>'}
-                    </div>
-                </div>
-                <div class="business-terminal">
-                    <div class="business-mini">Сотрудники</div>
-                    <div style="margin-top:8px;">
-                        ${Object.entries(staff).length ? Object.entries(staff).map(([nick,info]) => `
-                            <div class="business-staff-item">
-                                <div class="business-staff-row">
-                                    <div style="min-width:0;flex:1;">
-                                        <div style="font-weight:900;">${escHtml(nick)}</div>
-                                        <div class="business-mini">${escHtml(info.roleName || 'Сотрудник')}</div>
-                                    </div>
-                                    <button class="btn btn-ghost btn-sm" onclick="removeBusinessStaff('${jsEsc(b.id)}','${jsEsc(nick)}')">Убрать</button>
-                                </div>
-                            </div>
-                        `).join('') : '<div class="business-empty">Пока нет сотрудников</div>'}
-                    </div>
-                </div>
-            </div>
-        ` : ''}
-
-        <div class="business-section-card" style="margin-top:12px;">
-            <div class="card-title">📦 Заказы</div>
-            <div id="bizOrders_${jsEsc(b.id)}">${loadingHtml('Загрузка заказов...')}</div>
-        </div>
-
-        <div class="business-mini" style="margin-top:8px;">🧾 Последние операции</div>
-        <div id="bizLedger_${jsEsc(b.id)}" style="margin-top:8px;">${loadingHtml('Загрузка операций...')}</div>
-    `;
-    loadBusinessLedger(b.id);
-    loadBusinessOrders(b.id);
-    maybeRunBusinessAutoPayroll(b);
-}
-window.renderBizPage = renderBizPage;
-window.submitBusinessApplication = async function(){
-    try{
-        const title = (qs('bizAppName')?.value || '').trim();
-        const category = qs('bizAppCategory')?.value || 'other';
-        const description = (qs('bizAppDesc')?.value || '').trim();
-
-        const productDrafts = businessAppDraft.products.map((item, idx) => ({
-            name: (qs(`bizDraftProductName_${idx}`)?.value || '').trim(),
-            description: (qs(`bizDraftProductDesc_${idx}`)?.value || '').trim(),
-            price: parseInt(qs(`bizDraftProductPrice_${idx}`)?.value) || 0,
-            imageFile: item.imageFile || null,
-            imagePreview: item.imagePreview || ''
-        })).filter(p => p.name || p.description || p.price || p.imageFile);
-
-        if(!title) return toast('⚠️ Укажите название бизнеса', 'gold');
-        if(!description) return toast('⚠️ Укажите описание бизнеса', 'gold');
-        if(!businessAppDraft.iconFile) return toast('⚠️ Выберите иконку из галереи', 'gold');
-        if(!productDrafts.length) return toast('⚠️ Добавьте хотя бы одну карточку товара / услуги', 'gold');
-
-        for(const p of productDrafts){
-            if(!p.name) return toast('⚠️ У карточки должно быть название', 'gold');
-            if(p.price < 0) return toast('⚠️ Цена не может быть отрицательной', 'gold');
-        }
-
-        const snap = await get(businessAppsRef());
-        const apps = snap.val() || {};
-        const already = Object.values(apps).some(a => a && a.applicant === currentNick && (a.status || 'new') === 'new');
-        if(already) return toast('⚠️ У вас уже есть активная заявка', 'gold');
-
-        const uploadIcon = async () => {
-            if(businessAppDraft.iconFile) return await uploadBlobToStorage(businessAppDraft.iconFile, 'businesses/icon');
-            return '';
-        };
-
-        const uploadGallery = async () => {
-            const urls = [];
-            for(const file of businessAppDraft.galleryFiles){
-                const url = await uploadBlobToStorage(file, 'businesses/gallery');
-                urls.push(url);
-            }
-            return urls;
-        };
-
-        const uploadProducts = async () => {
-            const out = [];
-            for(const item of productDrafts){
-                const image = item.imageFile ? await uploadBlobToStorage(item.imageFile, 'businesses/products') : '';
-                out.push({
-                    id: genId(),
-                    name: item.name,
-                    description: item.description,
-                    price: Number(item.price || 0),
-                    image: image || item.imagePreview || ''
-                });
-            }
-            return out;
-        };
-
-        const [iconUrl, galleryUrls, products] = await Promise.all([uploadIcon(), uploadGallery(), uploadProducts()]);
-
-        const id = genId();
-        await set(businessAppRef(id), {
-            id,
-            applicant: currentNick,
-            title,
-            category,
-            icon: iconUrl || DEFAULT_AVATAR_URL,
-            gallery: galleryUrls,
-            products,
-            description,
-            deliveryEnabled: false,
-            roles: [],
-            status:'new',
-            createdAt: Date.now()
-        });
-
-        await pushNotification(currentNick, `🏢 Заявка на бизнес "${title}" отправлена в мэрию`, 'system');
-        toast('🏢 Заявка отправлена', 'green');
-        ['bizAppName','bizAppDesc'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
-        const cat=qs('bizAppCategory'); if(cat) cat.value='other';
-        clearBusinessIconDraft();
-        businessAppDraft.galleryFiles = [];
-        clearBusinessDraftPreviews();
-        businessAppDraft.products = [];
-        renderBusinessDraftGalleryPreview();
-        renderBusinessDraftProducts();
-        addBusinessDraftProduct();
-        renderBizPage();
-    }catch(err){
-        console.error('submitBusinessApplication failed', err);
-        toast('❌ Не удалось отправить заявку', 'red');
-    }
-};
-
-window.reviewBusinessApplication = async function(id, ok){
-
-    const snap = await get(businessAppRef(id));
-    if(!snap.exists()) return;
-    const app = snap.val() || {};
-    if(!ok){
-        await update(businessAppRef(id), { status:'rejected', reviewedAt: Date.now(), reviewedBy: currentNick });
-        await pushNotification(app.applicant, `❌ Заявка на бизнес "${app.title || id}" отклонена`, 'system');
-        toast('Заявка отклонена', 'red');
-        renderBusinessAdminPreview();
-        return;
-    }
-    const rolesObj = {};
-    (app.roles || []).forEach((r, idx) => {
-        const rid = r.id || genId();
-        rolesObj[rid] = {
-            id: rid,
-            order: Number.isFinite(r.order) ? r.order : idx,
-            name: r.name || 'Без названия',
-            description: r.description || '',
-            salaryAmount: Number(r.salaryAmount || 0),
-            salaryPeriod: r.salaryPeriod || 'contract',
-            autoPay: !!r.autoPay
-        };
-    });
-
-    const business = {
-        id,
-        title: app.title || 'Без названия',
-        category: app.category || 'other',
-        icon: app.icon || DEFAULT_AVATAR_URL,
-        gallery: app.gallery || [],
-        address: app.address || '',
-        hours: app.hours || '',
-        phone: app.phone || '',
-        website: app.website || '',
-        services: app.services || [],
-        products: app.products || [],
-        description: app.description || '',
-        deliveryEnabled: !!app.deliveryEnabled,
-        applicant: app.applicant,
-        owner: app.applicant,
-        balance: 0,
-        staff: {},
-        roles: rolesObj,
-        activeTerminal: null,
-        createdAt: app.createdAt || Date.now(),
-        approvedAt: Date.now()
-    };
-    await set(businessRef(id), business);
-    await update(userRef(app.applicant), {
-        job: 'Бизнесмен',
-        businessOwnerId: id,
-        [`ownedBusinesses/${id}`]: { title: business.title, category: business.category, createdAt: Date.now() }
-    });
-    await update(businessAppRef(id), { status:'approved', reviewedAt: Date.now(), reviewedBy: currentNick, businessId: id });
-    await pushNotification(app.applicant, `✅ Бизнес "${business.title}" одобрен! Теперь вы — Бизнесмен.`, 'system');
-    toast(`✅ "${business.title}" одобрен`, 'green');
-    renderBusinessAdminPreview();
-};
-
-window.createBusinessRole = async function(id){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
-    const name = qs(`bizRoleName_${id}`).value.trim();
-    const desc = qs(`bizRoleDesc_${id}`).value.trim();
-    const salaryAmount = parseInt(qs(`bizRoleAmt_${id}`).value) || 0;
-    const salaryPeriod = qs(`bizRolePeriod_${id}`).value || 'contract';
-    const autoPay = !!qs(`bizRoleAuto_${id}`).checked;
-    if(!name) return toast('⚠️ Укажите название роли', 'gold');
-    if(autoPay && salaryAmount <= 0) return toast('⚠️ Укажите сумму автоматической зарплаты', 'gold');
-    const rid = genId();
-    await update(businessRef(id), { [`roles/${rid}`]: { id: rid, name, description: desc, salaryAmount, salaryPeriod, autoPay } });
-    toast('Роль добавлена', 'green');
-    renderBizPage();
-};
-
-window.assignBusinessRole = async function(id, rid){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
-    const nick = qs(`bizAssignNick_${id}_${rid}`).value.trim();
-    if(!nick) return toast('⚠️ Укажите ник', 'gold');
-    const role = (b.roles || {})[rid];
-    if(!role) return toast('⚠️ Роль не найдена', 'gold');
-    const uSnap = await get(userRef(nick));
-    if(!uSnap.exists()) return toast('❌ Пользователь не найден', 'red');
-    await update(businessRef(id), { [`staff/${nick}`]: { nick, roleId: rid, roleName: role.name, joinedAt: Date.now() } });
-    await update(userRef(nick), { job: 'Бизнесмен', [`businessRoles/${id}`]: { businessId: id, businessTitle: b.title || '', roleId: rid, roleName: role.name } });
-    await pushNotification(nick, `🏢 Вас назначили на роль "${role.name}" в бизнесе "${b.title || id}"`, 'system');
-    toast('Сотрудник назначен', 'green');
-    renderBizPage();
-};
-
-window.deleteBusinessRole = async function(id, rid){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
-    if(!confirm('Удалить роль?')) return;
-    const patch = { [`roles/${rid}`]: null };
-    Object.entries(b.staff || {}).forEach(([nick,info]) => { if(info && info.roleId === rid) patch[`staff/${nick}`] = null; });
-    await update(businessRef(id), patch);
-    toast('Роль удалена', 'gold');
-    renderBizPage();
-};
-
-window.removeBusinessStaff = async function(id, nick){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
-    if(!confirm(`Убрать ${nick} из сотрудников?`)) return;
-    await update(businessRef(id), { [`staff/${nick}`]: null });
-    await update(userRef(nick), { [`businessRoles/${id}`]: null });
-    toast('Сотрудник удалён', 'gold');
-    renderBizPage();
-};
-
-window.moveBusinessMoney = async function(id){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
-    const amt = parseInt(qs(`bizMoneyAmt_${id}`).value) || 0;
-    if(amt === 0) return toast('⚠️ Укажите сумму', 'gold');
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val() || {};
-    const currentBalance = Number(b.balance || 0);
-    const ownerBalance = Number(u.balance || 0);
-    if(amt > 0 && ownerBalance < amt) return toast('❌ Недостаточно личных средств', 'red');
-    if(amt < 0 && currentBalance < Math.abs(amt)) return toast('❌ Недостаточно средств бизнеса', 'red');
-    await update(userRef(currentNick), { balance: ownerBalance - amt });
-    await update(businessRef(id), { balance: currentBalance + amt });
-    await writeBusinessLedger(id, { type: amt > 0 ? 'in' : 'out', amount: Math.abs(amt), from: amt > 0 ? currentNick : 'business', desc: amt > 0 ? 'Пополнение владельцем' : 'Снятие владельцем' });
-    await logTx(currentNick, { type: amt > 0 ? 'out' : 'in', who: b.title || 'Бизнес', amt: Math.abs(amt), desc: amt > 0 ? `Пополнение бизнеса ${b.title || id}` : `Снятие из бизнеса ${b.title || id}` });
-    toast('Баланс бизнеса обновлён', 'green');
-    renderBizPage();
-};
-
-window.payBusinessEmployee = async function(id){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
-    const nick = qs(`bizEmpNick_${id}`).value.trim();
-    const amt = parseInt(qs(`bizEmpAmt_${id}`).value) || 0;
-    if(!nick || amt <= 0) return toast('⚠️ Укажите ник и сумму', 'gold');
-    const uSnap = await get(userRef(nick));
-    if(!uSnap.exists()) return toast('❌ Пользователь не найден', 'red');
-    if((b.balance || 0) < amt) return toast('❌ Недостаточно средств бизнеса', 'red');
-    const u = uSnap.val() || {};
-    await update(businessRef(id), { balance: (b.balance || 0) - amt });
-    await update(userRef(nick), { balance: (u.balance || 0) + amt });
-    await writeBusinessLedger(id, { type:'out', amount: amt, to: nick, desc: `Выплата сотруднику ${nick}` });
-    await logTx(nick, { type:'in', who: b.title || 'Бизнес', amt, desc: `Выплата от ${b.title || id}` });
-    await pushNotification(nick, `💰 Выплата от бизнеса "${b.title || id}": ${amt}₽`, 'money');
-    toast('Перевод сотруднику выполнен', 'green');
-    renderBizPage();
-};
-
-window.createBusinessTerminal = async function(id){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    if(b.owner !== currentNick) return toast('❌ Только владелец', 'red');
-    const amt = parseInt(qs(`bizTermAmt_${id}`).value) || 0;
-    if(amt <= 0) return toast('⚠️ Укажите сумму терминала', 'gold');
-    const code = `BUS-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    const term = { code, amount: amt, createdAt: Date.now(), expiresAt: Date.now() + 10 * 60 * 1000, by: currentNick, status: 'open' };
-    await update(businessRef(id), { activeTerminal: term });
-    await writeBusinessLedger(id, { type:'in', amount: amt, from: currentNick, desc: `Создан терминал ${code}` });
-    toast(`Терминал создан: ${code}`, 'green');
-    renderBizPage();
-};
-
-window.buyFromBusiness = async function(id){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    const amt = parseInt(qs(`bizBuyAmt_${id}`).value) || 0;
-    const desc = qs(`bizBuyDesc_${id}`).value.trim() || 'Покупка';
-    if(amt <= 0) return toast('⚠️ Укажите сумму', 'gold');
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val() || {};
-    if((u.balance || 0) < amt) return toast('❌ Недостаточно средств', 'red');
-    if(!b.deliveryEnabled) return toast('🚫 Владелец ещё не включил доставку', 'red');
-    await update(userRef(currentNick), { balance: (u.balance || 0) - amt });
-    await update(businessRef(id), { balance: (b.balance || 0) + amt });
-    await writeBusinessLedger(id, { type:'in', amount: amt, from: currentNick, desc });
-    await logTx(currentNick, { type:'out', who: b.title || 'Бизнес', amt, desc: `${desc} · ${b.title || id}` });
-    await pushNotification(b.owner, `🛍 Новый заказ в "${b.title || id}" на ${amt}₽`, 'market');
-    toast('Заказ оплачен', 'green');
-    renderBizPage();
-};
-
-window.payBusinessTerminal = async function(id){
-    const bSnap = await get(businessRef(id));
-    if(!bSnap.exists()) return;
-    const b = bSnap.val() || {};
-    const code = (qs(`bizPayCode_${id}`)?.value || '').trim().toUpperCase();
-    const terminal = b.activeTerminal || {};
-    if(!terminal.code) return toast('⚠️ Терминал не создан', 'gold');
-    if(terminal.status !== 'open') return toast('⚠️ Терминал закрыт', 'gold');
-    if(code !== String(terminal.code || '').toUpperCase()) return toast('❌ Неверный код терминала', 'red');
-    if(Number(terminal.expiresAt || 0) < Date.now()) return toast('⌛ Терминал уже истёк', 'red');
-    const amt = Number(terminal.amount || 0);
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val() || {};
-    if((u.balance || 0) < amt) return toast('❌ Недостаточно средств', 'red');
-    await update(userRef(currentNick), { balance: (u.balance || 0) - amt });
-    await update(businessRef(id), { balance: (b.balance || 0) + amt, activeTerminal: { ...terminal, status: 'closed', closedAt: Date.now(), paidBy: currentNick } });
-    await writeBusinessLedger(id, { type:'in', amount: amt, from: currentNick, desc: `Терминал ${terminal.code}` });
-    await logTx(currentNick, { type:'out', who: b.title || 'Бизнес', amt, desc: `Оплата терминалом ${terminal.code}` });
-    await pushNotification(b.owner, `💳 Оплата через терминал: ${amt}₽ в "${b.title || id}"`, 'money');
-    toast('Оплата прошла', 'green');
-    renderBizPage();
-};
-
-async function maybeRunBusinessAutoPayroll(b){
-    try{
-        if(!b || b.owner !== currentNick) return;
-        const roles = b.roles || {};
-        const staff = b.staff || {};
-        let changes = {};
-        let any = false;
-        for(const [nick, info] of Object.entries(staff)){
-            const role = roles[info.roleId];
-            if(!role || !role.autoPay) continue;
-            const period = BUSINESS_AUTO_PERIOD[role.salaryPeriod || 'contract'];
-            if(!isFinite(period)) continue;
-            const last = Number((b.autoPaidAt && b.autoPaidAt[info.roleId] && b.autoPaidAt[info.roleId][nick]) || 0);
-            if(Date.now() - last < period) continue;
-            const amt = Number(role.salaryAmount || 0);
-            if(amt <= 0 || (b.balance || 0) < amt) continue;
-            const uSnap = await get(userRef(nick));
-            if(!uSnap.exists()) continue;
-            const u = uSnap.val() || {};
-            await update(userRef(nick), { balance: (u.balance || 0) + amt });
-            await logTx(nick, { type:'in', who: b.title || 'Бизнес', amt, desc: `Авто-зарплата: ${role.name || 'роль'}` });
-            await writeBusinessLedger(id, { type:'out', amount: amt, to: nick, desc: `Авто-зарплата ${role.name || 'роль'}` });
-            changes[`autoPaidAt/${info.roleId}/${nick}`] = Date.now();
-            b.balance = (b.balance || 0) - amt;
-            any = true;
-            await pushNotification(nick, `💰 Авто-зарплата от "${b.title || b.id}": ${amt}₽`, 'money');
-        }
-        if(any){
-            changes.balance = b.balance || 0;
-            await update(businessRef(b.id), changes);
-        }
-    }catch(e){}
-}
-
-
-window.addEventListener('load', () => {
-    const btn = qs('bizSubmitBtn');
-    if(btn && !btn.dataset.boundBizSubmit){
-        btn.dataset.boundBizSubmit = '1';
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if(typeof window.submitBusinessApplication === 'function'){
-                window.submitBusinessApplication();
-            } else {
-                toast('❌ Функция подачи заявки ещё загружается', 'red');
-            }
-        });
-    }
-});
-
 </script>
 
 <script>
