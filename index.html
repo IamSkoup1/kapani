@@ -176,6 +176,28 @@ select option{background:#1a2332;}
 .business-draft-role-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:8px;}
 .business-draft-role-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .business-draft-role-grid .full{grid-column:1/-1;}
+.business-product-list{display:grid;gap:10px;}
+.business-product-card{display:flex;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;align-items:flex-start;}
+.business-product-img{width:72px;height:72px;border-radius:14px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);background:var(--surface);}
+.business-product-body{flex:1;min-width:0;}
+.business-product-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.business-product-title{font-weight:900;font-size:15px;line-height:1.2;}
+.business-product-price{font-weight:900;color:var(--gold);margin-top:4px;}
+.business-product-desc{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.45;}
+.business-product-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.business-cart-box{background:linear-gradient(145deg,rgba(251,191,36,.08),rgba(34,211,165,.05));border:1px solid rgba(251,191,36,.2);border-radius:var(--r);padding:14px;margin-top:12px;}
+.business-cart-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.business-cart-row:last-child{border-bottom:none;}
+.business-cart-name{font-weight:800;font-size:13px;}
+.business-cart-sub{font-size:11px;color:var(--muted);}
+.business-cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0 6px;font-weight:900;}
+.business-order-list{display:grid;gap:10px;}
+.business-order-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
+.business-order-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+.business-order-meta{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45;}
+.business-order-items{margin-top:8px;display:grid;gap:6px;}
+.business-order-item{font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+.business-order-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
 
 #taxiMap{width:100%;height:320px;border-radius:var(--r-sm);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
 .taxi-point-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
@@ -1456,6 +1478,12 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <input type="text" id="bizAppPhone" placeholder="Контакт / телефон" maxlength="40">
                 <input type="text" id="bizAppWebsite" placeholder="Сайт / соцсети" maxlength="120">
                 <textarea class="full" id="bizAppServices" placeholder="Услуги через запятую" style="min-height:72px;"></textarea>
+                <div class="full business-section-card" style="margin:0;padding:14px;">
+                    <div class="card-title" style="margin-bottom:10px;">🛍️ Услуги / товары</div>
+                    <div class="business-mini">Добавляйте карточки по одной: название, картинка, описание и цена.</div>
+                    <div id="bizDraftProductsList" class="business-product-list" style="margin-top:10px;"></div>
+                    <button type="button" class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="addBusinessDraftProduct()">➕ Добавить карточку</button>
+                </div>
                 <textarea class="full" id="bizAppDesc" placeholder="Описание бизнеса" style="min-height:110px;"></textarea>
 
                 <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
@@ -2105,6 +2133,8 @@ const businessRef = (id) => ref(db, `businesses/${id}`);
 const businessAppsRef = () => ref(db, 'businessApplications');
 const businessAppRef = (id) => ref(db, `businessApplications/${id}`);
 const businessLedgerRef = (id) => ref(db, `businessLedger/${id}`);
+const businessOrdersRef = (id) => ref(db, `businessOrders/${id}`);
+const businessOrderRef = (bid, oid) => ref(db, `businessOrders/${bid}/${oid}`);
 const txLogRef  = (nick) => ref(db, `users/${nick}/txlog`);
 const janitorSubsRef = () => ref(db, 'janitorSubmissions');
 const janitorSubRef = (id) => ref(db, `janitorSubmissions/${id}`);
@@ -2269,6 +2299,7 @@ function attachListeners() {
         if(currentNick===ADMIN) renderAdminUserSelect(users);
         myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
         updateHeader_balance(users[currentNick]);
+        if(curPage==='subscription') renderSubscription();
         if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
         if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
         if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
@@ -6670,6 +6701,26 @@ function businessMediaList(b){
     return list;
 }
 
+function normalizeBusinessProducts(v){
+    if(!Array.isArray(v)) return [];
+    return v.map((p, idx) => ({
+        id: p.id || `prod_${idx}_${Math.random().toString(36).slice(2, 7)}`,
+        name: p.name || p.title || 'Без названия',
+        description: p.description || '',
+        price: Number(p.price || p.amount || 0),
+        image: p.image || p.photo || p.icon || '',
+        type: p.type || 'product'
+    })).filter(p => p.name || p.description || p.price || p.image);
+}
+
+function businessProductsList(b){
+    return normalizeBusinessProducts(b?.products || []);
+}
+
+function businessMediaUrl(item){
+    return item?.image || item?.url || item?.icon || DEFAULT_AVATAR_URL;
+}
+
 const BUSINESS_CATEGORY_LABELS = {
     shop: '🛒 Магазин',
     service: '🤝 Услуги',
@@ -6683,8 +6734,28 @@ let businessAppDraft = {
     iconPreview: '',
     galleryFiles: [],
     galleryPreviews: [],
+    products: [],
     roles: []
 };
+
+let businessCartState = {};
+
+function getBusinessCart(bizId){
+    if(!businessCartState[bizId]) businessCartState[bizId] = [];
+    return businessCartState[bizId];
+}
+
+function setBusinessCart(bizId, cart){
+    businessCartState[bizId] = cart.filter(it => it && Number(it.qty || 0) > 0);
+}
+
+function businessCartTotal(cart, products){
+    const map = new Map((products || []).map(p => [p.id, p]));
+    return (cart || []).reduce((sum, it) => {
+        const prod = map.get(it.id);
+        return sum + (Number(prod?.price || 0) * Number(it.qty || 0));
+    }, 0);
+}
 
 function businessRolePeriodLabel(v){
     const map = { daily:'в день', weekly:'в неделю', monthly:'в месяц', contract:'по договору' };
@@ -6694,6 +6765,9 @@ function businessRolePeriodLabel(v){
 function clearBusinessDraftPreviews(){
     businessAppDraft.galleryPreviews.forEach(u => { try{ URL.revokeObjectURL(u); }catch(e){} });
     businessAppDraft.galleryPreviews = [];
+    (businessAppDraft.products || []).forEach(p => {
+        if(p && p.imagePreview){ try{ URL.revokeObjectURL(p.imagePreview); }catch(e){} }
+    });
 }
 
 function clearBusinessIconDraft(){
@@ -6770,6 +6844,67 @@ window.handleBusinessGalleryPick = async function(e){
     renderBusinessDraftGalleryPreview();
 };
 
+function addBusinessDraftProduct(product = {}){
+    businessAppDraft.products.push({
+        name: product.name || '',
+        description: product.description || '',
+        price: product.price ?? '',
+        imageFile: product.imageFile || null,
+        imagePreview: product.imagePreview || '',
+    });
+    renderBusinessDraftProducts();
+}
+window.addBusinessDraftProduct = addBusinessDraftProduct;
+
+function removeBusinessDraftProduct(idx){
+    const item = businessAppDraft.products[idx];
+    if(item && item.imagePreview){ try{ URL.revokeObjectURL(item.imagePreview); }catch(e){} }
+    businessAppDraft.products.splice(idx,1);
+    renderBusinessDraftProducts();
+}
+window.removeBusinessDraftProduct = removeBusinessDraftProduct;
+
+window.handleBusinessDraftProductPick = function(e, idx){
+    const file = (e.target.files || [])[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')) return toast('❌ Картинка товара должна быть изображением','red');
+    if(file.size > 10 * 1024 * 1024) return toast('❌ Картинка слишком большая (макс. 10 МБ)','red');
+    const item = businessAppDraft.products[idx];
+    if(!item) return;
+    if(item.imagePreview){ try{ URL.revokeObjectURL(item.imagePreview); }catch(err){} }
+    item.imageFile = file;
+    item.imagePreview = URL.createObjectURL(file);
+    renderBusinessDraftProducts();
+};
+
+function renderBusinessDraftProducts(){
+    const wrap = qs('bizDraftProductsList');
+    if(!wrap) return;
+    if(!businessAppDraft.products.length){
+        wrap.innerHTML = '<div class="business-empty">Пока нет товаров / услуг</div>';
+        return;
+    }
+    wrap.innerHTML = businessAppDraft.products.map((item, idx) => `
+        <div class="business-draft-role">
+            <div class="business-draft-role-head">
+                <div style="font-weight:900;">Карточка ${idx + 1}</div>
+                <button type="button" class="btn btn-red btn-sm" style="width:auto;padding:8px 12px;" onclick="removeBusinessDraftProduct(${idx})">Удалить</button>
+            </div>
+            <div class="business-draft-role-grid">
+                <input class="full" type="text" id="bizDraftProductName_${idx}" placeholder="Название товара / услуги" value="${escHtml(item.name || '')}">
+                <input type="number" id="bizDraftProductPrice_${idx}" placeholder="Цена, ₽" value="${escHtml(String(item.price ?? ''))}">
+                <textarea class="full" id="bizDraftProductDesc_${idx}" placeholder="Описание" style="min-height:64px;">${escHtml(item.description || '')}</textarea>
+                <label class="file-upload-btn full" for="bizDraftProductFile_${idx}">🖼 Выбрать картинку</label>
+                <input type="file" id="bizDraftProductFile_${idx}" accept="image/*" onchange="handleBusinessDraftProductPick(event, ${idx})">
+                ${item.imagePreview ? `<div class="business-upload-preview single full"><div class="business-upload-thumb" style="height:150px;"><img src="${escHtml(item.imagePreview)}" alt=""></div></div>` : `<div class="business-empty full">Картинка не выбрана</div>`}
+            </div>
+        </div>
+    `).join('');
+}
+window.renderBusinessDraftProducts = renderBusinessDraftProducts;
+
+if (document.getElementById('bizDraftProductsList') && !businessAppDraft.products.length) { addBusinessDraftProduct(); }
+
 function addBusinessDraftRole(role = {}){
     businessAppDraft.roles.push({
         name: role.name || '',
@@ -6783,6 +6918,7 @@ function addBusinessDraftRole(role = {}){
 window.addBusinessDraftRole = addBusinessDraftRole;
 
 if (document.getElementById('bizDraftRolesList') && !businessAppDraft.roles.length) { addBusinessDraftRole(); }
+if (document.getElementById('bizDraftProductsList') && !businessAppDraft.products.length) { addBusinessDraftProduct(); }
 
 function removeBusinessDraftRole(idx){
     businessAppDraft.roles.splice(idx,1);
@@ -6823,10 +6959,12 @@ function renderBusinessDraftRoles(){
 
 function businessMatchesFilter(b, query, filter){
     const q = (query || '').trim().toLowerCase();
+    const products = businessProductsList(b).map(p => [p.name, p.description].join(' ')).join(' ');
     const text = [
         b.title, b.address, b.description,
         ...(Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services)),
-        b.category, b.hours, b.phone, b.website
+        b.category, b.hours, b.phone, b.website,
+        products
     ].join(' ').toLowerCase();
     if(filter !== 'all' && String(b.category || 'other') !== filter) return false;
     if(q && !text.includes(q)) return false;
@@ -6852,49 +6990,85 @@ function renderBusinessSummary(){
 }
 
 function businessCardHtml(b, isOwner=false){
-    const services = Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services);
     const gallery = businessMediaList(b);
-    const delivery = b.deliveryEnabled ? '<span class="business-pill primary">🚚 Доставка</span>' : '<span class="business-pill">🏷️ Без доставки</span>';
-    return `<div class="business-card" onclick="openBusinessDetail('${jsEsc(b.id)}')">
+    const products = businessProductsList(b);
+    return `<div class="business-card">
         <div class="business-top">
             <img class="business-icon" src="${escHtml(gallery[0] || b.icon || DEFAULT_AVATAR_URL)}" alt="">
             <div style="flex:1;min-width:0;">
                 <div class="business-title">${escHtml(b.title || 'Без названия')}</div>
-                <div class="business-sub">${escHtml(b.address || 'Адрес не указан')} · ${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'other')}</div>
+                <div class="business-sub">${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'other')} · ${escHtml(b.address || 'Адрес не указан')}</div>
                 <div class="business-badges">
-                    ${delivery}
-                    <span class="business-pill">${gallery.length ? `${gallery.length} фото` : 'Без фото'}</span>
+                    <span class="business-pill ${b.deliveryEnabled ? 'primary' : ''}">${b.deliveryEnabled ? '🚚 Доставка' : '🏷️ Без доставки'}</span>
+                    <span class="business-pill">${products.length ? `${products.length} карточек` : 'Без товаров'}</span>
                     ${isOwner ? '<span class="business-pill gold">👑 Мой</span>' : ''}
                 </div>
             </div>
-        </div>
-        <div class="business-desc">${escHtml((b.description || '').slice(0, 180) || 'Описание не заполнено')}</div>
-        <div class="business-badges">
-            ${(services.slice(0,4).map(s=>`<span class="business-pill">${escHtml(s)}</span>`).join(''))}
+            <button class="btn btn-primary btn-sm" type="button" onclick="event.stopPropagation(); openBusinessDetail('${jsEsc(b.id)}')">Открыть</button>
         </div>
     </div>`;
+}
+
+function businessApplicationPreviewHtml(a){
+    const gallery = businessMediaList(a);
+    const products = businessProductsList(a);
+    const services = Array.isArray(a.services) ? a.services : normalizeBusinessList(a.services);
+    const roles = Array.isArray(a.roles) ? a.roles : [];
+    return `
+        <div class="business-role-item" style="padding:16px;">
+            <div class="business-role-row">
+                <div style="min-width:0;flex:1;">
+                    <div style="font-weight:900;font-size:16px;">${escHtml(a.title || 'Без названия')}</div>
+                    <div class="business-mini">${escHtml(a.applicant || '—')} · ${escHtml(a.address || 'Адрес не указан')} · ${escHtml(BUSINESS_CATEGORY_LABELS[a.category || 'other'] || a.category || 'other')}</div>
+                </div>
+                <div class="business-pill gold">🕒 На проверке</div>
+            </div>
+            <div class="business-badges" style="margin-top:10px;">
+                ${a.deliveryEnabled ? '<span class="business-pill primary">🚚 Доставка</span>' : '<span class="business-pill">🏷️ Без доставки</span>'}
+                <span class="business-pill">${gallery.length ? `${gallery.length} медиа` : 'Без медиа'}</span>
+                <span class="business-pill">${products.length ? `${products.length} карточек` : 'Без карточек'}</span>
+            </div>
+            ${gallery.length ? `<div class="business-gallery" style="grid-template-columns:repeat(3,1fr);margin-top:10px;">${gallery.slice(0,6).map(src => `<img src="${escHtml(src)}" alt="">`).join('')}</div>` : ''}
+            <div style="font-size:13px;line-height:1.5;margin-top:10px;">${escHtml(a.description || 'Описание не заполнено')}</div>
+            ${services.length ? `<div class="business-badges" style="margin-top:10px;">${services.map(s=>`<span class="business-pill">${escHtml(s)}</span>`).join('')}</div>` : ''}
+            ${products.length ? `<div class="business-product-list" style="margin-top:12px;">${products.map(p => `
+                <div class="business-product-card">
+                    <img class="business-product-img" src="${escHtml(businessMediaUrl(p))}" alt="">
+                    <div class="business-product-body">
+                        <div class="business-product-head">
+                            <div>
+                                <div class="business-product-title">${escHtml(p.name || 'Без названия')}</div>
+                                <div class="business-product-price">${Number(p.price || 0)} ₽</div>
+                            </div>
+                        </div>
+                        <div class="business-product-desc">${escHtml(p.description || '')}</div>
+                    </div>
+                </div>
+            `).join('')}</div>` : ''}
+            ${roles.length ? `<div class="business-mini" style="margin-top:12px;font-weight:900;color:var(--text);">Роли</div><div style="margin-top:8px;">${roles.map(r=>`
+                <div class="business-role-item" style="margin-bottom:8px;">
+                    <div class="business-role-row">
+                        <div style="min-width:0;flex:1;">
+                            <div style="font-weight:900;">${escHtml(r.name || 'Без названия')}</div>
+                            <div class="business-mini">${escHtml(r.description || 'Без описания')}</div>
+                        </div>
+                        <div class="business-pill ${r.autoPay ? 'primary' : 'gold'}">${escHtml(r.salaryAmount || 0)}₽ · ${escHtml(r.autoPay ? businessRolePeriodLabel(r.salaryPeriod) : 'ручная')}</div>
+                    </div>
+                </div>
+            `).join('')}</div>` : ''}
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button class="btn btn-primary btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', true)">Одобрить</button>
+                <button class="btn btn-red btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', false)">Отклонить</button>
+            </div>
+        </div>
+    `;
 }
 
 function renderBusinessAdminPreview(){
     const el = qs('businessAdminList');
     if(!el) return;
     const pending = Object.values(businessAppsCache || {}).filter(a => a && (a.status || 'new') === 'new').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    el.innerHTML = pending.length ? pending.map(a => `
-        <div class="business-role-item">
-            <div class="business-role-row">
-                <div style="min-width:0;flex:1;">
-                    <div style="font-weight:900;">${escHtml(a.title || 'Без названия')}</div>
-                    <div class="business-mini">${escHtml(a.address || 'Адрес не указан')} · ${escHtml(a.category || 'other')}</div>
-                </div>
-                <div class="business-pill gold">🕒 На проверке</div>
-            </div>
-            <div style="font-size:12px;color:var(--muted);margin-top:8px;">${escHtml((a.description || '').slice(0, 120))}</div>
-            <div style="display:flex;gap:8px;margin-top:10px;">
-                <button class="btn btn-primary btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', true)">✅</button>
-                <button class="btn btn-red btn-sm" onclick="reviewBusinessApplication('${jsEsc(a.id)}', false)">❌</button>
-            </div>
-        </div>
-    `).join('') : '<div class="business-empty">Нет заявок</div>';
+    el.innerHTML = pending.length ? pending.map(a => businessApplicationPreviewHtml(a)).join('') : '<div class="business-empty">Нет заявок</div>';
 }
 window.renderBizAdminPreview = renderBusinessAdminPreview;
 
@@ -6929,11 +7103,246 @@ async function writeBusinessLedger(id, entry){
     try{ await push(businessLedgerRef(id), {...entry, ts: Date.now()}); }catch(e){}
 }
 
+async function loadBusinessOrders(id){
+    const el = qs(`bizOrders_${id}`);
+    if(!el) return;
+    try{
+        const snap = await get(businessOrdersRef(id));
+        const orders = snap.val() || {};
+        const arr = Object.entries(orders).map(([key,v]) => ({...v, key})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        const b = currentBusinessData() || businessCache[id] || {};
+        const isOwnerView = b.owner === currentNick;
+        const visible = isOwnerView ? arr : arr.filter(o => o.buyer === currentNick);
+        if(!visible.length){
+            el.innerHTML = '<div class="business-empty">Пока нет заказов</div>';
+            return;
+        }
+        el.innerHTML = visible.map(o => {
+            const statusText = o.status === 'done' ? '✅ Завершён'
+                : o.status === 'ready' ? '📦 Готов'
+                : o.status === 'preparing' ? '👨‍🍳 В работе'
+                : '🕒 Новый';
+            const items = Array.isArray(o.items) ? o.items : [];
+            const canStart = isOwnerView && o.status === 'new';
+            const canReady = isOwnerView && o.status === 'preparing';
+            const canConfirm = !isOwnerView && o.buyer === currentNick && o.status === 'ready';
+            return `
+                <div class="business-order-card">
+                    <div class="business-order-head">
+                        <div>
+                            <div style="font-weight:900;">Заказ #${escHtml(o.id || o.key)}</div>
+                            <div class="business-order-meta">${escHtml(o.buyerName || o.buyer || '—')} · ${escHtml(o.method === 'delivery' ? 'Доставка' : 'Самовывоз')} · ${new Date(Number(o.createdAt || Date.now())).toLocaleString('ru-RU')}</div>
+                        </div>
+                        <div class="business-pill ${o.status === 'done' ? 'primary' : o.status === 'ready' ? 'gold' : 'red'}">${statusText}</div>
+                    </div>
+                    <div class="business-order-items">
+                        ${items.map(it => `<div class="business-order-item">${escHtml(it.name)} × ${Number(it.qty || 1)} · ${Number(it.price || 0)} ₽</div>`).join('')}
+                    </div>
+                    ${o.method === 'delivery' ? `<div class="business-order-meta">📍 Доставка: ${escHtml(o.address || '—')}</div>` : `<div class="business-order-meta">🏪 Самовывоз</div>`}
+                    ${o.notes ? `<div class="business-order-meta">📝 ${escHtml(o.notes)}</div>` : ''}
+                    <div class="business-cart-total"><span>Итого</span><span style="color:var(--gold);">${Number(o.total || 0)} ₽</span></div>
+                    <div class="business-order-actions">
+                        ${canStart ? `<button class="btn btn-primary btn-sm" onclick="setBusinessOrderStatus('${jsEsc(id)}','${jsEsc(o.id || o.key)}','preparing')">Взять в работу</button>` : ''}
+                        ${canReady ? `<button class="btn btn-gold btn-sm" onclick="setBusinessOrderStatus('${jsEsc(id)}','${jsEsc(o.id || o.key)}','ready')">Готово</button>` : ''}
+                        ${canConfirm ? `<button class="btn btn-primary btn-sm" onclick="confirmBusinessOrder('${jsEsc(id)}','${jsEsc(o.id || o.key)}')">Подтвердить получение</button>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }catch(e){
+        el.innerHTML = '<div class="business-empty">Не удалось загрузить заказы</div>';
+    }
+}
+
+function renderBusinessProductCards(products, bizId, isOwner=false){
+    const arr = Array.isArray(products) ? products : [];
+    if(!arr.length) return '<div class="business-empty">Пока нет карточек товаров / услуг</div>';
+    return `<div class="business-product-list">${arr.map((p, idx) => {
+        const pid = p.id || `p_${idx}`;
+        return `
+            <div class="business-product-card">
+                <img class="business-product-img" src="${escHtml(businessMediaUrl(p))}" alt="">
+                <div class="business-product-body">
+                    <div class="business-product-head">
+                        <div>
+                            <div class="business-product-title">${escHtml(p.name || 'Без названия')}</div>
+                            <div class="business-product-price">${Number(p.price || 0)} ₽</div>
+                        </div>
+                    </div>
+                    <div class="business-product-desc">${escHtml(p.description || '')}</div>
+                    <div class="business-product-actions">
+                        ${isOwner ? '' : `<button class="btn btn-primary btn-sm" onclick="addBusinessToCart('${jsEsc(bizId)}','${jsEsc(pid)}')">В корзину</button>`}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('')}</div>`;
+}
+
+function renderBusinessCartPanel(bizId, b, products){
+    const cart = getBusinessCart(bizId);
+    const map = new Map((products || []).map(p => [String(p.id), p]));
+    const lines = cart.map(it => {
+        const prod = map.get(String(it.id));
+        if(!prod) return '';
+        return `
+            <div class="business-cart-row">
+                <div style="min-width:0;flex:1;">
+                    <div class="business-cart-name">${escHtml(prod.name || 'Без названия')}</div>
+                    <div class="business-cart-sub">${Number(prod.price || 0)} ₽ × ${Number(it.qty || 0)}</div>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <button class="btn btn-ghost btn-sm" style="padding:6px 10px;" onclick="decBusinessCartItem('${jsEsc(bizId)}','${jsEsc(prod.id)}')">−</button>
+                    <button class="btn btn-ghost btn-sm" style="padding:6px 10px;" onclick="incBusinessCartItem('${jsEsc(bizId)}','${jsEsc(prod.id)}')">+</button>
+                    <button class="btn btn-red btn-sm" style="padding:6px 10px;" onclick="removeBusinessCartItem('${jsEsc(bizId)}','${jsEsc(prod.id)}')">✕</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    const total = businessCartTotal(cart, products);
+    return `
+        <div class="business-cart-box">
+            <div class="card-title" style="margin-bottom:10px;">🧺 Корзина</div>
+            ${lines || '<div class="business-empty" style="padding:8px 0;">Корзина пуста</div>'}
+            <div class="business-cart-total"><span>Сумма</span><span style="font-size:20px;color:var(--gold);">${total} ₽</span></div>
+            <div class="business-form-grid">
+                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
+                    <input type="radio" name="bizMethod_${jsEsc(bizId)}" value="pickup" checked style="width:auto;margin:0 8px 0 0;"> Заберу в заведении
+                </label>
+                <label class="business-pill" style="grid-column:1/-1;justify-content:flex-start;cursor:pointer;">
+                    <input type="radio" name="bizMethod_${jsEsc(bizId)}" value="delivery" style="width:auto;margin:0 8px 0 0;"> Доставка
+                </label>
+                <input class="full" type="text" id="bizCustomerName_${jsEsc(bizId)}" placeholder="Имя">
+                <input class="full" type="text" id="bizCustomerAddress_${jsEsc(bizId)}" placeholder="Адрес доставки">
+                <textarea class="full" id="bizOrderNotes_${jsEsc(bizId)}" placeholder="Комментарий к заказу" style="min-height:72px;"></textarea>
+                <button class="btn btn-primary full" onclick="checkoutBusinessOrder('${jsEsc(bizId)}')">💳 Оплатить и оформить заказ</button>
+            </div>
+            <div class="business-mini" style="margin-top:8px;">При оплате деньги сразу списываются, а заказ уходит владельцу и сотрудникам.</div>
+        </div>
+    `;
+}
+
+window.addBusinessToCart = function(bizId, productId){
+    const b = businessCache[bizId];
+    if(!b) return;
+    const products = businessProductsList(b);
+    const prod = products.find(p => String(p.id) === String(productId));
+    if(!prod) return toast('❌ Товар не найден', 'red');
+    const cart = getBusinessCart(bizId);
+    const found = cart.find(it => String(it.id) === String(productId));
+    if(found) found.qty = Number(found.qty || 0) + 1;
+    else cart.push({id: prod.id, qty: 1});
+    setBusinessCart(bizId, cart);
+    toast('Добавлено в корзину', 'green');
+    if(currentBusinessId === bizId) renderBizPage();
+};
+window.incBusinessCartItem = function(bizId, productId){
+    const cart = getBusinessCart(bizId);
+    const found = cart.find(it => String(it.id) === String(productId));
+    if(found){ found.qty = Number(found.qty || 0) + 1; setBusinessCart(bizId, cart); if(currentBusinessId === bizId) renderBizPage(); }
+};
+window.decBusinessCartItem = function(bizId, productId){
+    const cart = getBusinessCart(bizId);
+    const found = cart.find(it => String(it.id) === String(productId));
+    if(found){ found.qty = Math.max(0, Number(found.qty || 0) - 1); setBusinessCart(bizId, cart); if(currentBusinessId === bizId) renderBizPage(); }
+};
+window.removeBusinessCartItem = function(bizId, productId){
+    const cart = getBusinessCart(bizId).filter(it => String(it.id) !== String(productId));
+    setBusinessCart(bizId, cart);
+    if(currentBusinessId === bizId) renderBizPage();
+};
+
+window.checkoutBusinessOrder = async function(bizId){
+    const bSnap = await get(businessRef(bizId));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    const products = businessProductsList(b);
+    const cart = getBusinessCart(bizId);
+    if(!cart.length) return toast('🧺 Корзина пуста', 'gold');
+    const total = businessCartTotal(cart, products);
+    if(total <= 0) return toast('⚠️ Неверная сумма', 'gold');
+
+    const method = (document.querySelector(`input[name="bizMethod_${bizId}"]:checked`)?.value || 'pickup');
+    const name = (qs(`bizCustomerName_${bizId}`)?.value || '').trim();
+    const address = (qs(`bizCustomerAddress_${bizId}`)?.value || '').trim();
+    const notes = (qs(`bizOrderNotes_${bizId}`)?.value || '').trim();
+
+    if(!name) return toast('⚠️ Укажите имя', 'gold');
+    if(method === 'delivery' && !address) return toast('⚠️ Укажите адрес доставки', 'gold');
+
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    if((u.balance || 0) < total) return toast('❌ Недостаточно средств', 'red');
+    if(!confirm(`Оплатить заказ на ${total}₽?`)) return;
+
+    const orderId = genId();
+    const order = {
+        id: orderId,
+        businessId: bizId,
+        buyer: currentNick,
+        buyerName: name,
+        method,
+        address: method === 'delivery' ? address : '',
+        notes,
+        items: cart.map(it => {
+            const prod = products.find(p => String(p.id) === String(it.id));
+            return {
+                id: prod?.id || it.id,
+                name: prod?.name || 'Товар',
+                price: Number(prod?.price || 0),
+                qty: Number(it.qty || 1),
+                image: prod?.image || ''
+            };
+        }),
+        total,
+        status: 'new',
+        createdAt: Date.now()
+    };
+
+    const orderRefInst = push(businessOrdersRef(bizId));
+    await set(orderRefInst, order);
+
+    await update(userRef(currentNick), { balance: (u.balance || 0) - total });
+    await update(businessRef(bizId), { balance: Number(b.balance || 0) + total });
+    await writeBusinessLedger(bizId, { type:'in', amount: total, from: currentNick, desc: `Заказ #${orderId}` });
+    await logTx(currentNick, { type:'out', who: b.title || 'Бизнес', amt: total, desc: `Заказ #${orderId}` });
+
+    const mentions = new Set([b.owner, ...(Object.keys(b.staff || {}))]);
+    for(const nick of mentions){
+        if(nick) await pushNotification(nick, `🛍 Новый заказ #${orderId} в "${b.title || bizId}" на ${total}₽`, 'market');
+    }
+    businessCartState[bizId] = [];
+    toast('✅ Заказ оформлен и оплачен', 'green');
+    if(currentBusinessId === bizId) renderBizPage();
+};
+
+window.setBusinessOrderStatus = async function(bizId, orderId, status){
+    const bSnap = await get(businessRef(bizId));
+    if(!bSnap.exists()) return;
+    const b = bSnap.val() || {};
+    const oSnap = await get(businessOrderRef(bizId, orderId));
+    if(!oSnap.exists()) return;
+    const order = oSnap.val() || {};
+    const isStaff = b.owner === currentNick || !!(b.staff && b.staff[currentNick]);
+    if(!isStaff) return toast('❌ Нет доступа', 'red');
+    await update(businessOrderRef(bizId, orderId), { status, updatedAt: Date.now(), updatedBy: currentNick });
+    if(order.buyer) await pushNotification(order.buyer, `📦 Заказ #${orderId} получил статус: ${status}`, 'system');
+    if(currentBusinessId === bizId) renderBizPage();
+};
+
+window.confirmBusinessOrder = async function(bizId, orderId){
+    const oSnap = await get(businessOrderRef(bizId, orderId));
+    if(!oSnap.exists()) return;
+    const order = oSnap.val() || {};
+    if(order.buyer !== currentNick) return toast('❌ Это не ваш заказ', 'red');
+    await update(businessOrderRef(bizId, orderId), { status: 'done', confirmedAt: Date.now() });
+    await pushNotification(currentNick, `✅ Заказ #${orderId} подтверждён`, 'system');
+    if(currentBusinessId === bizId) renderBizPage();
+};
+
 function openBusinessDetail(id){
     currentBusinessId = id;
     renderBizPage();
-    const det = qs('businessDetailPanel');
-    if(det) det.scrollIntoView({behavior:'smooth', block:'start'});
 }
 window.openBusinessDetail = openBusinessDetail;
 
@@ -6975,17 +7384,19 @@ function renderBizPage(){
 
     const gallery = businessMediaList(b);
     const services = Array.isArray(b.services) ? b.services : normalizeBusinessList(b.services);
+    const products = businessProductsList(b);
     const roles = b.roles || {};
     const staff = b.staff || {};
     const isOwner = b.owner === currentNick;
     const terminal = b.activeTerminal && b.activeTerminal.status !== 'closed'
         ? `<div class="business-terminal"><div class="business-mini">Активный терминал</div><div class="business-terminal-code">${escHtml(b.activeTerminal.code || '')}</div><div class="business-mini">Сумма: ${Number(b.activeTerminal.amount || 0)} ₽ · До ${new Date(Number(b.activeTerminal.expiresAt || 0)).toLocaleString('ru-RU')}</div></div>`
         : `<div class="business-terminal"><div class="business-mini">Терминал не создан</div></div>`;
+    const cartSection = !isOwner ? renderBusinessCartPanel(b.id, b, products) : '';
 
     detail.innerHTML = `
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;">
             <button class="btn btn-ghost btn-sm" onclick="closeBusinessDetail()">← Назад</button>
-            <div class="business-pill primary">${escHtml(b.category || 'business')}</div>
+            <div class="business-pill primary">${escHtml(BUSINESS_CATEGORY_LABELS[b.category || 'other'] || b.category || 'business')}</div>
         </div>
         <div class="business-detail-header">
             <img class="business-icon" src="${escHtml(gallery[0] || b.icon || DEFAULT_AVATAR_URL)}" alt="" style="width:72px;height:72px;border-radius:20px;">
@@ -7007,11 +7418,24 @@ function renderBizPage(){
             ${b.phone ? `<span class="business-pill">${escHtml(b.phone)}</span>` : ''}
             ${b.website ? `<span class="business-pill">${escHtml(b.website)}</span>` : ''}
         </div>
-        ${terminal}
-        <div class="business-actions">
-            ${b.deliveryEnabled ? `<button class="btn btn-primary" onclick="buyFromBusiness('${jsEsc(b.id)}')">🛒 Купить / заказать</button>` : `<button class="btn btn-ghost" disabled>Доставка выключена</button>`}
-            <button class="btn btn-gold" onclick="payBusinessTerminal('${jsEsc(b.id)}')">💳 Оплатить терминалом</button>
+
+        <div class="business-section-card" style="margin-top:12px;">
+            <div class="card-title">🛍️ Услуги / товары</div>
+            ${renderBusinessProductCards(products, b.id, isOwner)}
         </div>
+
+        ${cartSection}
+
+        <div class="business-section-card" style="margin-top:12px;">
+            <div class="card-title">💳 Терминал</div>
+            ${terminal}
+            <div class="business-form-grid" style="margin-top:8px;">
+                <input type="text" id="bizPayCode_${jsEsc(b.id)}" placeholder="Код терминала">
+                <button class="btn btn-gold full" onclick="payBusinessTerminal('${jsEsc(b.id)}')">Оплатить терминалом</button>
+            </div>
+            <div class="business-mini" style="margin-top:8px;">Другой человек может оплатить через терминал, введя код на своём телефоне.</div>
+        </div>
+
         ${isOwner ? `
             <div class="business-section-card" style="margin-top:12px;">
                 <div class="card-title">💼 Управление бизнесом</div>
@@ -7052,7 +7476,7 @@ function renderBizPage(){
                                         <div style="font-weight:900;">${escHtml(r.name || 'Без названия')}</div>
                                         <div class="business-mini">${escHtml(r.description || 'Без описания')}</div>
                                     </div>
-                                    <div class="business-pill ${r.autoPay ? 'primary' : 'gold'}">${escHtml(r.salaryAmount || 0)}₽ · ${escHtml(r.autoPay ? businessRolePeriodLabel(r.salaryPeriod) : 'ручная') }</div>
+                                    <div class="business-pill ${r.autoPay ? 'primary' : 'gold'}">${escHtml(r.salaryAmount || 0)}₽ · ${escHtml(r.autoPay ? businessRolePeriodLabel(r.salaryPeriod) : 'ручная')}</div>
                                 </div>
                                 <div class="business-mini" style="margin-top:8px;">Назначить сотрудника</div>
                                 <div style="display:flex;gap:8px;margin-top:8px;">
@@ -7082,36 +7506,22 @@ function renderBizPage(){
                         `).join('') : '<div class="business-empty">Пока нет сотрудников</div>'}
                     </div>
                 </div>
-                <div class="business-terminal">
-                    ${terminal}
-                </div>
-                <div class="business-mini" style="margin-top:8px;">🧾 Последние операции</div>
-                <div id="bizLedger_${jsEsc(b.id)}" style="margin-top:8px;">${loadingHtml('Загрузка операций...')}</div>
             </div>
-        ` : `
-            <div class="business-section-card" style="margin-top:12px;">
-                <div class="card-title">💳 Покупка</div>
-                <div class="business-form-grid">
-                    <input type="number" id="bizBuyAmt_${jsEsc(b.id)}" placeholder="Сумма покупки">
-                    <input type="text" id="bizBuyDesc_${jsEsc(b.id)}" placeholder="Что покупаете?">
-                    <button class="btn btn-primary full" onclick="buyFromBusiness('${jsEsc(b.id)}')">🛒 Оплатить и отправить заказ</button>
-                </div>
-                <div class="business-mini" style="margin-top:8px;">Если владелец включил доставку, заказ попадёт бизнесу и средства уйдут на его счёт.</div>
-            </div>
-            <div class="business-terminal" style="margin-top:12px;">
-                <div class="business-mini">Введите код терминала, чтобы оплатить</div>
-                <div class="business-form-grid" style="margin-top:8px;">
-                    <input type="text" id="bizPayCode_${jsEsc(b.id)}" placeholder="Код терминала">
-                    <button class="btn btn-gold" onclick="payBusinessTerminal('${jsEsc(b.id)}')">Оплатить</button>
-                </div>
-            </div>
-        `}
+        ` : ''}
+
+        <div class="business-section-card" style="margin-top:12px;">
+            <div class="card-title">📦 Заказы</div>
+            <div id="bizOrders_${jsEsc(b.id)}">${loadingHtml('Загрузка заказов...')}</div>
+        </div>
+
+        <div class="business-mini" style="margin-top:8px;">🧾 Последние операции</div>
+        <div id="bizLedger_${jsEsc(b.id)}" style="margin-top:8px;">${loadingHtml('Загрузка операций...')}</div>
     `;
     loadBusinessLedger(b.id);
+    loadBusinessOrders(b.id);
     maybeRunBusinessAutoPayroll(b);
 }
 window.renderBizPage = renderBizPage;
-
 window.submitBusinessApplication = async function(){
     const title = qs('bizAppName').value.trim();
     const category = qs('bizAppCategory').value || 'other';
@@ -7131,12 +7541,25 @@ window.submitBusinessApplication = async function(){
         salaryPeriod: qs(`bizDraftRolePeriod_${idx}`)?.value || 'contract'
     })).filter(r => r.name || r.description || r.salaryAmount || r.autoPay);
 
+    const productDrafts = businessAppDraft.products.map((item, idx) => ({
+        name: (qs(`bizDraftProductName_${idx}`)?.value || '').trim(),
+        description: (qs(`bizDraftProductDesc_${idx}`)?.value || '').trim(),
+        price: parseInt(qs(`bizDraftProductPrice_${idx}`)?.value) || 0,
+        imageFile: item.imageFile || null,
+        imagePreview: item.imagePreview || ''
+    })).filter(p => p.name || p.description || p.price || p.imageFile);
+
     if(!title || !description || !address) return toast('⚠️ Заполните название, описание и адрес', 'gold');
     if(!businessAppDraft.iconFile) return toast('⚠️ Выберите иконку из галереи', 'gold');
     if(!businessAppDraft.galleryFiles.length) return toast('⚠️ Добавьте хотя бы одно изображение или видео', 'gold');
+    if(!productDrafts.length) return toast('⚠️ Добавьте хотя бы одну карточку товара / услуги', 'gold');
 
     for(const r of roleDrafts){
         if(!r.name) return toast('⚠️ У роли должно быть название', 'gold');
+    }
+    for(const p of productDrafts){
+        if(!p.name) return toast('⚠️ У карточки должно быть название', 'gold');
+        if(p.price < 0) return toast('⚠️ Цена не может быть отрицательной', 'gold');
     }
 
     const snap = await get(businessAppsRef());
@@ -7158,7 +7581,22 @@ window.submitBusinessApplication = async function(){
         return urls;
     };
 
-    const [iconUrl, galleryUrls] = await Promise.all([uploadIcon(), uploadGallery()]);
+    const uploadProducts = async () => {
+        const out = [];
+        for(const item of productDrafts){
+            const image = item.imageFile ? await uploadBlobToStorage(item.imageFile, 'businesses/products') : '';
+            out.push({
+                id: genId(),
+                name: item.name,
+                description: item.description,
+                price: Number(item.price || 0),
+                image: image || item.imagePreview || ''
+            });
+        }
+        return out;
+    };
+
+    const [iconUrl, galleryUrls, products] = await Promise.all([uploadIcon(), uploadGallery(), uploadProducts()]);
 
     const id = genId();
     await set(businessAppRef(id), {
@@ -7173,6 +7611,7 @@ window.submitBusinessApplication = async function(){
         phone,
         website,
         services,
+        products,
         description,
         deliveryEnabled,
         roles: roleDrafts.map((r, idx) => ({ id: genId(), order: idx, ...r })),
@@ -7188,9 +7627,12 @@ window.submitBusinessApplication = async function(){
     clearBusinessIconDraft();
     businessAppDraft.galleryFiles = [];
     clearBusinessDraftPreviews();
+    businessAppDraft.products = [];
     businessAppDraft.roles = [];
     renderBusinessDraftGalleryPreview();
+    renderBusinessDraftProducts();
     renderBusinessDraftRoles();
+    addBusinessDraftProduct();
     addBusinessDraftRole();
     renderBizPage();
 };
@@ -7231,6 +7673,7 @@ window.reviewBusinessApplication = async function(id, ok){
         phone: app.phone || '',
         website: app.website || '',
         services: app.services || [],
+        products: app.products || [],
         description: app.description || '',
         deliveryEnabled: !!app.deliveryEnabled,
         applicant: app.applicant,
