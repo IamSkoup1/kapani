@@ -45,9 +45,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm{position:relative;display:block;flex-shrink:0;align-self:flex-start;}
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
-.bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(9,1fr);padding:8px 0 10px;z-index:900;}
-.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:7.5px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.2px;padding:0 1px;position:relative;}
-.bn-item .ico{font-size:20px;transition:.2s;}
+.bottom-nav{position:fixed;bottom:0;width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(11,1fr);padding:8px 0 10px;z-index:900;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);font-size:6.4px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.15px;padding:0 1px;position:relative;line-height:1.1;}
+.bn-item .ico{font-size:18px;transition:.2s;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
 .bn-item.sel .ico{transform:scale(1.15);}
 .bn-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
@@ -95,6 +95,20 @@ select option{background:#1a2332;}
 .item-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface2);border-radius:var(--r-sm);margin-bottom:8px;border:1px solid var(--border);}
 .item-row input{width:70px;margin:0;padding:8px;text-align:center;}
 .total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--pri-dim);border-radius:var(--r-sm);margin:12px 0;border:1px solid rgba(34,211,165,.25);font-weight:900;}
+.cart-card,.order-card,.rent-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:12px;}
+.cart-list,.order-list,.rent-list{display:flex;flex-direction:column;gap:8px;}
+.cart-item,.order-item,.rent-row{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);}
+.cart-item img,.order-item img,.rent-row img{width:54px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0;cursor:pointer;}
+.cart-meta,.order-meta,.rent-meta{flex:1;min-width:0;}
+.cart-title,.order-title,.rent-title{font-weight:900;font-size:14px;}
+.cart-sub,.order-sub,.rent-sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;}
+.cart-qty{display:flex;align-items:center;gap:6px;}
+.cart-qty input{width:54px;margin:0;padding:9px 8px;text-align:center;}
+.cart-actions,.order-actions,.rent-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+.rent-disabled{background:var(--muted)!important;border-color:var(--border)!important;color:#fff!important;opacity:.6;}
+.rent-owned{background:var(--gold-dim);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:8px 10px;font-size:12px;color:var(--gold);font-weight:800;}
+.biz-role-salary small{display:block;color:var(--muted);font-weight:700;margin-top:2px;}
+
 .total-val{font-size:22px;color:var(--primary);}
 .msg-tabs{display:flex;gap:8px;margin-bottom:14px;}
 .msg-tab{flex:1;padding:10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s;text-align:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
@@ -830,6 +844,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <button class="bn-item" id="bn7" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
     <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
     <button class="bn-item" id="bn9" onclick="navTo('businesses')" aria-label="Бизнесы поселка"><span class="ico">🏪</span>Бизнесы</button>
+    <button class="bn-item" id="bn10" onclick="navTo('rentBuildings')" aria-label="Аренда зданий"><span class="ico">🏘️</span>Здания</button>
 </div>
 
 <div class="container">
@@ -867,6 +882,15 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <button class="btn btn-primary btn-sm" id="workerPageBtn" onclick="goToWorkerPage()">Открыть →</button>
             </div>
             <div id="workerList"></div>
+        </div>
+    </div>
+    <div id="bizOrderSection" style="display:none;margin-bottom:14px;">
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <div class="card-title" id="bizOrderTitle" style="margin-bottom:0;">🧺 Ваши заказы</div>
+                <button class="btn btn-ghost btn-sm" onclick="navTo('rentBuildings')">Здания</button>
+            </div>
+            <div id="homeBizOrders"></div>
         </div>
     </div>
     <div id="adminQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-gold" onclick="navTo('adminPage')">👑 Открыть Мэрию</button></div>
@@ -1483,6 +1507,16 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;" required min="1" step="1">
         <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;" required minlength="5" maxlength="200">
     </div>
+    <div class="card">
+        <div class="card-title">🏘️ Здания для аренды</div>
+        <input type="text" id="rentBuildName" placeholder="Название здания" maxlength="80">
+        <input type="number" id="rentBuildPrice" placeholder="Цена в неделю (₽)" min="1" step="1">
+        <input type="url" id="rentBuildPhoto" placeholder="Фото URL (необязательно)" style="margin-top:0;">
+        <label class="file-upload-btn" for="rentBuildPhotoFile">📷 Выбрать фото</label>
+        <input type="file" id="rentBuildPhotoFile" accept="image/*" onchange="handleRentBuildingPhoto(event)">
+        <button class="btn btn-gold" onclick="addRentBuilding()" style="margin-top:4px;">➕ Добавить здание</button>
+        <div id="adminRentBuildings" style="margin-top:12px;"></div>
+    </div>
     <div class="card"><div class="card-title">👥 Все жители</div><div id="allUsersList"></div></div>
     <div class="card"><div class="card-title">📦 Активные заказы</div><div id="adminOrders"></div></div>
 </div>
@@ -1497,6 +1531,17 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div id="bizList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
 </div>
 
+
+<!-- RENT BUILDINGS -->
+<div id="rentBuildings" class="section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="font-weight:900;font-size:20px;">🏘️ Аренда зданий</div>
+        <button class="btn btn-gold btn-sm" onclick="navTo('adminPage')" style="display:none;" id="rentAdminJumpBtn">👑 Мэрия</button>
+    </div>
+    <div class="card" id="myRentedBuildingCard" style="display:none;"></div>
+    <div id="rentBuildingsList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
+</div>
+
 <!-- BUSINESS DETAIL PAGE -->
 <div id="bizDetail" class="section">
     <button class="btn btn-ghost btn-sm" onclick="navTo('businesses')" style="margin-bottom:14px;">← Назад</button>
@@ -1506,10 +1551,12 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <button class="biz-tab active" id="bizDTab0" onclick="switchBizDetailTab(0)">ℹ️ О бизнесе</button>
         <button class="biz-tab" id="bizDTab1" onclick="switchBizDetailTab(1)">👥 Роли</button>
         <button class="biz-tab" id="bizDTab2" onclick="switchBizDetailTab(2)">🛒 Товары</button>
+        <button class="biz-tab" id="bizDTab3" onclick="switchBizDetailTab(3)">📦 Заказы</button>
     </div>
     <div class="biz-panel active" id="bizDPanel0"></div>
     <div class="biz-panel" id="bizDPanel1"></div>
     <div class="biz-panel" id="bizDPanel2"></div>
+    <div class="biz-panel" id="bizDPanel3"></div>
 </div>
 
 <!-- BUSINESS OWNER PANEL -->
@@ -1529,16 +1576,14 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <button class="btn btn-ghost btn-sm" onclick="bizWithdraw()">💸 Снять</button>
         </div>
     </div>
-    <div class="card">
-        <div class="card-title">💳 Терминал оплаты</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Введите сумму — покупатель подносит телефон и деньги спишутся автоматически.</div>
-        <input type="number" id="terminalAmtInput" placeholder="Сумма (₽)" min="1" step="1">
-        <input type="text" id="terminalDescInput" placeholder="Описание (необязательно)" maxlength="100" style="margin-top:0;">
-        <button class="btn btn-gold" onclick="openTerminal()" style="margin-top:4px;">📱 Открыть терминал</button>
-    </div>
+
     <div class="card">
         <div class="card-title">👥 Сотрудники</div>
         <div id="bizEmployeesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
+    <div class="card">
+        <div class="card-title">📦 Активные заказы</div>
+        <div id="bizOwnerOrders"><div style="color:var(--muted);font-size:13px;">Нет заказов</div></div>
     </div>
     <div class="card">
         <div class="card-title">🎭 Роли</div>
@@ -1581,21 +1626,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 
 </div><!-- end mainApp -->
 
-<!-- TERMINAL OVERLAY -->
-<div id="terminalOverlay" class="terminal-overlay">
-    <div style="font-size:13px;color:var(--muted);font-weight:700;margin-bottom:4px;">🏪 ТЕРМИНАЛ</div>
-    <div class="terminal-business" id="terminalBizName">Бизнес</div>
-    <div class="terminal-label">К оплате</div>
-    <div class="terminal-amount" id="terminalAmtDisplay">0 ₽</div>
-    <div id="terminalDescDisplay" style="font-size:13px;color:var(--muted);margin-bottom:20px;"></div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Покупатель нажимает кнопку ниже на своём телефоне</div>
-    <button class="btn btn-primary" style="max-width:300px;" onclick="terminalPay()">💳 Оплатить</button>
-    <button class="btn btn-ghost" style="max-width:300px;margin-top:8px;" onclick="closeTerminal()">✕ Закрыть</button>
-</div>
-<div id="terminalPayAnim" class="terminal-pay-anim">
-    <div style="font-size:64px;margin-bottom:12px;">✅</div>
-    <div style="font-size:24px;font-weight:900;color:var(--primary);">Оплачено!</div>
-</div>
 </div><!-- end container -->
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -2101,6 +2131,10 @@ const janitorSubRef = (id) => ref(db, `janitorSubmissions/${id}`);
 const wallRef = (nick) => ref(db, `walls/${nick}`);
 const newsRef = () => ref(db, 'news');
 const newsItemRef = (id) => ref(db, `news/${id}`);
+const rentBuildingsRef = () => ref(db, 'rentBuildings');
+const rentBuildingRef = (id) => ref(db, `rentBuildings/${id}`);
+const bizOrdersRef = (bizId) => ref(db, `bizOrders/${bizId}`);
+const bizOrderRef = (bizId, orderId) => ref(db, `bizOrders/${bizId}/${orderId}`);
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
@@ -2517,7 +2551,7 @@ function updateHeader(u) {
     const profBtn=qs('bn7'); if(profBtn) profBtn.style.display='flex';
     // Кнопка уборщика — bn8, показываем только для уборщиков
     const janBtn=qs('bn8'); if(janBtn) janBtn.style.display=isJanitor?'flex':'none';
-    const bottomNav=qs('bottomNav'); if(bottomNav) bottomNav.style.gridTemplateColumns=isJanitor?'repeat(9,1fr)':'repeat(8,1fr)';
+    const bottomNav=qs('bottomNav'); if(bottomNav) bottomNav.style.gridTemplateColumns='repeat(11,1fr)';
     const vDisp=qs('vehicleDisplay');
     if(vDisp){if(u.vehicle){vDisp.style.display='block';vDisp.textContent='🛵 '+u.vehicle;}else vDisp.style.display='none';}
     const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=(u.job&&u.job!=='Житель')?'block':'none';
@@ -4722,7 +4756,7 @@ function marketCard(l,isMine, isArchived=false){
     const serviceBadge=isService?`<span class="market-status-service" style="margin-left:8px;">🤝 Услуга</span>`:'';
     const archivedBadge=isArchived?`<span class="market-status-sold" style="margin-left:8px;">🕓 Скрыто</span>`:'';
     const statusBadge=l.status==='sold'&&!isService?'<span class="market-status-sold">Продано</span>':(l.status!=='active'&&!isWork&&!isService?'<span class="market-status-pending">Ожидание</span>':'');
-    return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'">`:''}
+    return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'" onclick="openImgViewer('${jsEsc(l.photo)}')">`:''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div>${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div>
         <div class="market-price">${priceLine(l)}</div>${l.desc?`<div class="market-desc">${escHtml(l.desc)}</div>`:''}
         <div class="market-seller" style="cursor:pointer;" onclick="openUserProfile('${escHtml(l.seller)}')">
@@ -5060,9 +5094,10 @@ window.rejectJanitorSubmission=async function(id){
     renderAdmin();
 };
 async function renderAdmin(){
-    const[uSnap,oSnap,aSnap,jSnap]=await Promise.all([get(ref(db,'users')),get(ordersRef()),get(appsRef()),get(janitorSubsRef())]);
+    const[uSnap,oSnap,aSnap,jSnap,rSnap]=await Promise.all([get(ref(db,'users')),get(ordersRef()),get(appsRef()),get(janitorSubsRef()),get(rentBuildingsRef())]);
     renderAdminUsers(uSnap.val()||{});renderAdminOrders(oSnap.val()||{});renderAdminApps(aSnap.val()||{});renderAdminJanitorSubmissions(jSnap.val()||{});renderAdminUserSelect(uSnap.val()||{});renderUnverifiedAccounts();
     renderAdminBizApps();
+    renderAdminRentBuildings(rSnap.val()||{});
 }
 window.approveApp=async function(id,ok){
     const snap=await get(appRef(id));if(!snap.exists())return;
@@ -5567,11 +5602,11 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
-    for(let i=0;i<10;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
+    for(let i=0;i<11;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
     window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
@@ -5589,6 +5624,8 @@ window.navTo=function(id){
     if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
+    if(id==='home') { renderHomeBizOrders(); }
+    if(id==='rentBuildings') renderRentBuildings();
     if(id==='tasks') renderTasks();
     if(id==='jobs') renderJobAppStatus();
     if(id==='news') { currentNewsTab = currentNewsTab || 'village'; renderNews(); }
@@ -5607,9 +5644,12 @@ const bizAppsRef = () => ref(db, 'businessApps');
 const bizAppRef = (id) => ref(db, `businessApps/${id}`);
 
 let currentBizId = null;
+let currentBizDetailData = null;
+let bizCarts = {};
 let _bizEditIconData = null;
 let _bizEditBannerData = null;
 let _bizProdPhotoData = null;
+let _rentBuildingPhotoData = null;
 
 // ─── APPLY MODAL ──────────────────────────
 window.openBizApplyModal = async function(){
@@ -5743,6 +5783,7 @@ window.openBizDetail = async function(bizId){
     currentBizId = bizId;
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return toast('❌ Бизнес не найден','red');
     const b = snap.val();
+    currentBizDetailData = b;
     const isOwner = b.owner === currentNick;
     const isAdmin = currentNick === ADMIN;
 
@@ -5777,8 +5818,12 @@ window.openBizDetail = async function(bizId){
     // Roles tab
     renderBizDetailRoles(roles, employees);
 
+    // Orders tab
+    renderBizDetailOrders();
+
     // Products tab
     renderBizDetailProducts(b.products||{}, b, isOwner);
+    renderBizDetailOrders();
 
     // Switch to about
     switchBizDetailTab(0);
@@ -5803,7 +5848,7 @@ function renderBizDetailRoles(roles, employees){
             <div class="biz-role-info">
                 <div class="biz-role-name">${escHtml(r.name)}</div>
                 ${r.desc ? `<div class="biz-role-desc">${escHtml(r.desc)}</div>` : ''}
-                <div class="biz-role-salary">${r.salaryType==='auto' ? `💰 ${escHtml(r.salary||'')} (авто)` : r.salaryType==='contract' ? '📝 По договору' : '💸 Ручная выдача'}</div>
+                <div class="biz-role-salary">${formatRoleSalary(r)}</div>
             </div>
             <div style="font-size:11px;color:var(--muted);">${empCount[rid]||0} чел.</div>
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">Роли не созданы</div>';
@@ -5812,18 +5857,26 @@ function renderBizDetailRoles(roles, employees){
 function renderBizDetailProducts(products, b, isOwner){
     const el = qs('bizDPanel2'); if(!el) return;
     const prodArr = Object.entries(products||{});
+    const cart = getBizCart(b.id);
     el.innerHTML = prodArr.length ? prodArr.map(([pid, p])=>`
         <div class="market-card">
             ${p.photo ? `<img class="market-img" src="${escHtml(p.photo)}" loading="lazy" onclick="openImgViewer('${jsEsc(p.photo)}')">` : ''}
-            <div class="market-title">${escHtml(p.name||'')}</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;">
+                <div class="market-title">${escHtml(p.name||'')}</div>
+                ${b.delivery ? '' : '<span class="market-status-pending">Только в заведении</span>'}
+            </div>
             <div class="market-price">${(p.price||0).toLocaleString()} ₽</div>
             ${p.desc ? `<div class="market-desc">${escHtml(p.desc)}</div>` : ''}
-            ${b.delivery ? `<button class="btn btn-gold btn-sm" onclick="buyBizProduct('${jsEsc(b.id)}','${jsEsc(pid)}')">🛒 Заказать</button>` : ''}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <button class="btn btn-gold btn-sm" onclick="addBizToCart('${jsEsc(b.id)}','${jsEsc(pid)}')">🧺 В корзину</button>
+                ${cart[pid] ? `<button class="btn btn-ghost btn-sm" onclick="changeBizCartQty('${jsEsc(b.id)}','${jsEsc(pid)}',-1)">−1</button><span style="font-size:12px;color:var(--muted);font-weight:800;">В корзине: ${cart[pid].qty}</span>` : ''}
+            </div>
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:30px 0;">Товаров нет</div>';
+    renderBizCartUI(b.id, b);
 }
 
 window.switchBizDetailTab = function(i){
-    [0,1,2].forEach(j=>{qs(`bizDTab${j}`)?.classList.toggle('active',j===i);qs(`bizDPanel${j}`)?.classList.toggle('active',j===i);});
+    [0,1,2,3].forEach(j=>{qs(`bizDTab${j}`)?.classList.toggle('active',j===i);qs(`bizDPanel${j}`)?.classList.toggle('active',j===i);});
 };
 
 // ─── APPLY TO BIZ ─────────────────────────
@@ -5857,19 +5910,85 @@ window.quitBiz = async function(bizId){
 };
 
 // ─── BUY BIZ PRODUCT ─────────────────────
-window.buyBizProduct = async function(bizId, prodId){
+window.addBizToCart = async function(bizId, prodId){
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
     const b = snap.val(); const p = b.products?.[prodId]; if(!p) return;
-    if(!await requireSpendable()) return;
-    const uSnap = await get(userRef(currentNick)); const u = uSnap.val();
-    if((u.balance||0) < (p.price||0)) return toast('❌ Недостаточно средств','red');
-    const newBal = (u.balance||0) - (p.price||0);
-    await update(userRef(currentNick), { balance: newBal });
-    await update(bizItemRef(bizId), { balance: (b.balance||0) + (p.price||0) });
-    await logTx(currentNick, {type:'out',who:b.name,amt:p.price||0,desc:`Покупка «${p.name}» в ${b.name}`});
-    await pushNotification(b.owner, `💰 ${currentNick} купил «${p.name}» — ${(p.price||0)}₽ поступило на счёт бизнеса`, 'money');
-    toast('🛒 Заказ оформлен! Деньги переведены в бизнес.','green');
+    const cart = getBizCart(bizId);
+    cart[prodId] = cart[prodId] || { name: p.name||'', price: p.price||0, photo: p.photo||'', qty: 0 };
+    cart[prodId].qty += 1;
+    toast('🧺 Добавлено в корзину','green');
+    if(currentBizDetailData && currentBizId === bizId) renderBizDetailProducts(b.products||{}, currentBizDetailData, b.owner===currentNick);
 };
+window.changeBizCartQty = function(bizId, prodId, delta){
+    const cart = getBizCart(bizId);
+    if(!cart[prodId]) return;
+    cart[prodId].qty = Math.max(1, (parseInt(cart[prodId].qty||1,10) + Number(delta||0)));
+    if(currentBizDetailData && currentBizId === bizId) renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
+};
+window.setBizCartQty = function(bizId, prodId, value){
+    const cart = getBizCart(bizId);
+    if(!cart[prodId]) return;
+    const q = Math.max(1, parseInt(value||'1',10)||1);
+    cart[prodId].qty = q;
+    if(currentBizDetailData && currentBizId === bizId) renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
+};
+window.clearBizCart = function(bizId){
+    bizCarts[bizId] = {};
+    if(currentBizDetailData && currentBizId === bizId) renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
+};
+window.checkoutBizCart = async function(bizId){
+    const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
+    const b = snap.val();
+    const cart = getBizCart(bizId);
+    const entries = Object.entries(cart);
+    if(!entries.length) return toast('⚠️ Корзина пуста','gold');
+    const buyerName = (qs('bizOrderNameInput')?.value||'').trim();
+    if(!buyerName) return toast('⚠️ Укажите имя','gold');
+    if(!await requireSpendable()) return;
+    const total = bizCartTotal(cart);
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val() || {};
+    if((u.balance||0) < total) return toast('❌ Недостаточно средств','red');
+    const orderId = genId();
+    const items = entries.map(([pid, item]) => ({ pid, name: item.name, qty: item.qty, price: item.price, photo: item.photo || '' }));
+    const bizBalance = Number(b.balance||0);
+    const newBal = (u.balance||0) - total;
+    await update(userRef(currentNick), { balance: newBal });
+    await update(bizItemRef(bizId), { balance: bizBalance + total });
+    await set(bizOrderRef(bizId, orderId), {
+        id: orderId,
+        bizId,
+        owner: b.owner,
+        bizName: b.name,
+        client: currentNick,
+        clientName: buyerName,
+        clientAvatar: u.avatar || DEFAULT_AVATAR_URL,
+        items,
+        total,
+        status: 'active',
+        createdAt: Date.now()
+    });
+    await logTx(currentNick, {type:'out', who:b.name, amt: total, desc:`Заказ в «${b.name}» (${buyerName})`});
+    const staff = new Set([b.owner, ...Object.keys(b.employees||{})].filter(Boolean));
+    await Promise.all([...staff].map(nick => pushNotification(nick, `🛒 Новый заказ в «${b.name}» от ${buyerName}`, 'money')));
+    toast('✅ Заказ оплачен и создан','green');
+    bizCarts[bizId] = {};
+    if(qs('bizOrderNameInput')) qs('bizOrderNameInput').value = '';
+    renderHomeBizOrders();
+    renderBizDetailOrders();
+    if(currentBizId === bizId && currentBizDetailData) renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
+};
+window.confirmBizOrderReceipt = async function(bizId, orderId){
+    const snap = await get(bizOrderRef(bizId, orderId)); if(!snap.exists()) return;
+    const order = snap.val();
+    if(order.client !== currentNick) return toast('❌ Это не ваш заказ','red');
+    await remove(bizOrderRef(bizId, orderId));
+    if(order.owner) await pushNotification(order.owner, `✅ ${order.clientName || order.client} подтвердил получение заказа`, 'money');
+    toast('✅ Заказ подтверждён','green');
+    renderHomeBizOrders();
+    renderBizDetailOrders();
+    if(currentBizId === bizId && currentBizDetailData) renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
+};
+window.buyBizProduct = window.addBizToCart;
 
 // ─── OWNER PANEL ─────────────────────────
 async function renderBizOwnerPanel(){
@@ -5879,21 +5998,24 @@ async function renderBizOwnerPanel(){
     currentBizId = bizId;
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
     const b = snap.val();
-    const nameEl = qs('bizOwnerName'); if(nameEl) nameEl.textContent = b.name;
-    const balEl = qs('bizBalanceDisplay'); if(balEl) balEl.textContent = (b.balance||0).toLocaleString();
+    await processBizAutoSalaries(bizId, b).catch(()=>{});
+    const refreshedSnap = await get(bizItemRef(bizId)); const bData = refreshedSnap.val() || b;
+    const nameEl = qs('bizOwnerName'); if(nameEl) nameEl.textContent = bData.name;
+    const balEl = qs('bizBalanceDisplay'); if(balEl) balEl.textContent = (bData.balance||0).toLocaleString();
     // Fill edit fields
     const fn = (id, v) => { const el=qs(id); if(el) el.value=v||''; };
-    fn('bizEditName', b.name); fn('bizEditDesc', b.desc); fn('bizEditAddress', b.address);
-    fn('bizEditServices', b.services); fn('bizEditCategory', b.category);
-    const dc = qs('bizDeliveryCheck'); if(dc) dc.checked = !!b.delivery;
+    fn('bizEditName', bData.name); fn('bizEditDesc', bData.desc); fn('bizEditAddress', bData.address);
+    fn('bizEditServices', bData.services); fn('bizEditCategory', bData.category);
+    const dc = qs('bizDeliveryCheck'); if(dc) dc.checked = !!bData.delivery;
     // Employees
-    renderOwnerEmployees(b);
+    renderOwnerEmployees(bData);
     // Roles
-    renderOwnerRoles(b);
+    renderOwnerRoles(bData);
     // Job apps
     renderOwnerJobApps(bizId);
     // Products
-    renderOwnerProducts(b);
+    renderOwnerProducts(bData);
+    renderBizOwnerOrders(bizId);
 }
 function renderOwnerEmployees(b){
     const el = qs('bizEmployeesList'); if(!el) return;
@@ -5918,7 +6040,7 @@ function renderOwnerRoles(b){
             <div class="biz-role-info">
                 <div class="biz-role-name">${escHtml(r.name)}</div>
                 ${r.desc ? `<div class="biz-role-desc">${escHtml(r.desc)}</div>` : ''}
-                <div class="biz-role-salary">${r.salaryType==='auto'?`💰 ${escHtml(r.salary||'')} (авто)`:r.salaryType==='contract'?'📝 По договору':'💸 Ручная выдача'}</div>
+                <div class="biz-role-salary">${formatRoleSalary(r)}</div>
             </div>
             <button class="btn btn-red btn-sm" onclick="deleteRole('${jsEsc(rid)}')">✕</button>
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">Ролей нет</div>';
@@ -5951,18 +6073,209 @@ function renderOwnerProducts(b){
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">Нет товаров</div>';
 }
 
+
+function normalizeRoleAmount(r){
+    const raw = r?.salaryAmount ?? r?.salary ?? '';
+    if(typeof raw === 'number') return String(raw);
+    if(typeof raw === 'string'){
+        const m = raw.replace(/\s+/g,' ').match(/\d+/);
+        return m ? m[0] : raw.trim();
+    }
+    return '';
+}
+function normalizeRolePeriod(r){
+    const p = String(r?.salaryPeriod || '').toLowerCase();
+    if(p === 'week' || p === 'weekly' || p === 'неделю' || p === 'неделя') return 'week';
+    if(p === 'day' || p === 'daily' || p === 'день' || p === 'dayly') return 'day';
+    const raw = String(r?.salary || '').toLowerCase();
+    if(raw.includes('нед')) return 'week';
+    return 'day';
+}
+function normalizeRoleMode(r){
+    const mode = String(r?.salaryMode || r?.salaryType || '').toLowerCase();
+    if(mode === 'auto' || mode === 'авто' || mode === 'automatic') return 'auto';
+    if(mode === 'manual' || mode === 'ручная' || mode === 'ручной') return 'manual';
+    if(mode === 'contract') return 'manual';
+    return 'manual';
+}
+function formatRoleSalary(r){
+    const amount = normalizeRoleAmount(r);
+    const period = normalizeRolePeriod(r) === 'week' ? 'в неделю' : 'в день';
+    const mode = normalizeRoleMode(r);
+    if(!amount) return mode === 'auto' ? '💰 Авто-выплата' : '✋ Ручная выплата';
+    return mode === 'auto'
+        ? `💰 ${escHtml(amount)} ₽ / ${period}`
+        : `✋ ${escHtml(amount)} ₽ / ${period} (ручная)`;
+}
+function getBizCart(bizId){
+    if(!bizCarts[bizId]) bizCarts[bizId] = {};
+    return bizCarts[bizId];
+}
+function bizCartTotal(cart){
+    return Object.values(cart||{}).reduce((sum, item)=>sum + (Number(item.price)||0) * (Number(item.qty)||0), 0);
+}
+async function processBizAutoSalaries(bizId, b){
+    if(!b || !b.roles || !b.employees) return;
+    const now = Date.now();
+    const periodMs = (p) => p === 'week' ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+    const employeePatch = {};
+    let bizBalance = Number(b.balance||0);
+    const payOps = [];
+    for(const [nick, emp] of Object.entries(b.employees||{})){
+        const role = b.roles?.[emp.roleId];
+        if(!role || normalizeRoleMode(role) !== 'auto') continue;
+        const amount = parseInt(normalizeRoleAmount(role) || '0', 10);
+        if(amount <= 0) continue;
+        const pp = periodMs(normalizeRolePeriod(role));
+        const lastPaid = emp.salaryPaidAt || emp.joinedAt || 0;
+        if(now - lastPaid < pp) continue;
+        if(bizBalance < amount) continue;
+        bizBalance -= amount;
+        employeePatch[`employees/${nick}/salaryPaidAt`] = now;
+        payOps.push({nick, amount, roleName: role.name || 'Роль', period: normalizeRolePeriod(role)});
+    }
+    if(!payOps.length) return false;
+    await update(bizItemRef(bizId), { balance: bizBalance, ...employeePatch });
+    for(const op of payOps){
+        const empSnap = await get(userRef(op.nick));
+        const emp = empSnap.val() || {};
+        await update(userRef(op.nick), { balance: (emp.balance||0) + op.amount });
+        await logTx(op.nick, {type:'in', who:b.name, amt:op.amount, desc:`Автозарплата: ${op.roleName} (${op.amount} ₽/${op.period === 'week' ? 'неделю' : 'день'})`});
+        await pushNotification(op.nick, `💰 Начислена автозарплата ${op.amount}₽ от «${b.name}»`, 'money');
+    }
+    return true;
+}
+async function renderBizOrdersForBiz(bizId, b, mode='detail'){
+    const elId = mode === 'owner' ? 'bizOwnerOrders' : mode === 'home' ? 'homeBizOrders' : 'bizDPanel3';
+    const el = qs(elId);
+    if(!el) return;
+    const snap = await get(bizOrdersRef(bizId));
+    const orders = Object.values(snap.val()||{}).filter(o=>o && o.status !== 'removed').sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
+    const myOrders = mode === 'home' ? orders.filter(o=>o.client === currentNick) : orders;
+    if(!myOrders.length){
+        el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0;">Нет заказов</div>';
+        return;
+    }
+    el.innerHTML = myOrders.map(o=>{
+        const mine = o.client === currentNick;
+        const items = (o.items||[]).map(it=>`${escHtml(it.name)} × ${it.qty}`).join(', ');
+        return `
+        <div class="order-card ${mine ? 'order-active' : ''}">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:10px;">
+                <div>
+                    <div class="order-title">${escHtml(o.customerName || o.clientName || o.client || 'Клиент')}</div>
+                    <div class="order-sub">🕒 ${new Date(o.createdAt||Date.now()).toLocaleString('ru')} · ${escHtml(o.client||'')}</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="openUserProfile('${jsEsc(o.client)}')">👤 Профиль</button>
+            </div>
+            <div class="order-items-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
+                ${(o.items||[]).map(it=>`
+                    <div class="order-item">
+                        ${it.photo ? `<img src="${escHtml(it.photo)}" onclick="openImgViewer('${jsEsc(it.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📦</div>'}
+                        <div class="order-meta">
+                            <div class="order-title">${escHtml(it.name||'')}</div>
+                            <div class="order-sub">Кол-во: ${Number(it.qty)||0} · ${(Number(it.price)||0).toLocaleString()} ₽</div>
+                        </div>
+                    </div>`).join('')}
+            </div>
+            <div class="total-row"><span>Итого</span><span class="total-val">${(o.total||0).toLocaleString()} ₽</span></div>
+            ${mine ? `<div class="order-actions"><button class="btn btn-primary btn-sm" onclick="confirmBizOrderReceipt('${jsEsc(bizId)}','${jsEsc(o.id)}')">✅ Подтвердить получение заказа</button></div>` : ''}
+        </div>`;
+    }).join('');
+}
+function renderBizCartUI(bizId, b){
+    const wrap = qs('bizCartWrap');
+    if(!wrap || !b) return;
+    const cart = getBizCart(bizId);
+    const entries = Object.entries(cart);
+    const total = bizCartTotal(cart);
+    const userName = qs('bizOrderNameInput')?.value || '';
+    wrap.innerHTML = entries.length ? `
+        <div class="cart-card">
+            <div class="card-title">🧺 Корзина</div>
+            <div class="cart-list">
+                ${entries.map(([pid, item])=>`
+                    <div class="cart-item">
+                        ${item.photo ? `<img src="${escHtml(item.photo)}" onclick="openImgViewer('${jsEsc(item.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🛍</div>'}
+                        <div class="cart-meta">
+                            <div class="cart-title">${escHtml(item.name||'')}</div>
+                            <div class="cart-sub">${(Number(item.price)||0).toLocaleString()} ₽ за шт.</div>
+                        </div>
+                        <div class="cart-qty">
+                            <button class="btn btn-ghost btn-sm" style="width:34px;padding:8px 0;" onclick="changeBizCartQty('${jsEsc(bizId)}','${jsEsc(pid)}',-1)">−</button>
+                            <input type="number" min="1" step="1" value="${Number(item.qty)||1}" onchange="setBizCartQty('${jsEsc(bizId)}','${jsEsc(pid)}', this.value)">
+                            <button class="btn btn-ghost btn-sm" style="width:34px;padding:8px 0;" onclick="changeBizCartQty('${jsEsc(bizId)}','${jsEsc(pid)}',1)">+</button>
+                        </div>
+                    </div>`).join('')}
+            </div>
+            <div class="total-row"><span>Итого</span><span class="total-val">${total.toLocaleString()} ₽</span></div>
+            <input type="text" id="bizOrderNameInput" placeholder="Имя для заказа" value="${escHtml(userName)}" maxlength="60">
+            <button class="btn btn-primary" onclick="checkoutBizCart('${jsEsc(bizId)}')">💳 Оплатить корзину</button>
+            <button class="btn btn-ghost" style="margin-top:8px;color:var(--red);border-color:var(--red-dim);" onclick="clearBizCart('${jsEsc(bizId)}')">🗑 Очистить корзину</button>
+        </div>` : `
+        <div class="cart-card">
+            <div class="card-title">🧺 Корзина</div>
+            <div style="color:var(--muted);font-size:13px;">Пока пусто. Добавьте товары выше.</div>
+        </div>`;
+}
+window.renderBizDetailOrders = async function(){
+    if(!currentBizDetailData) return;
+    await renderBizOrdersForBiz(currentBizId, currentBizDetailData, 'detail');
+};
+window.renderBizOwnerOrders = async function(bizId){
+    const snap = await get(bizItemRef(bizId));
+    if(!snap.exists()) return;
+    await renderBizOrdersForBiz(bizId, snap.val(), 'owner');
+};
+window.renderHomeBizOrders = async function(){
+    const elWrap = qs('bizOrderSection');
+    const el = qs('homeBizOrders');
+    if(!elWrap || !el) return;
+    const snap = await get(ref(db,'bizOrders'));
+    const all = snap.val() || {};
+    const orders = [];
+    Object.entries(all).forEach(([bizId, bizOrders]) => {
+        Object.values(bizOrders || {}).forEach(o => {
+            if(o && o.client === currentNick && o.status !== 'removed') orders.push({...o, bizId: o.bizId || bizId});
+        });
+    });
+    elWrap.style.display = orders.length ? 'block' : 'none';
+    if(!orders.length){ el.innerHTML = ''; return; }
+    el.innerHTML = orders.map(o=>`
+        <div class="order-card order-active">
+            <div class="order-title">${escHtml(o.clientName || currentNick)}</div>
+            <div class="order-sub">${escHtml(o.bizName || '')} · ${(o.total||0).toLocaleString()} ₽</div>
+            <div class="order-sub" style="margin-top:6px;">${(o.items||[]).map(it=>`${escHtml(it.name)} × ${it.qty}`).join(', ')}</div>
+            <div class="order-actions" style="margin-top:10px;">
+                <button class="btn btn-primary btn-sm" onclick="confirmBizOrderReceipt('${jsEsc(o.bizId)}','${jsEsc(o.id)}')">✅ Подтвердить получение заказа</button>
+                <button class="btn btn-ghost btn-sm" onclick="openBizDetail('${jsEsc(o.bizId)}')">Открыть</button>
+            </div>
+        </div>`).join('');
+};
+
 // ─── ROLES ────────────────────────────────
 window.openAddRoleModal = function(){
-    const name = prompt('Название роли (напр. Доставщик):');
-    if(!name||!name.trim()) return;
-    const desc = prompt('Описание — что делать:') || '';
-    const salaryType = prompt('Тип зарплаты:\n1 — Автоматическая\n2 — По договору\n3 — Ручная выдача\n(введи 1, 2 или 3):')||'3';
-    let salary = '';
-    if(salaryType === '1') salary = prompt('Сумма и период (напр. 500₽/день):') || '';
+    const name = prompt('Название роли (например, Доставщик):');
+    if(!name || !name.trim()) return;
+    const desc = prompt('Описание — что делает сотрудник:') || '';
+    const salaryAmount = parseInt(prompt('Зарплата только цифрой (без ₽ и текста):') || '0', 10);
+    if(!salaryAmount || salaryAmount <= 0) return toast('⚠️ Укажите зарплату цифрой','gold');
+    const periodPick = prompt('Период выплаты:\n1 — в день\n2 — в неделю', '1') || '1';
+    const salaryPeriod = periodPick === '2' ? 'week' : 'day';
+    const modePick = prompt('Выплата:\n1 — автоматически\n2 — вручную', '1') || '1';
+    const payMode = modePick === '2' ? 'manual' : 'auto';
     const rid = genId();
     if(!currentBizId) return;
     update(bizItemRef(currentBizId), {
-        [`roles/${rid}`]: { name: name.trim(), desc, salaryType: salaryType==='1'?'auto':salaryType==='2'?'contract':'manual', salary, createdAt: Date.now() }
+        [`roles/${rid}`]: {
+            name: name.trim(),
+            desc,
+            salaryAmount,
+            salaryPeriod,
+            salaryMode: payMode,
+            salaryType: payMode,
+            createdAt: Date.now()
+        }
     }).then(()=>{ toast('✅ Роль добавлена','green'); renderBizOwnerPanel(); });
 };
 window.deleteRole = async function(rid){
@@ -6108,6 +6421,103 @@ window.deleteBizProduct = async function(pid){
     renderBizOwnerPanel();
 };
 
+
+// ─── RENT BUILDINGS ───────────────────────
+function renderAdminRentBuildings(buildings){
+    const el = qs('adminRentBuildings'); if(!el) return;
+    const list = Object.entries(buildings||{}).map(([id,b])=>({...b,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    el.innerHTML = list.length ? list.map(b=>`
+        <div class="rent-row" style="align-items:flex-start;">
+            ${b.photo ? `<img src="${escHtml(b.photo)}" onclick="openImgViewer('${jsEsc(b.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏘️</div>'}
+            <div class="rent-meta">
+                <div class="rent-title">${escHtml(b.name||'')}</div>
+                <div class="rent-sub">${(b.weekPrice||0).toLocaleString()} ₽ / неделя</div>
+                ${b.renter ? `<div class="rent-owned">Арендует: <b style="color:var(--text);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.renter)}')">${escHtml(b.renter)}</b></div>` : '<div class="rent-sub">Свободно</div>'}
+            </div>
+            <button class="btn btn-red btn-sm" onclick="deleteRentBuilding('${jsEsc(b.id)}')">✕</button>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">Пока нет зданий</div>';
+}
+window.handleRentBuildingPhoto = async function(e){
+    const f = e.target.files[0]; if(!f) return;
+    _rentBuildingPhotoData = await compressImage(f, 900, 0.85);
+    toast('🖼 Фото здания выбрано','green');
+};
+window.addRentBuilding = async function(){
+    const name = (qs('rentBuildName')?.value||'').trim();
+    const price = parseInt(qs('rentBuildPrice')?.value||'0',10);
+    const url = (qs('rentBuildPhoto')?.value||'').trim();
+    const photo = _rentBuildingPhotoData || url || '';
+    if(!name) return toast('⚠️ Укажите название','gold');
+    if(!price || price <= 0) return toast('⚠️ Укажите цену в неделю','gold');
+    const id = genId();
+    await set(rentBuildingRef(id), {
+        id, name, weekPrice: price, photo,
+        renter: '', renterName: '', rentedAt: 0, createdAt: Date.now()
+    });
+    if(qs('rentBuildName')) qs('rentBuildName').value = '';
+    if(qs('rentBuildPrice')) qs('rentBuildPrice').value = '';
+    if(qs('rentBuildPhoto')) qs('rentBuildPhoto').value = '';
+    _rentBuildingPhotoData = null;
+    await renderAdminRentBuildings((await get(rentBuildingsRef())).val()||{});
+    toast('✅ Здание добавлено','green');
+};
+window.deleteRentBuilding = async function(id){
+    if(!confirm('Удалить здание?')) return;
+    await remove(rentBuildingRef(id));
+    await renderAdminRentBuildings((await get(rentBuildingsRef())).val()||{});
+    toast('🗑 Удалено','gold');
+};
+window.rentBuilding = async function(id){
+    const snap = await get(rentBuildingRef(id)); if(!snap.exists()) return;
+    const b = snap.val();
+    if(b.renter) return toast('⚠️ Уже арендовано','gold');
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val() || {};
+    if((u.balance||0) < (b.weekPrice||0)) return toast('❌ Недостаточно средств','red');
+    if(!confirm(`Арендовать «${b.name}» за ${(b.weekPrice||0).toLocaleString()}₽ в неделю?`)) return;
+    await update(userRef(currentNick), { balance: (u.balance||0) - (b.weekPrice||0) });
+    await update(rentBuildingRef(id), { renter: currentNick, renterName: displayNick(u) || currentNick, rentedAt: Date.now() });
+    await logTx(currentNick, {type:'out', who:b.name, amt:b.weekPrice||0, desc:`Аренда здания «${b.name}»`});
+    toast('🏘 Здание арендовано','green');
+    renderRentBuildings();
+};
+window.renderRentBuildings = async function(){
+    const el = qs('rentBuildingsList'); if(!el) return;
+    const snap = await get(rentBuildingsRef());
+    const list = Object.values(snap.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    const myCard = qs('myRentedBuildingCard');
+    const my = list.filter(b => b.renter === currentNick);
+    if(myCard){
+        if(my.length){
+            myCard.style.display='block';
+            myCard.innerHTML = `<div class="card-title">🏠 Ваши арендованные здания</div>` + my.map(b=>`
+                <div class="rent-row" style="align-items:flex-start;">
+                    ${b.photo ? `<img src="${escHtml(b.photo)}" onclick="openImgViewer('${jsEsc(b.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏘️</div>'}
+                    <div class="rent-meta">
+                        <div class="rent-title">${escHtml(b.name||'')}</div>
+                        <div class="rent-sub">${(b.weekPrice||0).toLocaleString()} ₽ / неделя</div>
+                    </div>
+                </div>`).join('');
+        } else {
+            myCard.style.display='none';
+            myCard.innerHTML = '';
+        }
+    }
+    el.innerHTML = list.length ? list.map(b=>`
+        <div class="rent-card ${b.renter ? 'rented' : ''}">
+            <div class="rent-row" style="align-items:flex-start;">
+                ${b.photo ? `<img src="${escHtml(b.photo)}" onclick="openImgViewer('${jsEsc(b.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏘️</div>'}
+                <div class="rent-meta">
+                    <div class="rent-title">${escHtml(b.name||'')}</div>
+                    <div class="rent-sub">${(b.weekPrice||0).toLocaleString()} ₽ / неделя</div>
+                    ${b.renter ? `<div class="rent-owned">Арендует: <b style="color:var(--text);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.renter)}')">${escHtml(b.renterName || b.renter)}</b></div>` : '<div class="rent-sub">Свободно</div>'}
+                </div>
+            </div>
+            <div class="rent-actions" style="margin-top:10px;">
+                ${b.renter ? `<button class="btn btn-ghost btn-sm rent-disabled" disabled>Арендовать</button>` : `<button class="btn btn-gold btn-sm" onclick="rentBuilding('${jsEsc(b.id)}')">Арендовать</button>`}
+            </div>
+        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет зданий</div>';
+};
+window.refreshRentBuildingsIfNeeded = renderRentBuildings;
 // ─── TERMINAL ────────────────────────────
 let _terminalBizId = null;
 let _terminalAmt = 0;
@@ -7144,6 +7554,7 @@ window.sendGiftSubscription = async function(){
     // Apply to recipient
     await update(userRef(recipient), {
         subscription: giftSubscriptionType,
+        subscriptionStatus: 'active',
         subscriptionExpiry: expiry.toISOString(),
         subscriptionStart: startDate,
         subscriptionGiftedBy: currentNick,
