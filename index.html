@@ -1869,7 +1869,7 @@ function formatLastSeen(user){
 function updateDmLiveStatus(peerUser, typingData){
     const el = qs('dmChatJob');
     if(!el || !peerUser) return;
-    const base = peerUser.job || 'Житель';
+    const base = getUserBusinessRoleLabel(peerUser, peerUser.nick || '');
     const online = isUserOnline(peerUser);
     const ageOk = typingData && (Date.now() - Number(typingData.ts || 0) < 7000);
     let live = online ? 'в сети' : formatLastSeen(peerUser);
@@ -2429,7 +2429,7 @@ function attachListeners() {
 function updateHeader(u) {
     if(!u) return;
     const shown = displayNick(u) || u.nick;
-    qs('hNick').textContent=shown; qs('hJob').textContent=u.job||'Житель';
+    qs('hNick').textContent=shown; qs('hJob').textContent=getUserBusinessRoleLabel(u, u.nick || currentNick);
     qs('hBal').textContent=(u.balance||0).toLocaleString();
     const av=u.avatar||DEFAULT_AVATAR_URL;
     toggleAvatarMedia(qs('hAv'), qs('hAvVideo'), av);
@@ -2495,7 +2495,7 @@ function updateHeader(u) {
     
     qs('uNick').textContent=shown;
     const ul = qs('uNickLogin'); if(ul) ul.textContent = '@' + (u.nick || '');
-    qs('uJobDisp').textContent=u.job||'Житель';
+    qs('uJobDisp').textContent=getUserBusinessRoleLabel(u, u.nick || currentNick);
     
     // Profile description
     const descEl = qs('profileDescription');
@@ -3024,7 +3024,7 @@ async function renderWorkerPage(orders){
         const clientCardId=isDriver?'driverClientCard':'deliveryClientCard';const clientInfoId=isDriver?'driverClientInfo':'deliveryClientInfo';
         const clientCardEl=qs(clientCardId),clientInfoEl=qs(clientInfoId);
         if(clientCardEl) clientCardEl.style.display='block';
-        if(clientInfoEl) clientInfoEl.innerHTML=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;"><div class="av-wrap-sm ${clientOnline?'online':''}"><img src="${escHtml(clientUser.avatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" style="width:44px;height:44px;border-radius:13px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="openUserProfile('${escHtml(active.client)}')"><div class="online-dot"></div></div><div><div style="font-weight:900;font-size:15px;cursor:pointer;" onclick="openUserProfile('${escHtml(active.client)}')">${escHtml(active.client)}</div><div style="font-size:11px;color:${clientOnline?'#22c55e':'var(--muted)'};">${clientOnline?'🟢 В сети':escHtml(clientUser.job||'Житель')}</div></div></div><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" style="flex:1;" onclick="goToChat('${escHtml(active.client)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openUserProfile('${escHtml(active.client)}')">👤 Профиль</button></div>`;
+        if(clientInfoEl) clientInfoEl.innerHTML=`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;"><div class="av-wrap-sm ${clientOnline?'online':''}"><img src="${escHtml(clientUser.avatar||'https://cdn-icons-png.flaticon.com/512/149/149071.png')}" style="width:44px;height:44px;border-radius:13px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="openUserProfile('${escHtml(active.client)}')"><div class="online-dot"></div></div><div><div style="font-weight:900;font-size:15px;cursor:pointer;" onclick="openUserProfile('${escHtml(active.client)}')">${escHtml(active.client)}</div><div style="font-size:11px;color:${clientOnline?'#22c55e':'var(--muted)'};">${clientOnline?'🟢 В сети':escHtml(getUserBusinessRoleLabel(clientUser, active.client))}</div></div></div><div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" style="flex:1;" onclick="goToChat('${escHtml(active.client)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openUserProfile('${escHtml(active.client)}')">👤 Профиль</button></div>`;
         if(isDriver&&active.type==='taxi') setTimeout(()=>initDriverTrackMap(active.id,active.clientLat,active.clientLng,active.destLat,active.destLng),200);
         if(!isDriver&&active.type==='shop') setTimeout(()=>initDeliveryMap(active),200);
     } else {
@@ -4270,7 +4270,7 @@ window.openUserProfile=async function(nick){
     toggleAvatarMedia(qs('upmAv'), qs('upmAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
     qs('upmAv').onclick=()=>isVideoAvatarSrc(u.avatar||DEFAULT_AVATAR_URL) ? openVideoViewer(u.avatar||DEFAULT_AVATAR_URL) : openImgViewer(u.avatar||DEFAULT_AVATAR_URL);
     if(qs('upmAvVideo')) qs('upmAvVideo').onclick=()=>openVideoViewer(u.avatar||DEFAULT_AVATAR_URL);
-    qs('upmNick').textContent=(displayNick(u)||u.nick)+(u.nick===ADMIN?' 👑':'');qs('upmJob').textContent=u.job||'Житель';
+    qs('upmNick').textContent=(displayNick(u)||u.nick)+(u.nick===ADMIN?' 👑':'');qs('upmJob').textContent=getUserBusinessRoleLabel(u, u.nick || currentNick);
     
     // Display subscription badge in visitor profile
     const vpfSubBadge = qs('vpfSubscriptionBadge');
@@ -4366,7 +4366,7 @@ window.openUserProfile=async function(nick){
         }
     }
     
-    qs('upmStats').innerHTML = (subscriptionHtml ? `<div style="grid-column:1/-1;text-align:center;margin-bottom:8px;">${subscriptionHtml}</div>` : '') + `<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:11px;color:var(--muted);">@${escHtml(u.nick)}</div><div class="sl">Логин</div></div><div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:16px;">${escHtml(u.job||'Житель')}</div><div class="sl">Должность</div></div>${u.vehicle?`<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:14px;">🛵 ${escHtml(u.vehicle)}</div><div class="sl">Транспорт</div></div>`:''}`;
+    qs('upmStats').innerHTML = (subscriptionHtml ? `<div style="grid-column:1/-1;text-align:center;margin-bottom:8px;">${subscriptionHtml}</div>` : '') + `<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:11px;color:var(--muted);">@${escHtml(u.nick)}</div><div class="sl">Логин</div></div><div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:16px;">${escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div><div class="sl">Должность</div></div>${u.vehicle?`<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:14px;">🛵 ${escHtml(u.vehicle)}</div><div class="sl">Транспорт</div></div>`:''}`;
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,12);
     const wallHtml=posts.length?`<div style="margin-top:16px;"><div style="font-weight:900;font-size:12px;color:var(--muted);margin-bottom:8px;">📰 Лента</div>${posts.map(p=>wallPostCardHtml(nick,p.id||'',p)).join('')}</div>`:'';
@@ -4404,7 +4404,7 @@ async function renderVisitorProfilePage(nick){
     toggleAvatarMedia(qs('vpfAv'), qs('vpfAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
     qs('vpfName').textContent=(u.nicknameEmoji ? u.nicknameEmoji + ' ' : '') + (displayNick(u)||u.nick)+(u.nick===ADMIN?' 👑':'');
     const vpl=qs('vpfLogin');if(vpl)vpl.textContent='@'+u.nick;
-    qs('vpfJob').textContent=u.job||'Житель';
+    qs('vpfJob').textContent=getUserBusinessRoleLabel(u, u.nick || currentNick);
     
     // Profile description
     const descEl = qs('vpfProfileBgEffect').parentElement.querySelector('#profileDescription');
@@ -4978,7 +4978,7 @@ function renderLeaderboard(users){
         frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
     }
     
-    return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(u.job||'Житель')}</div></div><div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div></div>`;}).join('');
+    return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div><div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div></div>`;}).join('');
 }
 
 // ─── JOBS ─────────────────────────────────
@@ -5092,7 +5092,7 @@ window.submitJanitorDone=async function(){
 function renderAdminApps(apps){const pending=Object.values(apps||{}).filter(a=>a.status==='new');qs('appList').innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':pending.map(a=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;"><b>${escHtml(a.from)}</b> → ${escHtml(a.target)}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="approveApp('${a.id}',true)">✅</button><button class="btn btn-red btn-sm" onclick="approveApp('${a.id}',false)">❌</button></div></div>`).join('');}
 function renderAdminUsers(users){
     const el=qs('allUsersList');if(!el)return;
-    el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);const canDelete=u.nick!==ADMIN;return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;"><div class="av-wrap-sm ${online?'online':''}" style="cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(u.job||'Житель')} · ${(u.balance||0).toLocaleString()}₽</div></div>${canDelete?`<button class="btn btn-red btn-sm" style="margin-left:8px;padding:6px 10px;font-size:11px;" onclick="event.stopPropagation();adminDeleteAccount('${escHtml(u.nick)}')">🗑</button>`:''}</div>`;}).join('');
+    el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);const canDelete=u.nick!==ADMIN;return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;"><div class="av-wrap-sm ${online?'online':''}" style="cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(getUserBusinessRoleLabel(u, u.nick || ''))} · ${(u.balance||0).toLocaleString()}₽</div></div>${canDelete?`<button class="btn btn-red btn-sm" style="margin-left:8px;padding:6px 10px;font-size:11px;" onclick="event.stopPropagation();adminDeleteAccount('${escHtml(u.nick)}')">🗑</button>`:''}</div>`;}).join('');
     const total=Object.values(users).reduce((s,u)=>s+(u.balance||0),0);
     const aStats=qs('adminStats');if(aStats)aStats.innerHTML=`<div class="stat-box"><div class="sv" style="color:var(--gold)">${Object.keys(users).length}</div><div class="sl">Жителей</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)" id="adminOrderCount">—</div><div class="sl">Заказов</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)">${Math.round(total/1000)}к</div><div class="sl">₽ оборот</div></div>`;
 }
@@ -5259,7 +5259,7 @@ window.adminFireWorker=async function(){
     if(target===currentNick)return toast('⚠️ Нельзя уволить себя','gold');
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
     const u=snap.val();
-    if(!confirm(`Уволить ${target} с должности ${u.job||'Житель'}?`))return;
+    if(!confirm(`Уволить ${target} с должности ${getUserBusinessRoleLabel(u, u.nick || '')}?`))return;
     await update(userRef(target),{job:'Житель',vehicle:'',janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''});
     await pushNotification(target,'🚪 Мэрия уволила вас с работы','system');
     toast(`🚪 ${target} уволен`,'red');
@@ -5411,7 +5411,7 @@ window.publishNews = async function(){
         imageUrl,
         videoUrl,
         author: currentNick,
-        authorJob: allUsersCache[currentNick]?.job || 'Житель',
+        authorJob: getUserBusinessRoleLabel(allUsersCache[currentNick] || {}, currentNick),
         createdAt: Date.now(),
         date: new Date().toLocaleDateString('ru'),
         time: nowTime()
@@ -5683,6 +5683,7 @@ const bizAppRef = (id) => ref(db, `businessApps/${id}`);
 
 let currentBizId = null;
 let currentBizDetailData = null;
+let allBusinessesCache = {};
 let bizCarts = {};
 let _bizEditIconData = null;
 let _bizEditBannerData = null;
@@ -5755,7 +5756,7 @@ window.adminDeleteBiz = async function(bizId){
     if(!confirm(`Удалить бизнес «${b.name}»? Это необратимо.`)) return;
     await update(bizItemRef(bizId), { status: 'deleted', deletedAt: Date.now(), deletedBy: ADMIN });
     // Remove businessId from owner
-    if(b.owner) await update(userRef(b.owner), { businessId: null, job: 'Житель' });
+    if(b.owner) await update(userRef(b.owner), { businessId: null, employerBizId: null, job: 'Житель' });
     if(b.owner) await pushNotification(b.owner, `🗑 Ваш бизнес «${b.name}» закрыт мэрией.`, 'system');
     toast(`🗑 Бизнес «${b.name}» закрыт`, 'red');
     renderBusinesses();
@@ -5879,7 +5880,9 @@ async function renderBusinesses(){
     } else { myBizPanel.style.display = 'none'; }
 
     const snap = await get(bizRef());
-    const bizneses = Object.values(snap.val() || {}).filter(b => b.status === 'active');
+    const biznesesRaw = snap.val() || {};
+    allBusinessesCache = biznesesRaw;
+    const bizneses = Object.values(biznesesRaw).filter(b => b.status === 'active');
     if(!bizneses.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Бизнесов пока нет</div>'; return; }
     el.innerHTML = `<div class="biz-grid">${bizneses.map(b => `
         <div class="biz-card" onclick="openBizDetail('${jsEsc(b.id)}')">
@@ -5891,6 +5894,13 @@ async function renderBusinesses(){
                 </div>
                 <div class="biz-card-cat">${escHtml(b.category||'')}</div>
                 <div class="biz-card-desc">${escHtml(b.desc||'')}</div>
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;font-weight:800;">Владелец и сотрудники</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                        <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.22);font-size:11px;font-weight:800;">👑 ${escHtml(b.owner||'')}</span>
+                        ${Object.entries(b.employees||{}).map(([nick, emp])=>`<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;">👤 ${escHtml(nick)} · <span style="color:var(--primary);">${escHtml(getBizEmployeeRoleName(emp))}</span></span>`).join('')}
+                    </div>
+                </div>
                 ${b.delivery ? '<div style="font-size:11px;color:var(--primary);font-weight:800;margin-top:4px;">🚚 Доставка</div>' : ''}
             </div>
         </div>`).join('')}</div>`;
@@ -5902,6 +5912,7 @@ window.openBizDetail = async function(bizId){
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return toast('❌ Бизнес не найден','red');
     const b = snap.val();
     currentBizDetailData = b;
+    allBusinessesCache[bizId] = b;
     const isOwner = b.owner === currentNick;
     const isAdmin = currentNick === ADMIN;
 
@@ -5934,7 +5945,11 @@ window.openBizDetail = async function(bizId){
                     <span style="color:var(--muted);font-size:16px;">›</span>
                 </div>
             </div>
-            ${myRole ? `<div style="margin-top:8px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:10px;font-size:13px;"><b style="color:var(--primary);">👤 Ваша роль:</b> ${escHtml(myRole.roleName||'')}</div>` : ''}
+            ${myRole ? `<div style="margin-top:8px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:10px;font-size:13px;"><b style="color:var(--primary);">👤 Ваша роль:</b> ${escHtml(getBizEmployeeRoleName(myRole))}</div>` : ''}
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:800;">Сотрудники</div>
+                ${renderBizEmployeeTags(b)}
+            </div>
         </div>
         ${!isOwner ? `<div class="card">
             <div class="card-title">💼 Работа в бизнесе</div>
@@ -6094,6 +6109,7 @@ window.applyToBiz = async function(bizId){
 window.quitBiz = async function(bizId){
     if(!confirm('Уволиться из бизнеса?')) return;
     await update(bizItemRef(bizId), { [`employees/${currentNick}`]: null });
+    await update(userRef(currentNick), { employerBizId: null, job: 'Житель' });
     toast('🚪 Вы уволились','gold');
     openBizDetail(bizId);
 };
@@ -6221,6 +6237,7 @@ async function renderBizOwnerPanel(){
     const b = snap.val();
     await processBizAutoSalaries(bizId, b).catch(()=>{});
     const refreshedSnap = await get(bizItemRef(bizId)); const bData = refreshedSnap.val() || b;
+    allBusinessesCache[bizId] = bData;
     const nameEl = qs('bizOwnerName'); if(nameEl) nameEl.textContent = bData.name;
     const balEl = qs('bizBalanceDisplay'); if(balEl) balEl.textContent = (bData.balance||0).toLocaleString();
     // Fill edit fields
@@ -6247,7 +6264,7 @@ function renderOwnerEmployees(b){
             <img src="${escHtml(safeAvatar(nick))}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
             <div style="flex:1;">
                 <div style="font-weight:900;font-size:14px;">${escHtml(nick)}</div>
-                <div style="font-size:11px;color:var(--primary);">${escHtml(e.roleName||'')}</div>
+                <div style="font-size:11px;color:var(--primary);">${escHtml(getBizEmployeeRoleName(e))}</div>
             </div>
             <button class="btn btn-gold btn-sm" onclick="payEmployee('${jsEsc(nick)}')">💸 Перевести</button>
             <button class="btn btn-red btn-sm" onclick="fireEmployee('${jsEsc(nick)}')">✕</button>
@@ -6324,6 +6341,34 @@ function formatRoleSalary(r){
     const period = normalizeRolePeriod(r) === 'week' ? 'в неделю' : 'в день';
     if(!amount) return '💰 Зарплата не указана';
     return `💰 ${escHtml(amount)} ₽ / ${period}`;
+}
+
+function getBizEmployeeRoleName(entry){
+    if(!entry) return 'Сотрудник';
+    return entry.roleName || entry.role || 'Сотрудник';
+}
+function getUserBusinessRoleLabel(u, nick = (u && u.nick) || currentNick){
+    const fallback = (u && u.job) || 'Житель';
+    if(!u) return fallback;
+    if(u.businessId){
+        const ownBiz = allBusinessesCache[u.businessId];
+        if(ownBiz && ownBiz.owner === nick) return 'Бизнесмен';
+    }
+    const scan = (allBusinessesCache && typeof allBusinessesCache === 'object') ? Object.values(allBusinessesCache) : [];
+    for(const b of scan){
+        const emp = b && b.employees && b.employees[nick];
+        if(emp) return getBizEmployeeRoleName(emp);
+    }
+    if(u.employerBizId && allBusinessesCache[u.employerBizId]){
+        const emp = allBusinessesCache[u.employerBizId].employees?.[nick];
+        if(emp) return getBizEmployeeRoleName(emp);
+    }
+    return fallback;
+}
+function renderBizEmployeeTags(b){
+    const entries = Object.entries(b?.employees || {});
+    if(!entries.length) return '<div style="color:var(--muted);font-size:12px;">Сотрудников пока нет</div>';
+    return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${entries.map(([nick, emp])=>`<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;white-space:nowrap;"><span>👤</span><span>${escHtml(nick)}</span><span style="color:var(--primary);font-weight:900;">${escHtml(getBizEmployeeRoleName(emp))}</span></span>`).join('')}</div>`;
 }
 function getBizCart(bizId){
     if(!bizCarts[bizId]) bizCarts[bizId] = {};
@@ -6532,7 +6577,7 @@ window.approveJobApp = async function(bizId, appId, applicant, roleId, roleName)
     await update(bizItemRef(bizId), { [`employees/${applicant}`]: { roleId, roleName, joinedAt: Date.now() } });
     await update(ref(db,`bizJobApps/${bizId}/${appId}`), { status: 'approved' });
     // Give employee role reference
-    await update(userRef(applicant), { employerBizId: bizId });
+    await update(userRef(applicant), { employerBizId: bizId, businessId: null, job: roleName || 'Сотрудник' });
     await pushNotification(applicant, `✅ Вас приняли в «${b.name}» на роль ${roleName}!`, 'system');
     toast(`✅ ${applicant} принят`, 'green');
     renderBizOwnerPanel();
@@ -6549,7 +6594,7 @@ window.fireEmployee = async function(nick){
     if(!currentBizId) return;
     if(!confirm(`Уволить ${nick}?`)) return;
     await update(bizItemRef(currentBizId), { [`employees/${nick}`]: null });
-    await update(userRef(nick), { employerBizId: null });
+    await update(userRef(nick), { employerBizId: null, job: 'Житель' });
     const snap = await get(bizItemRef(currentBizId));
     await pushNotification(nick, `🚪 Вы уволены из бизнеса «${snap.val()?.name||''}»`, 'system');
     toast(`🚪 ${nick} уволен`,'gold');
