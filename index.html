@@ -5945,13 +5945,25 @@ window.openBizDetail = async function(bizId){
     renderBizDetailProducts(b.products||{}, b, isOwner);
     renderBizDetailOrders();
 
-    // Show/hide Orders tab based on staff status
+    // Orders tab: staff see all orders, clients see their own
     const ordersTab = qs('bizDTab3');
-    if(ordersTab) ordersTab.style.display = isStaff ? '' : 'none';
+    if(ordersTab) ordersTab.style.display = ''; // always show — clients see their own orders
 
     // Switch to about
     switchBizDetailTab(0);
     navTo('bizDetail');
+
+    // Live listener for this biz orders — updates both client and staff in real time
+    if(listeners.bizOrders) { off(listeners.bizOrders.ref, 'value', listeners.bizOrders.fn); delete listeners.bizOrders; }
+    const boRef = bizOrdersRef(bizId);
+    const boFn = (snap) => {
+        if(curPage === 'bizDetail' || curPage === 'bizOwnerPanel'){
+            renderBizDetailOrders();
+            renderHomeBizOrders();
+        }
+    };
+    onValue(boRef, boFn);
+    listeners.bizOrders = { ref: boRef, fn: boFn };
 };
 
 function renderBizJobApplyHtml(roles, b){
@@ -6138,13 +6150,22 @@ window.checkoutBizCart = async function(bizId){
     });
     await logTx(currentNick, {type:'out', who:b.name, amt: total, desc:`Заказ в «${b.name}» (${buyerName})`});
     const staff = new Set([b.owner, ...Object.keys(b.employees||{})].filter(Boolean));
-    await Promise.all([...staff].map(nick => pushNotification(nick, `🛒 Новый заказ в «${b.name}» от ${buyerName}`, 'money')));
-    toast('✅ Заказ оплачен и создан','green');
+    await Promise.all([...staff].map(nick => pushNotification(nick, `🛒 Новый заказ в «${b.name}» от ${buyerName} (код: ${orderId.slice(-6).toUpperCase()})`, 'money')));
+    toast(`✅ Заказ #${orderCode} оплачен! Деньги списаны. Ожидайте выдачи.`,'green');
     bizCarts[bizId] = {};
-    if(qs('bizOrderNameInput')) qs('bizOrderNameInput').value = ''; window._bizOrderName = '';
+    window._bizOrderName = '';
+    if(qs('bizOrderNameInput')) qs('bizOrderNameInput').value = '';
+    // Refresh home orders
     renderHomeBizOrders();
-    renderBizDetailOrders();
-    if(currentBizId === bizId && currentBizDetailData) renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
+    // Show order in biz detail — for staff switch to orders tab, for client show inline
+    if(currentBizId === bizId && currentBizDetailData){
+        const isStaff = currentBizDetailData.owner === currentNick || currentNick === ADMIN || (currentBizDetailData.employees && currentBizDetailData.employees[currentNick]);
+        renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
+        if(isStaff){
+            switchBizDetailTab(3);
+            renderBizDetailOrders();
+        }
+    }
 };
 window.confirmBizOrderReceipt = async function(bizId, orderId, side){
     const snap = await get(bizOrderRef(bizId, orderId)); if(!snap.exists()) return;
@@ -6341,9 +6362,15 @@ async function renderBizOrdersForBiz(bizId, b, mode='detail'){
     if(!el) return;
     const snap = await get(bizOrdersRef(bizId));
     const orders = Object.values(snap.val()||{}).filter(o=>o && o.status !== 'removed').sort((a,b)=> (b.createdAt||0) - (a.createdAt||0));
-    const myOrders = mode === 'home' ? orders.filter(o=>o.client === currentNick) : orders;
+    const isViewerStaff = b?.owner === currentNick || currentNick === ADMIN || (b?.employees && b.employees[currentNick]);
+    const myOrders = (mode === 'home' || (mode === 'detail' && !isViewerStaff)) 
+        ? orders.filter(o=>o.client === currentNick) 
+        : orders;
     if(!myOrders.length){
-        el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0;">Нет заказов</div>';
+        const emptyMsg = (mode === 'detail' && !isViewerStaff) 
+            ? '🛒 У вас нет активных заказов в этом бизнесе' 
+            : 'Нет активных заказов';
+        el.innerHTML = `<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0;">${emptyMsg}</div>`;
         return;
     }
     el.innerHTML = myOrders.map(o=>{
@@ -6420,8 +6447,13 @@ function renderBizCartUI(bizId, b){
         </div>`;
 }
 window.renderBizDetailOrders = async function(){
-    if(!currentBizDetailData) return;
-    await renderBizOrdersForBiz(currentBizId, currentBizDetailData, 'detail');
+    if(!currentBizId) return;
+    // Always re-fetch fresh biz data so employee list is current
+    const snap = await get(bizItemRef(currentBizId));
+    const b = snap.exists() ? snap.val() : currentBizDetailData;
+    if(!b) return;
+    currentBizDetailData = b;
+    await renderBizOrdersForBiz(currentBizId, b, 'detail');
 };
 window.renderBizOwnerOrders = async function(bizId){
     const snap = await get(bizItemRef(bizId));
