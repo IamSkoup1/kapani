@@ -5923,10 +5923,20 @@ window.openBizDetail = async function(bizId){
             ${b.address ? `<div style="font-size:13px;color:var(--muted);">📍 ${escHtml(b.address)}</div>` : ''}
             ${b.services ? `<div style="font-size:13px;color:var(--muted);margin-top:6px;">🛠 ${escHtml(b.services)}</div>` : ''}
             ${b.delivery ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.3);border-radius:20px;font-size:12px;font-weight:800;color:var(--primary);">🚚 Доставка доступна</div>' : ''}
-            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);">Владелец: <b style="color:var(--text);">${escHtml(b.owner)}</b></div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:800;">Владелец</div>
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.owner)}')">
+                    <img src="${escHtml(safeAvatar(b.owner))}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;border:2px solid var(--primary);flex-shrink:0;">
+                    <div style="flex:1;">
+                        <div style="font-weight:900;font-size:14px;">${escHtml(b.owner)}</div>
+                        <div style="font-size:11px;color:var(--primary);font-weight:700;">Владелец бизнеса</div>
+                    </div>
+                    <span style="color:var(--muted);font-size:16px;">›</span>
+                </div>
+            </div>
             ${myRole ? `<div style="margin-top:8px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:10px;font-size:13px;"><b style="color:var(--primary);">👤 Ваша роль:</b> ${escHtml(myRole.roleName||'')}</div>` : ''}
         </div>
-        ${!isOwner && !isAdmin ? `<div class="card">
+        ${!isOwner ? `<div class="card">
             <div class="card-title">💼 Работа в бизнесе</div>
             ${myRole ? `<div class="biz-apply-pending">👤 Вы сотрудник: <b>${escHtml(myRole.roleName||'')}</b></div>
                 <button class="btn btn-red btn-sm" onclick="quitBiz('${jsEsc(bizId)}')">Уволиться</button>` :
@@ -6312,11 +6322,8 @@ function normalizeRoleMode(r){
 function formatRoleSalary(r){
     const amount = normalizeRoleAmount(r);
     const period = normalizeRolePeriod(r) === 'week' ? 'в неделю' : 'в день';
-    const mode = normalizeRoleMode(r);
-    if(!amount) return mode === 'auto' ? '💰 Авто-выплата' : '✋ Ручная выплата';
-    return mode === 'auto'
-        ? `💰 ${escHtml(amount)} ₽ / ${period}`
-        : `✋ ${escHtml(amount)} ₽ / ${period} (ручная)`;
+    if(!amount) return '💰 Зарплата не указана';
+    return `💰 ${escHtml(amount)} ₽ / ${period}`;
 }
 function getBizCart(bizId){
     if(!bizCarts[bizId]) bizCarts[bizId] = {};
@@ -6492,12 +6499,10 @@ window.openAddRoleModal = function(){
     const name = prompt('Название роли (например, Доставщик):');
     if(!name || !name.trim()) return;
     const desc = prompt('Описание — что делает сотрудник:') || '';
-    const salaryAmount = parseInt(prompt('Зарплата только цифрой (без ₽ и текста):') || '0', 10);
+    const salaryAmount = parseInt(prompt('Ставка зарплаты цифрой (₽, только для отображения):') || '0', 10);
     if(!salaryAmount || salaryAmount <= 0) return toast('⚠️ Укажите зарплату цифрой','gold');
-    const periodPick = prompt('Период выплаты:\n1 — в день\n2 — в неделю', '1') || '1';
+    const periodPick = prompt('Период ставки:\n1 — в день\n2 — в неделю', '1') || '1';
     const salaryPeriod = periodPick === '2' ? 'week' : 'day';
-    const modePick = prompt('Выплата:\n1 — автоматически\n2 — вручную', '1') || '1';
-    const payMode = modePick === '2' ? 'manual' : 'auto';
     const rid = genId();
     if(!currentBizId) return;
     update(bizItemRef(currentBizId), {
@@ -6506,8 +6511,8 @@ window.openAddRoleModal = function(){
             desc,
             salaryAmount,
             salaryPeriod,
-            salaryMode: payMode,
-            salaryType: payMode,
+            salaryMode: 'manual',
+            salaryType: 'manual',
             createdAt: Date.now()
         }
     }).then(()=>{ toast('✅ Роль добавлена','green'); renderBizOwnerPanel(); });
@@ -6551,20 +6556,27 @@ window.fireEmployee = async function(nick){
     renderBizOwnerPanel();
 };
 window.payEmployee = async function(nick){
-    const amtStr = prompt(`Перевести деньги со счёта бизнеса сотруднику ${nick}. Сумма (₽):`);
-    const amt = parseInt(amtStr||'0',10);
-    if(!amt||amt<=0) return;
     if(!currentBizId) return;
     const snap = await get(bizItemRef(currentBizId)); if(!snap.exists()) return;
     const b = snap.val();
-    if((b.balance||0) < amt) return toast('❌ Недостаточно средств на счету бизнеса','red');
+    // Only owner can pay
+    if(b.owner !== currentNick) return toast('❌ Только владелец может переводить зарплату','red');
+    const emp = b.employees?.[nick];
+    const role = emp ? b.roles?.[emp.roleId] : null;
+    const suggested = role ? normalizeRoleAmount(role) : '';
+    const hint = suggested ? ` (ставка: ${suggested} ₽)` : '';
+    const amtStr = prompt(`Перевести зарплату сотруднику ${nick}${hint}\nСумма со счёта бизнеса (₽):`);
+    const amt = parseInt(amtStr||'0',10);
+    if(!amt||amt<=0) return;
+    if((b.balance||0) < amt) return toast(`❌ На счету бизнеса только ${(b.balance||0).toLocaleString()} ₽`,'red');
     const empSnap = await get(userRef(nick)); if(!empSnap.exists()) return;
-    const emp = empSnap.val();
+    const empUser = empSnap.val();
     await update(bizItemRef(currentBizId), { balance: (b.balance||0) - amt });
-    await update(userRef(nick), { balance: (emp.balance||0) + amt });
+    await update(userRef(nick), { balance: (empUser.balance||0) + amt });
     await logTx(nick, {type:'in',who:b.name,amt,desc:`Зарплата от «${b.name}»`});
-    await pushNotification(nick, `💰 Получена зарплата ${amt}₽ от «${b.name}»`, 'money');
-    toast(`💸 ${amt}₽ переведено сотруднику ${nick}`,'green');
+    await logTx(currentNick, {type:'out',who:nick,amt,desc:`Зарплата сотруднику ${nick} («${b.name}»)`});
+    await pushNotification(nick, `💰 Получена зарплата ${amt.toLocaleString()}₽ от «${b.name}»`, 'money');
+    toast(`💸 ${amt.toLocaleString()}₽ переведено сотруднику ${nick}`,'green');
     renderBizOwnerPanel();
 };
 
