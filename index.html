@@ -738,7 +738,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .terminal-pay-anim.show{display:flex;animation:terminalPay .8s ease-out forwards;}
 @keyframes terminalPay{0%{opacity:0;transform:scale(.8)}50%{opacity:1;transform:scale(1.05)}100%{opacity:0;transform:scale(1.1)}}
 .biz-apply-pending{background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;font-size:13px;}
-.biz-employee-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;}
+.biz-employee-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;}
 
 </style>
 </head>
@@ -5895,10 +5895,9 @@ async function renderBusinesses(){
                 <div class="biz-card-cat">${escHtml(b.category||'')}</div>
                 <div class="biz-card-desc">${escHtml(b.desc||'')}</div>
                 <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
-                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;font-weight:800;">Владелец и сотрудники</div>
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;font-weight:800;">Владелец</div>
                     <div style="display:flex;flex-wrap:wrap;gap:6px;">
                         <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.22);font-size:11px;font-weight:800;">👑 ${escHtml(b.owner||'')}</span>
-                        ${Object.entries(b.employees||{}).map(([nick, emp])=>`<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;">👤 ${escHtml(nick)} · <span style="color:var(--primary);">${escHtml(getBizEmployeeRoleName(emp))}</span></span>`).join('')}
                     </div>
                 </div>
                 ${b.delivery ? '<div style="font-size:11px;color:var(--primary);font-weight:800;margin-top:4px;">🚚 Доставка</div>' : ''}
@@ -6260,14 +6259,15 @@ function renderOwnerEmployees(b){
     const emps = Object.entries(b.employees||{});
     if(!emps.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Нет сотрудников</div>'; return; }
     el.innerHTML = emps.map(([nick,e])=>`
-        <div class="biz-employee-row">
+        <div class="biz-employee-row" onclick="openUserProfile('${jsEsc(nick)}')" style="cursor:pointer;">
             <img src="${escHtml(safeAvatar(nick))}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
             <div style="flex:1;">
                 <div style="font-weight:900;font-size:14px;">${escHtml(nick)}</div>
                 <div style="font-size:11px;color:var(--primary);">${escHtml(getBizEmployeeRoleName(e))}</div>
             </div>
-            <button class="btn btn-gold btn-sm" onclick="payEmployee('${jsEsc(nick)}')">💸 Перевести</button>
-            <button class="btn btn-red btn-sm" onclick="fireEmployee('${jsEsc(nick)}')">✕</button>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openUserProfile('${jsEsc(nick)}')" style="font-size:11px;">👤 Профиль</button>
+            <button class="btn btn-gold btn-sm" onclick="event.stopPropagation(); payEmployee('${jsEsc(nick)}')">💸 Перевести</button>
+            <button class="btn btn-red btn-sm" onclick="event.stopPropagation(); fireEmployee('${jsEsc(nick)}')">✕</button>
         </div>`).join('');
 }
 function renderOwnerRoles(b){
@@ -6368,7 +6368,7 @@ function getUserBusinessRoleLabel(u, nick = (u && u.nick) || currentNick){
 function renderBizEmployeeTags(b){
     const entries = Object.entries(b?.employees || {});
     if(!entries.length) return '<div style="color:var(--muted);font-size:12px;">Сотрудников пока нет</div>';
-    return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${entries.map(([nick, emp])=>`<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;white-space:nowrap;"><span>👤</span><span>${escHtml(nick)}</span><span style="color:var(--primary);font-weight:900;">${escHtml(getBizEmployeeRoleName(emp))}</span></span>`).join('')}</div>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${entries.map(([nick, emp])=>`<span onclick="openUserProfile('${jsEsc(nick)}')" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer;"><span>👤</span><span>${escHtml(nick)}</span><span style="color:var(--primary);font-weight:900;">${escHtml(getBizEmployeeRoleName(emp))}</span></span>`).join('')}</div>`;
 }
 function getBizCart(bizId){
     if(!bizCarts[bizId]) bizCarts[bizId] = {};
