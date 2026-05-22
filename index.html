@@ -149,6 +149,7 @@ select option{background:#1a2332;}
 .market-seller img{width:24px;height:24px;border-radius:8px;object-fit:cover;}
 .market-status-sold{background:var(--red-dim);color:var(--red);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 .market-status-pending{background:var(--gold-dim);color:var(--gold);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.market-status-pin{background:rgba(251,191,36,.16);color:var(--gold);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 #taxiMap{width:100%;height:320px;border-radius:var(--r-sm);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
 .taxi-point-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
 .taxi-point-row input{flex:1;margin:0;}
@@ -1020,6 +1021,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <option value="service">🤝 Услуга</option>
             </select>
         </div>
+        <div id="marketDebtNotice"></div>
         <div id="marketListings"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
     </div>
     <div class="market-panel" id="mktPanel1"><div id="myMarketListings"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Нет объявлений</div></div></div>
@@ -1100,6 +1102,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         </div>
         <button class="btn btn-gold" id="btnCallTaxi" onclick="orderTaxi()" disabled>🛵 Вызвать такси</button>
     </div>
+    <div id="taxiDebtNotice"></div>
     <div id="taxiStatus"></div>
 </div>
 
@@ -1152,6 +1155,13 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-size:14px;color:var(--muted);margin-bottom:8px;">Ваш текущий статус:</div>
             <div id="currentSubscription" style="font-size:18px;font-weight:900;color:var(--primary);">Загрузка...</div>
             <div id="subscriptionExpiry" style="font-size:12px;color:var(--muted);margin-top:4px;"></div>
+        </div>
+    </div>
+    <div class="card" style="background:rgba(34,211,165,.06);border-color:rgba(34,211,165,.18);">
+        <div class="card-title">💳 Абонентская плата аккаунта</div>
+        <div style="font-size:13px;line-height:1.55;color:var(--text);">
+            15 ₽ списываются автоматически <b>каждую неделю</b> за наличие аккаунта.
+            Если баланс уходит в минус, такси и маркетплейс блокируются до погашения долга.
         </div>
     </div>
     
@@ -1640,7 +1650,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-weight:900;font-size:18px;">🏪 Открыть бизнес</div>
             <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeBizApplyModal()">✕</span>
         </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — 100 ₽.</div>
         <input type="text" id="bapName" placeholder="Название бизнеса" maxlength="60">
         <textarea id="bapDesc" placeholder="Описание бизнеса" style="min-height:72px;"></textarea>
         <input type="text" id="bapAddress" placeholder="Адрес (где находится)" maxlength="120">
@@ -1712,6 +1722,13 @@ const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
 const REWARD_CUSTOM_AVATAR = CONFIG.rewards.customAvatar;
 const REWARD_FIRST_WALL = CONFIG.rewards.firstWall;
 const FCM_VAPID_KEY = CONFIG.fcmVapidKey;
+const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
+const ECONOMY_TRANSFER_COMMISSION = 0.02;
+const ECONOMY_MARKET_COMMISSION = 0.02;
+const ECONOMY_BUSINESS_CREATION_FEE = 100;
+const ECONOMY_MARKET_PIN_PRICE = 50;
+const ECONOMY_MARKET_PIN_DURATION_MS = ECONOMY_WEEK_MS;
 let messagingInstance = null;
 
 const PRICE_PER_KM = CONFIG.finance.pricePerKm;
@@ -2043,18 +2060,22 @@ async function fallbackTransferMoney(data) {
     const toSnap = await get(userRef(data.toUid));
     const fromUser = fromSnap.val();
     const toUser = toSnap.val();
-    
+
     if(!fromUser || !toUser) throw new Error('Пользователь не найден');
     if(!fromUser.accountVerified) throw new Error('Ваш аккаунт не подтверждён');
     if(!toUser.accountVerified) throw new Error('Аккаунт получателя не подтверждён');
-    if(fromUser.balance < data.amount) throw new Error('Недостаточно средств');
-    
-    await update(userRef(currentNick), { balance: fromUser.balance - data.amount });
-    await update(userRef(data.toUid), { balance: (toUser.balance || 0) + data.amount });
-    await logTx(currentNick, { type: 'out', who: data.toUid, amt: data.amount, desc: data.description || 'Перевод' });
-    await logTx(data.toUid, { type: 'in', who: currentNick, amt: data.amount, desc: data.description || 'Перевод' });
-    
-    return { success: true };
+    const amount = Math.max(0, Number(data.amount) || 0);
+    const fee = calcCommission(amount, ECONOMY_TRANSFER_COMMISSION);
+    const total = amount + fee;
+    if(fromUser.balance < total) throw new Error('Недостаточно средств');
+
+    await update(userRef(currentNick), { balance: fromUser.balance - total });
+    await update(userRef(data.toUid), { balance: (toUser.balance || 0) + amount });
+    await logTx(currentNick, { type: 'out', who: data.toUid, amt: amount, desc: data.description || 'Перевод' });
+    if(fee > 0) await logTx(currentNick, { type: 'out', who: 'Комиссия', amt: fee, desc: `Комиссия 2% за перевод` });
+    await logTx(data.toUid, { type: 'in', who: currentNick, amt: amount, desc: data.description || 'Перевод' });
+
+    return { success: true, commissionCharged: true, commission: fee, totalSpent: total };
 }
 
 // Fallback: Admin adjust balance directly
@@ -2198,6 +2219,116 @@ function updateFrozenOverlay(u){
     if(b <= MIN_BALANCE_ALLOWED) fo.classList.add('open');
     else fo.classList.remove('open');
 }
+
+function calcCommission(amount, rate = 0.02){
+    const n = Math.max(0, Number(amount) || 0);
+    if(n <= 0) return 0;
+    return Math.max(1, Math.round(n * rate));
+}
+function getDebtHelpHtml(){
+    return `
+    <div class="card" style="margin:0 0 12px;background:rgba(248,191,36,.08);border-color:rgba(251,191,36,.3);">
+        <div class="card-title" style="margin-bottom:10px;">⚠️ Долг по аккаунту</div>
+        <div style="font-size:13px;line-height:1.55;color:var(--text);margin-bottom:12px;">
+            Баланс отрицательный, поэтому такси и маркетплейс заблокированы.
+            Напишите мэру <b style="color:var(--gold);">Денису</b> за заданиями для погашения долга.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="openUserProfile('Денис')">👤 Профиль Дениса</button>
+            <button class="btn btn-ghost btn-sm" onclick="navTo('tasks')">🗂 Задания</button>
+        </div>
+    </div>`;
+}
+function renderDebtNotice(targetId, u){
+    const el = qs(targetId);
+    if(!el) return;
+    const balance = Number(u?.balance || 0);
+    el.innerHTML = balance < 0 ? getDebtHelpHtml() : '';
+}
+let economyMaintenanceBusy = false;
+async function processEconomyChargesForUser(nick, opts = {}){
+    if(!nick || economyMaintenanceBusy) return null;
+    economyMaintenanceBusy = true;
+    try{
+        const snap = await get(userRef(nick));
+        if(!snap.exists()) return null;
+        const u = snap.val() || {};
+        const now = Date.now();
+        const hasMarker = !!u.economyLastProcessedAt;
+        const lastProcessed = hasMarker ? Number(u.economyLastProcessedAt) : now;
+        if(!hasMarker){
+            await update(userRef(nick), { economyLastProcessedAt: now });
+            return u;
+        }
+        const weeks = Math.floor((now - lastProcessed) / ECONOMY_WEEK_MS);
+        if(weeks <= 0) return u;
+
+        let balance = Number(u.balance || 0);
+        let cursor = lastProcessed;
+        const notifications = [];
+        for(let i = 0; i < weeks; i++){
+            const taxBase = balance;
+            const accountFee = ECONOMY_ACCOUNT_WEEKLY_FEE;
+            let wealthTax = 0;
+            if(taxBase >= 1000 && taxBase <= 10000) wealthTax = Math.round(taxBase * 0.03);
+            else if(taxBase > 10000) wealthTax = Math.round(taxBase * 0.08);
+
+            const total = accountFee + wealthTax;
+            balance -= total;
+            cursor += ECONOMY_WEEK_MS;
+            notifications.push({ total, accountFee, wealthTax, taxBase, cursor });
+        }
+
+        const patch = { balance, economyLastProcessedAt: cursor };
+        await update(userRef(nick), patch);
+
+        if(opts.notify !== false){
+            for(const n of notifications){
+                if(n.total <= 0) continue;
+                const parts = [`абонентская плата ${n.accountFee}₽`];
+                if(n.wealthTax > 0) parts.push(`налог ${n.wealthTax}₽`);
+                const text = `💳 Списано за неделю: ${parts.join(' + ')}.`;
+                await pushNotification(nick, text, 'money');
+            }
+            if(notifications.length){
+                toast(`💳 Списания по аккаунту: ${notifications.length} нед.`, 'gold');
+            }
+        }
+        return {...u, ...patch};
+    } catch(e){
+        console.warn('Economy maintenance failed:', e);
+        return null;
+    } finally {
+        economyMaintenanceBusy = false;
+    }
+}
+async function ensureEconomyFresh(opts = {}){
+    if(!currentNick) return null;
+    return await processEconomyChargesForUser(currentNick, opts);
+}
+async function requireMarketTaxiAccess(){
+    if(!await requireSpendable()) return false;
+    const snap = await get(userRef(currentNick));
+    if(!snap.exists()) return false;
+    const u = snap.val() || {};
+    if((u.balance || 0) < 0){
+        renderDebtNotice('marketDebtNotice', u);
+        renderDebtNotice('taxiDebtNotice', u);
+        toast('🚫 Такси и маркетплейс заблокированы при отрицательном балансе. Напишите мэру Денису за заданиями.', 'red');
+        return false;
+    }
+    return true;
+}
+async function chargeCommissionAndLog(nick, fee, desc){
+    const amount = Math.max(0, Math.round(Number(fee) || 0));
+    if(amount <= 0) return;
+    const snap = await get(userRef(nick));
+    if(!snap.exists()) return;
+    const u = snap.val() || {};
+    await update(userRef(nick), { balance: (u.balance || 0) - amount });
+    await logTx(nick, { type: 'out', who: 'Комиссия', amt: amount, desc: desc || `Комиссия ${amount}₽` });
+}
+
 async function requireSpendable(){
     const s = await get(userRef(currentNick));
     if(!s.exists()) return false;
@@ -2246,6 +2377,7 @@ window.handleAuth = async function() {
                 joinDate:new Date().toLocaleDateString('ru'),vehicle:'',lastSeen:Date.now(),
                 displayName:'',accountFrozen:false,rewardedAvatar:false,rewardedWall:false,
                 createdAt: now,
+                economyLastProcessedAt: now,
                 totalEarned: 0,
                 accountVerified: false // New accounts need mayor approval
             });
@@ -2273,6 +2405,9 @@ function startApp() {
     const hw=qs('headerAvatarWrap'); if(hw) hw.classList.add('online');
     startOnlineHeartbeat();
     attachListeners();
+    ensureEconomyFresh({notify:false}).catch(()=>{});
+    window._economyTimer && clearInterval(window._economyTimer);
+    window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(()=>{}), 5 * 60 * 1000);
     navTo('home');
     requestPersistentStorage();
     setTimeout(()=>requestPushPermission(),2500);
@@ -2293,7 +2428,17 @@ window.logout = function() {
 // ─── REAL-TIME LISTENERS ──────────────────
 function attachListeners() {
     const uRef=userRef(currentNick);
-    const uFn=async (snap)=>{if(snap.exists()){const u=snap.val();await syncJanitorTaskState(u);updateHeader(u);updateFrozenOverlay(u);}};
+    const uFn=async (snap)=>{
+        if(snap.exists()){
+            const u=snap.val();
+            await syncJanitorTaskState(u);
+            updateHeader(u);
+            updateFrozenOverlay(u);
+            if(curPage==='market') renderDebtNotice('marketDebtNotice', u);
+            if(curPage==='taxi') renderDebtNotice('taxiDebtNotice', u);
+            if(curPage==='subscription' && typeof renderSubscription === 'function') renderSubscription();
+        }
+    };
     onValue(uRef,uFn); listeners.user={ref:uRef,fn:uFn};
 
     const oRef=ordersRef();
@@ -3755,8 +3900,10 @@ window.doTransfer=async function(){
     if(!await requireSpendable())return;
     const to=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
     if(!to)return toast('⚠️ Введите никнейм','gold');if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
-    
-    // Check if sender account is verified
+
+    const commission = calcCommission(amt, ECONOMY_TRANSFER_COMMISSION);
+    const total = amt + commission;
+
     const[fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
     const fromUser = fromSnap.val();
     const toUser = toSnap.val();
@@ -3765,26 +3912,31 @@ window.doTransfer=async function(){
     if(!fromUser.accountVerified) {
         return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
     }
-    
-    // Check if recipient account is verified
+    if(!toSnap.exists())return toast('❌ Не найден','red');
     if(!toUser.accountVerified) {
         return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
     }
-    
-    if(!toSnap.exists())return toast('❌ Не найден','red');
-    
+    if((fromUser.balance || 0) < total){
+        return toast(`❌ Недостаточно средств. Нужно ${total}₽ (перевод ${amt}₽ + комиссия ${commission}₽)`,'red');
+    }
+
     try {
-        // Вызываем Cloud Function с fallback
         const result = await callFunctionWithFallback('transferMoney', { 
             toUid: to, 
-            amount: amt, 
+            amount: amt,
+            commission,
+            total,
             description: `Перевод пользователю ${to}` 
         }, fallbackTransferMoney);
-        
+
         if (result.success) {
-            // Only notify recipient, not sender
+            if(!result.commissionCharged){
+                await chargeCommissionAndLog(currentNick, commission, `Комиссия 2% за перевод пользователю ${to}`);
+            }
             await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
-            qs('bTo').value='';qs('bAmt').value='';toast(`💸 ${amt}₽ → ${to}`,'green');renderRecentTransfers();renderFinancialStats();
+            qs('bTo').value='';qs('bAmt').value='';
+            toast(`💸 ${amt}₽ → ${to} (комиссия ${commission}₽)`,'green');
+            renderRecentTransfers();renderFinancialStats();
         }
     } catch (error) {
         console.error('Ошибка перевода:', error);
@@ -4723,9 +4875,11 @@ function renderMarket(listings){
     const all=Object.entries(lastMarketListings).map(([id,l])=>({...l,id}));
     const cat=qs('mktBrowseCat')?.value||'all';
     const allEl=qs('marketListings');
+    get(userRef(currentNick)).then(s=>{ const u=s.val()||{}; renderDebtNotice('marketDebtNotice', u); }).catch(()=>{});
     if(allEl){
         let active=all.filter(l=>(l.status!=='sold' || l.category==='service') && !l.archived);
         if(cat&&cat!=='all') active=active.filter(l=>(l.category||'other')===cat);
+        active.sort((a,b)=>Number(isListingPinned(b)) - Number(isListingPinned(a)) || (b.createdAt||0) - (a.createdAt||0));
         allEl.innerHTML=active.length===0?'<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Нет объявлений</div>':active.map(l=>marketCard(l,false)).join('');
     }
     const myEl=qs('myMarketListings');
@@ -4750,6 +4904,9 @@ function renderMarket(listings){
     }
 }
 const categoryEmoji={other:'📦',food:'🍎',tools:'🔧',clothes:'👕',electronics:'📱',building:'🧱',work:'💼',service:'🤝'};
+function isListingPinned(l){
+    return Number(l?.pinnedUntil || 0) > Date.now();
+}
 function priceLine(l){
     if(l.category==='work') return l.salaryHint ? `Оплата: ${escHtml(l.salaryHint)}` : 'Оплата по договорённости';
     if(l.category==='service') return l.salaryHint ? `Стоимость: ${escHtml(l.salaryHint)}` : (l.priceNegotiable ? 'Договорная' : `${(l.price||0).toLocaleString()} ₽`);
@@ -4792,9 +4949,10 @@ function marketCard(l,isMine, isArchived=false){
     const workBadge=isWork&&l.workAcceptedBy?`<span class="market-status-pending" style="margin-left:8px;">✅ Подтверждено</span>`:'';
     const serviceBadge=isService?`<span class="market-status-service" style="margin-left:8px;">🤝 Услуга</span>`:'';
     const archivedBadge=isArchived?`<span class="market-status-sold" style="margin-left:8px;">🕓 Скрыто</span>`:'';
+    const pinnedBadge=isListingPinned(l)?'<span class="market-status-pin">⭐ Лидер продаж!</span>':'';
     const statusBadge=l.status==='sold'&&!isService?'<span class="market-status-sold">Продано</span>':(l.status!=='active'&&!isWork&&!isService?'<span class="market-status-pending">Ожидание</span>':'');
     return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'" onclick="openImgViewer('${jsEsc(l.photo)}')">`:''}
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div>${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:6px;flex-wrap:wrap;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${pinnedBadge}${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div></div>
         <div class="market-price">${priceLine(l)}</div>${l.desc?`<div class="market-desc">${escHtml(l.desc)}</div>`:''}
         <div class="market-seller" style="cursor:pointer;" onclick="openUserProfile('${escHtml(l.seller)}')">
             <div class="seller-info" style="display:flex;align-items:center;gap:6px;">
@@ -4809,12 +4967,12 @@ function marketCard(l,isMine, isArchived=false){
             ${pendingSellerConfirm&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
             ${pendingBuyerConfirm&&!isArchived?`<button class="btn btn-primary btn-sm" onclick="confirmPurchase('${l.id}')">✅ ${isService?'Подтвердить заказ':'Оплатить и подтвердить'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
             ${showChat?`<button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(chatPartner)}')">💬 Написать</button>`:''}
-            ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
+            ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" onclick="pinListing('${l.id}')">📌 ${isListingPinned(l)?'Закреплено':'Лидер продаж!'} (${ECONOMY_MARKET_PIN_PRICE}₽)</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
             ${isMine&&isArchived?`<button class="btn btn-primary btn-sm" onclick="restoreListing('${l.id}')">↩ Вернуть</button><button class="btn btn-red btn-sm" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
         </div></div>`;
 }
 window.publishListing=async function(){
-    if(!await requireNotMigrant('маркетплейс недоступен')) return;
+    if(!await requireMarketTaxiAccess()) return;
     const title=qs('mktTitle').value.trim();
     const negotiable=qs('mktNegotiable')?.checked;
     const cat=qs('mktCategory').value;
@@ -4871,7 +5029,7 @@ window.publishListing=async function(){
     qs('mktPhoto').value='';qs('mktPhotoPreview').style.display='none';window._mktPhotoData=null;toggleMktPriceFields();toast('✅ Опубликовано!','green');switchMarketTab(0);
 };
 window.requestMeeting=async function(id){
-    if(!await requireNotMigrant('маркетплейс недоступен')) return;
+    if(!await requireMarketTaxiAccess()) return;
     const snap=await get(listingRef(id));if(!snap.exists())return toast('❌ Листинг не найден','red');
     const meSnap = await get(userRef(currentNick)); const me = meSnap.val()||{};
     if(isMigrantUser(me)) return toast(`🚫 ${ROLE_MIGRANT}: маркетплейс недоступен`,'red');
@@ -4886,8 +5044,7 @@ window.cancelMeeting=async function(id){const snap=await get(listingRef(id));if(
 window.goToChat=function(nick){navTo('messages');setTimeout(()=>{switchMsgTab(1);setTimeout(()=>openDmChat(nick),200);},200);};
 window.declineListing=async function(id){const snap=await get(listingRef(id));if(!snap.exists())return;const l=snap.val();await update(listingRef(id),{status:'active',buyer:null});await pushNotification(l.buyer,`❌ ${l.seller} отказал`,'market');toast('❌ Отклонено','red');};
 window.confirmPurchase=async function(id){
-    if(!await requireNotMigrant('маркетплейс недоступен')) return;
-    if(!await requireSpendable())return;
+    if(!await requireMarketTaxiAccess()) return;
     const snap=await get(listingRef(id));if(!snap.exists())return;
     const l=snap.val();
     if(l.category==='work'){
@@ -4901,26 +5058,47 @@ window.confirmPurchase=async function(id){
     if(pay<0)return toast('⚠️ Сумма','gold');
     const[bSnap,sSnap]=await Promise.all([get(userRef(l.buyer)),get(userRef(l.seller))]);
     if(!bSnap.exists()||!sSnap.exists())return;
-    if(pay>0&&bSnap.val().balance<pay)return toast('❌ Недостаточно','red');
-    if(pay>0){
-        await update(userRef(l.buyer),{balance:bSnap.val().balance-pay});
-        await update(userRef(l.seller),{balance:(sSnap.val().balance||0)+pay});        await logTx(l.buyer,{type:'out',who:l.seller,amt:pay,desc:`Куплено${isService?' услуга':' объявление'} «${l.title}»`});
+    const fee = calcCommission(pay, ECONOMY_MARKET_COMMISSION);
+    const total = pay + fee;
+    if(total>0 && (bSnap.val().balance||0) < total)return toast(`❌ Недостаточно средств. Нужно ${total}₽ (комиссия ${fee}₽)`,'red');
+    if(total>0){
+        await update(userRef(l.buyer),{balance:(bSnap.val().balance||0)-total});
+        await update(userRef(l.seller),{balance:(sSnap.val().balance||0)+pay});
+        await logTx(l.buyer,{type:'out',who:l.seller,amt:pay,desc:`Куплено${isService?' услуга':' объявление'} «${l.title}»`});
+        if(fee>0) await logTx(l.buyer,{type:'out',who:'Комиссия',amt:fee,desc:`Комиссия 2% за покупку «${l.title}»`});
         await logTx(l.seller,{type:'in',who:l.buyer,amt:pay,desc:`Продано${isService?' услуга':' объявление'} «${l.title}»`});
-        // Track market purchase for one-time task reward
         if(!bSnap.val().rewardedMarket) await update(userRef(l.buyer),{rewardedMarket:true});
     }
     // Service listings stay active forever — just reset buyer
     if(isService){
         await update(listingRef(id),{status:'active',buyer:null});
-        await pushNotification(l.seller,`💰 ${l.buyer} заказал услугу "${l.title}"${pay?` — ${pay}₽`:''}`,'market');
-        await pushNotification(l.buyer,`✅ Услуга "${l.title}" подтверждена!`,'market');
+        await pushNotification(l.seller,`💰 ${l.buyer} заказал услугу "${l.title}"${pay?` — ${pay}₽`:''}${fee?` (+${fee}₽ комиссия)`:''}`,'market');
+        await pushNotification(l.buyer,`✅ Услуга "${l.title}" подтверждена! Комиссия: ${fee}₽`,'market');
         toast('🎉 Услуга заказана!','green');
     } else {
         await update(listingRef(id),{status:'sold'});
-        await pushNotification(l.seller,`💰 ${l.buyer} купил "${l.title}"${pay?` — ${pay}₽`:''}`,'market');
-        await pushNotification(l.buyer,`✅ Покупка "${l.title}" подтверждена!`,'market');
+        await pushNotification(l.seller,`💰 ${l.buyer} купил "${l.title}"${pay?` — ${pay}₽`:''}${fee?` (+${fee}₽ комиссия)`:''}`,'market');
+        await pushNotification(l.buyer,`✅ Покупка "${l.title}" подтверждена! Комиссия: ${fee}₽`,'market');
         toast('🎉 Покупка!','green');
     }
+};
+window.pinListing=async function(id){
+    if(!await requireMarketTaxiAccess()) return;
+    const snap=await get(listingRef(id));
+    if(!snap.exists()) return toast('❌ Объявление не найдено','red');
+    const l=snap.val();
+    if(l.seller!==currentNick) return toast('❌ Нет прав','red');
+    if(l.archived) return toast('❌ Сначала восстановите объявление','red');
+    if((l.pinnedUntil || 0) > Date.now()) return toast('⭐ Уже закреплено','gold');
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    if((u.balance || 0) < ECONOMY_MARKET_PIN_PRICE) return toast(`❌ Нужно ${ECONOMY_MARKET_PIN_PRICE}₽ для закрепления`,'red');
+    await update(userRef(currentNick), { balance: (u.balance || 0) - ECONOMY_MARKET_PIN_PRICE });
+    await update(listingRef(id), { pinnedUntil: Date.now() + ECONOMY_MARKET_PIN_DURATION_MS, pinnedBy: currentNick, pinnedLabel: 'Лидер продаж!' });
+    await logTx(currentNick, { type:'out', who:'Маркетплейс', amt:ECONOMY_MARKET_PIN_PRICE, desc:`Закрепление объявления «${l.title}»` });
+    await pushNotification(currentNick, `📌 Объявление «${l.title}» закреплено как «Лидер продаж!»`, 'market');
+    toast('📌 Объявление закреплено!', 'green');
+    get(marketRef()).then(s=>renderMarket(s.val()||{}));
 };
 window.deleteListing=async function(id){
     const snap=await get(listingRef(id));
@@ -5659,7 +5837,7 @@ window.navTo=function(id){
         get(chatRef()).then(s=>{ chatLoading = false; renderChat(s.val()||{}); });
     }
     if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
-    if(id==='market') get(marketRef()).then(s=>renderMarket(s.val()||{}));
+    if(id==='market') { renderDebtNotice('marketDebtNotice', allUsersCache[currentNick] || {}); get(marketRef()).then(s=>renderMarket(s.val()||{})); }
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
     if(id==='home') { renderHomeBizOrders(); }
@@ -5668,7 +5846,7 @@ window.navTo=function(id){
     if(id==='jobs') renderJobAppStatus();
     if(id==='news') { currentNewsTab = currentNewsTab || 'village'; renderNews(); }
     if(id==='newsDiscussion') { const el=qs('newsDiscussionMessages'); if(el) renderNewsDiscussionMessages(currentNewsMsgs); }
-    if(id==='taxi') setTimeout(()=>window.initTaxiMap(),100);
+    if(id==='taxi') { renderDebtNotice('taxiDebtNotice', allUsersCache[currentNick] || {}); setTimeout(()=>window.initTaxiMap(),100); }
     if(id==='driverPage') setTimeout(()=>{if(driverTrackMapObj)driverTrackMapObj.invalidateSize();},450);
     if(id==='janitorPage') renderJanitorPage();
     if(id==='businesses') renderBusinesses();
@@ -5716,14 +5894,21 @@ window.submitBizApply = async function(){
     if(!name) return toast('⚠️ Укажите название','gold');
     if(!desc) return toast('⚠️ Укажите описание','gold');
     if(!address) return toast('⚠️ Укажите адрес','gold');
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    if((u.balance || 0) < ECONOMY_BUSINESS_CREATION_FEE) return toast('❌ Для создания бизнеса нужно 100₽ госпошлины','red');
+    await update(userRef(currentNick), { balance: (u.balance || 0) - ECONOMY_BUSINESS_CREATION_FEE });
+    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:ECONOMY_BUSINESS_CREATION_FEE, desc:'Госпошлина за создание бизнеса' });
+    await pushNotification(currentNick, `🏛 Списана госпошлина ${ECONOMY_BUSINESS_CREATION_FEE}₽ за заявку на бизнес`, 'money');
     const id = genId();
     await set(bizAppRef(id), {
         id, owner: currentNick, name, desc, address, category, services,
-        status: 'pending', createdAt: Date.now()
+        status: 'pending', createdAt: Date.now(), feePaid: ECONOMY_BUSINESS_CREATION_FEE
     });
     await pushNotification(ADMIN, `🏪 Новая заявка на бизнес от ${currentNick}: «${name}»`, 'system');
     closeBizApplyModal();
     toast('📋 Заявка отправлена в мэрию!', 'green');
+    if(curPage==='bizOwnerPanel') renderBizOwnerPanel();
 };
 
 // ─── BIZ DELETE REQUEST ───────────────────────
