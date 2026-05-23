@@ -1650,7 +1650,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-weight:900;font-size:18px;">🏪 Открыть бизнес</div>
             <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeBizApplyModal()">✕</span>
         </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — 100 ₽.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — 500 ₽.</div>
         <input type="text" id="bapName" placeholder="Название бизнеса" maxlength="60">
         <textarea id="bapDesc" placeholder="Описание бизнеса" style="min-height:72px;"></textarea>
         <input type="text" id="bapAddress" placeholder="Адрес (где находится)" maxlength="120">
@@ -6019,10 +6019,10 @@ window.adminApproveBiz = async function(id){
         roles: {}, employees: {}, products: {},
         createdAt: Date.now(), status: 'active'
     });
-    // Give owner the 'Бизнесмен' job title
-    await update(userRef(a.owner), { job: 'Бизнесмен', businessId: bizId });
+
+    await update(userRef(a.owner), { businessId: bizId });
     await update(bizAppRef(id), { status: 'approved' });
-    await pushNotification(a.owner, `🎉 Ваш бизнес «${a.name}» одобрен мэрией! Теперь вы Бизнесмен.`, 'system');
+    await pushNotification(a.owner, `🎉 Ваш бизнес «${a.name}» одобрен мэрией!`, 'system');
     toast(`✅ Бизнес «${a.name}» одобрен`, 'green');
     renderAdminBizApps();
 };
@@ -6535,10 +6535,10 @@ function getBizEmployeeRoleName(entry){
 function getUserBusinessRoleLabel(u, nick = (u && u.nick) || currentNick){
     const fallback = (u && u.job) || 'Житель';
     if(!u) return fallback;
-    if(u.businessId){
-        const ownBiz = allBusinessesCache[u.businessId];
-        if(ownBiz && ownBiz.owner === nick) return 'Бизнесмен';
-    }
+
+
+
+
     const scan = (allBusinessesCache && typeof allBusinessesCache === 'object') ? Object.values(allBusinessesCache) : [];
     for(const b of scan){
         const emp = b && b.employees && b.employees[nick];
