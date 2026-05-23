@@ -320,7 +320,11 @@ select option{background:#1a2332;}
 .theme-cyber .h-avatar{border-color:#00d4ff!important;box-shadow:0 0 15px rgba(0,212,255,.5)!important;}
 .theme-cyber body::before{background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(0,212,255,.1) 0%,transparent 70%),radial-gradient(ellipse 50% 50% at 85% 75%,rgba(255,0,255,.08) 0%,transparent 70%)!important;}
 
-/* Subscription Badge */
+/* === GAMES LIBRARY === */
+#gamesGrid .card{transition:.2s;}
+#gamesGrid .card:hover{transform:translateY(-3px);}
+
+
 .sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#d97706);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
 .sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,#22d3a5,#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
 @keyframes pulseUltra{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
@@ -875,6 +879,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
         <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
+        <div class="quick-card" onclick="navTo('games')" role="button" tabindex="0" aria-label="Библиотека игр" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(251,191,36,.10));border-color:rgba(34,211,165,.3);"><div class="qico">🎮</div><div class="qlbl">Библиотека игр</div><div class="qsub">Игры за капанёвские рубли</div></div>
     </div>
     <div id="homeOrders"></div>
     <div id="workerSection" style="display:none">
@@ -900,6 +905,71 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="card-title" style="margin-bottom:12px;">🗺 Карта поселка</div>
         <iframe class="map-frame" style="height:280px;" src="https://www.google.com/maps/d/embed?mid=1uYqkCigRmRXX6WOjTjIH01PsF9Na2xw&hl=ru&ll=52.629519493712436,38.41743147652263&z=17" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
+</div>
+
+<!-- GAMES LIBRARY -->
+<div id="games" class="section">
+  <div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.08),rgba(251,191,36,.06));border-color:rgba(34,211,165,.25);">
+    <div style="font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--primary),var(--gold));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">🎮 Библиотека игр</div>
+    <div style="font-size:12px;color:var(--muted);">Покупай игры и играй с друзьями за капанёвские рубли</div>
+    <div style="margin-top:10px;font-size:13px;font-weight:800;">Ваш баланс: <span id="gamesBalDisplay" style="color:var(--primary);">0₽</span></div>
+  </div>
+  <div id="gamesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"></div>
+</div>
+
+<!-- GAME: КТО ШПИОН -->
+<div id="gameSpySection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card">
+    <div style="font-size:26px;margin-bottom:6px;">🕵️</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Кто шпион?</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Один из игроков — шпион. Он не знает локацию. Остальные знают. Найдите шпиона!</div>
+    <div id="spyGameArea"></div>
+  </div>
+</div>
+
+<!-- GAME: МАФИЯ -->
+<div id="gameMafiaSection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card">
+    <div style="font-size:26px;margin-bottom:6px;">🃏</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Мафия</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Классическая игра. Мирные жители против мафии. Ведущий раздаёт роли.</div>
+    <div id="mafiaGameArea"></div>
+  </div>
+</div>
+
+<!-- GAME: ТРИ В РЯД -->
+<div id="gameMatch3Section" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:26px;margin-bottom:6px;">💎</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Три в ряд</div>
+    <div id="match3BalRow" style="font-size:13px;color:var(--primary);font-weight:800;margin-bottom:8px;"></div>
+    <div id="match3StatsRow" style="display:flex;gap:10px;justify-content:center;margin-bottom:10px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="m3Score" style="font-size:18px;font-weight:900;color:var(--primary);">0</div><div style="font-size:10px;color:var(--muted);">Очки</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="m3Moves" style="font-size:18px;font-weight:900;color:var(--gold);">20</div><div style="font-size:10px;color:var(--muted);">Ходы</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="m3Lives" style="font-size:18px;font-weight:900;color:var(--red);">❤️❤️❤️</div><div style="font-size:10px;color:var(--muted);">Жизни</div></div>
+    </div>
+    <div id="match3Board" style="display:inline-grid;grid-template-columns:repeat(6,44px);gap:3px;margin:0 auto 12px;"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:6px;">
+      <button class="btn btn-primary btn-sm" onclick="match3NewGame()">🔄 Новая игра</button>
+      <button class="btn btn-gold btn-sm" onclick="match3BuyHint()">💡 Подсказка (5₽)</button>
+      <button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid var(--red);" onclick="match3BuyRevive()">❤️ Возрождение (10₽)</button>
+    </div>
+    <div id="match3Msg" style="font-size:13px;color:var(--muted);min-height:20px;"></div>
+  </div>
+</div>
+
+<!-- GAME: ДУЭЛИ -->
+<div id="gameDuelSection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card">
+    <div style="font-size:26px;margin-bottom:6px;">⚔️</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Дуэли</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Сделай одинаковую ставку и сыграй с другом в крестики-нолики или камень-ножницы-бумага. Победитель забирает банк!</div>
+    <div id="duelGameArea"></div>
+  </div>
 </div>
 
 <!-- MESSAGES -->
@@ -5818,7 +5888,7 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,games:0,gameSpySection:0,gameMafiaSection:0,gameMatch3Section:0,gameDuelSection:0};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
@@ -5851,9 +5921,502 @@ window.navTo=function(id){
     if(id==='janitorPage') renderJanitorPage();
     if(id==='businesses') renderBusinesses();
     if(id==='bizOwnerPanel') renderBizOwnerPanel();
+    if(id==='games') renderGamesLibrary();
+    if(id==='gameSpySection') initSpyGame();
+    if(id==='gameMafiaSection') initMafiaGame();
+    if(id==='gameMatch3Section') initMatch3();
+    if(id==='gameDuelSection') initDuelGame();
 };
 
-// ─── BUSINESSES ───────────────────────────
+// ══════════════════════════════════════════════════════════════════
+// 🎮 БИБЛИОТЕКА ИГР
+// ══════════════════════════════════════════════════════════════════
+const GAMES_CATALOG = [
+  { id:'spy',   icon:'🕵️', name:'Кто шпион?',  price:50,  desc:'Найди шпиона среди друзей',  section:'gameSpySection' },
+  { id:'mafia', icon:'🃏', name:'Мафия',        price:109, desc:'Мирные vs мафия',             section:'gameMafiaSection' },
+  { id:'match3',icon:'💎', name:'Три в ряд',   price:79,  desc:'Собирай комбо за очки',       section:'gameMatch3Section' },
+  { id:'duel',  icon:'⚔️', name:'Дуэли',       price:49,  desc:'КНБ или крестики-нолики',     section:'gameDuelSection' },
+];
+const GAMES_STORAGE_KEY = nick => `games_owned_${nick}`;
+
+async function getOwnedGames(){
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  return u.ownedGames || {};
+}
+async function setOwnedGames(owned){
+  await update(userRef(currentNick),{ownedGames:owned});
+}
+
+async function renderGamesLibrary(){
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  const bal = u.balance||0;
+  const owned = u.ownedGames||{};
+  const balEl = document.getElementById('gamesBalDisplay');
+  if(balEl) balEl.textContent = bal.toLocaleString()+'₽';
+  const grid = document.getElementById('gamesGrid');
+  if(!grid) return;
+  grid.innerHTML = GAMES_CATALOG.map(g=>{
+    const isOwned = !!owned[g.id];
+    return `<div class="card" style="margin:0;text-align:center;padding:18px 12px;cursor:${isOwned?'pointer':'default'};${isOwned?'border-color:rgba(34,211,165,.35);':''}transition:.2s;" ${isOwned?`onclick="navTo('${g.section}')"`:''}>
+      <div style="font-size:36px;margin-bottom:8px;">${g.icon}</div>
+      <div style="font-weight:900;font-size:14px;margin-bottom:4px;">${g.name}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${g.desc}</div>
+      ${isOwned
+        ? `<div style="background:var(--pri-dim);color:var(--primary);border:1px solid rgba(34,211,165,.3);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:900;">✅ Куплено</div>
+           <button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%;" onclick="event.stopPropagation();navTo('${g.section}')">Играть →</button>`
+        : `<div style="font-size:18px;font-weight:900;color:var(--gold);margin-bottom:8px;">${g.price}₽</div>
+           <button class="btn btn-gold btn-sm" style="width:100%;" onclick="buyGame('${g.id}')">Купить</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+window.buyGame = async function(gameId){
+  const g = GAMES_CATALOG.find(x=>x.id===gameId); if(!g) return;
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  if((u.balance||0)<g.price) return toast(`❌ Недостаточно рублей. Нужно ${g.price}₽`,'red');
+  const owned = u.ownedGames||{};
+  if(owned[gameId]) return toast('✅ Игра уже куплена','gold');
+  owned[gameId]=true;
+  await update(userRef(currentNick),{balance:(u.balance||0)-g.price, ownedGames:owned});
+  await logTx(currentNick,{type:'out',who:'Магазин игр',amt:g.price,desc:`Покупка игры «${g.name}»`});
+  toast(`🎮 «${g.name}» куплена!`,'green');
+  renderGamesLibrary();
+};
+
+async function checkGameOwned(gameId){
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  return !!(u.ownedGames||{})[gameId];
+}
+
+// ──────────────────────────────────────────────
+// 🕵️ КТО ШПИОН?
+// ──────────────────────────────────────────────
+const SPY_LOCATIONS = [
+  'Пляж','Казино','Больница','Школа','Банк','Ресторан','Кинотеатр','Церковь','Тюрьма','Аэропорт',
+  'Поезд','Военная база','Спа-салон','Цирк','Посольство','Ночной клуб','Театр','Пиратский корабль'
+];
+
+async function initSpyGame(){
+  const owned = await checkGameOwned('spy');
+  const area = document.getElementById('spyGameArea'); if(!area) return;
+  if(!owned){
+    area.innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('spy');navTo('games')">Купить за 50₽</button></div>`;
+    return;
+  }
+  area.innerHTML=`
+    <div class="card-title">Настройка игры</div>
+    <label style="font-size:13px;font-weight:800;color:var(--muted);">Количество игроков</label>
+    <input type="number" id="spyPlayerCount" value="4" min="3" max="12" style="margin-bottom:8px;">
+    <label style="font-size:13px;font-weight:800;color:var(--muted);">Количество шпионов</label>
+    <input type="number" id="spySpyCount" value="1" min="1" max="2" style="margin-bottom:8px;">
+    <button class="btn btn-primary" onclick="startSpyGame()">🕵️ Начать игру</button>
+    <div id="spyCardsArea" style="margin-top:16px;"></div>
+  `;
+}
+
+window.startSpyGame = function(){
+  const n = parseInt(document.getElementById('spyPlayerCount')?.value||4);
+  const s = parseInt(document.getElementById('spySpyCount')?.value||1);
+  if(s>=n) return toast('❌ Шпионов не может быть больше игроков','red');
+  const loc = SPY_LOCATIONS[Math.floor(Math.random()*SPY_LOCATIONS.length)];
+  const roles = Array(s).fill('🕵️ Шпион').concat(Array(n-s).fill('🏘️ Житель'));
+  roles.sort(()=>Math.random()-.5);
+  const area = document.getElementById('spyCardsArea'); if(!area) return;
+  area.innerHTML=`<div class="card-title" style="margin-bottom:12px;">Раздача карточек — передавайте телефон каждому по очереди</div>`
+    +roles.map((r,i)=>`
+    <div id="spyCard${i}" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;cursor:pointer;text-align:center;" onclick="revealSpyCard(${i},'${r}','${r==='🕵️ Шпион'?'???':loc}')">
+      <div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div>
+      <div style="font-size:12px;color:var(--primary);margin-top:4px;">Нажмите, чтобы увидеть роль</div>
+    </div>`).join('');
+};
+
+window.revealSpyCard = function(i,role,loc){
+  const card = document.getElementById(`spyCard${i}`); if(!card) return;
+  const isSpy = role==='🕵️ Шпион';
+  card.innerHTML=`
+    <div style="font-size:28px;margin-bottom:6px;">${isSpy?'🕵️':'🏘️'}</div>
+    <div style="font-size:16px;font-weight:900;color:${isSpy?'var(--red)':'var(--primary)'};">${role}</div>
+    <div style="font-size:14px;margin-top:6px;color:var(--text);">Локация: <b>${loc}</b></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">Запомни и нажми снова, чтобы скрыть</div>
+  `;
+  card.onclick=()=>{
+    card.innerHTML=`<div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div><div style="font-size:12px;color:var(--primary);margin-top:4px;">Карточка просмотрена ✅</div>`;
+    card.onclick=null; card.style.opacity='.5';
+  };
+};
+
+// ──────────────────────────────────────────────
+// 🃏 МАФИЯ
+// ──────────────────────────────────────────────
+const MAFIA_ROLES_POOL = [
+  {id:'mafia',label:'Мафия',icon:'🔫',desc:'Ночью убивает мирного жителя'},
+  {id:'don',label:'Дон мафии',icon:'💼',desc:'Главарь мафии. Ночью проверяет комиссара'},
+  {id:'doctor',label:'Доктор',icon:'💊',desc:'Ночью лечит одного игрока'},
+  {id:'sheriff',label:'Комиссар',icon:'🛡',desc:'Ночью проверяет одного игрока'},
+  {id:'civilian',label:'Мирный житель',icon:'👤',desc:'Голосует за подозреваемых днём'},
+];
+
+async function initMafiaGame(){
+  const owned = await checkGameOwned('mafia');
+  const area = document.getElementById('mafiaGameArea'); if(!area) return;
+  if(!owned){
+    area.innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('mafia');navTo('games')">Купить за 109₽</button></div>`;
+    return;
+  }
+  area.innerHTML=`
+    <div class="card-title">Настройка игры</div>
+    <label style="font-size:13px;font-weight:800;color:var(--muted);">Количество игроков (4–12)</label>
+    <input type="number" id="mafiaCount" value="6" min="4" max="12" style="margin-bottom:4px;">
+    <div id="mafiaRoleSuggestion" style="font-size:12px;color:var(--primary);margin-bottom:8px;"></div>
+    <button class="btn btn-primary" onclick="startMafiaGame()">🃏 Раздать роли</button>
+    <div id="mafiaCardsArea" style="margin-top:16px;"></div>
+  `;
+  document.getElementById('mafiaCount')?.addEventListener('input',updateMafiaRoleSuggestion);
+  updateMafiaRoleSuggestion();
+}
+
+function updateMafiaRoleSuggestion(){
+  const n = parseInt(document.getElementById('mafiaCount')?.value||6);
+  const el = document.getElementById('mafiaRoleSuggestion'); if(!el) return;
+  const mafiaCount = Math.max(1,Math.floor(n/3));
+  const hasDon = n>=6; const hasDoctor = n>=5; const hasSheriff = n>=7;
+  let roles=[];
+  if(hasDon){roles.push('Дон мафии'); roles.push(...Array(mafiaCount-1).fill('Мафия'));}
+  else roles.push(...Array(mafiaCount).fill('Мафия'));
+  if(hasDoctor) roles.push('Доктор');
+  if(hasSheriff) roles.push('Комиссар');
+  roles.push(...Array(n-roles.length).fill('Мирный житель'));
+  el.textContent=`Рекомендуемый состав: ${roles.join(', ')}`;
+}
+
+window.startMafiaGame = function(){
+  const n = parseInt(document.getElementById('mafiaCount')?.value||6);
+  if(n<4||n>12) return toast('❌ От 4 до 12 игроков','red');
+  const mafiaCount=Math.max(1,Math.floor(n/3));
+  const hasDon=n>=6,hasDoctor=n>=5,hasSheriff=n>=7;
+  let roles=[];
+  if(hasDon){roles.push(MAFIA_ROLES_POOL[1]);roles.push(...Array(mafiaCount-1).fill(MAFIA_ROLES_POOL[0]));}
+  else roles.push(...Array(mafiaCount).fill(MAFIA_ROLES_POOL[0]));
+  if(hasDoctor) roles.push(MAFIA_ROLES_POOL[2]);
+  if(hasSheriff) roles.push(MAFIA_ROLES_POOL[3]);
+  while(roles.length<n) roles.push(MAFIA_ROLES_POOL[4]);
+  roles.sort(()=>Math.random()-.5);
+  const area = document.getElementById('mafiaCardsArea'); if(!area) return;
+  area.innerHTML=`<div class="card-title" style="margin-bottom:12px;">Передавайте телефон каждому по очереди</div>`
+    +roles.map((r,i)=>`
+    <div id="mafiaCard${i}" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;cursor:pointer;text-align:center;" onclick="revealMafiaCard(${i},'${r.id}')">
+      <div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div>
+      <div style="font-size:12px;color:var(--primary);margin-top:4px;">Нажмите для просмотра роли</div>
+    </div>`).join('');
+  window._mafiaRoles=roles;
+};
+
+window.revealMafiaCard = function(i,roleId){
+  const r=MAFIA_ROLES_POOL.find(x=>x.id===roleId); if(!r) return;
+  const card=document.getElementById(`mafiaCard${i}`); if(!card) return;
+  const isMafia=roleId==='mafia'||roleId==='don';
+  card.innerHTML=`
+    <div style="font-size:28px;margin-bottom:6px;">${r.icon}</div>
+    <div style="font-size:16px;font-weight:900;color:${isMafia?'var(--red)':'var(--primary)'};">${r.label}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">${r.desc}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">Запомни и нажми снова чтобы скрыть</div>
+  `;
+  card.onclick=()=>{card.innerHTML=`<div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div><div style="font-size:12px;color:var(--primary);margin-top:4px;">Карточка просмотрена ✅</div>`;card.onclick=null;card.style.opacity='.5';};
+};
+
+// ──────────────────────────────────────────────
+// 💎 ТРИ В РЯД
+// ──────────────────────────────────────────────
+const M3_GEMS=['💎','🔥','⚡','🍀','💜','🌸'];
+const M3_COLS=6,M3_ROWS=6,M3_INIT_MOVES=20;
+let m3Board=[],m3Score=0,m3Moves=M3_INIT_MOVES,m3Lives=3,m3Selected=null,m3Active=false;
+
+async function initMatch3(){
+  const owned = await checkGameOwned('match3');
+  const area = document.getElementById('match3Board');
+  if(!area) return;
+  if(!owned){
+    const section=document.getElementById('gameMatch3Section');
+    if(section) section.querySelector('.card').innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('match3');navTo('games')">Купить за 79₽</button></div>`;
+    return;
+  }
+  updateMatch3BalDisplay();
+  match3NewGame();
+}
+
+async function updateMatch3BalDisplay(){
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  const el = document.getElementById('match3BalRow');
+  if(el) el.textContent=`Баланс: ${(u.balance||0).toLocaleString()}₽ | Подсказка 5₽ | Возрождение 10₽`;
+}
+
+window.match3NewGame = function(){
+  m3Score=0;m3Moves=M3_INIT_MOVES;if(m3Lives<=0)m3Lives=3;m3Selected=null;m3Active=true;
+  m3Board=Array.from({length:M3_ROWS},()=>Array.from({length:M3_COLS},()=>M3_GEMS[Math.floor(Math.random()*M3_GEMS.length)]));
+  renderMatch3();
+};
+
+function renderMatch3(){
+  const board = document.getElementById('match3Board'); if(!board) return;
+  document.getElementById('m3Score').textContent=m3Score;
+  document.getElementById('m3Moves').textContent=m3Moves;
+  document.getElementById('m3Lives').textContent='❤️'.repeat(m3Lives);
+  board.innerHTML='';
+  for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS;c++){
+    const cell=document.createElement('div');
+    cell.style.cssText=`width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;border-radius:10px;cursor:pointer;background:var(--surface2);border:1px solid ${m3Selected&&m3Selected[0]===r&&m3Selected[1]===c?'var(--primary)':'var(--border)'};transition:.15s;`;
+    cell.textContent=m3Board[r][c];
+    cell.onclick=()=>m3Click(r,c);
+    board.appendChild(cell);
+  }}
+  const msg=document.getElementById('match3Msg');
+  if(msg) msg.textContent=m3Active?`Очки: ${m3Score} | Ходы: ${m3Moves}`:(m3Moves<=0?'🏁 Ходы закончились!':'');
+}
+
+function m3Click(r,c){
+  if(!m3Active) return;
+  if(!m3Selected){m3Selected=[r,c];renderMatch3();return;}
+  const [sr,sc]=m3Selected;
+  if(Math.abs(r-sr)+Math.abs(c-sc)!==1){m3Selected=[r,c];renderMatch3();return;}
+  // swap
+  [m3Board[r][c],m3Board[sr][sc]]=[m3Board[sr][sc],m3Board[r][c]];
+  const matched=m3FindMatches();
+  if(!matched){[m3Board[r][c],m3Board[sr][sc]]=[m3Board[sr][sc],m3Board[r][c]];m3Selected=null;renderMatch3();return;}
+  m3Selected=null;m3Moves--;
+  m3ProcessMatches();
+}
+
+function m3FindMatches(){
+  let found=false;
+  const mark=Array.from({length:M3_ROWS},()=>Array(M3_COLS).fill(false));
+  for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS-2;c++){if(m3Board[r][c]&&m3Board[r][c]===m3Board[r][c+1]&&m3Board[r][c]===m3Board[r][c+2]){mark[r][c]=mark[r][c+1]=mark[r][c+2]=true;found=true;}}}
+  for(let c=0;c<M3_COLS;c++){for(let r=0;r<M3_ROWS-2;r++){if(m3Board[r][c]&&m3Board[r][c]===m3Board[r+1][c]&&m3Board[r][c]===m3Board[r+2][c]){mark[r][c]=mark[r+1][c]=mark[r+2][c]=true;found=true;}}}
+  return found?mark:null;
+}
+
+function m3ProcessMatches(){
+  const mark=m3FindMatches();
+  if(!mark){if(m3Moves<=0){m3Active=false;}renderMatch3();return;}
+  let pts=0;
+  for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS;c++){if(mark[r][c]){m3Board[r][c]=null;pts++;}}}
+  m3Score+=pts*10;
+  // drop
+  for(let c=0;c<M3_COLS;c++){let empty=[];for(let r=M3_ROWS-1;r>=0;r--){if(m3Board[r][c]===null)empty.push(r);}for(const er of empty){for(let r=er;r>0;r--)m3Board[r][c]=m3Board[r-1][c];m3Board[0][c]=M3_GEMS[Math.floor(Math.random()*M3_GEMS.length)];}}
+  setTimeout(m3ProcessMatches,250);
+  renderMatch3();
+}
+
+window.match3BuyHint = async function(){
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  if((u.balance||0)<5) return toast('❌ Нужно 5₽ для подсказки','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-5});
+  await logTx(currentNick,{type:'out',who:'Три в ряд',amt:5,desc:'Подсказка'});
+  // Highlight a valid move
+  let hint=null;
+  outer:for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS-1;c++){
+    [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
+    if(m3FindMatches()){hint=[r,c,'right'];[m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];break outer;}
+    [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
+  }}
+  if(hint){
+    toast(`💡 Подсказка: поменяй [${hint[0]+1},${hint[1]+1}] вправо!`,'green');
+  } else {
+    toast('💡 Нет доступных ходов — перемешиваем!','gold');
+    match3NewGame();
+  }
+  updateMatch3BalDisplay();
+};
+
+window.match3BuyRevive = async function(){
+  if(m3Active) return toast('❌ Возрождение только при смерти','gold');
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  if((u.balance||0)<10) return toast('❌ Нужно 10₽ для возрождения','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-10});
+  await logTx(currentNick,{type:'out',who:'Три в ряд',amt:10,desc:'Возрождение'});
+  m3Moves+=10; m3Active=true;
+  toast('❤️ +10 ходов добавлено!','green');
+  renderMatch3();
+  updateMatch3BalDisplay();
+};
+
+// ──────────────────────────────────────────────
+// ⚔️ ДУЭЛИ
+// ──────────────────────────────────────────────
+let duelState={mode:null,stake:0,p1:null,p2:null,board:null,turn:null,winner:null};
+
+async function initDuelGame(){
+  const owned = await checkGameOwned('duel');
+  const area = document.getElementById('duelGameArea'); if(!area) return;
+  if(!owned){
+    area.innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('duel');navTo('games')">Купить за 49₽</button></div>`;
+    return;
+  }
+  renderDuelSetup();
+}
+
+function renderDuelSetup(){
+  const area = document.getElementById('duelGameArea'); if(!area) return;
+  area.innerHTML=`
+    <div class="card-title">Настройка дуэли</div>
+    <label style="font-size:13px;font-weight:800;color:var(--muted);">Ставка (каждый игрок платит)</label>
+    <input type="number" id="duelStake" value="10" min="1" style="margin-bottom:8px;">
+    <label style="font-size:13px;font-weight:800;color:var(--muted);">Режим</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button id="duelModeKNB" class="btn btn-primary btn-sm" onclick="selectDuelMode('knb')" style="flex:1;">✊ КНБ</button>
+      <button id="duelModeTTT" class="btn btn-ghost btn-sm" onclick="selectDuelMode('ttt')" style="flex:1;">⊞ Крестики-нолики</button>
+    </div>
+    <button class="btn btn-gold" onclick="startDuel()">⚔️ Начать дуэль</button>
+    <div id="duelArea" style="margin-top:16px;"></div>
+  `;
+  duelState.mode='knb';
+}
+
+window.selectDuelMode = function(mode){
+  duelState.mode=mode;
+  document.getElementById('duelModeKNB')?.classList.toggle('btn-primary',mode==='knb');
+  document.getElementById('duelModeKNB')?.classList.toggle('btn-ghost',mode!=='knb');
+  document.getElementById('duelModeTTT')?.classList.toggle('btn-primary',mode==='ttt');
+  document.getElementById('duelModeTTT')?.classList.toggle('btn-ghost',mode!=='ttt');
+};
+
+window.startDuel = async function(){
+  const stake = parseInt(document.getElementById('duelStake')?.value||10);
+  if(stake<1) return toast('❌ Ставка должна быть минимум 1₽','red');
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  if((u.balance||0)<stake*2) return toast(`❌ Нужно ${stake*2}₽ (ставка × 2)...`,'red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-stake*2});
+  await logTx(currentNick,{type:'out',who:'Дуэли',amt:stake*2,desc:`Ставка на дуэль (${duelState.mode==='knb'?'КНБ':'Крестики-нолики'})`});
+  duelState.stake=stake;
+  duelState.winner=null;
+  if(duelState.mode==='knb') renderKNBGame();
+  else renderTTTGame();
+};
+
+// --- КНБ ---
+let knbP1=null, knbP2=null;
+function renderKNBGame(){
+  const area=document.getElementById('duelArea'); if(!area) return;
+  knbP1=null; knbP2=null;
+  area.innerHTML=`
+    <div class="card-title">Камень-ножницы-бумага</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div style="text-align:center;">
+        <div style="font-weight:900;margin-bottom:8px;">Игрок 1</div>
+        <div id="knbP1choice" style="font-size:32px;margin-bottom:8px;">❓</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="knbChoose(1,'rock')">✊ Камень</button>
+          <button class="btn btn-ghost btn-sm" onclick="knbChoose(1,'scissors')">✌️ Ножницы</button>
+          <button class="btn btn-ghost btn-sm" onclick="knbChoose(1,'paper')">🖐 Бумага</button>
+        </div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-weight:900;margin-bottom:8px;">Игрок 2</div>
+        <div id="knbP2choice" style="font-size:32px;margin-bottom:8px;">❓</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="knbChoose(2,'rock')">✊ Камень</button>
+          <button class="btn btn-ghost btn-sm" onclick="knbChoose(2,'scissors')">✌️ Ножницы</button>
+          <button class="btn btn-ghost btn-sm" onclick="knbChoose(2,'paper')">🖐 Бумага</button>
+        </div>
+      </div>
+    </div>
+    <div id="knbResult" style="font-size:15px;font-weight:900;text-align:center;min-height:24px;"></div>
+  `;
+}
+
+const KNB_ICONS={rock:'✊',scissors:'✌️',paper:'🖐'};
+const KNB_BEATS={rock:'scissors',scissors:'paper',paper:'rock'};
+window.knbChoose = function(player, choice){
+  if(player===1) knbP1=choice;
+  if(player===2) knbP2=choice;
+  document.getElementById(`knbP${player}choice`).textContent=KNB_ICONS[choice];
+  if(!knbP1||!knbP2) return;
+  setTimeout(async()=>{
+    const res=document.getElementById('knbResult');
+    let winner=0;
+    if(KNB_BEATS[knbP1]===knbP2) winner=1;
+    else if(KNB_BEATS[knbP2]===knbP1) winner=2;
+    if(winner===0){
+      if(res) res.innerHTML=`<span style="color:var(--gold);">🤝 Ничья! Деньги возвращены.</span>`;
+      const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
+      await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
+    } else {
+      if(res) res.innerHTML=`<span style="color:var(--primary);">🏆 Игрок ${winner} победил! +${duelState.stake*2}₽ зачислено!</span>`;
+      const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
+      await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
+      await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа в дуэли КНБ`});
+    }
+    setTimeout(()=>{document.getElementById('duelArea').innerHTML+=`<button class="btn btn-primary" style="margin-top:12px;" onclick="startDuel()">🔄 Ещё раз</button>`;},500);
+  },600);
+};
+
+// --- Крестики-нолики ---
+let tttBoard, tttTurn;
+function renderTTTGame(){
+  tttBoard=Array(9).fill(null); tttTurn=1;
+  const area=document.getElementById('duelArea'); if(!area) return;
+  area.innerHTML=`
+    <div class="card-title">Крестики-нолики</div>
+    <div id="tttStatus" style="text-align:center;font-weight:900;margin-bottom:10px;color:var(--primary);">Ход: Игрок 1 (✕)</div>
+    <div id="tttGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:200px;margin:0 auto 12px;"></div>
+    <div id="tttResult" style="text-align:center;font-size:15px;font-weight:900;min-height:24px;"></div>
+  `;
+  renderTTTGrid();
+}
+
+function renderTTTGrid(){
+  const grid=document.getElementById('tttGrid'); if(!grid) return;
+  grid.innerHTML='';
+  tttBoard.forEach((cell,i)=>{
+    const btn=document.createElement('button');
+    btn.style.cssText=`width:60px;height:60px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);font-size:28px;cursor:${cell?'default':'pointer'};color:${cell==='X'?'var(--primary)':'var(--red)'};font-family:'Nunito',sans-serif;font-weight:900;`;
+    btn.textContent=cell||'';
+    if(!cell) btn.onclick=()=>tttMove(i);
+    grid.appendChild(btn);
+  });
+}
+
+window.tttMove = async function(i){
+  if(tttBoard[i]) return;
+  tttBoard[i]=tttTurn===1?'X':'O';
+  const win=tttCheckWin();
+  renderTTTGrid();
+  const status=document.getElementById('tttStatus');
+  const result=document.getElementById('tttResult');
+  if(win){
+    if(status) status.textContent=`🏆 Игрок ${tttTurn} победил!`;
+    if(result) result.innerHTML=`<span style="color:var(--primary);">Игрок ${tttTurn} победил! +${duelState.stake*2}₽</span>`;
+    const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
+    await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
+    await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа в крестики-нолики`});
+    document.getElementById('duelArea').innerHTML+=`<button class="btn btn-primary" style="margin-top:12px;" onclick="startDuel()">🔄 Ещё раз</button>`;
+    return;
+  }
+  if(tttBoard.every(x=>x)){
+    if(status) status.textContent='🤝 Ничья!';
+    if(result) result.innerHTML=`<span style="color:var(--gold);">Ничья! Деньги возвращены.</span>`;
+    const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
+    await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
+    document.getElementById('duelArea').innerHTML+=`<button class="btn btn-primary" style="margin-top:12px;" onclick="startDuel()">🔄 Ещё раз</button>`;
+    return;
+  }
+  tttTurn=tttTurn===1?2:1;
+  if(status) status.textContent=`Ход: Игрок ${tttTurn} (${tttTurn===1?'✕':'○'})`;
+};
+
+function tttCheckWin(){
+  const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  return wins.some(([a,b,c])=>tttBoard[a]&&tttBoard[a]===tttBoard[b]&&tttBoard[a]===tttBoard[c]);
+}
+// ══════════════════════════════════════════════════════════════════
 const bizRef = () => ref(db, 'businesses');
 const bizItemRef = (id) => ref(db, `businesses/${id}`);
 const bizAppsRef = () => ref(db, 'businessApps');
