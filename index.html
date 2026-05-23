@@ -943,21 +943,31 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="gameMatch3Section" class="section">
   <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
   <div class="card" style="text-align:center;">
-    <div style="font-size:26px;margin-bottom:6px;">💎</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Три в ряд</div>
-    <div id="match3BalRow" style="font-size:13px;color:var(--primary);font-weight:800;margin-bottom:8px;"></div>
-    <div id="match3StatsRow" style="display:flex;gap:10px;justify-content:center;margin-bottom:10px;">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="m3Score" style="font-size:18px;font-weight:900;color:var(--primary);">0</div><div style="font-size:10px;color:var(--muted);">Очки</div></div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="m3Moves" style="font-size:18px;font-weight:900;color:var(--gold);">20</div><div style="font-size:10px;color:var(--muted);">Ходы</div></div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="m3Lives" style="font-size:18px;font-weight:900;color:var(--red);">❤️❤️❤️</div><div style="font-size:10px;color:var(--muted);">Жизни</div></div>
+    <div style="font-size:26px;margin-bottom:4px;">💎</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Три в ряд</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Нажми на камень → нажми на соседний, чтобы поменять местами. Собери 3+ одинаковых в ряд!</div>
+    <div id="match3BalRow" style="font-size:12px;color:var(--primary);font-weight:800;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;"><div id="m3Score" style="font-size:18px;font-weight:900;color:var(--primary);">0</div><div style="font-size:9px;color:var(--muted);">Очки</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;"><div id="m3Moves" style="font-size:18px;font-weight:900;color:var(--gold);">20</div><div style="font-size:9px;color:var(--muted);">Ходы</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;"><div id="m3Combo" style="font-size:18px;font-weight:900;color:var(--red);">x1</div><div style="font-size:9px;color:var(--muted);">Комбо</div></div>
     </div>
-    <div id="match3Board" style="display:inline-grid;grid-template-columns:repeat(6,44px);gap:3px;margin:0 auto 12px;"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:6px;">
-      <button class="btn btn-primary btn-sm" onclick="match3NewGame()">🔄 Новая игра</button>
+    <div id="match3Board" style="display:inline-grid;grid-template-columns:repeat(6,46px);gap:4px;margin:0 auto 12px;touch-action:none;"></div>
+    <style>
+    .m3cell{width:46px;height:46px;border-radius:12px;background:var(--surface2);border:2px solid var(--border);font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s,border-color .12s,background .12s;user-select:none;-webkit-user-select:none;}
+    .m3cell:active{transform:scale(.88);}
+    .m3cell.sel{border-color:var(--primary);background:var(--pri-dim);transform:scale(1.1);}
+    .m3cell.hint-cell{border-color:var(--gold);background:var(--gold-dim);animation:hintPulse .6s ease-in-out infinite alternate;}
+    .m3cell.pop{animation:m3Pop .25s ease-out;}
+    @keyframes hintPulse{from{transform:scale(1);}to{transform:scale(1.12);}}
+    @keyframes m3Pop{0%{transform:scale(1.3);}100%{transform:scale(1);}}
+    </style>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;">
+      <button class="btn btn-primary btn-sm" onclick="match3NewGame()">🔄 Новая</button>
       <button class="btn btn-gold btn-sm" onclick="match3BuyHint()">💡 Подсказка (5₽)</button>
-      <button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid var(--red);" onclick="match3BuyRevive()">❤️ Возрождение (10₽)</button>
+      <button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid var(--red);" onclick="match3BuyRevive()">❤️ +10 ходов (10₽)</button>
     </div>
-    <div id="match3Msg" style="font-size:13px;color:var(--muted);min-height:20px;"></div>
+    <div id="match3Msg" style="font-size:13px;color:var(--muted);min-height:20px;font-weight:700;"></div>
   </div>
 </div>
 
@@ -969,6 +979,39 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Дуэли</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Сделай одинаковую ставку и сыграй с другом в крестики-нолики или камень-ножницы-бумага. Победитель забирает банк!</div>
     <div id="duelGameArea"></div>
+  </div>
+</div>
+
+<!-- GAME: ЗАБРОШКА -->
+<div id="gameAbandonedSection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card">
+    <div style="font-size:26px;margin-bottom:4px;">🏚️</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Заброшка: Поиск сокровищ</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Открывай клетки туманного поля, ищи хабар и избегай гопников!</div>
+    <div id="abandonedGameArea"></div>
+  </div>
+</div>
+
+<!-- GAME: БАШНЯ КАПАНИ -->
+<div id="gameTowerSection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:26px;margin-bottom:4px;">🏗️</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Башня Капани</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Кликни в нужный момент, чтобы поставить блок точно на платформу!</div>
+    <div id="towerGameArea"></div>
+  </div>
+</div>
+
+<!-- GAME: УГАДАЙ СЛОВО -->
+<div id="gameWordleSection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:26px;margin-bottom:4px;">🔤</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Угадай слово</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">🟩 — буква на месте &nbsp; 🟨 — буква есть, но не там &nbsp; ⬜ — такой буквы нет</div>
+    <div id="wordleGameArea"></div>
   </div>
 </div>
 
@@ -1358,6 +1401,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div id="wallFeed" style="margin-top:14px;"></div>
     </div>
     <button class="btn btn-ghost" onclick="logout()" style="margin-bottom:14px;color:var(--red);border-color:var(--red-dim);">🚪 Выйти</button>
+    <!-- ACHIEVEMENTS -->
+    <div class="card" id="achievementsCard">
+      <div class="card-title">🏅 Достижения</div>
+      <div id="achievementsList" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+    </div>
 </div>
 
 <!-- ЧУЖОЙ ПРОФИЛЬ (полная страница) -->
@@ -5888,7 +5936,7 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,games:0,gameSpySection:0,gameMafiaSection:0,gameMatch3Section:0,gameDuelSection:0};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,games:0,gameSpySection:0,gameMafiaSection:0,gameMatch3Section:0,gameDuelSection:0,gameAbandonedSection:0,gameTowerSection:0,gameWordleSection:0};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
@@ -5906,7 +5954,7 @@ window.navTo=function(id){
         chatLoading = true;
         get(chatRef()).then(s=>{ chatLoading = false; renderChat(s.val()||{}); });
     }
-    if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
+    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded(); }
     if(id==='market') { renderDebtNotice('marketDebtNotice', allUsersCache[currentNick] || {}); get(marketRef()).then(s=>renderMarket(s.val()||{})); }
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
@@ -5926,26 +5974,75 @@ window.navTo=function(id){
     if(id==='gameMafiaSection') initMafiaGame();
     if(id==='gameMatch3Section') initMatch3();
     if(id==='gameDuelSection') initDuelGame();
+    if(id==='gameAbandonedSection') initAbandonedGame();
+    if(id==='gameTowerSection') initTowerGame();
+    if(id==='gameWordleSection') initWordleGame();
+    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();renderAchievements(); }
 };
 
 // ══════════════════════════════════════════════════════════════════
 // 🎮 БИБЛИОТЕКА ИГР
 // ══════════════════════════════════════════════════════════════════
 const GAMES_CATALOG = [
-  { id:'spy',   icon:'🕵️', name:'Кто шпион?',  price:50,  desc:'Найди шпиона среди друзей',  section:'gameSpySection' },
-  { id:'mafia', icon:'🃏', name:'Мафия',        price:109, desc:'Мирные vs мафия',             section:'gameMafiaSection' },
-  { id:'match3',icon:'💎', name:'Три в ряд',   price:79,  desc:'Собирай комбо за очки',       section:'gameMatch3Section' },
-  { id:'duel',  icon:'⚔️', name:'Дуэли',       price:49,  desc:'КНБ или крестики-нолики',     section:'gameDuelSection' },
+  { id:'spy',       icon:'🕵️', name:'Кто шпион?',              price:50,  desc:'Найди шпиона среди друзей',        section:'gameSpySection' },
+  { id:'mafia',     icon:'🃏', name:'Мафия',                    price:109, desc:'Мирные жители против мафии',        section:'gameMafiaSection' },
+  { id:'match3',    icon:'💎', name:'Три в ряд',               price:79,  desc:'Собирай комбо, набирай очки',       section:'gameMatch3Section' },
+  { id:'duel',      icon:'⚔️', name:'Дуэли',                   price:49,  desc:'КНБ или крестики-нолики на рубли',  section:'gameDuelSection' },
+  { id:'abandoned', icon:'🏚️', name:'Заброшка',                price:89,  desc:'Ищи хабар, беги от гопников',      section:'gameAbandonedSection' },
+  { id:'tower',     icon:'🏗️', name:'Башня Капани',            price:59,  desc:'Ставь блоки на лету — не промахнись!', section:'gameTowerSection' },
+  { id:'wordle',    icon:'🔤', name:'Угадай слово',             price:39,  desc:'4–5 букв, 6 попыток, русские слова', section:'gameWordleSection' },
 ];
-const GAMES_STORAGE_KEY = nick => `games_owned_${nick}`;
 
-async function getOwnedGames(){
+// ─── ACHIEVEMENTS ─────────────────────────────
+const ALL_ACHIEVEMENTS = [
+  { id:'match3_first',   game:'match3',    icon:'💎', name:'Первый матч',       desc:'Сыграй в Три в ряд впервые' },
+  { id:'match3_100',     game:'match3',    icon:'🌟', name:'Сотня очков',       desc:'Набери 100+ очков' },
+  { id:'match3_500',     game:'match3',    icon:'🏆', name:'Мастер матча',      desc:'Набери 500+ очков за игру' },
+  { id:'match3_combo',   game:'match3',    icon:'🔥', name:'Комбо!',            desc:'Сделай комбо x3' },
+  { id:'spy_first',      game:'spy',       icon:'🕵️', name:'Первый шпион',      desc:'Запусти игру Кто шпион?' },
+  { id:'mafia_first',    game:'mafia',     icon:'🃏', name:'В Мафию!',          desc:'Раздай роли в Мафии' },
+  { id:'duel_first',     game:'duel',      icon:'⚔️', name:'Первая дуэль',      desc:'Сыграй в дуэль' },
+  { id:'duel_win',       game:'duel',      icon:'🥇', name:'Дуэлянт',          desc:'Победи в дуэли' },
+  { id:'abandoned_first',game:'abandoned', icon:'🏚️', name:'Исследователь',     desc:'Открой первую клетку' },
+  { id:'abandoned_gold', game:'abandoned', icon:'💰', name:'Кладоискатель',     desc:'Найди крупный куш' },
+  { id:'abandoned_clear',game:'abandoned', icon:'🗺️', name:'Выжил!',           desc:'Пройди поле без потерь от гопников' },
+  { id:'tower_first',    game:'tower',     icon:'🏗️', name:'Строитель',        desc:'Поставь первый блок' },
+  { id:'tower_10',       game:'tower',     icon:'🏙️', name:'Небоскрёб',        desc:'Поставь 10 блоков подряд' },
+  { id:'tower_perfect',  game:'tower',     icon:'✨', name:'Идеальная стопка', desc:'Поставь 3 блока идеально' },
+  { id:'wordle_first',   game:'wordle',    icon:'🔤', name:'Первое слово',      desc:'Угадай любое слово' },
+  { id:'wordle_fast',    game:'wordle',    icon:'⚡', name:'С первого раза',    desc:'Угадай слово с 1-й попытки' },
+  { id:'wordle_hard',    game:'wordle',    icon:'🎯', name:'Знаток языка',      desc:'Угадай 5-буквенное слово' },
+  { id:'buyer_all',      game:'all',       icon:'🛒', name:'Коллекционер',      desc:'Купи все игры' },
+];
+
+async function unlockAchievement(id){
   const snap = await get(userRef(currentNick));
   const u = snap.val()||{};
-  return u.ownedGames || {};
+  const ach = u.achievements||{};
+  if(ach[id]) return;
+  ach[id] = Date.now();
+  await update(userRef(currentNick),{achievements:ach});
+  const a = ALL_ACHIEVEMENTS.find(x=>x.id===id);
+  if(a) toast(`🏅 Достижение разблокировано: ${a.name}!`,'gold');
 }
-async function setOwnedGames(owned){
-  await update(userRef(currentNick),{ownedGames:owned});
+
+async function renderAchievements(){
+  const snap = await get(userRef(currentNick));
+  const u = snap.val()||{};
+  const ach = u.achievements||{};
+  const el = document.getElementById('achievementsList'); if(!el) return;
+  el.innerHTML = ALL_ACHIEVEMENTS.map(a=>{
+    const unlocked = !!ach[a.id];
+    return `<div style="background:${unlocked?'var(--pri-dim)':'var(--surface2)'};border:1px solid ${unlocked?'rgba(34,211,165,.3)':'var(--border)'};border-radius:var(--r-sm);padding:10px 8px;text-align:center;opacity:${unlocked?'1':'.45'};">
+      <div style="font-size:22px;margin-bottom:4px;">${a.icon}</div>
+      <div style="font-size:11px;font-weight:900;line-height:1.2;">${a.name}</div>
+      <div style="font-size:9px;color:var(--muted);margin-top:2px;line-height:1.3;">${a.desc}</div>
+      ${unlocked?`<div style="font-size:9px;color:var(--primary);margin-top:3px;font-weight:800;">✅ Выполнено</div>`:''}
+    </div>`;
+  }).join('');
+  // check all games bought
+  const owned = u.ownedGames||{};
+  if(GAMES_CATALOG.every(g=>owned[g.id])) unlockAchievement('buyer_all');
 }
 
 async function renderGamesLibrary(){
@@ -5959,15 +6056,15 @@ async function renderGamesLibrary(){
   if(!grid) return;
   grid.innerHTML = GAMES_CATALOG.map(g=>{
     const isOwned = !!owned[g.id];
-    return `<div class="card" style="margin:0;text-align:center;padding:18px 12px;cursor:${isOwned?'pointer':'default'};${isOwned?'border-color:rgba(34,211,165,.35);':''}transition:.2s;" ${isOwned?`onclick="navTo('${g.section}')"`:''}>
-      <div style="font-size:36px;margin-bottom:8px;">${g.icon}</div>
-      <div style="font-weight:900;font-size:14px;margin-bottom:4px;">${g.name}</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${g.desc}</div>
+    return `<div class="card" style="margin:0;text-align:center;padding:16px 10px;cursor:${isOwned?'pointer':'default'};${isOwned?'border-color:rgba(34,211,165,.3);':''}" ${isOwned?`onclick="navTo('${g.section}')"`:''}>
+      <div style="font-size:32px;margin-bottom:6px;">${g.icon}</div>
+      <div style="font-weight:900;font-size:13px;margin-bottom:3px;">${g.name}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.3;">${g.desc}</div>
       ${isOwned
-        ? `<div style="background:var(--pri-dim);color:var(--primary);border:1px solid rgba(34,211,165,.3);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:900;">✅ Куплено</div>
-           <button class="btn btn-primary btn-sm" style="margin-top:8px;width:100%;" onclick="event.stopPropagation();navTo('${g.section}')">Играть →</button>`
-        : `<div style="font-size:18px;font-weight:900;color:var(--gold);margin-bottom:8px;">${g.price}₽</div>
-           <button class="btn btn-gold btn-sm" style="width:100%;" onclick="buyGame('${g.id}')">Купить</button>`
+        ? `<div style="background:var(--pri-dim);color:var(--primary);border:1px solid rgba(34,211,165,.3);border-radius:10px;padding:5px 8px;font-size:11px;font-weight:900;margin-bottom:6px;">✅ Куплено</div>
+           <button class="btn btn-primary btn-sm" style="width:100%;font-size:11px;" onclick="event.stopPropagation();navTo('${g.section}')">Играть →</button>`
+        : `<div style="font-size:17px;font-weight:900;color:var(--gold);margin-bottom:6px;">${g.price}₽</div>
+           <button class="btn btn-gold btn-sm" style="width:100%;font-size:11px;" onclick="buyGame('${g.id}')">Купить</button>`
       }
     </div>`;
   }).join('');
@@ -5985,12 +6082,16 @@ window.buyGame = async function(gameId){
   await logTx(currentNick,{type:'out',who:'Магазин игр',amt:g.price,desc:`Покупка игры «${g.name}»`});
   toast(`🎮 «${g.name}» куплена!`,'green');
   renderGamesLibrary();
+  if(GAMES_CATALOG.every(x=>(u.ownedGames||{})[x.id]||x.id===gameId)) unlockAchievement('buyer_all');
 };
 
 async function checkGameOwned(gameId){
   const snap = await get(userRef(currentNick));
-  const u = snap.val()||{};
-  return !!(u.ownedGames||{})[gameId];
+  return !!((snap.val()||{}).ownedGames||{})[gameId];
+}
+
+function gameLockedHTML(gameId, price){
+  return `<div style="text-align:center;padding:24px 0;"><div style="font-size:44px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;font-size:14px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('${gameId}');setTimeout(()=>navTo('games'),600)">Купить за ${price}₽</button></div>`;
 }
 
 // ──────────────────────────────────────────────
@@ -5998,116 +6099,101 @@ async function checkGameOwned(gameId){
 // ──────────────────────────────────────────────
 const SPY_LOCATIONS = [
   'Пляж','Казино','Больница','Школа','Банк','Ресторан','Кинотеатр','Церковь','Тюрьма','Аэропорт',
-  'Поезд','Военная база','Спа-салон','Цирк','Посольство','Ночной клуб','Театр','Пиратский корабль'
+  'Поезд','Военная база','Спа-салон','Цирк','Посольство','Ночной клуб','Театр','Пиратский корабль',
+  'Подводная лодка','Зоопарк','Библиотека','Супермаркет','Стадион','Больница'
 ];
-
 async function initSpyGame(){
   const owned = await checkGameOwned('spy');
   const area = document.getElementById('spyGameArea'); if(!area) return;
-  if(!owned){
-    area.innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('spy');navTo('games')">Купить за 50₽</button></div>`;
-    return;
-  }
+  if(!owned){ area.innerHTML=gameLockedHTML('spy',50); return; }
+  unlockAchievement('spy_first');
   area.innerHTML=`
     <div class="card-title">Настройка игры</div>
-    <label style="font-size:13px;font-weight:800;color:var(--muted);">Количество игроков</label>
-    <input type="number" id="spyPlayerCount" value="4" min="3" max="12" style="margin-bottom:8px;">
-    <label style="font-size:13px;font-weight:800;color:var(--muted);">Количество шпионов</label>
-    <input type="number" id="spySpyCount" value="1" min="1" max="2" style="margin-bottom:8px;">
+    <label style="font-size:12px;font-weight:800;color:var(--muted);">Количество игроков</label>
+    <input type="number" id="spyPlayerCount" value="4" min="3" max="12" style="margin-bottom:6px;">
+    <label style="font-size:12px;font-weight:800;color:var(--muted);">Количество шпионов</label>
+    <input type="number" id="spySpyCount" value="1" min="1" max="2" style="margin-bottom:10px;">
     <button class="btn btn-primary" onclick="startSpyGame()">🕵️ Начать игру</button>
     <div id="spyCardsArea" style="margin-top:16px;"></div>
   `;
+  const controls=area.querySelectorAll('button[onclick]');
+  controls.forEach(btn=>btn.type='button');
 }
-
 window.startSpyGame = function(){
-  const n = parseInt(document.getElementById('spyPlayerCount')?.value||4);
-  const s = parseInt(document.getElementById('spySpyCount')?.value||1);
+  const n=parseInt(document.getElementById('spyPlayerCount')?.value||4);
+  const s=parseInt(document.getElementById('spySpyCount')?.value||1);
   if(s>=n) return toast('❌ Шпионов не может быть больше игроков','red');
-  const loc = SPY_LOCATIONS[Math.floor(Math.random()*SPY_LOCATIONS.length)];
-  const roles = Array(s).fill('🕵️ Шпион').concat(Array(n-s).fill('🏘️ Житель'));
+  const loc=SPY_LOCATIONS[Math.floor(Math.random()*SPY_LOCATIONS.length)];
+  const roles=Array(s).fill('spy').concat(Array(n-s).fill('civ'));
   roles.sort(()=>Math.random()-.5);
-  const area = document.getElementById('spyCardsArea'); if(!area) return;
-  area.innerHTML=`<div class="card-title" style="margin-bottom:12px;">Раздача карточек — передавайте телефон каждому по очереди</div>`
+  const area=document.getElementById('spyCardsArea'); if(!area) return;
+  area.innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Передавайте телефон по очереди — каждый нажимает на свою карточку</div>`
     +roles.map((r,i)=>`
-    <div id="spyCard${i}" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;cursor:pointer;text-align:center;" onclick="revealSpyCard(${i},'${r}','${r==='🕵️ Шпион'?'???':loc}')">
+    <div id="spyCard${i}" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;cursor:pointer;text-align:center;" onclick="revealSpyCard(${i},'${r}','${r==='spy'?'???':loc}')">
       <div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div>
       <div style="font-size:12px;color:var(--primary);margin-top:4px;">Нажмите, чтобы увидеть роль</div>
     </div>`).join('');
 };
-
 window.revealSpyCard = function(i,role,loc){
-  const card = document.getElementById(`spyCard${i}`); if(!card) return;
-  const isSpy = role==='🕵️ Шпион';
+  const card=document.getElementById(`spyCard${i}`); if(!card) return;
+  const isSpy=role==='spy';
   card.innerHTML=`
     <div style="font-size:28px;margin-bottom:6px;">${isSpy?'🕵️':'🏘️'}</div>
-    <div style="font-size:16px;font-weight:900;color:${isSpy?'var(--red)':'var(--primary)'};">${role}</div>
-    <div style="font-size:14px;margin-top:6px;color:var(--text);">Локация: <b>${loc}</b></div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;">Запомни и нажми снова, чтобы скрыть</div>
+    <div style="font-size:16px;font-weight:900;color:${isSpy?'var(--red)':'var(--primary)'};">${isSpy?'Шпион':'Житель'}</div>
+    <div style="font-size:14px;margin-top:6px;">Локация: <b>${loc}</b></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;">Нажми снова, чтобы скрыть</div>
   `;
-  card.onclick=()=>{
-    card.innerHTML=`<div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div><div style="font-size:12px;color:var(--primary);margin-top:4px;">Карточка просмотрена ✅</div>`;
-    card.onclick=null; card.style.opacity='.5';
-  };
+  card.onclick=()=>{card.innerHTML=`<div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div><div style="font-size:12px;color:var(--primary);margin-top:4px;">✅ Просмотрено</div>`;card.onclick=null;card.style.opacity='.5';};
 };
 
 // ──────────────────────────────────────────────
 // 🃏 МАФИЯ
 // ──────────────────────────────────────────────
-const MAFIA_ROLES_POOL = [
+const MAFIA_ROLES_POOL=[
   {id:'mafia',label:'Мафия',icon:'🔫',desc:'Ночью убивает мирного жителя'},
-  {id:'don',label:'Дон мафии',icon:'💼',desc:'Главарь мафии. Ночью проверяет комиссара'},
+  {id:'don',label:'Дон мафии',icon:'💼',desc:'Главарь. Ночью проверяет комиссара'},
   {id:'doctor',label:'Доктор',icon:'💊',desc:'Ночью лечит одного игрока'},
   {id:'sheriff',label:'Комиссар',icon:'🛡',desc:'Ночью проверяет одного игрока'},
-  {id:'civilian',label:'Мирный житель',icon:'👤',desc:'Голосует за подозреваемых днём'},
+  {id:'civilian',label:'Мирный житель',icon:'👤',desc:'Голосует за подозреваемых'},
 ];
-
 async function initMafiaGame(){
-  const owned = await checkGameOwned('mafia');
-  const area = document.getElementById('mafiaGameArea'); if(!area) return;
-  if(!owned){
-    area.innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('mafia');navTo('games')">Купить за 109₽</button></div>`;
-    return;
-  }
+  const owned=await checkGameOwned('mafia');
+  const area=document.getElementById('mafiaGameArea'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('mafia',109); return; }
   area.innerHTML=`
     <div class="card-title">Настройка игры</div>
-    <label style="font-size:13px;font-weight:800;color:var(--muted);">Количество игроков (4–12)</label>
+    <label style="font-size:12px;font-weight:800;color:var(--muted);">Количество игроков (4–12)</label>
     <input type="number" id="mafiaCount" value="6" min="4" max="12" style="margin-bottom:4px;">
-    <div id="mafiaRoleSuggestion" style="font-size:12px;color:var(--primary);margin-bottom:8px;"></div>
+    <div id="mafiaRoleSuggestion" style="font-size:11px;color:var(--primary);margin-bottom:10px;"></div>
     <button class="btn btn-primary" onclick="startMafiaGame()">🃏 Раздать роли</button>
     <div id="mafiaCardsArea" style="margin-top:16px;"></div>
   `;
   document.getElementById('mafiaCount')?.addEventListener('input',updateMafiaRoleSuggestion);
   updateMafiaRoleSuggestion();
 }
-
 function updateMafiaRoleSuggestion(){
-  const n = parseInt(document.getElementById('mafiaCount')?.value||6);
-  const el = document.getElementById('mafiaRoleSuggestion'); if(!el) return;
-  const mafiaCount = Math.max(1,Math.floor(n/3));
-  const hasDon = n>=6; const hasDoctor = n>=5; const hasSheriff = n>=7;
-  let roles=[];
-  if(hasDon){roles.push('Дон мафии'); roles.push(...Array(mafiaCount-1).fill('Мафия'));}
-  else roles.push(...Array(mafiaCount).fill('Мафия'));
-  if(hasDoctor) roles.push('Доктор');
-  if(hasSheriff) roles.push('Комиссар');
-  roles.push(...Array(n-roles.length).fill('Мирный житель'));
-  el.textContent=`Рекомендуемый состав: ${roles.join(', ')}`;
+  const n=parseInt(document.getElementById('mafiaCount')?.value||6);
+  const el=document.getElementById('mafiaRoleSuggestion'); if(!el) return;
+  const mc=Math.max(1,Math.floor(n/3));
+  let r=[];
+  if(n>=6){r.push('Дон мафии');r.push(...Array(mc-1).fill('Мафия'));}else r.push(...Array(mc).fill('Мафия'));
+  if(n>=5)r.push('Доктор');if(n>=7)r.push('Комиссар');
+  while(r.length<n)r.push('Мирный');
+  el.textContent=`Состав: ${r.join(', ')}`;
 }
-
-window.startMafiaGame = function(){
-  const n = parseInt(document.getElementById('mafiaCount')?.value||6);
+window.startMafiaGame=function(){
+  const n=parseInt(document.getElementById('mafiaCount')?.value||6);
   if(n<4||n>12) return toast('❌ От 4 до 12 игроков','red');
-  const mafiaCount=Math.max(1,Math.floor(n/3));
-  const hasDon=n>=6,hasDoctor=n>=5,hasSheriff=n>=7;
+  const mc=Math.max(1,Math.floor(n/3));
   let roles=[];
-  if(hasDon){roles.push(MAFIA_ROLES_POOL[1]);roles.push(...Array(mafiaCount-1).fill(MAFIA_ROLES_POOL[0]));}
-  else roles.push(...Array(mafiaCount).fill(MAFIA_ROLES_POOL[0]));
-  if(hasDoctor) roles.push(MAFIA_ROLES_POOL[2]);
-  if(hasSheriff) roles.push(MAFIA_ROLES_POOL[3]);
-  while(roles.length<n) roles.push(MAFIA_ROLES_POOL[4]);
+  if(n>=6){roles.push(MAFIA_ROLES_POOL[1]);roles.push(...Array(mc-1).fill(MAFIA_ROLES_POOL[0]));}
+  else roles.push(...Array(mc).fill(MAFIA_ROLES_POOL[0]));
+  if(n>=5)roles.push(MAFIA_ROLES_POOL[2]);if(n>=7)roles.push(MAFIA_ROLES_POOL[3]);
+  while(roles.length<n)roles.push(MAFIA_ROLES_POOL[4]);
   roles.sort(()=>Math.random()-.5);
-  const area = document.getElementById('mafiaCardsArea'); if(!area) return;
-  area.innerHTML=`<div class="card-title" style="margin-bottom:12px;">Передавайте телефон каждому по очереди</div>`
+  unlockAchievement('mafia_first');
+  const area=document.getElementById('mafiaCardsArea'); if(!area) return;
+  area.innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Передавайте телефон по очереди</div>`
     +roles.map((r,i)=>`
     <div id="mafiaCard${i}" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;cursor:pointer;text-align:center;" onclick="revealMafiaCard(${i},'${r.id}')">
       <div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div>
@@ -6115,133 +6201,272 @@ window.startMafiaGame = function(){
     </div>`).join('');
   window._mafiaRoles=roles;
 };
-
-window.revealMafiaCard = function(i,roleId){
+window.revealMafiaCard=function(i,roleId){
   const r=MAFIA_ROLES_POOL.find(x=>x.id===roleId); if(!r) return;
   const card=document.getElementById(`mafiaCard${i}`); if(!card) return;
   const isMafia=roleId==='mafia'||roleId==='don';
-  card.innerHTML=`
-    <div style="font-size:28px;margin-bottom:6px;">${r.icon}</div>
+  card.innerHTML=`<div style="font-size:28px;margin-bottom:6px;">${r.icon}</div>
     <div style="font-size:16px;font-weight:900;color:${isMafia?'var(--red)':'var(--primary)'};">${r.label}</div>
     <div style="font-size:12px;color:var(--muted);margin-top:4px;">${r.desc}</div>
-    <div style="font-size:11px;color:var(--muted);margin-top:8px;">Запомни и нажми снова чтобы скрыть</div>
-  `;
-  card.onclick=()=>{card.innerHTML=`<div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div><div style="font-size:12px;color:var(--primary);margin-top:4px;">Карточка просмотрена ✅</div>`;card.onclick=null;card.style.opacity='.5';};
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;">Нажми снова чтобы скрыть</div>`;
+  card.onclick=()=>{card.innerHTML=`<div style="font-size:15px;font-weight:900;">Игрок ${i+1}</div><div style="font-size:12px;color:var(--primary);margin-top:4px;">✅ Просмотрено</div>`;card.onclick=null;card.style.opacity='.5';};
 };
 
 // ──────────────────────────────────────────────
-// 💎 ТРИ В РЯД
+// 💎 ТРИ В РЯД (переработанная версия)
 // ──────────────────────────────────────────────
 const M3_GEMS=['💎','🔥','⚡','🍀','💜','🌸'];
 const M3_COLS=6,M3_ROWS=6,M3_INIT_MOVES=20;
-let m3Board=[],m3Score=0,m3Moves=M3_INIT_MOVES,m3Lives=3,m3Selected=null,m3Active=false;
+let m3Board=[],m3Score=0,m3Moves=M3_INIT_MOVES,m3Selected=null,m3Active=false,m3Combo=1,m3Processing=false;
+let m3HintCells=[];
+
+const m3Sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function initMatch3(){
-  const owned = await checkGameOwned('match3');
-  const area = document.getElementById('match3Board');
-  if(!area) return;
+  const owned=await checkGameOwned('match3');
   if(!owned){
-    const section=document.getElementById('gameMatch3Section');
-    if(section) section.querySelector('.card').innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('match3');navTo('games')">Купить за 79₽</button></div>`;
+    const sec=document.getElementById('gameMatch3Section');
+    if(sec){const c=sec.querySelector('.card');if(c)c.innerHTML=`<button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>`+gameLockedHTML('match3',79);}
     return;
   }
+  unlockAchievement('match3_first');
   updateMatch3BalDisplay();
   match3NewGame();
 }
 
 async function updateMatch3BalDisplay(){
-  const snap = await get(userRef(currentNick));
-  const u = snap.val()||{};
-  const el = document.getElementById('match3BalRow');
-  if(el) el.textContent=`Баланс: ${(u.balance||0).toLocaleString()}₽ | Подсказка 5₽ | Возрождение 10₽`;
+  const snap=await get(userRef(currentNick));
+  const u=snap.val()||{};
+  const el=document.getElementById('match3BalRow');
+  if(el) el.textContent=`Баланс: ${(u.balance||0).toLocaleString()}₽`;
 }
 
-window.match3NewGame = function(){
-  m3Score=0;m3Moves=M3_INIT_MOVES;if(m3Lives<=0)m3Lives=3;m3Selected=null;m3Active=true;
-  m3Board=Array.from({length:M3_ROWS},()=>Array.from({length:M3_COLS},()=>M3_GEMS[Math.floor(Math.random()*M3_GEMS.length)]));
+window.match3NewGame=function(){
+  m3Score=0;
+  m3Moves=M3_INIT_MOVES;
+  m3Selected=null;
+  m3Active=true;
+  m3Combo=1;
+  m3Processing=false;
+  m3HintCells=[];
+  do{
+    m3Board=Array.from({length:M3_ROWS},()=>Array.from({length:M3_COLS},()=>M3_GEMS[Math.floor(Math.random()*M3_GEMS.length)]));
+  } while(!m3HasMoves());
   renderMatch3();
 };
 
-function renderMatch3(){
-  const board = document.getElementById('match3Board'); if(!board) return;
-  document.getElementById('m3Score').textContent=m3Score;
-  document.getElementById('m3Moves').textContent=m3Moves;
-  document.getElementById('m3Lives').textContent='❤️'.repeat(m3Lives);
-  board.innerHTML='';
-  for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS;c++){
-    const cell=document.createElement('div');
-    cell.style.cssText=`width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:24px;border-radius:10px;cursor:pointer;background:var(--surface2);border:1px solid ${m3Selected&&m3Selected[0]===r&&m3Selected[1]===c?'var(--primary)':'var(--border)'};transition:.15s;`;
-    cell.textContent=m3Board[r][c];
-    cell.onclick=()=>m3Click(r,c);
-    board.appendChild(cell);
-  }}
-  const msg=document.getElementById('match3Msg');
-  if(msg) msg.textContent=m3Active?`Очки: ${m3Score} | Ходы: ${m3Moves}`:(m3Moves<=0?'🏁 Ходы закончились!':'');
+function m3HasMoves(){
+  for(let r=0;r<M3_ROWS;r++){
+    for(let c=0;c<M3_COLS;c++){
+      if(c<M3_COLS-1){
+        [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
+        const h=!!m3FindMatches();
+        [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
+        if(h) return true;
+      }
+      if(r<M3_ROWS-1){
+        [m3Board[r][c],m3Board[r+1][c]]=[m3Board[r+1][c],m3Board[r][c]];
+        const h=!!m3FindMatches();
+        [m3Board[r][c],m3Board[r+1][c]]=[m3Board[r+1][c],m3Board[r][c]];
+        if(h) return true;
+      }
+    }
+  }
+  return false;
 }
 
-function m3Click(r,c){
-  if(!m3Active) return;
-  if(!m3Selected){m3Selected=[r,c];renderMatch3();return;}
-  const [sr,sc]=m3Selected;
-  if(Math.abs(r-sr)+Math.abs(c-sc)!==1){m3Selected=[r,c];renderMatch3();return;}
-  // swap
-  [m3Board[r][c],m3Board[sr][sc]]=[m3Board[sr][sc],m3Board[r][c]];
-  const matched=m3FindMatches();
-  if(!matched){[m3Board[r][c],m3Board[sr][sc]]=[m3Board[sr][sc],m3Board[r][c]];m3Selected=null;renderMatch3();return;}
-  m3Selected=null;m3Moves--;
-  m3ProcessMatches();
+function renderMatch3(){
+  const board=document.getElementById('match3Board'); if(!board) return;
+  const scoreEl=document.getElementById('m3Score');
+  const movesEl=document.getElementById('m3Moves');
+  const comboEl=document.getElementById('m3Combo');
+  if(scoreEl) scoreEl.textContent=m3Score;
+  if(movesEl) movesEl.textContent=m3Moves;
+  if(comboEl){comboEl.textContent=`x${m3Combo}`;comboEl.style.color=m3Combo>=3?'var(--gold)':m3Combo>=2?'var(--primary)':'var(--red)';}
+  board.innerHTML='';
+  for(let r=0;r<M3_ROWS;r++){
+    for(let c=0;c<M3_COLS;c++){
+      const cell=document.createElement('div');
+      cell.className='m3cell';
+      const isSel=m3Selected&&m3Selected[0]===r&&m3Selected[1]===c;
+      const isHint=m3HintCells.some(([hr,hc])=>hr===r&&hc===c);
+      if(isSel) cell.classList.add('sel');
+      if(isHint) cell.classList.add('hint-cell');
+      cell.textContent=m3Board[r]?.[c]||'';
+      if(!m3Processing) cell.addEventListener('click',()=>m3Click(r,c));
+      board.appendChild(cell);
+    }
+  }
+  const msg=document.getElementById('match3Msg');
+  if(msg){
+    if(!m3Active) msg.textContent='🏁 Игра окончена! Нажми «Новая» для старта.';
+    else if(m3Moves<=3) msg.textContent=`⚠️ Осталось ${m3Moves} ход(а)!`;
+    else msg.textContent='';
+  }
+}
+
+function m3ClearBoardCells(mark){
+  let cleared = 0;
+  for(let r=0;r<M3_ROWS;r++){
+    for(let c=0;c<M3_COLS;c++){
+      if(mark[r][c]){
+        m3Board[r][c]=null;
+        cleared++;
+      }
+    }
+  }
+  return cleared;
+}
+
+function m3DropBoard(){
+  for(let c=0;c<M3_COLS;c++){
+    const stack=[];
+    for(let r=M3_ROWS-1;r>=0;r--){
+      if(m3Board[r][c]!==null) stack.push(m3Board[r][c]);
+    }
+    while(stack.length<M3_ROWS){
+      stack.push(M3_GEMS[Math.floor(Math.random()*M3_GEMS.length)]);
+    }
+    for(let r=M3_ROWS-1, i=0; r>=0; r--, i++){
+      m3Board[r][c]=stack[i];
+    }
+  }
+}
+
+async function m3cascade(){
+  try{
+    while(true){
+      const mark=m3FindMatches();
+      if(!mark) break;
+
+      const pts=m3ClearBoardCells(mark);
+      const gained=pts*10*m3Combo;
+      m3Score+=gained;
+
+      if(m3Score>=100) unlockAchievement('match3_100');
+      if(m3Score>=500) unlockAchievement('match3_500');
+      if(m3Combo>=3) unlockAchievement('match3_combo');
+
+      renderMatch3();
+      await m3Sleep(150);
+
+      m3DropBoard();
+      m3Combo++;
+      renderMatch3();
+      await m3Sleep(150);
+    }
+
+    if(m3Moves<=0){
+      m3Active=false;
+    } else if(m3Active && !m3HasMoves()){
+      toast('⚠️ Нет ходов — перемешиваем','gold');
+      match3NewGame();
+      return;
+    }
+  } finally {
+    m3Processing=false;
+    m3Selected=null;
+    renderMatch3();
+  }
 }
 
 function m3FindMatches(){
-  let found=false;
   const mark=Array.from({length:M3_ROWS},()=>Array(M3_COLS).fill(false));
-  for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS-2;c++){if(m3Board[r][c]&&m3Board[r][c]===m3Board[r][c+1]&&m3Board[r][c]===m3Board[r][c+2]){mark[r][c]=mark[r][c+1]=mark[r][c+2]=true;found=true;}}}
-  for(let c=0;c<M3_COLS;c++){for(let r=0;r<M3_ROWS-2;r++){if(m3Board[r][c]&&m3Board[r][c]===m3Board[r+1][c]&&m3Board[r][c]===m3Board[r+2][c]){mark[r][c]=mark[r+1][c]=mark[r+2][c]=true;found=true;}}}
+  let found=false;
+  for(let r=0;r<M3_ROWS;r++){
+    for(let c=0;c<M3_COLS-2;c++){
+      if(m3Board[r][c]&&m3Board[r][c]===m3Board[r][c+1]&&m3Board[r][c]===m3Board[r][c+2]){
+        mark[r][c]=mark[r][c+1]=mark[r][c+2]=true;found=true;
+      }
+    }
+  }
+  for(let c=0;c<M3_COLS;c++){
+    for(let r=0;r<M3_ROWS-2;r++){
+      if(m3Board[r][c]&&m3Board[r][c]===m3Board[r+1][c]&&m3Board[r][c]===m3Board[r+2][c]){
+        mark[r][c]=mark[r+1][c]=mark[r+2][c]=true;found=true;
+      }
+    }
+  }
   return found?mark:null;
 }
 
-function m3ProcessMatches(){
-  const mark=m3FindMatches();
-  if(!mark){if(m3Moves<=0){m3Active=false;}renderMatch3();return;}
-  let pts=0;
-  for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS;c++){if(mark[r][c]){m3Board[r][c]=null;pts++;}}}
-  m3Score+=pts*10;
-  // drop
-  for(let c=0;c<M3_COLS;c++){let empty=[];for(let r=M3_ROWS-1;r>=0;r--){if(m3Board[r][c]===null)empty.push(r);}for(const er of empty){for(let r=er;r>0;r--)m3Board[r][c]=m3Board[r-1][c];m3Board[0][c]=M3_GEMS[Math.floor(Math.random()*M3_GEMS.length)];}}
-  setTimeout(m3ProcessMatches,250);
+function m3ResolvePotentialMove(){
+  let hint=null;
+  outer:for(let r=0;r<M3_ROWS;r++){
+    for(let c=0;c<M3_COLS-1;c++){
+      [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
+      if(m3FindMatches()){
+        hint=[[r,c],[r,c+1]];
+        [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
+        break outer;
+      }
+      [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
+    }
+  }
+  if(!hint){
+    for(let r=0;r<M3_ROWS-1;r++){
+      for(let c=0;c<M3_COLS;c++){
+        [m3Board[r][c],m3Board[r+1][c]]=[m3Board[r+1][c],m3Board[r][c]];
+        if(m3FindMatches()){
+          hint=[[r,c],[r+1,c]];
+          [m3Board[r][c],m3Board[r+1][c]]=[m3Board[r+1][c],m3Board[r][c]];
+          break;
+        }
+        [m3Board[r][c],m3Board[r+1][c]]=[m3Board[r+1][c],m3Board[r][c]];
+      }
+    }
+  }
+  return hint;
+}
+
+function m3Click(r,c){
+  if(!m3Active||m3Processing) return;
+  m3HintCells=[];
+  if(!m3Selected){m3Selected=[r,c];renderMatch3();return;}
+  const[sr,sc]=m3Selected;
+  if(sr===r&&sc===c){m3Selected=null;renderMatch3();return;}
+  if(Math.abs(r-sr)+Math.abs(c-sc)!==1){m3Selected=[r,c];renderMatch3();return;}
+  [m3Board[r][c],m3Board[sr][sc]]=[m3Board[sr][sc],m3Board[r][c]];
+  if(!m3FindMatches()){
+    [m3Board[r][c],m3Board[sr][sc]]=[m3Board[sr][sc],m3Board[r][c]];
+    m3Selected=null;
+    renderMatch3();
+    toast('❌ Нет совпадений — попробуй другой ход','red');
+    return;
+  }
+  m3Selected=null;
+  m3Moves--;
+  m3Processing=true;
+  m3Combo=1;
+  m3cascade();
   renderMatch3();
 }
 
-window.match3BuyHint = async function(){
-  const snap = await get(userRef(currentNick));
-  const u = snap.val()||{};
+window.match3BuyHint=async function(){
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<5) return toast('❌ Нужно 5₽ для подсказки','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-5});
   await logTx(currentNick,{type:'out',who:'Три в ряд',amt:5,desc:'Подсказка'});
-  // Highlight a valid move
-  let hint=null;
-  outer:for(let r=0;r<M3_ROWS;r++){for(let c=0;c<M3_COLS-1;c++){
-    [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
-    if(m3FindMatches()){hint=[r,c,'right'];[m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];break outer;}
-    [m3Board[r][c],m3Board[r][c+1]]=[m3Board[r][c+1],m3Board[r][c]];
-  }}
+  const hint=m3ResolvePotentialMove();
   if(hint){
-    toast(`💡 Подсказка: поменяй [${hint[0]+1},${hint[1]+1}] вправо!`,'green');
+    m3HintCells=hint;
+    toast('💡 Подсвечено возможное совпадение!','green');
   } else {
-    toast('💡 Нет доступных ходов — перемешиваем!','gold');
+    toast('💡 Ходов нет — перемешиваем!','gold');
     match3NewGame();
+    return;
   }
   updateMatch3BalDisplay();
+  renderMatch3();
 };
 
-window.match3BuyRevive = async function(){
-  if(m3Active) return toast('❌ Возрождение только при смерти','gold');
-  const snap = await get(userRef(currentNick));
-  const u = snap.val()||{};
-  if((u.balance||0)<10) return toast('❌ Нужно 10₽ для возрождения','red');
+window.match3BuyRevive=async function(){
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<10) return toast('❌ Нужно 10₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-10});
-  await logTx(currentNick,{type:'out',who:'Три в ряд',amt:10,desc:'Возрождение'});
-  m3Moves+=10; m3Active=true;
+  await logTx(currentNick,{type:'out',who:'Три в ряд',amt:10,desc:'+10 ходов'});
+  m3Moves+=10;
+  m3Active=true;
   toast('❤️ +10 ходов добавлено!','green');
   renderMatch3();
   updateMatch3BalDisplay();
@@ -6250,25 +6475,21 @@ window.match3BuyRevive = async function(){
 // ──────────────────────────────────────────────
 // ⚔️ ДУЭЛИ
 // ──────────────────────────────────────────────
-let duelState={mode:null,stake:0,p1:null,p2:null,board:null,turn:null,winner:null};
 
+let duelState={mode:'knb',stake:0};
 async function initDuelGame(){
-  const owned = await checkGameOwned('duel');
-  const area = document.getElementById('duelGameArea'); if(!area) return;
-  if(!owned){
-    area.innerHTML=`<div style="text-align:center;padding:20px 0;"><div style="font-size:40px;margin-bottom:12px;">🔒</div><div style="color:var(--muted);margin-bottom:16px;">Купите игру, чтобы играть</div><button class="btn btn-gold" onclick="buyGame('duel');navTo('games')">Купить за 49₽</button></div>`;
-    return;
-  }
+  const owned=await checkGameOwned('duel');
+  const area=document.getElementById('duelGameArea'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('duel',49); return; }
   renderDuelSetup();
 }
-
 function renderDuelSetup(){
-  const area = document.getElementById('duelGameArea'); if(!area) return;
+  const area=document.getElementById('duelGameArea'); if(!area) return;
+  duelState.mode='knb';
   area.innerHTML=`
     <div class="card-title">Настройка дуэли</div>
-    <label style="font-size:13px;font-weight:800;color:var(--muted);">Ставка (каждый игрок платит)</label>
+    <label style="font-size:12px;font-weight:800;color:var(--muted);">Ставка каждого игрока (₽)</label>
     <input type="number" id="duelStake" value="10" min="1" style="margin-bottom:8px;">
-    <label style="font-size:13px;font-weight:800;color:var(--muted);">Режим</label>
     <div style="display:flex;gap:8px;margin-bottom:12px;">
       <button id="duelModeKNB" class="btn btn-primary btn-sm" onclick="selectDuelMode('knb')" style="flex:1;">✊ КНБ</button>
       <button id="duelModeTTT" class="btn btn-ghost btn-sm" onclick="selectDuelMode('ttt')" style="flex:1;">⊞ Крестики-нолики</button>
@@ -6276,147 +6497,570 @@ function renderDuelSetup(){
     <button class="btn btn-gold" onclick="startDuel()">⚔️ Начать дуэль</button>
     <div id="duelArea" style="margin-top:16px;"></div>
   `;
-  duelState.mode='knb';
 }
-
-window.selectDuelMode = function(mode){
+window.selectDuelMode=function(mode){
   duelState.mode=mode;
   document.getElementById('duelModeKNB')?.classList.toggle('btn-primary',mode==='knb');
   document.getElementById('duelModeKNB')?.classList.toggle('btn-ghost',mode!=='knb');
   document.getElementById('duelModeTTT')?.classList.toggle('btn-primary',mode==='ttt');
   document.getElementById('duelModeTTT')?.classList.toggle('btn-ghost',mode!=='ttt');
 };
-
-window.startDuel = async function(){
-  const stake = parseInt(document.getElementById('duelStake')?.value||10);
-  if(stake<1) return toast('❌ Ставка должна быть минимум 1₽','red');
-  const snap = await get(userRef(currentNick));
-  const u = snap.val()||{};
-  if((u.balance||0)<stake*2) return toast(`❌ Нужно ${stake*2}₽ (ставка × 2)...`,'red');
+window.startDuel=async function(){
+  const stake=parseInt(document.getElementById('duelStake')?.value||10);
+  if(stake<1) return toast('❌ Минимальная ставка 1₽','red');
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<stake*2) return toast(`❌ Нужно ${stake*2}₽ (ставка × 2)`,'red');
   await update(userRef(currentNick),{balance:(u.balance||0)-stake*2});
-  await logTx(currentNick,{type:'out',who:'Дуэли',amt:stake*2,desc:`Ставка на дуэль (${duelState.mode==='knb'?'КНБ':'Крестики-нолики'})`});
+  await logTx(currentNick,{type:'out',who:'Дуэли',amt:stake*2,desc:`Ставка на дуэль`});
   duelState.stake=stake;
-  duelState.winner=null;
+  unlockAchievement('duel_first');
   if(duelState.mode==='knb') renderKNBGame();
   else renderTTTGame();
 };
-
-// --- КНБ ---
-let knbP1=null, knbP2=null;
+let knbP1=null,knbP2=null;
 function renderKNBGame(){
   const area=document.getElementById('duelArea'); if(!area) return;
-  knbP1=null; knbP2=null;
-  area.innerHTML=`
-    <div class="card-title">Камень-ножницы-бумага</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      <div style="text-align:center;">
+  knbP1=null;knbP2=null;
+  area.innerHTML=`<div class="card-title">✊ Камень-ножницы-бумага</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;">
         <div style="font-weight:900;margin-bottom:8px;">Игрок 1</div>
-        <div id="knbP1choice" style="font-size:32px;margin-bottom:8px;">❓</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="knbChoose(1,'rock')">✊ Камень</button>
-          <button class="btn btn-ghost btn-sm" onclick="knbChoose(1,'scissors')">✌️ Ножницы</button>
-          <button class="btn btn-ghost btn-sm" onclick="knbChoose(1,'paper')">🖐 Бумага</button>
-        </div>
+        <div id="knbP1choice" style="font-size:36px;margin-bottom:10px;">❓</div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:4px;" onclick="knbChoose(1,'rock')">✊</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:4px;" onclick="knbChoose(1,'scissors')">✌️</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="knbChoose(1,'paper')">🖐</button>
       </div>
-      <div style="text-align:center;">
+      <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;">
         <div style="font-weight:900;margin-bottom:8px;">Игрок 2</div>
-        <div id="knbP2choice" style="font-size:32px;margin-bottom:8px;">❓</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="knbChoose(2,'rock')">✊ Камень</button>
-          <button class="btn btn-ghost btn-sm" onclick="knbChoose(2,'scissors')">✌️ Ножницы</button>
-          <button class="btn btn-ghost btn-sm" onclick="knbChoose(2,'paper')">🖐 Бумага</button>
-        </div>
+        <div id="knbP2choice" style="font-size:36px;margin-bottom:10px;">❓</div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:4px;" onclick="knbChoose(2,'rock')">✊</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-bottom:4px;" onclick="knbChoose(2,'scissors')">✌️</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="knbChoose(2,'paper')">🖐</button>
       </div>
     </div>
-    <div id="knbResult" style="font-size:15px;font-weight:900;text-align:center;min-height:24px;"></div>
-  `;
+    <div id="knbResult" style="font-size:15px;font-weight:900;text-align:center;min-height:24px;"></div>`;
 }
-
 const KNB_ICONS={rock:'✊',scissors:'✌️',paper:'🖐'};
 const KNB_BEATS={rock:'scissors',scissors:'paper',paper:'rock'};
-window.knbChoose = function(player, choice){
-  if(player===1) knbP1=choice;
-  if(player===2) knbP2=choice;
+window.knbChoose=function(player,choice){
+  if(player===1)knbP1=choice;else knbP2=choice;
   document.getElementById(`knbP${player}choice`).textContent=KNB_ICONS[choice];
-  if(!knbP1||!knbP2) return;
+  if(!knbP1||!knbP2)return;
   setTimeout(async()=>{
     const res=document.getElementById('knbResult');
     let winner=0;
-    if(KNB_BEATS[knbP1]===knbP2) winner=1;
-    else if(KNB_BEATS[knbP2]===knbP1) winner=2;
+    if(KNB_BEATS[knbP1]===knbP2)winner=1;else if(KNB_BEATS[knbP2]===knbP1)winner=2;
+    const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
     if(winner===0){
-      if(res) res.innerHTML=`<span style="color:var(--gold);">🤝 Ничья! Деньги возвращены.</span>`;
-      const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
+      if(res)res.innerHTML=`<div style="color:var(--gold);margin-bottom:8px;">🤝 Ничья! Деньги возвращены.</div>`;
       await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
-    } else {
-      if(res) res.innerHTML=`<span style="color:var(--primary);">🏆 Игрок ${winner} победил! +${duelState.stake*2}₽ зачислено!</span>`;
-      const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
+    }else{
+      if(res)res.innerHTML=`<div style="color:var(--primary);margin-bottom:8px;">🏆 Игрок ${winner} победил! +${duelState.stake*2}₽</div>`;
       await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
-      await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа в дуэли КНБ`});
+      await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа КНБ`});
+      unlockAchievement('duel_win');
     }
-    setTimeout(()=>{document.getElementById('duelArea').innerHTML+=`<button class="btn btn-primary" style="margin-top:12px;" onclick="startDuel()">🔄 Ещё раз</button>`;},500);
-  },600);
+    if(res)res.innerHTML+=`<button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
+  },500);
 };
-
-// --- Крестики-нолики ---
-let tttBoard, tttTurn;
+let tttBoard,tttTurn2;
 function renderTTTGame(){
-  tttBoard=Array(9).fill(null); tttTurn=1;
+  tttBoard=Array(9).fill(null);tttTurn2=1;
   const area=document.getElementById('duelArea'); if(!area) return;
-  area.innerHTML=`
-    <div class="card-title">Крестики-нолики</div>
+  area.innerHTML=`<div class="card-title">⊞ Крестики-нолики</div>
     <div id="tttStatus" style="text-align:center;font-weight:900;margin-bottom:10px;color:var(--primary);">Ход: Игрок 1 (✕)</div>
     <div id="tttGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:200px;margin:0 auto 12px;"></div>
-    <div id="tttResult" style="text-align:center;font-size:15px;font-weight:900;min-height:24px;"></div>
-  `;
+    <div id="tttResult" style="text-align:center;font-size:15px;font-weight:900;min-height:24px;"></div>`;
   renderTTTGrid();
 }
-
 function renderTTTGrid(){
   const grid=document.getElementById('tttGrid'); if(!grid) return;
   grid.innerHTML='';
   tttBoard.forEach((cell,i)=>{
     const btn=document.createElement('button');
-    btn.style.cssText=`width:60px;height:60px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);font-size:28px;cursor:${cell?'default':'pointer'};color:${cell==='X'?'var(--primary)':'var(--red)'};font-family:'Nunito',sans-serif;font-weight:900;`;
+    btn.style.cssText=`width:62px;height:62px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);font-size:30px;cursor:${cell?'default':'pointer'};color:${cell==='X'?'var(--primary)':'var(--red)'};font-family:'Nunito',sans-serif;font-weight:900;`;
     btn.textContent=cell||'';
     if(!cell) btn.onclick=()=>tttMove(i);
     grid.appendChild(btn);
   });
 }
-
-window.tttMove = async function(i){
-  if(tttBoard[i]) return;
-  tttBoard[i]=tttTurn===1?'X':'O';
+window.tttMove=async function(i){
+  if(tttBoard[i])return;
+  tttBoard[i]=tttTurn2===1?'X':'O';
   const win=tttCheckWin();
   renderTTTGrid();
   const status=document.getElementById('tttStatus');
   const result=document.getElementById('tttResult');
   if(win){
-    if(status) status.textContent=`🏆 Игрок ${tttTurn} победил!`;
-    if(result) result.innerHTML=`<span style="color:var(--primary);">Игрок ${tttTurn} победил! +${duelState.stake*2}₽</span>`;
+    if(status)status.textContent=`🏆 Игрок ${tttTurn2} победил!`;
     const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
     await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
-    await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа в крестики-нолики`});
-    document.getElementById('duelArea').innerHTML+=`<button class="btn btn-primary" style="margin-top:12px;" onclick="startDuel()">🔄 Ещё раз</button>`;
-    return;
+    await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа крестики-нолики`});
+    if(result)result.innerHTML=`<div style="color:var(--primary);margin-bottom:8px;">Игрок ${tttTurn2} победил! +${duelState.stake*2}₽</div><button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
+    unlockAchievement('duel_win');return;
   }
   if(tttBoard.every(x=>x)){
-    if(status) status.textContent='🤝 Ничья!';
-    if(result) result.innerHTML=`<span style="color:var(--gold);">Ничья! Деньги возвращены.</span>`;
+    if(status)status.textContent='🤝 Ничья!';
     const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
     await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
-    document.getElementById('duelArea').innerHTML+=`<button class="btn btn-primary" style="margin-top:12px;" onclick="startDuel()">🔄 Ещё раз</button>`;
+    if(result)result.innerHTML=`<div style="color:var(--gold);margin-bottom:8px;">Ничья! Деньги возвращены.</div><button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
     return;
   }
-  tttTurn=tttTurn===1?2:1;
-  if(status) status.textContent=`Ход: Игрок ${tttTurn} (${tttTurn===1?'✕':'○'})`;
+  tttTurn2=tttTurn2===1?2:1;
+  if(status)status.textContent=`Ход: Игрок ${tttTurn2} (${tttTurn2===1?'✕':'○'})`;
+};
+function tttCheckWin(){return[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(([a,b,c])=>tttBoard[a]&&tttBoard[a]===tttBoard[b]&&tttBoard[a]===tttBoard[c]);}
+
+// ──────────────────────────────────────────────
+// 🏚️ ЗАБРОШКА: ПОИСК СОКРОВИЩ
+// ──────────────────────────────────────────────
+const ABN_ROWS=10,ABN_COLS=10;
+let abnBoard=[],abnRevealed=[],abnEnergy=15,abnActive=false,abnScore=0,abnFlashlightUsed=false,abnDetectorUsed=false;
+
+async function initAbandonedGame(){
+  const owned=await checkGameOwned('abandoned');
+  const area=document.getElementById('abandonedGameArea'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('abandoned',89); return; }
+  renderAbandonedSetup();
+}
+
+function renderAbandonedSetup(){
+  const area=document.getElementById('abandonedGameArea'); if(!area) return;
+  area.innerHTML=`
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-primary" onclick="startAbandonedGame()" style="flex:1;">🏚️ Новая экспедиция</button>
+      <button type="button" class="btn btn-gold btn-sm" onclick="abnBuyFlashlight()" style="flex:1;">🔦 Фонарик (15₽)</button>
+      <button type="button" class="btn btn-gold btn-sm" onclick="abnBuyDetector()" style="flex:1;">📡 Металлоискатель (25₽)</button>
+    </div>
+    <div id="abnInfo" style="display:flex;gap:8px;margin-bottom:10px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;flex:1;text-align:center;"><div id="abnEnergyEl" style="font-size:16px;font-weight:900;color:var(--primary);">15</div><div style="font-size:9px;color:var(--muted);">Энергия</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;flex:1;text-align:center;"><div id="abnScoreEl" style="font-size:16px;font-weight:900;color:var(--gold);">0₽</div><div style="font-size:9px;color:var(--muted);">Найдено</div></div>
+    </div>
+    <style>
+    .abn-grid{display:grid;gap:2px;margin:0 auto 10px;}
+    .abn-cell{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:.1s;border:1px solid rgba(255,255,255,.06);user-select:none;}
+    .abn-cell.fog{background:rgba(100,116,139,.2);cursor:pointer;}
+    .abn-cell.fog:active{transform:scale(.88);}
+    .abn-cell.fog:hover{background:rgba(100,116,139,.35);border-color:rgba(255,255,255,.15);}
+    .abn-cell.safe{background:rgba(34,211,165,.08);cursor:default;}
+    .abn-cell.revealed{cursor:default;}
+    .abn-cell.hint-safe{background:rgba(34,211,165,.18);border-color:rgba(34,211,165,.4);}
+    .abn-cell.hint-treasure{background:rgba(251,191,36,.25);border-color:rgba(251,191,36,.5);animation:hintPulse .7s ease-in-out infinite alternate;}
+    </style>
+    <div id="abnGrid" class="abn-grid" style="grid-template-columns:repeat(${ABN_COLS},30px);"></div>
+    <div id="abnMsg" style="font-size:13px;font-weight:800;text-align:center;min-height:20px;margin-top:4px;"></div>
+  `;
+}
+
+window.startAbandonedGame=function(){
+  abnEnergy=15;abnScore=0;abnActive=true;abnFlashlightUsed=false;abnDetectorUsed=false;
+  // Generate board: 0=empty, treasure=amt, -amt=gopnik, 'big'=big treasure
+  abnBoard=Array.from({length:ABN_ROWS},()=>Array(ABN_COLS).fill(0));
+  abnRevealed=Array.from({length:ABN_ROWS},()=>Array(ABN_COLS).fill(false));
+  // Place items randomly
+  const place=(val,count)=>{let n=0;while(n<count){const r=Math.floor(Math.random()*ABN_ROWS),c=Math.floor(Math.random()*ABN_COLS);if(abnBoard[r][c]===0){abnBoard[r][c]=val;n++;}}};
+  place(5,8); place(10,6); place(20,4); place(50,2); place('big',1);
+  place(-5,6); place(-10,4); place(-15,2);
+  renderAbnGrid();
+  unlockAchievement('abandoned_first');
+}
+
+function renderAbnGrid(){
+  const grid=document.getElementById('abnGrid'); if(!grid) return;
+  const eEl=document.getElementById('abnEnergyEl');const sEl=document.getElementById('abnScoreEl');
+  if(eEl)eEl.textContent=abnEnergy;if(sEl)sEl.textContent=abnScore+'₽';
+  grid.innerHTML='';
+  let allClear=true;
+  for(let r=0;r<ABN_ROWS;r++){for(let c=0;c<ABN_COLS;c++){
+    const cell=document.createElement('div');
+    cell.className='abn-cell';
+    if(abnRevealed[r][c]){
+      cell.classList.add('revealed');
+      const v=abnBoard[r][c];
+      if(v===0){cell.textContent='·';cell.style.color='var(--muted)';}
+      else if(v==='big'){cell.textContent='💰';}
+      else if(typeof v==='number'&&v>0){cell.textContent='💎';cell.title=`+${v}₽`;}
+      else{cell.textContent='😤';}
+    } else {
+      cell.classList.add('fog');
+      cell.textContent='🌫️';
+      if(abnActive) cell.addEventListener('click',()=>abnOpen(r,c));
+      allClear=false;
+    }
+    grid.appendChild(cell);
+  }}
+  const msg=document.getElementById('abnMsg');
+  if(msg){
+    if(!abnActive)msg.textContent=`Экспедиция завершена! Итого: ${abnScore}₽`;
+    else if(abnEnergy<=0){msg.textContent='⚡ Энергия кончилась!';abnActive=false;}
+    else msg.textContent=`⚡ ${abnEnergy} энергии • 💰 ${abnScore}₽`;
+  }
+  if(allClear&&abnActive) endAbandonedGame(true);
+}
+
+async function abnOpen(r,c){
+  if(!abnActive||abnRevealed[r][c]) return;
+  abnRevealed[r][c]=true;abnEnergy--;
+  const v=abnBoard[r][c];
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  let gain=0;
+  if(typeof v==='number'&&v>0){gain=v;abnScore+=v;await update(userRef(currentNick),{balance:(u.balance||0)+v});await logTx(currentNick,{type:'in',who:'Заброшка',amt:v,desc:'Найден хабар'});}
+  else if(v==='big'){gain=100;abnScore+=100;await update(userRef(currentNick),{balance:(u.balance||0)+100});await logTx(currentNick,{type:'in',who:'Заброшка',amt:100,desc:'Большой куш!'});unlockAchievement('abandoned_gold');toast('💰 БОЛЬШОЙ КУШ! +100₽','gold');}
+  else if(typeof v==='number'&&v<0){const loss=Math.abs(v);abnScore=Math.max(0,abnScore-loss);const newBal=Math.max(0,(u.balance||0)-loss);await update(userRef(currentNick),{balance:newBal});await logTx(currentNick,{type:'out',who:'Заброшка',amt:loss,desc:'Гопники!'});toast(`😤 Гопники! -${loss}₽`,'red');}
+  if(abnEnergy<=0){abnActive=false;}
+  renderAbnGrid();
+}
+
+function endAbandonedGame(clear){
+  abnActive=false;
+  if(clear) unlockAchievement('abandoned_clear');
+  toast(`🏚️ Экспедиция окончена! Найдено: ${abnScore}₽`,'green');
+  renderAbnGrid();
+}
+
+window.abnBuyFlashlight=async function(){
+  if(abnFlashlightUsed) return toast('Фонарик уже использован','gold');
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<15) return toast('❌ Нужно 15₽','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-15});
+  await logTx(currentNick,{type:'out',who:'Заброшка',amt:15,desc:'Фонарик'});
+  abnFlashlightUsed=true;
+  // reveal safe cells (value=0 or negative) as hints
+  const grid=document.getElementById('abnGrid'); if(!grid) return;
+  const cells=grid.querySelectorAll('.abn-cell.fog');
+  let idx=0;
+  cells.forEach(cell=>{
+    const r=Math.floor(idx/ABN_COLS),c=idx%ABN_COLS; idx++;
+    if(!abnRevealed[r]?.[c]&&(abnBoard[r]?.[c]===0||typeof abnBoard[r]?.[c]==='number'&&abnBoard[r][c]<0)) cell.classList.add('hint-safe');
+  });
+  toast('🔦 Безопасные клетки подсвечены на 5 сек!','green');
+  setTimeout(()=>document.querySelectorAll('.hint-safe').forEach(x=>x.classList.remove('hint-safe')),5000);
+  updateMatch3BalDisplay();
 };
 
-function tttCheckWin(){
-  const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-  return wins.some(([a,b,c])=>tttBoard[a]&&tttBoard[a]===tttBoard[b]&&tttBoard[a]===tttBoard[c]);
+window.abnBuyDetector=async function(){
+  if(abnDetectorUsed) return toast('Металлоискатель уже использован','gold');
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<25) return toast('❌ Нужно 25₽','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-25});
+  await logTx(currentNick,{type:'out',who:'Заброшка',amt:25,desc:'Металлоискатель'});
+  abnDetectorUsed=true;
+  // highlight big treasure area
+  const grid=document.getElementById('abnGrid'); if(!grid) return;
+  const cells=grid.querySelectorAll('.abn-cell');
+  let idx=0;
+  cells.forEach(cell=>{
+    const r=Math.floor(idx/ABN_COLS),c=idx%ABN_COLS; idx++;
+    if(!abnRevealed[r]?.[c]&&(abnBoard[r]?.[c]==='big'||abnBoard[r]?.[c]===50)) cell.classList.add('hint-treasure');
+  });
+  toast('📡 Крупные клады подсвечены на 5 сек!','gold');
+  setTimeout(()=>document.querySelectorAll('.hint-treasure').forEach(x=>x.classList.remove('hint-treasure')),5000);
+};
+
+// ──────────────────────────────────────────────
+// 🏗️ БАШНЯ КАПАНИ
+// ──────────────────────────────────────────────
+let towerBlocks=[],towerBlockPos=0,towerBlockDir=1,towerBlockWidth=200,towerScore=0,towerRunning=false,towerRAF=null,towerPerfectStreak=0,towerStabilityBought=false,towerStabilityCharges=0;
+const TOWER_SPEED_BASE=2.2,TOWER_CANVAS_W=280,TOWER_BLOCK_H=28;
+
+async function initTowerGame(){
+  const owned=await checkGameOwned('tower');
+  const area=document.getElementById('towerGameArea'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('tower',59); return; }
+  area.innerHTML=`
+    <style>
+    #towerCanvas{border-radius:12px;border:1px solid var(--border);background:var(--surface2);display:block;margin:0 auto 10px;touch-action:none;}
+    </style>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:8px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="towerScoreEl" style="font-size:18px;font-weight:900;color:var(--primary);">0</div><div style="font-size:9px;color:var(--muted);">Уровень</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;"><div id="towerPerfEl" style="font-size:18px;font-weight:900;color:var(--gold);">0</div><div style="font-size:9px;color:var(--muted);">Идеально</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 14px;text-align:center;min-width:86px;"><div id="towerStabEl" style="font-size:18px;font-weight:900;color:var(--gold);">0</div><div style="font-size:9px;color:var(--muted);">Стаб.</div></div>
+    </div>
+    <canvas id="towerCanvas" width="${TOWER_CANVAS_W}" height="360"></canvas>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;">
+      <button class="btn btn-primary" id="towerBtn" onclick="towerAction()" style="flex:1;max-width:180px;">▶ Старт / Стоп</button>
+      <button class="btn btn-gold btn-sm" onclick="towerBuyStability()">🧱 Устойчивость (20₽)</button>
+    </div>
+    <div id="towerMsg" style="font-size:13px;color:var(--muted);text-align:center;min-height:20px;"></div>
+  `;
+  towerStartNew();
 }
+
+function towerStartNew(){
+  towerBlocks=[];towerBlockPos=0;towerBlockDir=1;towerBlockWidth=TOWER_CANVAS_W*0.7;
+  towerScore=0;towerRunning=false;towerPerfectStreak=0;towerStabilityCharges=0;
+  if(towerRAF){cancelAnimationFrame(towerRAF);towerRAF=null;}
+  towerBlocks.push({x:(TOWER_CANVAS_W-towerBlockWidth)/2,w:towerBlockWidth});
+  towerDrawFrame(false);
+  const msg=document.getElementById('towerMsg');if(msg)msg.textContent='Нажми Старт, затем нажимай кнопку или экран в нужный момент!';
+}
+
+window.towerAction=function(){
+  if(!towerRunning){
+    towerRunning=true;
+    document.getElementById('towerCanvas')?.addEventListener('click',towerPlace,{passive:true});
+    towerLoop();
+  } else {
+    towerPlace();
+  }
+};
+
+function towerLoop(){
+  if(!towerRunning) return;
+  const speed=(TOWER_SPEED_BASE+towerScore*0.07)*towerBlockDir;
+  towerBlockPos+=speed;
+  if(towerBlockPos<0){towerBlockPos=0;towerBlockDir=1;}
+  if(towerBlockPos+towerBlockWidth>TOWER_CANVAS_W){towerBlockPos=TOWER_CANVAS_W-towerBlockWidth;towerBlockDir=-1;}
+  towerDrawFrame(true);
+  towerRAF=requestAnimationFrame(towerLoop);
+}
+
+function towerDrawFrame(showMoving){
+  const canvas=document.getElementById('towerCanvas'); if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,TOWER_CANVAS_W,360);
+  const visibleBlocks=towerBlocks.slice(-10);
+  const startY=360-TOWER_BLOCK_H;
+  visibleBlocks.forEach((b,i)=>{
+    const y=startY-(i*TOWER_BLOCK_H);
+    if(y<-TOWER_BLOCK_H) return;
+    const alpha=0.4+i/visibleBlocks.length*0.6;
+    ctx.fillStyle=`rgba(34,211,165,${alpha})`;
+    ctx.beginPath();ctx.roundRect(b.x,y,b.w,TOWER_BLOCK_H-2,6);ctx.fill();
+    if(i===visibleBlocks.length-1){
+      ctx.fillStyle='rgba(255,255,255,0.15)';
+      ctx.beginPath();ctx.roundRect(b.x,y,b.w,8,{upperLeft:6,upperRight:6});ctx.fill();
+    }
+  });
+  if(showMoving){
+    const y=startY-(towerBlocks.length*TOWER_BLOCK_H);
+    ctx.fillStyle='rgba(251,191,36,0.85)';
+    ctx.beginPath();ctx.roundRect(towerBlockPos,y,towerBlockWidth,TOWER_BLOCK_H-2,6);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.2)';
+    ctx.beginPath();ctx.roundRect(towerBlockPos,y,towerBlockWidth,8,{upperLeft:6,upperRight:6});ctx.fill();
+  }
+  const scoreEl=document.getElementById('towerScoreEl');if(scoreEl)scoreEl.textContent=towerScore;
+  const perfEl=document.getElementById('towerPerfEl');if(perfEl)perfEl.textContent=towerPerfectStreak;
+  const stabEl=document.getElementById('towerStabEl');if(stabEl)stabEl.textContent=towerStabilityCharges;
+}
+
+function towerPlace(){
+  if(!towerRunning) return;
+  cancelAnimationFrame(towerRAF);towerRAF=null;
+  const prev=towerBlocks[towerBlocks.length-1];
+  const cur={x:towerBlockPos,w:towerBlockWidth};
+  const overlap_start=Math.max(prev.x,cur.x);
+  const overlap_end=Math.min(prev.x+prev.w,cur.x+cur.w);
+  const overlap=overlap_end-overlap_start;
+  const msg=document.getElementById('towerMsg');
+  if(overlap<=0){
+    towerRunning=false;
+    if(msg)msg.textContent=`💥 Промахнулся! Игра окончена. Уровень: ${towerScore}`;
+    towerDrawFrame(false);
+    unlockAchievement('tower_first');
+    if(towerScore>=10) unlockAchievement('tower_10');
+    setTimeout(towerStartNew,2000);
+    return;
+  }
+  const isPerfect=Math.abs(overlap-prev.w)<4;
+  if(isPerfect){
+    towerPerfectStreak++;
+    if(towerPerfectStreak>=3) unlockAchievement('tower_perfect');
+    if(msg)msg.textContent=`✨ Идеально! Комбо: ${towerPerfectStreak}`;
+    towerBlocks.push({x:prev.x,w:prev.w});
+    towerBlockWidth=prev.w;
+  } else {
+    towerPerfectStreak=0;
+    let newW=overlap;
+    if(towerStabilityCharges>0){
+      towerStabilityCharges--;
+      newW=prev.w;
+      if(msg)msg.textContent=`🧱 Устойчивость спасла блок! Осталось: ${towerStabilityCharges}`;
+    } else {
+      if(msg)msg.textContent=`📐 Осталось ${Math.round(newW)}px ширины`;
+    }
+    towerBlocks.push({x:overlap_start,w:newW});
+    towerBlockWidth=newW;
+  }
+  towerScore++;
+  unlockAchievement('tower_first');
+  if(towerScore>=10) unlockAchievement('tower_10');
+  if(towerBlocks.length>10){towerBlocks.shift();}
+  towerBlockPos=(TOWER_CANVAS_W-towerBlockWidth)/2;towerBlockDir=1;
+  towerDrawFrame(false);
+  setTimeout(()=>{ towerRunning=true; towerLoop(); },200);
+}
+
+window.towerBuyStability=async function(){
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<20) return toast('❌ Нужно 20₽','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-20});
+  await logTx(currentNick,{type:'out',who:'Башня',amt:20,desc:'Устойчивость блока'});
+  towerStabilityBought=true;
+  towerStabilityCharges=2;
+  const msg=document.getElementById('towerMsg');
+  if(msg) msg.textContent='🧱 Устойчивость включена: 2 ошибки без сужения блока.';
+  toast('🧱 Устойчивость включена на 2 хода','green');
+};
+
+// ──────────────────────────────────────────────
+// 🔤 УГАДАЙ СЛОВО (Wordle RU)
+// ──────────────────────────────────────────────
+const WORDLE_WORDS4=['КИНО','СЛОН','БЛИН','МОСТ','ГРИБ','СОЛЬ','КЛЕЙ','ПОНИ','ДРУГ','НОЧЬ','ДЕНЬ','СВЕТ','ЗИМА','РЕКА','ЛИСТ'];
+const WORDLE_WORDS5=['ЗАМОК','СЛОВО','ЛИМОН','КНИГА','ЗЕМЛЯ','ПЕСНЯ','ЖИВОТ','БЕРЕГ','ПТИЦА','ГРУША','БЕЛКА','ВОЛНА','МЕСТО','ГОЛОС','МАСЛО','КРЫША','ПАРУС','ЛАЙКА','КОБРА','КУБИК','ЛЕНТА','МЫШКА','НОРКА','СОСНА','ЯГОДА'];
+let wdWord='',wdLen=5,wdAttempts=[],wdMaxTries=6,wdDone=false,wdCurInput='',wdHint=null,wdUsedLetters=new Set(),wdUsedPositions=new Set();
+
+async function initWordleGame(){
+  const owned=await checkGameOwned('wordle');
+  const area=document.getElementById('wordleGameArea'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('wordle',39); return; }
+  startWordleGame();
+}
+
+function startWordleGame(len=5){
+  wdLen=len;
+  const pool=len===4?WORDLE_WORDS4:WORDLE_WORDS5;
+  wdWord=pool[Math.floor(Math.random()*pool.length)];
+  wdAttempts=[];wdDone=false;wdCurInput='';
+  wdHint=null;wdUsedLetters=new Set();wdUsedPositions=new Set();
+  wdMaxTries=len===4?5:6;
+  renderWordleGame();
+}
+
+function wdGetHintMarkup(){
+  if(!wdHint) return '';
+  if(wdHint.type==='letter'){
+    return `<div style="display:flex;justify-content:center;margin:0 0 10px;"><div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);font-weight:900;color:var(--gold);"><span>💡</span><span>Буква: «${wdHint.value}»</span></div></div>`;
+  }
+  return `<div style="display:flex;justify-content:center;margin:0 0 10px;"><div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);font-weight:900;color:var(--gold);"><span>🎯</span><span>Позиция ${wdHint.value.pos+1}: «${wdHint.value.letter}»</span></div></div>`;
+}
+
+function renderWordleGame(){
+  const area=document.getElementById('wordleGameArea'); if(!area) return;
+  const rows=[];
+  for(let i=0;i<wdMaxTries;i++){
+    const attempt=wdAttempts[i];
+    if(attempt){
+      rows.push(`<div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">`+
+        attempt.letters.map((l,j)=>{
+          const color=attempt.colors[j]==='green'?'#22d3a5':attempt.colors[j]==='yellow'?'#fbbf24':'rgba(100,116,139,.4)';
+          return `<div style="width:40px;height:40px;border-radius:8px;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0c1117;border:2px solid ${color};">${l}</div>`;
+        }).join('')+`</div>`);
+    } else if(i===wdAttempts.length&&!wdDone){
+      rows.push(`<div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">`+
+        Array.from({length:wdLen},(_, j)=>{
+          const ch=wdCurInput[j]||'';
+          const isHintPos=wdHint?.type==='position'&&wdHint.value.pos===j;
+          return `<div style="width:40px;height:40px;border-radius:8px;background:${isHintPos?'rgba(251,191,36,.2)':(ch?'var(--surface2)':'transparent')};border:2px solid ${isHintPos?'var(--gold)':(ch?'var(--primary)':'var(--border)')};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--text);position:relative;">${ch|| (isHintPos?wdHint.value.letter:'')}</div>`;
+        }).join('')+`</div>`);
+    } else {
+      rows.push(`<div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">`+
+        Array.from({length:wdLen},()=>`<div style="width:40px;height:40px;border-radius:8px;border:2px solid var(--border);"></div>`).join('')+`</div>`);
+    }
+  }
+  const keyboard='ЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ'.split('').map(k=>{
+    let bg='var(--surface2)';let col='var(--text)';
+    for(const a of wdAttempts){
+      const idx=a.letters.indexOf(k);
+      if(idx!==-1){
+        if(a.colors[idx]==='green'){bg='#22d3a5';col='#0c1117';}
+        else if(a.colors[idx]==='yellow'&&bg!=='#22d3a5'){bg='#fbbf24';col='#0c1117';}
+        else if(bg==='var(--surface2)'){bg='rgba(100,116,139,.35)';col='var(--muted)';}
+      }
+    }
+    return `<button style="min-width:26px;height:34px;border-radius:6px;background:${bg};color:${col};border:1px solid var(--border);font-size:11px;font-weight:900;font-family:'Nunito',sans-serif;cursor:pointer;padding:0 3px;touch-action:manipulation;" onclick="wdKey('${k}')">${k}</button>`;
+  }).join('');
+  area.innerHTML=`
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;">
+      <button class="btn btn-ghost btn-sm" onclick="startWordleGame(4)" style="${wdLen===4?'border-color:var(--primary);color:var(--primary);':''}">4 буквы</button>
+      <button class="btn btn-ghost btn-sm" onclick="startWordleGame(5)" style="${wdLen===5?'border-color:var(--primary);color:var(--primary);':''}">5 букв</button>
+    </div>
+    ${wdGetHintMarkup()}
+    <div style="margin-bottom:12px;">${rows.join('')}</div>
+    <div id="wdMsg" style="font-size:13px;font-weight:800;text-align:center;min-height:20px;margin-bottom:10px;color:var(--primary);"></div>
+    ${!wdDone?`<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:300px;margin:0 auto 8px;">${keyboard}</div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="wdKey('⌫')">⌫</button>
+      <button class="btn btn-primary btn-sm" onclick="wdSubmit()">✓ Ввод</button>
+    </div>
+    <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap;">
+      <button class="btn btn-gold btn-sm" onclick="wdBuyHint1()">💡 Буква (5₽)</button>
+      <button class="btn btn-gold btn-sm" onclick="wdBuyHint2()">🎯 Буква+место (10₽)</button>
+    </div>`
+    :`<button class="btn btn-primary" onclick="startWordleGame(${wdLen})">🔄 Новое слово</button>`}
+  `;
+  const msgEl=document.getElementById('wdMsg');
+  if(msgEl&&wdDone){
+    if(wdAttempts[wdAttempts.length-1]?.colors.every(c=>c==='green')){msgEl.textContent=`🎉 Угадал за ${wdAttempts.length} ${wdAttempts.length===1?'попытку':'попыток'}!`;}
+    else msgEl.textContent=`😔 Слово было: ${wdWord}`;
+  }
+}
+
+window.wdKey=function(k){
+  if(wdDone) return;
+  if(k==='⌫'){wdCurInput=wdCurInput.slice(0,-1);}
+  else if(wdCurInput.length<wdLen){wdCurInput+=k;}
+  renderWordleGame();
+};
+
+window.wdSubmit=function(){
+  if(wdDone) return;
+  if(wdCurInput.length<wdLen) return toast(`❌ Введите ${wdLen} букв`,'red');
+  const letters=wdCurInput.split('');
+  const colors=letters.map((l,i)=>{
+    if(wdWord[i]===l) return 'green';
+    if(wdWord.includes(l)) return 'yellow';
+    return 'gray';
+  });
+  wdAttempts.push({letters,colors});
+  const win=colors.every(c=>c==='green');
+  if(win){
+    wdDone=true;
+    unlockAchievement('wordle_first');
+    if(wdAttempts.length===1) unlockAchievement('wordle_fast');
+    if(wdLen===5) unlockAchievement('wordle_hard');
+  } else if(wdAttempts.length>=wdMaxTries){
+    wdDone=true;
+  }
+  wdCurInput='';
+  renderWordleGame();
+};
+
+window.wdBuyHint1=async function(){
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<5) return toast('❌ Нужно 5₽','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-5});
+  await logTx(currentNick,{type:'out',who:'Угадай слово',amt:5,desc:'Подсказка: буква'});
+  const candidates=[...new Set(wdWord.split(''))].filter(l=>!wdUsedLetters.has(l));
+  if(!candidates.length) return toast('Все буквы уже подсказаны','gold');
+  const hint=candidates[0];
+  wdUsedLetters.add(hint);
+  wdHint={type:'letter',value:hint};
+  toast(`💡 Буква в слове: ${hint}`,'green');
+  renderWordleGame();
+};
+
+window.wdBuyHint2=async function(){
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<10) return toast('❌ Нужно 10₽','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-10});
+  await logTx(currentNick,{type:'out',who:'Угадай слово',amt:10,desc:'Подсказка: буква+место'});
+  const candidates=[];
+  wdWord.split('').forEach((l,i)=>{
+    if(!wdUsedPositions.has(i) && !wdAttempts.some(a=>a.letters[i]===l&&a.colors[i]==='green')){
+      candidates.push({l,i});
+    }
+  });
+  if(!candidates.length) return toast('Все позиции уже подсказаны','gold');
+  const hint=candidates[0];
+  wdUsedPositions.add(hint.i);
+  wdHint={type:'position',value:{letter:hint.l,pos:hint.i}};
+  toast(`🎯 Позиция ${hint.i+1} открыта`,'green');
+  renderWordleGame();
+};
 // ══════════════════════════════════════════════════════════════════
+
+
 const bizRef = () => ref(db, 'businesses');
 const bizItemRef = (id) => ref(db, `businesses/${id}`);
 const bizAppsRef = () => ref(db, 'businessApps');
