@@ -977,7 +977,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
   <div class="card">
     <div style="font-size:26px;margin-bottom:6px;">⚔️</div>
     <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Дуэли</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Сделай одинаковую ставку и сыграй с другом в крестики-нолики или камень-ножницы-бумага. Победитель забирает банк!</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Играй с другом на рубли — с одного телефона или по сети! Победитель забирает банк.</div>
     <div id="duelGameArea"></div>
   </div>
 </div>
@@ -1012,6 +1012,39 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Угадай слово</div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">🟩 — буква на месте &nbsp; 🟨 — буква есть, но не там &nbsp; ⬜ — такой буквы нет</div>
     <div id="wordleGameArea"></div>
+  </div>
+</div>
+
+<!-- GAME: РЕАКЦИЯ -->
+<div id="gameReactionSection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:26px;margin-bottom:4px;">⚡</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Реакция</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Нажми как можно быстрее, когда экран станет зелёным! Топ-5 → запись в рейтинг</div>
+    <div id="reactionGameArea"></div>
+  </div>
+</div>
+
+<!-- GAME: ЧИСЛА -->
+<div id="game2048Section" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:26px;margin-bottom:4px;">🔢</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">2048</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Сдвигай плитки, складывай одинаковые числа. Доберись до 2048!</div>
+    <div id="game2048Area"></div>
+  </div>
+</div>
+
+<!-- GAME: ЗМЕЙКА -->
+<div id="gameSnakeSection" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div class="card" style="text-align:center;">
+    <div style="font-size:26px;margin-bottom:4px;">🐍</div>
+    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Змейка</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Управляй змейкой, собирай еду. Не врезайся в стены и хвост!</div>
+    <div id="gameSnakeArea"></div>
   </div>
 </div>
 
@@ -1257,7 +1290,17 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 
 <!-- RATINGS -->
 <div id="ratings" class="section">
-    <div class="card"><div class="card-title">🏆 Рейтинг жителей</div><div id="lbList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div></div>
+    <div class="card">
+      <div class="msg-tabs" style="flex-wrap:wrap;gap:6px;">
+        <button class="msg-tab active" onclick="switchRatingTab('balance',this)">💰 Богатство</button>
+        <button class="msg-tab" onclick="switchRatingTab('tower',this)">🏗️ Башня</button>
+        <button class="msg-tab" onclick="switchRatingTab('match3',this)">💎 Три в ряд</button>
+        <button class="msg-tab" onclick="switchRatingTab('duel',this)">⚔️ Дуэли</button>
+        <button class="msg-tab" onclick="switchRatingTab('abandoned',this)">🏚️ Заброшка</button>
+        <button class="msg-tab" onclick="switchRatingTab('wordle',this)">🔤 Словарь</button>
+      </div>
+      <div id="lbList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div>
+    </div>
 </div>
 
 <!-- SUBSCRIPTION -->
@@ -1400,12 +1443,13 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <button class="btn btn-primary" style="margin-top:8px;" onclick="publishWallPost()">📤 Опубликовать</button>
         <div id="wallFeed" style="margin-top:14px;"></div>
     </div>
-    <button class="btn btn-ghost" onclick="logout()" style="margin-bottom:14px;color:var(--red);border-color:var(--red-dim);">🚪 Выйти</button>
-    <!-- ACHIEVEMENTS -->
-    <div class="card" id="achievementsCard">
-      <div class="card-title">🏅 Достижения</div>
-      <div id="achievementsList" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+
+    <div class="card">
+        <div class="card-title">🏅 Достижения</div>
+        <div id="achievementsList" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
     </div>
+    <button class="btn btn-ghost" onclick="logout()" style="margin-bottom:14px;color:var(--red);border-color:var(--red-dim);">🚪 Выйти</button>
+
 </div>
 
 <!-- ЧУЖОЙ ПРОФИЛЬ (полная страница) -->
@@ -1427,6 +1471,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div id="vpfSubscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;text-align:center;display:none;"></div>
             <div class="upm-online" id="vpfOnline" style="justify-content:center;margin-top:8px;"><div class="upm-dot"></div><span></span></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+                <button class="btn btn-gold btn-sm" type="button" onclick="openAchievementsPage(window._visitorProfileNick||'', 'visitorProfile')" style="flex:1;">🏅 Достижения</button>
                 <button class="btn btn-primary btn-sm" type="button" onclick="visitorProfileDm()" style="flex:1;">💬 Написать</button>
                 <button class="btn btn-gold btn-sm" type="button" onclick="visitorProfileTransfer()" style="flex:1;">💸 Перевести</button>
             </div>
@@ -1462,6 +1507,15 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. Зарплата: 250 рублей/день<br>
             <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. Зарплата: <b style="color:var(--gold)">150 рублей/объявление</b>. В случае выкладывания неподобающих объявлений — <b style="color:var(--red)">увольнение</b>.
         </div>
+    </div>
+</div>
+
+<!-- ACHIEVEMENTS PAGE -->
+<div id="achievementsPage" class="section">
+    <button class="btn btn-ghost btn-sm" onclick="closeAchievementsPage()" style="width:auto;margin-bottom:14px;">← Назад</button>
+    <div class="card">
+        <div class="card-title" id="achievementsTitle">🏅 Достижения</div>
+        <div id="achievementsListPage" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
     </div>
 </div>
 
@@ -2950,8 +3004,24 @@ window.clearAllNotifications=async function(){await remove(notifRef(currentNick)
 function renderNotifications(notifs){
     const el=qs('inboxList');if(!el)return;
     const arr=Object.entries(notifs||{}).map(([id,n])=>({...n,id})).reverse();
-    el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет уведомлений</div>':arr.map(n=>`<div class="notif-item" onclick="deleteNotification('${n.id}')"><div class="notif-text">${escHtml(n.text||n)}</div><div style="display:flex;flex-direction:column;align-items:flex-end;"><div class="notif-time">${escHtml(n.time||'')}</div><div class="notif-del">✕</div></div></div>`).join('');
+    el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет уведомлений</div>':arr.map(n=>{
+      const duelActions=n.type==='duel_invite'&&n.duelId?`<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="acceptOnlineDuelFromNotif('${n.duelId}','${n.id}')">✅ Принять</button><button class="btn btn-red btn-sm" onclick="declineOnlineDuelFromNotif('${n.duelId}','${n.id}')">❌ Отклонить</button></div>`:'';
+      return `<div class="notif-item" style="${n.type==='duel_invite'?'border-left-color:var(--gold);':''}" onclick="${!duelActions?`deleteNotification('${n.id}')`:''}">`
+        +`<div style="flex:1;"><div class="notif-text">${escHtml(n.text||n)}</div>${duelActions}</div>`
+        +`<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:8px;"><div class="notif-time">${escHtml(n.time||'')}</div>${!duelActions?`<div class="notif-del" onclick="deleteNotification('${n.id}');event.stopPropagation()">✕</div>`:''}</div></div>`;
+    }).join('');
 }
+
+window.acceptOnlineDuelFromNotif=async function(duelId,notifId){
+  await deleteNotification(notifId);
+  await acceptOnlineDuel(duelId);
+  navTo('gameDuelSection');
+  setTimeout(()=>document.getElementById('duelTabOnline')?.click(),400);
+};
+window.declineOnlineDuelFromNotif=async function(duelId,notifId){
+  await deleteNotification(notifId);
+  await declineOnlineDuel(duelId);
+};
 
 // ─── EMOJI PICKER ─────────────────────────
 const EMOJI_LIST = [
@@ -5247,34 +5317,62 @@ window.restoreListing=async function(id){
 };
 
 // ─── LEADERBOARD ──────────────────────────
+let currentRatingTab='balance';
+
+window.switchRatingTab=function(tab, btn){
+  currentRatingTab=tab;
+  document.querySelectorAll('#ratings .msg-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
+};
+
 function renderLeaderboard(users){
-    const sorted=Object.values(users).sort((a,b)=>(b.balance||0)-(a.balance||0));const medals=['🥇','🥈','🥉'];
-    qs('lbList').innerHTML=sorted.map((u,i)=>{const online=isUserOnline(u);const dn=displayNick(u)||u.nick;
-    
-    // Check if user has active subscription and avatar frame
+  const medals=['🥇','🥈','🥉'];
+  const usersArr=Object.values(users).filter(u=>u.nick);
+
+  const makeRow=(u,i,valHtml)=>{
+    const online=isUserOnline(u);const dn=displayNick(u)||u.nick;
     const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
     const isActive = expiry && expiry > new Date();
     let frameHtml = '';
-    
     if(isActive && u.avatarFrame){
-        let frameClass = 'avatar-frame';
-        if(u.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
-        else if(u.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
-        else if(u.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
-        else if(u.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
-        else if(u.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
-        else if(u.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
-        else if(u.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
-        else if(u.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
-        else if(u.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
-        else if(u.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
-        else if(u.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
-        else if(u.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-        else if(u.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';        
-        frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
+      let frameClass = 'avatar-frame';
+      if(u.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
+      else if(u.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
+      else if(u.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
+      else if(u.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
+      else if(u.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
+      else if(u.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
+      else if(u.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
+      else if(u.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
+      else if(u.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
+      else if(u.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+      frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
     }
-    
-    return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div><div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div></div>`;}).join('');
+    return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div>${valHtml}</div>`;
+  };
+
+  const lbEl=qs('lbList'); if(!lbEl) return;
+
+  if(currentRatingTab==='balance'){
+    const sorted=usersArr.sort((a,b)=>(b.balance||0)-(a.balance||0));
+    lbEl.innerHTML=`<div class="card-title">💰 Рейтинг по богатству</div>`+sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div>`)).join('');
+  } else if(currentRatingTab==='tower'){
+    const sorted=usersArr.filter(u=>u.gameStats?.towerBest).sort((a,b)=>(b.gameStats?.towerBest||0)-(a.gameStats?.towerBest||0));
+    lbEl.innerHTML=`<div class="card-title">🏗️ Башня — самая высокая</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--gold);">${u.gameStats.towerBest} уровней</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не играл</div>`);
+  } else if(currentRatingTab==='match3'){
+    const sorted=usersArr.filter(u=>u.gameStats?.match3Best).sort((a,b)=>(b.gameStats?.match3Best||0)-(a.gameStats?.match3Best||0));
+    lbEl.innerHTML=`<div class="card-title">💎 Три в ряд — лучший результат</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--primary);">${u.gameStats.match3Best} очков</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не играл</div>`);
+  } else if(currentRatingTab==='duel'){
+    const sorted=usersArr.filter(u=>u.gameStats?.duelWins).sort((a,b)=>(b.gameStats?.duelWins||0)-(a.gameStats?.duelWins||0));
+    lbEl.innerHTML=`<div class="card-title">⚔️ Дуэли — больше всего побед</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--red);">${u.gameStats.duelWins} побед</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не побеждал</div>`);
+  } else if(currentRatingTab==='abandoned'){
+    const sorted=usersArr.filter(u=>u.gameStats?.abandonedBest).sort((a,b)=>(b.gameStats?.abandonedBest||0)-(a.gameStats?.abandonedBest||0));
+    lbEl.innerHTML=`<div class="card-title">🏚️ Заброшка — лучший куш</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--gold);">${u.gameStats.abandonedBest}₽</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не искал хабар</div>`);
+  } else if(currentRatingTab==='wordle'){
+    const sorted=usersArr.filter(u=>u.gameStats?.wordleTotal).sort((a,b)=>(b.gameStats?.wordleTotal||0)-(a.gameStats?.wordleTotal||0));
+    lbEl.innerHTML=`<div class="card-title">🔤 Угадай слово — угадано слов</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--primary);">${u.gameStats.wordleTotal} слов</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не угадывал</div>`);
+  }
 }
 
 // ─── JOBS ─────────────────────────────────
@@ -5936,7 +6034,7 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,games:0,gameSpySection:0,gameMafiaSection:0,gameMatch3Section:0,gameDuelSection:0,gameAbandonedSection:0,gameTowerSection:0,gameWordleSection:0};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,achievementsPage:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,games:0,gameSpySection:0,gameMafiaSection:0,gameMatch3Section:0,gameDuelSection:0,gameAbandonedSection:0,gameTowerSection:0,gameWordleSection:0,gameReactionSection:0,game2048Section:0,gameSnakeSection:0};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
@@ -5954,7 +6052,8 @@ window.navTo=function(id){
         chatLoading = true;
         get(chatRef()).then(s=>{ chatLoading = false; renderChat(s.val()||{}); });
     }
-    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded(); }
+    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();renderAchievements(currentNick); }
+    if(id==='achievementsPage') { renderAchievements(achievementsViewNick || currentNick); }
     if(id==='market') { renderDebtNotice('marketDebtNotice', allUsersCache[currentNick] || {}); get(marketRef()).then(s=>renderMarket(s.val()||{})); }
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
@@ -5977,61 +6076,112 @@ window.navTo=function(id){
     if(id==='gameAbandonedSection') initAbandonedGame();
     if(id==='gameTowerSection') initTowerGame();
     if(id==='gameWordleSection') initWordleGame();
-    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();renderAchievements(); }
+    if(id==='gameReactionSection') initReactionGame();
+    if(id==='game2048Section') init2048Game();
+    if(id==='gameSnakeSection') initSnakeGame();
+    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();renderAchievements(currentNick); }
 };
 
 // ══════════════════════════════════════════════════════════════════
 // 🎮 БИБЛИОТЕКА ИГР
 // ══════════════════════════════════════════════════════════════════
 const GAMES_CATALOG = [
-  { id:'spy',       icon:'🕵️', name:'Кто шпион?',              price:50,  desc:'Найди шпиона среди друзей',        section:'gameSpySection' },
-  { id:'mafia',     icon:'🃏', name:'Мафия',                    price:109, desc:'Мирные жители против мафии',        section:'gameMafiaSection' },
-  { id:'match3',    icon:'💎', name:'Три в ряд',               price:79,  desc:'Собирай комбо, набирай очки',       section:'gameMatch3Section' },
-  { id:'duel',      icon:'⚔️', name:'Дуэли',                   price:49,  desc:'КНБ или крестики-нолики на рубли',  section:'gameDuelSection' },
-  { id:'abandoned', icon:'🏚️', name:'Заброшка',                price:89,  desc:'Ищи хабар, беги от гопников',      section:'gameAbandonedSection' },
-  { id:'tower',     icon:'🏗️', name:'Башня Капани',            price:59,  desc:'Ставь блоки на лету — не промахнись!', section:'gameTowerSection' },
-  { id:'wordle',    icon:'🔤', name:'Угадай слово',             price:39,  desc:'4–5 букв, 6 попыток, русские слова', section:'gameWordleSection' },
+  { id:'spy',       icon:'🕵️', name:'Кто шпион?',              price:50,  desc:'Найди шпиона среди друзей',        section:'gameSpySection',   canEarn:false },
+  { id:'mafia',     icon:'🃏', name:'Мафия',                    price:109, desc:'Мирные жители против мафии',        section:'gameMafiaSection',  canEarn:false },
+  { id:'match3',    icon:'💎', name:'Три в ряд',               price:79,  desc:'Собирай комбо, набирай очки',       section:'gameMatch3Section', canEarn:false },
+  { id:'duel',      icon:'⚔️', name:'Дуэли',                   price:49,  desc:'КНБ или крестики-нолики на рубли',  section:'gameDuelSection',   canEarn:true  },
+  { id:'abandoned', icon:'🏚️', name:'Заброшка',                price:89,  desc:'Ищи хабар, беги от гопников',      section:'gameAbandonedSection', canEarn:true },
+  { id:'tower',     icon:'🏗️', name:'Башня Капани',            price:59,  desc:'Ставь блоки на лету — не промахнись!', section:'gameTowerSection', canEarn:false },
+  { id:'wordle',    icon:'🔤', name:'Угадай слово',             price:39,  desc:'4–5 букв, 6 попыток, русские слова', section:'gameWordleSection', canEarn:false },
+  { id:'reaction',  icon:'⚡', name:'Реакция',                  price:29,  desc:'Кто быстрее нажмёт? Рекорды в рейтинг', section:'gameReactionSection', canEarn:false },
+  { id:'game2048',  icon:'🔢', name:'2048',                     price:39,  desc:'Складывай плитки до числа 2048',    section:'game2048Section',   canEarn:false },
+  { id:'snake',     icon:'🐍', name:'Змейка',                   price:29,  desc:'Классическая змейка — собирай еду', section:'gameSnakeSection',  canEarn:false },
 ];
 
-// ─── ACHIEVEMENTS ─────────────────────────────
+
+
 const ALL_ACHIEVEMENTS = [
   { id:'match3_first',   game:'match3',    icon:'💎', name:'Первый матч',       desc:'Сыграй в Три в ряд впервые' },
   { id:'match3_100',     game:'match3',    icon:'🌟', name:'Сотня очков',       desc:'Набери 100+ очков' },
   { id:'match3_500',     game:'match3',    icon:'🏆', name:'Мастер матча',      desc:'Набери 500+ очков за игру' },
   { id:'match3_combo',   game:'match3',    icon:'🔥', name:'Комбо!',            desc:'Сделай комбо x3' },
+  { id:'match3_1000',    game:'match3',    icon:'🌈', name:'Легенда матча',     desc:'Набери 1000+ очков за игру' },
   { id:'spy_first',      game:'spy',       icon:'🕵️', name:'Первый шпион',      desc:'Запусти игру Кто шпион?' },
+  { id:'spy_5games',     game:'spy',       icon:'🔍', name:'Детектив',          desc:'Запусти 5 игр Кто шпион?' },
   { id:'mafia_first',    game:'mafia',     icon:'🃏', name:'В Мафию!',          desc:'Раздай роли в Мафии' },
+  { id:'mafia_5games',   game:'mafia',     icon:'🎭', name:'Дон Корлеоне',      desc:'Сыграй 5 раз в Мафию' },
   { id:'duel_first',     game:'duel',      icon:'⚔️', name:'Первая дуэль',      desc:'Сыграй в дуэль' },
   { id:'duel_win',       game:'duel',      icon:'🥇', name:'Дуэлянт',          desc:'Победи в дуэли' },
+  { id:'duel_win5',      game:'duel',      icon:'🏅', name:'Непобедимый',       desc:'Победи в 5 дуэлях' },
+  { id:'duel_highstake', game:'duel',      icon:'💸', name:'Большая игра',      desc:'Поставь 50₽+ в дуэли' },
   { id:'abandoned_first',game:'abandoned', icon:'🏚️', name:'Исследователь',     desc:'Открой первую клетку' },
   { id:'abandoned_gold', game:'abandoned', icon:'💰', name:'Кладоискатель',     desc:'Найди крупный куш' },
   { id:'abandoned_clear',game:'abandoned', icon:'🗺️', name:'Выжил!',           desc:'Пройди поле без потерь от гопников' },
+  { id:'abandoned_bomb', game:'abandoned', icon:'💣', name:'Сапёр',             desc:'Используй бомбу в Заброшке' },
+  { id:'abandoned_rich', game:'abandoned', icon:'🤑', name:'Барыга',            desc:'Найди 200₽+ за одну экспедицию' },
   { id:'tower_first',    game:'tower',     icon:'🏗️', name:'Строитель',        desc:'Поставь первый блок' },
   { id:'tower_10',       game:'tower',     icon:'🏙️', name:'Небоскрёб',        desc:'Поставь 10 блоков подряд' },
   { id:'tower_perfect',  game:'tower',     icon:'✨', name:'Идеальная стопка', desc:'Поставь 3 блока идеально' },
+  { id:'tower_20',       game:'tower',     icon:'🚀', name:'До облаков',        desc:'Поставь 20 блоков подряд' },
   { id:'wordle_first',   game:'wordle',    icon:'🔤', name:'Первое слово',      desc:'Угадай любое слово' },
   { id:'wordle_fast',    game:'wordle',    icon:'⚡', name:'С первого раза',    desc:'Угадай слово с 1-й попытки' },
   { id:'wordle_hard',    game:'wordle',    icon:'🎯', name:'Знаток языка',      desc:'Угадай 5-буквенное слово' },
+  { id:'wordle_10',      game:'wordle',    icon:'📚', name:'Эрудит',            desc:'Угадай 10 слов' },
   { id:'buyer_all',      game:'all',       icon:'🛒', name:'Коллекционер',      desc:'Купи все игры' },
+  { id:'rich_500',       game:'all',       icon:'💵', name:'Богач',             desc:'Достигни баланса 500₽' },
+  { id:'rich_1000',      game:'all',       icon:'💎', name:'Миллионер',         desc:'Достигни баланса 1000₽' },
+  { id:'gamer',          game:'all',       icon:'🎮', name:'Геймер',            desc:'Сыграй в 3 разные игры' },
 ];
 
-async function unlockAchievement(id){
-  const snap = await get(userRef(currentNick));
-  const u = snap.val()||{};
-  const ach = u.achievements||{};
-  if(ach[id]) return;
-  ach[id] = Date.now();
-  await update(userRef(currentNick),{achievements:ach});
-  const a = ALL_ACHIEVEMENTS.find(x=>x.id===id);
-  if(a) toast(`🏅 Достижение разблокировано: ${a.name}!`,'gold');
+let achievementsViewNick = null;
+let achievementsReturnPage = 'profile';
+
+async function recordGameStart(gameId){
+  try{
+    const snap = await get(userRef(currentNick));
+    const u = snap.val() || {};
+    const stats = u.gameStats || {};
+    const played = Array.isArray(stats.playedGames) ? stats.playedGames.slice() : [];
+    if(!played.includes(gameId)){
+      played.push(gameId);
+      await update(userRef(currentNick), {'gameStats/playedGames': played});
+      if(played.length >= 3) unlockAchievement('gamer');
+    }
+  }catch(err){
+    console.warn('recordGameStart failed', err);
+  }
 }
 
-async function renderAchievements(){
-  const snap = await get(userRef(currentNick));
-  const u = snap.val()||{};
-  const ach = u.achievements||{};
-  const el = document.getElementById('achievementsList'); if(!el) return;
-  el.innerHTML = ALL_ACHIEVEMENTS.map(a=>{
+async function bumpGameCounter(counterKey, achId, threshold){
+  try{
+    const snap = await get(userRef(currentNick));
+    const u = snap.val() || {};
+    const stats = u.gameStats || {};
+    const value = (stats[counterKey] || 0) + 1;
+    await update(userRef(currentNick), {[`gameStats/${counterKey}`]: value});
+    if(threshold && value >= threshold) unlockAchievement(achId);
+  }catch(err){
+    console.warn('bumpGameCounter failed', err);
+  }
+}
+
+async function checkBalanceAchievements(nick=currentNick){
+  try{
+    const snap = await get(userRef(nick));
+    const u = snap.val() || {};
+    const bal = u.balance || 0;
+    if(bal >= 500) unlockAchievement('rich_500');
+    if(bal >= 1000) unlockAchievement('rich_1000');
+  }catch(err){
+    console.warn('checkBalanceAchievements failed', err);
+  }
+}
+
+async function renderAchievements(nick=currentNick){
+  const snap = await get(userRef(nick));
+  const u = snap.val() || {};
+  const ach = u.achievements || {};
+  const html = ALL_ACHIEVEMENTS.map(a=>{
     const unlocked = !!ach[a.id];
     return `<div style="background:${unlocked?'var(--pri-dim)':'var(--surface2)'};border:1px solid ${unlocked?'rgba(34,211,165,.3)':'var(--border)'};border-radius:var(--r-sm);padding:10px 8px;text-align:center;opacity:${unlocked?'1':'.45'};">
       <div style="font-size:22px;margin-bottom:4px;">${a.icon}</div>
@@ -6040,10 +6190,27 @@ async function renderAchievements(){
       ${unlocked?`<div style="font-size:9px;color:var(--primary);margin-top:3px;font-weight:800;">✅ Выполнено</div>`:''}
     </div>`;
   }).join('');
-  // check all games bought
-  const owned = u.ownedGames||{};
+  const grid1 = document.getElementById('achievementsList');
+  const grid2 = document.getElementById('achievementsListPage');
+  if(grid1) grid1.innerHTML = html;
+  if(grid2) grid2.innerHTML = html;
+  const title = document.getElementById('achievementsTitle');
+  if(title) title.textContent = nick===currentNick ? '🏅 Достижения' : `🏅 Достижения: @${nick}`;
+  const owned = u.ownedGames || {};
   if(GAMES_CATALOG.every(g=>owned[g.id])) unlockAchievement('buyer_all');
+  if(nick === currentNick) await checkBalanceAchievements(nick);
 }
+
+window.openAchievementsPage = async function(nick, backPage){
+  achievementsViewNick = nick || currentNick;
+  achievementsReturnPage = backPage || (achievementsViewNick === currentNick ? 'profile' : 'visitorProfile');
+  await renderAchievements(achievementsViewNick);
+  navTo('achievementsPage');
+};
+
+window.closeAchievementsPage = function(){
+  navTo(achievementsReturnPage || 'profile');
+};
 
 async function renderGamesLibrary(){
   const snap = await get(userRef(currentNick));
@@ -6056,10 +6223,12 @@ async function renderGamesLibrary(){
   if(!grid) return;
   grid.innerHTML = GAMES_CATALOG.map(g=>{
     const isOwned = !!owned[g.id];
+    const earnBadge = g.canEarn ? `<div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(251,191,36,.08));border:1px solid rgba(251,191,36,.4);border-radius:8px;padding:3px 7px;font-size:9px;font-weight:900;color:var(--gold);margin-bottom:6px;">🪙 МОЖНО ЗАРАБОТАТЬ!</div>` : '';
     return `<div class="card" style="margin:0;text-align:center;padding:16px 10px;cursor:${isOwned?'pointer':'default'};${isOwned?'border-color:rgba(34,211,165,.3);':''}" ${isOwned?`onclick="navTo('${g.section}')"`:''}>
       <div style="font-size:32px;margin-bottom:6px;">${g.icon}</div>
       <div style="font-weight:900;font-size:13px;margin-bottom:3px;">${g.name}</div>
-      <div style="font-size:10px;color:var(--muted);margin-bottom:10px;line-height:1.3;">${g.desc}</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.3;">${g.desc}</div>
+      ${earnBadge}
       ${isOwned
         ? `<div style="background:var(--pri-dim);color:var(--primary);border:1px solid rgba(34,211,165,.3);border-radius:10px;padding:5px 8px;font-size:11px;font-weight:900;margin-bottom:6px;">✅ Куплено</div>
            <button class="btn btn-primary btn-sm" style="width:100%;font-size:11px;" onclick="event.stopPropagation();navTo('${g.section}')">Играть →</button>`
@@ -6107,6 +6276,7 @@ async function initSpyGame(){
   const area = document.getElementById('spyGameArea'); if(!area) return;
   if(!owned){ area.innerHTML=gameLockedHTML('spy',50); return; }
   unlockAchievement('spy_first');
+  await recordGameStart('spy');
   area.innerHTML=`
     <div class="card-title">Настройка игры</div>
     <label style="font-size:12px;font-weight:800;color:var(--muted);">Количество игроков</label>
@@ -6119,7 +6289,7 @@ async function initSpyGame(){
   const controls=area.querySelectorAll('button[onclick]');
   controls.forEach(btn=>btn.type='button');
 }
-window.startSpyGame = function(){
+window.startSpyGame = async function(){
   const n=parseInt(document.getElementById('spyPlayerCount')?.value||4);
   const s=parseInt(document.getElementById('spySpyCount')?.value||1);
   if(s>=n) return toast('❌ Шпионов не может быть больше игроков','red');
@@ -6127,6 +6297,7 @@ window.startSpyGame = function(){
   const roles=Array(s).fill('spy').concat(Array(n-s).fill('civ'));
   roles.sort(()=>Math.random()-.5);
   const area=document.getElementById('spyCardsArea'); if(!area) return;
+  await bumpGameCounter('spyGames','spy_5games',5);
   area.innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Передавайте телефон по очереди — каждый нажимает на свою карточку</div>`
     +roles.map((r,i)=>`
     <div id="spyCard${i}" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;cursor:pointer;text-align:center;" onclick="revealSpyCard(${i},'${r}','${r==='spy'?'???':loc}')">
@@ -6160,6 +6331,7 @@ async function initMafiaGame(){
   const owned=await checkGameOwned('mafia');
   const area=document.getElementById('mafiaGameArea'); if(!area) return;
   if(!owned){ area.innerHTML=gameLockedHTML('mafia',109); return; }
+  await recordGameStart('mafia');
   area.innerHTML=`
     <div class="card-title">Настройка игры</div>
     <label style="font-size:12px;font-weight:800;color:var(--muted);">Количество игроков (4–12)</label>
@@ -6181,7 +6353,7 @@ function updateMafiaRoleSuggestion(){
   while(r.length<n)r.push('Мирный');
   el.textContent=`Состав: ${r.join(', ')}`;
 }
-window.startMafiaGame=function(){
+window.startMafiaGame=async function(){
   const n=parseInt(document.getElementById('mafiaCount')?.value||6);
   if(n<4||n>12) return toast('❌ От 4 до 12 игроков','red');
   const mc=Math.max(1,Math.floor(n/3));
@@ -6193,6 +6365,7 @@ window.startMafiaGame=function(){
   roles.sort(()=>Math.random()-.5);
   unlockAchievement('mafia_first');
   const area=document.getElementById('mafiaCardsArea'); if(!area) return;
+  await bumpGameCounter('mafiaGames','mafia_5games',5);
   area.innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Передавайте телефон по очереди</div>`
     +roles.map((r,i)=>`
     <div id="mafiaCard${i}" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;cursor:pointer;text-align:center;" onclick="revealMafiaCard(${i},'${r.id}')">
@@ -6358,6 +6531,9 @@ async function m3cascade(){
 
     if(m3Moves<=0){
       m3Active=false;
+      // Save best score
+      get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).match3Best||0;if(m3Score>prev)update(userRef(currentNick),{'gameStats/match3Best':m3Score});});
+      if(m3Score>=1000) unlockAchievement('match3_1000');
     } else if(m3Active && !m3HasMoves()){
       toast('⚠️ Нет ходов — перемешиваем','gold');
       match3NewGame();
@@ -6481,23 +6657,282 @@ async function initDuelGame(){
   const owned=await checkGameOwned('duel');
   const area=document.getElementById('duelGameArea'); if(!area) return;
   if(!owned){ area.innerHTML=gameLockedHTML('duel',49); return; }
+  await recordGameStart('duel');
   renderDuelSetup();
 }
 function renderDuelSetup(){
   const area=document.getElementById('duelGameArea'); if(!area) return;
   duelState.mode='knb';
   area.innerHTML=`
-    <div class="card-title">Настройка дуэли</div>
-    <label style="font-size:12px;font-weight:800;color:var(--muted);">Ставка каждого игрока (₽)</label>
-    <input type="number" id="duelStake" value="10" min="1" style="margin-bottom:8px;">
-    <div style="display:flex;gap:8px;margin-bottom:12px;">
-      <button id="duelModeKNB" class="btn btn-primary btn-sm" onclick="selectDuelMode('knb')" style="flex:1;">✊ КНБ</button>
-      <button id="duelModeTTT" class="btn btn-ghost btn-sm" onclick="selectDuelMode('ttt')" style="flex:1;">⊞ Крестики-нолики</button>
+    <div class="msg-tabs" style="margin-bottom:14px;">
+      <button class="msg-tab active" id="duelTabLocal" onclick="duelSwitchTab('local',this)">📱 С одного телефона</button>
+      <button class="msg-tab" id="duelTabOnline" onclick="duelSwitchTab('online',this)">🌐 По сети</button>
     </div>
-    <button class="btn btn-gold" onclick="startDuel()">⚔️ Начать дуэль</button>
+    <div id="duelLocalArea">
+      <div class="card-title">Настройка дуэли</div>
+      <label style="font-size:12px;font-weight:800;color:var(--muted);">Ставка каждого игрока (₽)</label>
+      <input type="number" id="duelStake" value="10" min="1" style="margin-bottom:8px;">
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button id="duelModeKNB" class="btn btn-primary btn-sm" onclick="selectDuelMode('knb')" style="flex:1;">✊ КНБ</button>
+        <button id="duelModeTTT" class="btn btn-ghost btn-sm" onclick="selectDuelMode('ttt')" style="flex:1;">⊞ Крестики-нолики</button>
+      </div>
+      <button class="btn btn-gold" onclick="startDuel()">⚔️ Начать дуэль</button>
+    </div>
+    <div id="duelOnlineArea" style="display:none;"></div>
     <div id="duelArea" style="margin-top:16px;"></div>
   `;
+  renderOnlineDuelLobby();
 }
+
+window.duelSwitchTab=function(tab,btn){
+  document.querySelectorAll('#duelGameArea .msg-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('duelLocalArea').style.display=tab==='local'?'':'none';
+  document.getElementById('duelOnlineArea').style.display=tab==='online'?'':'none';
+  document.getElementById('duelArea').innerHTML='';
+};
+
+// ─── ONLINE DUEL ──────────────────────────────────────────────────────
+let onlineDuelListener=null, onlineDuelId=null;
+
+function onlineDuelRef(id){ return ref(db,`onlineDuels/${id}`); }
+
+async function renderOnlineDuelLobby(){
+  const area=document.getElementById('duelOnlineArea'); if(!area) return;
+  // Show incoming duel invites
+  const snap=await get(ref(db,'onlineDuels'));
+  const all=snap.val()||{};
+  const incoming=Object.entries(all).filter(([id,d])=>d.opponent===currentNick&&d.status==='waiting');
+  const inviteHtml=incoming.map(([id,d])=>`
+    <div style="background:var(--gold-dim);border:1px solid rgba(251,191,36,.35);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <div style="font-weight:900;font-size:14px;">⚔️ Вызов от <span style="color:var(--gold);">${escHtml(d.challenger)}</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px;">Ставка: ${d.stake}₽ • ${d.mode==='knb'?'КНБ':'Крестики-нолики'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn btn-primary btn-sm" onclick="acceptOnlineDuel('${id}')">✅ Принять</button>
+        <button class="btn btn-red btn-sm" onclick="declineOnlineDuel('${id}')">❌</button>
+      </div>
+    </div>`).join('');
+
+  area.innerHTML=`
+    ${inviteHtml}
+    <div class="card-title">Вызвать игрока по сети</div>
+    <label style="font-size:12px;font-weight:800;color:var(--muted);">Ник соперника</label>
+    <input type="text" id="duelOpponentNick" placeholder="Введи ник" style="margin-bottom:8px;" maxlength="30">
+    <label style="font-size:12px;font-weight:800;color:var(--muted);">Ставка (₽)</label>
+    <input type="number" id="duelOnlineStake" value="10" min="1" style="margin-bottom:8px;">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button id="duelOnlineKNB" class="btn btn-primary btn-sm" onclick="selectOnlineMode('knb')" style="flex:1;">✊ КНБ</button>
+      <button id="duelOnlineTTT" class="btn btn-ghost btn-sm" onclick="selectOnlineMode('ttt')" style="flex:1;">⊞ Крестики-нолики</button>
+    </div>
+    <button class="btn btn-gold" onclick="sendOnlineDuelInvite()">📨 Отправить вызов</button>
+    <div id="onlineDuelStatus" style="margin-top:12px;font-size:13px;font-weight:800;text-align:center;color:var(--muted);min-height:20px;"></div>
+  `;
+}
+
+let onlineDuelMode='knb';
+window.selectOnlineMode=function(m){
+  onlineDuelMode=m;
+  document.getElementById('duelOnlineKNB')?.classList.toggle('btn-primary',m==='knb');
+  document.getElementById('duelOnlineKNB')?.classList.toggle('btn-ghost',m!=='knb');
+  document.getElementById('duelOnlineTTT')?.classList.toggle('btn-primary',m==='ttt');
+  document.getElementById('duelOnlineTTT')?.classList.toggle('btn-ghost',m!=='ttt');
+};
+
+window.sendOnlineDuelInvite=async function(){
+  const opponent=(document.getElementById('duelOpponentNick')?.value||'').trim();
+  const stake=parseInt(document.getElementById('duelOnlineStake')?.value||10);
+  if(!opponent) return toast('❌ Введи ник соперника','red');
+  if(opponent===currentNick) return toast('❌ Нельзя вызвать самого себя','red');
+  if(stake<1) return toast('❌ Минимальная ставка 1₽','red');
+  const opSnap=await get(userRef(opponent));
+  if(!opSnap.exists()) return toast('❌ Игрок не найден','red');
+  const mySnap=await get(userRef(currentNick));const u=mySnap.val()||{};
+  if((u.balance||0)<stake) return toast(`❌ Нужно ${stake}₽`,'red');
+  if(stake>=50) unlockAchievement('duel_highstake');
+  // Deduct stake
+  await update(userRef(currentNick),{balance:(u.balance||0)-stake});
+  await logTx(currentNick,{type:'out',who:'Дуэли',amt:stake,desc:`Ставка на онлайн-дуэль с ${opponent}`});
+  // Create duel record
+  const duelRef2=push(ref(db,'onlineDuels'));
+  onlineDuelId=duelRef2.key;
+  await set(duelRef2,{challenger:currentNick,opponent,stake,mode:onlineDuelMode,status:'waiting',createdAt:Date.now(),challengerMove:null,opponentMove:null,board:null,turn:1});
+  // Notify opponent
+  await push(ref(db,`notifications/${opponent}`),{type:'duel_invite',from:currentNick,duelId:onlineDuelId,text:`⚔️ ${currentNick} вызывает тебя на дуэль! Ставка: ${stake}₽`,ts:Date.now(),read:false});
+  document.getElementById('onlineDuelStatus').textContent='⏳ Ожидаем соперника...';
+  document.getElementById('onlineDuelStatus').style.color='var(--gold)';
+  // Listen for opponent accept
+  listenOnlineDuel(onlineDuelId,'challenger');
+  unlockAchievement('duel_first');
+};
+
+window.acceptOnlineDuel=async function(duelId){
+  const dSnap=await get(onlineDuelRef(duelId));
+  const d=dSnap.val(); if(!d||d.status!=='waiting') return toast('❌ Дуэль уже не актуальна','red');
+  const mySnap=await get(userRef(currentNick));const u=mySnap.val()||{};
+  if((u.balance||0)<d.stake) return toast(`❌ Нужно ${d.stake}₽`,'red');
+  if(d.stake>=50) unlockAchievement('duel_highstake');
+  await update(userRef(currentNick),{balance:(u.balance||0)-d.stake});
+  await logTx(currentNick,{type:'out',who:'Дуэли',amt:d.stake,desc:`Ставка на онлайн-дуэль с ${d.challenger}`});
+  await update(onlineDuelRef(duelId),{status:'active'});
+  onlineDuelId=duelId;
+  listenOnlineDuel(duelId,'opponent');
+  document.getElementById('duelTabOnline')?.click();
+  unlockAchievement('duel_first');
+};
+
+window.declineOnlineDuel=async function(duelId){
+  const dSnap=await get(onlineDuelRef(duelId));
+  const d=dSnap.val(); if(!d) return;
+  // Refund challenger
+  const cSnap=await get(userRef(d.challenger));const cu=cSnap.val()||{};
+  await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
+  await logTx(d.challenger,{type:'in',who:'Дуэли',amt:d.stake,desc:`Вызов отклонён ${currentNick}`});
+  await update(onlineDuelRef(duelId),{status:'declined'});
+  await push(ref(db,`notifications/${d.challenger}`),{type:'duel_declined',from:currentNick,text:`❌ ${currentNick} отклонил вызов. Ставка возвращена.`,ts:Date.now(),read:false});
+  toast('❌ Вызов отклонён','red');
+  renderOnlineDuelLobby();
+};
+
+function listenOnlineDuel(duelId,role){
+  if(onlineDuelListener){off(onlineDuelRef(onlineDuelId));onlineDuelListener=null;}
+  const dRef=onlineDuelRef(duelId);
+  onlineDuelListener=onValue(dRef,snap=>{
+    const d=snap.val(); if(!d) return;
+    const area=document.getElementById('duelOnlineArea'); if(!area) return;
+    if(d.status==='waiting'){
+      if(role==='challenger') area.querySelector('#onlineDuelStatus')&&(area.querySelector('#onlineDuelStatus').textContent='⏳ Ожидаем соперника...');
+      return;
+    }
+    if(d.status==='declined'){
+      area.innerHTML=`<div style="text-align:center;padding:20px;color:var(--red);font-weight:800;">❌ Соперник отклонил вызов. Ставка возвращена.</div><button class="btn btn-ghost" onclick="renderOnlineDuelLobby()">← Назад</button>`;
+      off(dRef);return;
+    }
+    if(d.status==='active'){
+      if(d.mode==='knb') renderOnlineKNB(duelId,d,role);
+      else renderOnlineTTT(duelId,d,role);
+    }
+    if(d.status==='finished'){
+      off(dRef);
+      const winner=d.winner;
+      const myWin=winner===currentNick;
+      area.innerHTML=`<div style="text-align:center;padding:20px;">
+        <div style="font-size:40px;margin-bottom:8px;">${myWin?'🏆':'😔'}</div>
+        <div style="font-weight:900;font-size:18px;color:${myWin?'var(--primary)':'var(--red)'};margin-bottom:8px;">${winner==='draw'?'🤝 Ничья!':(myWin?'Ты победил!':'Победил '+escHtml(winner))}</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">${myWin?`+${d.stake*2}₽ зачислено!`:winner==='draw'?'Ставка возвращена.':'Ставка проиграна.'}</div>
+        <button class="btn btn-primary" onclick="renderOnlineDuelLobby()">🔄 Ещё раз</button>
+      </div>`;
+    }
+  });
+}
+
+function renderOnlineKNB(duelId,d,role){
+  const area=document.getElementById('duelOnlineArea'); if(!area) return;
+  const myMove=role==='challenger'?d.challengerMove:d.opponentMove;
+  const oppMove=role==='challenger'?d.opponentMove:d.challengerMove;
+  const oppNick=role==='challenger'?d.opponent:d.challenger;
+  const KNB_ICONS2={rock:'✊',scissors:'✌️',paper:'🖐',null:'❓'};
+  area.innerHTML=`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;">
+      <div style="text-align:center;margin-bottom:10px;font-weight:900;color:var(--primary);">⚔️ Онлайн-дуэль КНБ</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div style="text-align:center;">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:4px;">Ты</div>
+          <div style="font-size:36px;">${myMove?KNB_ICONS2[myMove]:'❓'}</div>
+          <div style="font-size:10px;color:var(--muted);">${myMove?'Ход сделан':'Выбери:'}</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:4px;">${escHtml(oppNick)}</div>
+          <div style="font-size:36px;">${oppMove?'✅':'⏳'}</div>
+          <div style="font-size:10px;color:var(--muted);">${oppMove?'Ход сделан':'Ждём...'}</div>
+        </div>
+      </div>
+      ${!myMove?`<div style="display:flex;gap:6px;justify-content:center;">
+        <button class="btn btn-ghost btn-sm" onclick="makeOnlineKNBMove('${duelId}','${role}','rock')">✊ Камень</button>
+        <button class="btn btn-ghost btn-sm" onclick="makeOnlineKNBMove('${duelId}','${role}','scissors')">✌️ Ножницы</button>
+        <button class="btn btn-ghost btn-sm" onclick="makeOnlineKNBMove('${duelId}','${role}','paper')">🖐 Бумага</button>
+      </div>`:'<div style="text-align:center;color:var(--muted);font-size:13px;">Ждём ход соперника...</div>'}
+    </div>`;
+}
+
+window.makeOnlineKNBMove=async function(duelId,role,choice){
+  const field=role==='challenger'?'challengerMove':'opponentMove';
+  await update(onlineDuelRef(duelId),{[field]:choice});
+  // Check if both moved
+  const snap=await get(onlineDuelRef(duelId));const d=snap.val();
+  if(d.challengerMove&&d.opponentMove){
+    // Resolve
+    const KNB_BEATS2={rock:'scissors',scissors:'paper',paper:'rock'};
+    let winner='draw';
+    if(KNB_BEATS2[d.challengerMove]===d.opponentMove) winner=d.challenger;
+    else if(KNB_BEATS2[d.opponentMove]===d.challengerMove) winner=d.opponent;
+    await update(onlineDuelRef(duelId),{status:'finished',winner});
+    // Pay winner (do it once by challenger role to avoid double payout)
+    if(role==='challenger'){
+      if(winner==='draw'){
+        const cSnap=await get(userRef(d.challenger));const cu=cSnap.val()||{};
+        await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
+        const oSnap=await get(userRef(d.opponent));const ou=oSnap.val()||{};
+        await update(userRef(d.opponent),{balance:(ou.balance||0)+d.stake});
+      } else {
+        const wSnap=await get(userRef(winner));const wu=wSnap.val()||{};
+        await update(userRef(winner),{balance:(wu.balance||0)+d.stake*2});
+        await logTx(winner,{type:'in',who:'Дуэли',amt:d.stake*2,desc:`Победа в онлайн-дуэли КНБ`});
+        unlockAchievement('duel_win');
+        get(userRef(winner)).then(snap2=>{const u2=snap2.val()||{};const w=(u2.gameStats?.duelWins||0)+1;update(userRef(winner),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
+      }
+    }
+  }
+};
+
+function renderOnlineTTT(duelId,d,role){
+  const area=document.getElementById('duelOnlineArea'); if(!area) return;
+  const isMyTurn=(d.turn===1&&role==='challenger')||(d.turn===2&&role==='opponent');
+  const myMark=role==='challenger'?'X':'O';
+  const board=d.board||Array(9).fill(null);
+  const oppNick=role==='challenger'?d.opponent:d.challenger;
+  area.innerHTML=`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;">
+      <div style="text-align:center;margin-bottom:10px;">
+        <div style="font-weight:900;color:var(--primary);margin-bottom:4px;">⊞ Крестики-нолики по сети</div>
+        <div style="font-size:12px;color:${isMyTurn?'var(--primary)':'var(--muted)'};">${isMyTurn?'Твой ход!':'Ход '+escHtml(oppNick)+'...'}</div>
+      </div>
+      <div id="onlineTTTGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:200px;margin:0 auto;"></div>
+    </div>`;
+  const grid=document.getElementById('onlineTTTGrid');
+  board.forEach((cell,i)=>{
+    const btn=document.createElement('button');
+    btn.style.cssText=`width:62px;height:62px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);font-size:30px;cursor:${(!cell&&isMyTurn)?'pointer':'default'};color:${cell==='X'?'var(--primary)':'var(--red)'};font-family:'Nunito',sans-serif;font-weight:900;`;
+    btn.textContent=cell||'';
+    if(!cell&&isMyTurn) btn.onclick=()=>makeOnlineTTTMove(duelId,d,role,i,board);
+    grid.appendChild(btn);
+  });
+}
+
+window.makeOnlineTTTMove=async function(duelId,d,role,idx,board){
+  const newBoard=[...board];
+  newBoard[idx]=role==='challenger'?'X':'O';
+  const nextTurn=d.turn===1?2:1;
+  const checkTTTWin=(b)=>[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].some(([a,b2,c])=>b[a]&&b[a]===b[b2]&&b[a]===b[c]);
+  if(checkTTTWin(newBoard)){
+    const winner=role==='challenger'?d.challenger:d.opponent;
+    await update(onlineDuelRef(duelId),{board:newBoard,status:'finished',winner});
+    const wSnap=await get(userRef(winner));const wu=wSnap.val()||{};
+    await update(userRef(winner),{balance:(wu.balance||0)+d.stake*2});
+    await logTx(winner,{type:'in',who:'Дуэли',amt:d.stake*2,desc:`Победа в онлайн-дуэли`});
+    unlockAchievement('duel_win');
+    get(userRef(winner)).then(snap2=>{const u2=snap2.val()||{};const w=(u2.gameStats?.duelWins||0)+1;update(userRef(winner),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
+  } else if(newBoard.every(x=>x)){
+    await update(onlineDuelRef(duelId),{board:newBoard,status:'finished',winner:'draw'});
+    const cSnap=await get(userRef(d.challenger));const cu=cSnap.val()||{};
+    await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
+    const oSnap=await get(userRef(d.opponent));const ou=oSnap.val()||{};
+    await update(userRef(d.opponent),{balance:(ou.balance||0)+d.stake});
+  } else {
+    await update(onlineDuelRef(duelId),{board:newBoard,turn:nextTurn});
+  }
+};
 window.selectDuelMode=function(mode){
   duelState.mode=mode;
   document.getElementById('duelModeKNB')?.classList.toggle('btn-primary',mode==='knb');
@@ -6507,6 +6942,7 @@ window.selectDuelMode=function(mode){
 };
 window.startDuel=async function(){
   const stake=parseInt(document.getElementById('duelStake')?.value||10);
+  if(stake>=50) unlockAchievement('duel_highstake');
   if(stake<1) return toast('❌ Минимальная ставка 1₽','red');
   const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<stake*2) return toast(`❌ Нужно ${stake*2}₽ (ставка × 2)`,'red');
@@ -6559,6 +6995,7 @@ window.knbChoose=function(player,choice){
       await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
       await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа КНБ`});
       unlockAchievement('duel_win');
+      get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const w=(u.gameStats?.duelWins||0)+1;update(userRef(currentNick),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
     }
     if(res)res.innerHTML+=`<button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
   },500);
@@ -6597,7 +7034,9 @@ window.tttMove=async function(i){
     await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
     await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа крестики-нолики`});
     if(result)result.innerHTML=`<div style="color:var(--primary);margin-bottom:8px;">Игрок ${tttTurn2} победил! +${duelState.stake*2}₽</div><button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
-    unlockAchievement('duel_win');return;
+    unlockAchievement('duel_win');
+    get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const w=(u.gameStats?.duelWins||0)+1;update(userRef(currentNick),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
+    return;
   }
   if(tttBoard.every(x=>x)){
     if(status)status.textContent='🤝 Ничья!';
@@ -6615,25 +7054,54 @@ function tttCheckWin(){return[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0
 // 🏚️ ЗАБРОШКА: ПОИСК СОКРОВИЩ
 // ──────────────────────────────────────────────
 const ABN_ROWS=10,ABN_COLS=10;
+const ABN_DAILY_ENERGY=15;
 let abnBoard=[],abnRevealed=[],abnEnergy=15,abnActive=false,abnScore=0,abnFlashlightUsed=false,abnDetectorUsed=false;
+
+function abnTodayKey(){ const d=new Date(); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }
 
 async function initAbandonedGame(){
   const owned=await checkGameOwned('abandoned');
   const area=document.getElementById('abandonedGameArea'); if(!area) return;
   if(!owned){ area.innerHTML=gameLockedHTML('abandoned',89); return; }
+  await recordGameStart('abandoned');
+  // Load saved energy from Firebase (daily reset)
+  const snap=await get(userRef(currentNick)); const u=snap.val()||{};
+  const abnData=u.abandonedData||{};
+  const today=abnTodayKey();
+  if(abnData.energyDate===today){
+    abnEnergy=typeof abnData.energy==='number'?abnData.energy:ABN_DAILY_ENERGY;
+  } else {
+    abnEnergy=ABN_DAILY_ENERGY;
+    await update(userRef(currentNick),{'abandonedData/energy':ABN_DAILY_ENERGY,'abandonedData/energyDate':today});
+  }
   renderAbandonedSetup();
+}
+
+async function abnSaveEnergy(){
+  const today=abnTodayKey();
+  await update(userRef(currentNick),{'abandonedData/energy':abnEnergy,'abandonedData/energyDate':today});
 }
 
 function renderAbandonedSetup(){
   const area=document.getElementById('abandonedGameArea'); if(!area) return;
+  const energyPct=Math.round((abnEnergy/ABN_DAILY_ENERGY)*100);
   area.innerHTML=`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px;">⚡</span>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:800;margin-bottom:4px;">Дневная энергия: <span style="color:var(--primary);">${abnEnergy}/${ABN_DAILY_ENERGY}</span></div>
+        <div style="background:var(--border);border-radius:6px;height:6px;overflow:hidden;"><div style="width:${energyPct}%;background:var(--primary);height:100%;border-radius:6px;transition:width .3s;"></div></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px;">Восстанавливается каждый день</div>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <button type="button" class="btn btn-primary" onclick="startAbandonedGame()" style="flex:1;">🏚️ Новая экспедиция</button>
+      <button type="button" class="btn btn-primary" onclick="startAbandonedGame()" style="flex:1;" ${abnEnergy<=0?'disabled':''}>🏚️ Новая экспедиция</button>
       <button type="button" class="btn btn-gold btn-sm" onclick="abnBuyFlashlight()" style="flex:1;">🔦 Фонарик (15₽)</button>
       <button type="button" class="btn btn-gold btn-sm" onclick="abnBuyDetector()" style="flex:1;">📡 Металлоискатель (25₽)</button>
+      <button type="button" class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid var(--red);flex:1;" onclick="abnBuyBomb()">💣 Бомба (35₽)</button>
     </div>
     <div id="abnInfo" style="display:flex;gap:8px;margin-bottom:10px;">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;flex:1;text-align:center;"><div id="abnEnergyEl" style="font-size:16px;font-weight:900;color:var(--primary);">15</div><div style="font-size:9px;color:var(--muted);">Энергия</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;flex:1;text-align:center;"><div id="abnEnergyEl" style="font-size:16px;font-weight:900;color:var(--primary);">${abnEnergy}</div><div style="font-size:9px;color:var(--muted);">Энергия</div></div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;flex:1;text-align:center;"><div id="abnScoreEl" style="font-size:16px;font-weight:900;color:var(--gold);">0₽</div><div style="font-size:9px;color:var(--muted);">Найдено</div></div>
     </div>
     <style>
@@ -6646,6 +7114,7 @@ function renderAbandonedSetup(){
     .abn-cell.revealed{cursor:default;}
     .abn-cell.hint-safe{background:rgba(34,211,165,.18);border-color:rgba(34,211,165,.4);}
     .abn-cell.hint-treasure{background:rgba(251,191,36,.25);border-color:rgba(251,191,36,.5);animation:hintPulse .7s ease-in-out infinite alternate;}
+    .abn-cell.bomb-mode{background:rgba(248,113,113,.25);border-color:rgba(248,113,113,.5);animation:hintPulse .5s ease-in-out infinite alternate;}
     </style>
     <div id="abnGrid" class="abn-grid" style="grid-template-columns:repeat(${ABN_COLS},30px);"></div>
     <div id="abnMsg" style="font-size:13px;font-weight:800;text-align:center;min-height:20px;margin-top:4px;"></div>
@@ -6653,17 +7122,20 @@ function renderAbandonedSetup(){
 }
 
 window.startAbandonedGame=function(){
-  abnEnergy=15;abnScore=0;abnActive=true;abnFlashlightUsed=false;abnDetectorUsed=false;
-  // Generate board: 0=empty, treasure=amt, -amt=gopnik, 'big'=big treasure
+  if(abnEnergy<=0) return toast('⚡ Энергия кончилась! Приходи завтра.','red');
+  abnScore=0;abnActive=true;abnFlashlightUsed=false;abnDetectorUsed=false;abnBombUsed=false;abnBombMode=false;
+  // Generate board: 0=empty, treasure=amt, -amt=gopnik, 'big'=big treasure, 'bomb_trap'=bomb hazard
   abnBoard=Array.from({length:ABN_ROWS},()=>Array(ABN_COLS).fill(0));
   abnRevealed=Array.from({length:ABN_ROWS},()=>Array(ABN_COLS).fill(false));
   // Place items randomly
   const place=(val,count)=>{let n=0;while(n<count){const r=Math.floor(Math.random()*ABN_ROWS),c=Math.floor(Math.random()*ABN_COLS);if(abnBoard[r][c]===0){abnBoard[r][c]=val;n++;}}};
   place(5,8); place(10,6); place(20,4); place(50,2); place('big',1);
-  place(-5,6); place(-10,4); place(-15,2);
+  place(-5,6); place(-10,4); place(-15,2); place('bomb_trap',3);
   renderAbnGrid();
   unlockAchievement('abandoned_first');
 }
+
+let abnBombUsed=false,abnBombMode=false;
 
 function renderAbnGrid(){
   const grid=document.getElementById('abnGrid'); if(!grid) return;
@@ -6679,12 +7151,14 @@ function renderAbnGrid(){
       const v=abnBoard[r][c];
       if(v===0){cell.textContent='·';cell.style.color='var(--muted)';}
       else if(v==='big'){cell.textContent='💰';}
+      else if(v==='bomb_trap'){cell.textContent='💥';}
       else if(typeof v==='number'&&v>0){cell.textContent='💎';cell.title=`+${v}₽`;}
       else{cell.textContent='😤';}
     } else {
       cell.classList.add('fog');
-      cell.textContent='🌫️';
-      if(abnActive) cell.addEventListener('click',()=>abnOpen(r,c));
+      if(abnBombMode) cell.classList.add('bomb-mode');
+      cell.textContent=abnBombMode?'💣':'🌫️';
+      if(abnActive) cell.addEventListener('click',()=>abnBombMode?abnUseBombOnCell(r,c):abnOpen(r,c));
       allClear=false;
     }
     grid.appendChild(cell);
@@ -6692,7 +7166,8 @@ function renderAbnGrid(){
   const msg=document.getElementById('abnMsg');
   if(msg){
     if(!abnActive)msg.textContent=`Экспедиция завершена! Итого: ${abnScore}₽`;
-    else if(abnEnergy<=0){msg.textContent='⚡ Энергия кончилась!';abnActive=false;}
+    else if(abnEnergy<=0){msg.textContent='⚡ Энергия на сегодня кончилась! Приходи завтра.';abnActive=false;}
+    else if(abnBombMode)msg.textContent=`💣 Выбери клетку для взрыва!`;
     else msg.textContent=`⚡ ${abnEnergy} энергии • 💰 ${abnScore}₽`;
   }
   if(allClear&&abnActive) endAbandonedGame(true);
@@ -6701,11 +7176,13 @@ function renderAbnGrid(){
 async function abnOpen(r,c){
   if(!abnActive||abnRevealed[r][c]) return;
   abnRevealed[r][c]=true;abnEnergy--;
+  await abnSaveEnergy();
   const v=abnBoard[r][c];
   const snap=await get(userRef(currentNick));const u=snap.val()||{};
   let gain=0;
   if(typeof v==='number'&&v>0){gain=v;abnScore+=v;await update(userRef(currentNick),{balance:(u.balance||0)+v});await logTx(currentNick,{type:'in',who:'Заброшка',amt:v,desc:'Найден хабар'});}
   else if(v==='big'){gain=100;abnScore+=100;await update(userRef(currentNick),{balance:(u.balance||0)+100});await logTx(currentNick,{type:'in',who:'Заброшка',amt:100,desc:'Большой куш!'});unlockAchievement('abandoned_gold');toast('💰 БОЛЬШОЙ КУШ! +100₽','gold');}
+  else if(v==='bomb_trap'){const loss=35;abnScore=Math.max(0,abnScore-loss);const newBal=Math.max(0,(u.balance||0)-loss);await update(userRef(currentNick),{balance:newBal});await logTx(currentNick,{type:'out',who:'Заброшка',amt:loss,desc:'Мина!'});toast(`💥 Мина! -${loss}₽`,'red');}
   else if(typeof v==='number'&&v<0){const loss=Math.abs(v);abnScore=Math.max(0,abnScore-loss);const newBal=Math.max(0,(u.balance||0)-loss);await update(userRef(currentNick),{balance:newBal});await logTx(currentNick,{type:'out',who:'Заброшка',amt:loss,desc:'Гопники!'});toast(`😤 Гопники! -${loss}₽`,'red');}
   if(abnEnergy<=0){abnActive=false;}
   renderAbnGrid();
@@ -6714,7 +7191,45 @@ async function abnOpen(r,c){
 function endAbandonedGame(clear){
   abnActive=false;
   if(clear) unlockAchievement('abandoned_clear');
+  if(abnScore>=200) unlockAchievement('abandoned_rich');
+  // Save best score
+  get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).abandonedBest||0;if(abnScore>prev)update(userRef(currentNick),{'gameStats/abandonedBest':abnScore});});
   toast(`🏚️ Экспедиция окончена! Найдено: ${abnScore}₽`,'green');
+  renderAbnGrid();
+}
+
+window.abnBuyBomb=async function(){
+  if(abnBombUsed) return toast('Бомба уже использована','gold');
+  if(!abnActive) return toast('Сначала начни экспедицию','red');
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  if((u.balance||0)<35) return toast('❌ Нужно 35₽','red');
+  await update(userRef(currentNick),{balance:(u.balance||0)-35});
+  await logTx(currentNick,{type:'out',who:'Заброшка',amt:35,desc:'Бомба'});
+  abnBombUsed=true;
+  abnBombMode=true;
+  toast('💣 Выбери клетку для взрыва! Разрывает 3×3 зону.','gold');
+  renderAbnGrid();
+};
+
+async function abnUseBombOnCell(r,c){
+  if(!abnBombMode||!abnActive) return;
+  abnBombMode=false;
+  // Reveal 3×3 area
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  let totalGain=0,totalLoss=0;
+  for(let dr=-1;dr<=1;dr++){for(let dc=-1;dc<=1;dc++){
+    const nr=r+dr,nc=c+dc;
+    if(nr<0||nr>=ABN_ROWS||nc<0||nc>=ABN_COLS||abnRevealed[nr][nc]) continue;
+    abnRevealed[nr][nc]=true;
+    const v=abnBoard[nr][nc];
+    if(typeof v==='number'&&v>0){totalGain+=v;abnScore+=v;}
+    else if(v==='big'){totalGain+=100;abnScore+=100;unlockAchievement('abandoned_gold');}
+    else if(v==='bomb_trap'){/* defused, no penalty */}
+    else if(typeof v==='number'&&v<0){const loss=Math.abs(v);abnScore=Math.max(0,abnScore-loss);totalLoss+=loss;}
+  }}
+  if(totalGain>0){await update(userRef(currentNick),{balance:(u.balance||0)+totalGain});await logTx(currentNick,{type:'in',who:'Заброшка',amt:totalGain,desc:'Взрыв бомбы — хабар!'});}
+  if(totalLoss>0){const newBal=Math.max(0,(u.balance||0)+totalGain-totalLoss);await update(userRef(currentNick),{balance:newBal});}
+  toast(`💥 Бум! +${totalGain}₽ ${totalLoss>0?`-${totalLoss}₽`:''}`.trim(),'green');
   renderAbnGrid();
 }
 
@@ -6767,6 +7282,7 @@ async function initTowerGame(){
   const owned=await checkGameOwned('tower');
   const area=document.getElementById('towerGameArea'); if(!area) return;
   if(!owned){ area.innerHTML=gameLockedHTML('tower',59); return; }
+  await recordGameStart('tower');
   area.innerHTML=`
     <style>
     #towerCanvas{border-radius:12px;border:1px solid var(--border);background:var(--surface2);display:block;margin:0 auto 10px;touch-action:none;}
@@ -6859,6 +7375,9 @@ function towerPlace(){
     towerDrawFrame(false);
     unlockAchievement('tower_first');
     if(towerScore>=10) unlockAchievement('tower_10');
+    if(towerScore>=20) unlockAchievement('tower_20');
+    // Save best score
+    get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).towerBest||0;if(towerScore>prev)update(userRef(currentNick),{'gameStats/towerBest':towerScore});});
     setTimeout(towerStartNew,2000);
     return;
   }
@@ -6905,15 +7424,16 @@ window.towerBuyStability=async function(){
 
 // ──────────────────────────────────────────────
 // 🔤 УГАДАЙ СЛОВО (Wordle RU)
-// ──────────────────────────────────────────────
 const WORDLE_WORDS4=['КИНО','СЛОН','БЛИН','МОСТ','ГРИБ','СОЛЬ','КЛЕЙ','ПОНИ','ДРУГ','НОЧЬ','ДЕНЬ','СВЕТ','ЗИМА','РЕКА','ЛИСТ'];
 const WORDLE_WORDS5=['ЗАМОК','СЛОВО','ЛИМОН','КНИГА','ЗЕМЛЯ','ПЕСНЯ','ЖИВОТ','БЕРЕГ','ПТИЦА','ГРУША','БЕЛКА','ВОЛНА','МЕСТО','ГОЛОС','МАСЛО','КРЫША','ПАРУС','ЛАЙКА','КОБРА','КУБИК','ЛЕНТА','МЫШКА','НОРКА','СОСНА','ЯГОДА'];
+const WORDLE_ALL_WORDS = new Set([...WORDLE_WORDS4, ...WORDLE_WORDS5]);
 let wdWord='',wdLen=5,wdAttempts=[],wdMaxTries=6,wdDone=false,wdCurInput='',wdHint=null,wdUsedLetters=new Set(),wdUsedPositions=new Set();
 
 async function initWordleGame(){
   const owned=await checkGameOwned('wordle');
   const area=document.getElementById('wordleGameArea'); if(!area) return;
   if(!owned){ area.innerHTML=gameLockedHTML('wordle',39); return; }
+  await recordGameStart('wordle');
   startWordleGame();
 }
 
@@ -6926,6 +7446,7 @@ function startWordleGame(len=5){
   wdMaxTries=len===4?5:6;
   renderWordleGame();
 }
+window.startWordleGame = startWordleGame;
 
 function wdGetHintMarkup(){
   if(!wdHint) return '';
@@ -7006,7 +7527,10 @@ window.wdKey=function(k){
 window.wdSubmit=function(){
   if(wdDone) return;
   if(wdCurInput.length<wdLen) return toast(`❌ Введите ${wdLen} букв`,'red');
-  const letters=wdCurInput.split('');
+  const guess = wdCurInput.toUpperCase().replace(/Ё/g,'Е');
+  if(!WORDLE_ALL_WORDS.has(guess)) return toast('Такого слова не существует!','red');
+  wdCurInput = guess;
+  const letters=guess.split('');
   const colors=letters.map((l,i)=>{
     if(wdWord[i]===l) return 'green';
     if(wdWord.includes(l)) return 'yellow';
@@ -7060,8 +7584,369 @@ window.wdBuyHint2=async function(){
 };
 // ══════════════════════════════════════════════════════════════════
 
+// ─── ⚡ ИГРА: РЕАКЦИЯ ───────────────────────────────────────────
+let reactionTimer=null,reactionStarted=false,reactionWaiting=false,reactionBest=null;
 
-const bizRef = () => ref(db, 'businesses');
+async function initReactionGame(){
+  const owned=await checkGameOwned('reaction');
+  const area=document.getElementById('reactionGameArea'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('reaction',29); return; }
+  await recordGameStart('reaction');
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  reactionBest=(u.gameStats?.reactionBest)||null;
+  renderReactionGame('idle');
+}
+
+function renderReactionGame(state,time){
+  const area=document.getElementById('reactionGameArea'); if(!area) return;
+  const bestHtml=reactionBest?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Твой рекорд: <span style="color:var(--gold);font-weight:900;">${reactionBest}мс</span></div>`:'';
+  if(state==='idle'){
+    area.innerHTML=`${bestHtml}<div id="reactionBtn" onclick="reactionStart()" style="width:200px;height:200px;border-radius:50%;background:var(--surface2);border:3px solid var(--border);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:800;color:var(--muted);text-align:center;user-select:none;touch-action:manipulation;">Нажми, чтобы начать</div>`;
+  } else if(state==='waiting'){
+    area.innerHTML=`${bestHtml}<div id="reactionBtn" style="width:200px;height:200px;border-radius:50%;background:var(--red-dim);border:3px solid var(--red);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--red);text-align:center;user-select:none;">⏳ Жди...</div>`;
+  } else if(state==='go'){
+    area.innerHTML=`${bestHtml}<div id="reactionBtn" onclick="reactionClick()" style="width:200px;height:200px;border-radius:50%;background:rgba(34,211,165,.25);border:3px solid var(--primary);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-weight:900;color:var(--primary);text-align:center;user-select:none;touch-action:manipulation;animation:pulse 0.4s infinite;">ЖМЯЯЯЙ!</div>`;
+  } else if(state==='result'){
+    const isRecord=!reactionBest||time<reactionBest;
+    area.innerHTML=`<div style="text-align:center;margin-bottom:12px;">
+      <div style="font-size:48px;font-weight:900;color:var(--primary);">${time}мс</div>
+      ${isRecord?'<div style="font-size:14px;color:var(--gold);font-weight:900;margin:6px 0;">🏆 Новый рекорд!</div>':''}
+      <div style="font-size:12px;color:var(--muted);">Рейтинг: ${time<200?'⚡ Молния':time<300?'🐇 Быстрый':time<500?'👍 Неплохо':'🐢 Можно лучше'}</div>
+    </div>
+    ${bestHtml}
+    <button class="btn btn-primary" onclick="reactionStart()">🔄 Ещё раз</button>`;
+  } else if(state==='toosoon'){
+    area.innerHTML=`${bestHtml}<div style="text-align:center;color:var(--red);font-weight:800;font-size:16px;margin-bottom:16px;">⚠️ Слишком рано!</div><button class="btn btn-primary" onclick="reactionStart()">🔄 Попробовать снова</button>`;
+  }
+}
+
+window.reactionStart=function(){
+  if(reactionTimer) clearTimeout(reactionTimer);
+  reactionStarted=false;reactionWaiting=true;
+  renderReactionGame('waiting');
+  const delay=1000+Math.random()*3000;
+  reactionTimer=setTimeout(()=>{
+    reactionWaiting=false;reactionStarted=true;
+    window._reactionTs=Date.now();
+    renderReactionGame('go');
+  },delay);
+};
+
+window.reactionClick=async function(){
+  if(!reactionStarted){
+    if(reactionWaiting){clearTimeout(reactionTimer);reactionWaiting=false;renderReactionGame('toosoon');}
+    return;
+  }
+  reactionStarted=false;
+  const t=Date.now()-window._reactionTs;
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  const prev=(u.gameStats?.reactionBest)||null;
+  if(!prev||t<prev){
+    reactionBest=t;
+    await update(userRef(currentNick),{'gameStats/reactionBest':t});
+  }
+  renderReactionGame('result',t);
+};
+
+// ─── 🔢 ИГРА: 2048 ────────────────────────────────────────────
+let g2048=[],g2048Score=0,g2048Done=false,g2048Won=false,g2048TouchX=0,g2048TouchY=0;
+
+async function init2048Game(){
+  const owned=await checkGameOwned('game2048');
+  const area=document.getElementById('game2048Area'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('game2048',39); return; }
+  await recordGameStart('game2048');
+  start2048();
+}
+
+function clone2048Board(board){ return board.map(row=>row.slice()); }
+function transpose2048Board(board){ return board[0].map((_,c)=>board.map(row=>row[c])); }
+function reverse2048Rows(board){ return board.map(row=>row.slice().reverse()); }
+
+function slide2048Line(line){
+  const nums = line.filter(v => v !== 0);
+  const out = [];
+  let gained = 0;
+  for(let i=0;i<nums.length;i++){
+    if(i < nums.length - 1 && nums[i] === nums[i+1]){
+      const merged = nums[i] * 2;
+      out.push(merged);
+      gained += merged;
+      i++;
+    }else{
+      out.push(nums[i]);
+    }
+  }
+  while(out.length < 4) out.push(0);
+  return { line: out, gained };
+}
+
+function start2048(){
+  g2048 = Array.from({length:4}, () => Array(4).fill(0));
+  g2048Score = 0;
+  g2048Done = false;
+  g2048Won = false;
+  add2048Tile();
+  add2048Tile();
+  render2048();
+}
+window.start2048 = start2048;
+
+function add2048Tile(){
+  const empty = [];
+  for(let r=0;r<4;r++) for(let c=0;c<4;c++) if(g2048[r][c] === 0) empty.push([r,c]);
+  if(!empty.length) return false;
+  const [r,c] = empty[Math.floor(Math.random()*empty.length)];
+  g2048[r][c] = Math.random() < 0.9 ? 2 : 4;
+  return true;
+}
+
+function can2048Move(board){
+  for(let r=0;r<4;r++){
+    for(let c=0;c<4;c++){
+      if(board[r][c] === 0) return true;
+      if(c < 3 && board[r][c] === board[r][c+1]) return true;
+      if(r < 3 && board[r][c] === board[r+1][c]) return true;
+    }
+  }
+  return false;
+}
+
+function boardMoved(a,b){ return JSON.stringify(a) !== JSON.stringify(b); }
+
+function move2048(dir){
+  if(g2048Done) return false;
+  let board = clone2048Board(g2048);
+
+  if(dir === 'ArrowRight'){
+    board = reverse2048Rows(board);
+  }else if(dir === 'ArrowUp'){
+    board = transpose2048Board(board);
+  }else if(dir === 'ArrowDown'){
+    board = transpose2048Board(board);
+    board = reverse2048Rows(board);
+  }else if(dir !== 'ArrowLeft'){
+    return false;
+  }
+
+  const before = clone2048Board(board);
+  let gained = 0;
+  board = board.map(row => {
+    const res = slide2048Line(row);
+    gained += res.gained;
+    return res.line;
+  });
+
+  if(dir === 'ArrowRight'){
+    board = reverse2048Rows(board);
+  }else if(dir === 'ArrowUp'){
+    board = transpose2048Board(board);
+  }else if(dir === 'ArrowDown'){
+    board = reverse2048Rows(board);
+    board = transpose2048Board(board);
+  }
+
+  if(!boardMoved(before, board)) return false;
+
+  g2048 = board;
+  g2048Score += gained;
+  add2048Tile();
+
+  if(!g2048Won && g2048.flat().includes(2048)){
+    g2048Won = true;
+    toast('🎉 Ты набрал 2048!','gold');
+  }
+
+  if(!can2048Move(g2048)){
+    g2048Done = true;
+    toast('Игра окончена! Дальше ходов нет.','red');
+  }
+
+  get(userRef(currentNick)).then(snap=>{
+    const u=snap.val()||{};
+    const prev=(u.gameStats?.g2048Best||0);
+    if(g2048Score>prev) update(userRef(currentNick),{'gameStats/g2048Best':g2048Score});
+  });
+
+  render2048();
+  return true;
+}
+window.move2048 = move2048;
+
+window.g2048TS = function(e){
+  if(!e.touches || !e.touches[0]) return;
+  g2048TouchX = e.touches[0].clientX;
+  g2048TouchY = e.touches[0].clientY;
+};
+
+window.g2048TE = function(e){
+  if(g2048Done) return;
+  if(!e.changedTouches || !e.changedTouches[0]) return;
+  const dx = e.changedTouches[0].clientX - g2048TouchX;
+  const dy = e.changedTouches[0].clientY - g2048TouchY;
+  if(Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  if(Math.abs(dx) > Math.abs(dy)){
+    move2048(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
+  }else{
+    move2048(dy > 0 ? 'ArrowDown' : 'ArrowUp');
+  }
+};
+
+window.addEventListener('keydown', (e) => {
+  if(curPage !== 'game2048Section' || g2048Done) return;
+  const tag = e.target && e.target.tagName ? e.target.tagName.toUpperCase() : '';
+  if(['INPUT','TEXTAREA','SELECT'].includes(tag) || e.isComposing) return;
+  const keyMap = {
+    ArrowLeft:'ArrowLeft',
+    ArrowRight:'ArrowRight',
+    ArrowUp:'ArrowUp',
+    ArrowDown:'ArrowDown',
+    a:'ArrowLeft',
+    A:'ArrowLeft',
+    d:'ArrowRight',
+    D:'ArrowRight',
+    w:'ArrowUp',
+    W:'ArrowUp',
+    s:'ArrowDown',
+    S:'ArrowDown',
+  };
+  const dir = keyMap[e.key];
+  if(dir){
+    e.preventDefault();
+    move2048(dir);
+  }
+});
+
+function render2048(){
+  const area=document.getElementById('game2048Area'); if(!area) return;
+  const colors={0:'var(--surface2)',2:'#eee4da',4:'#ede0c8',8:'#f2b179',16:'#f59563',32:'#f67c5f',64:'#f65e3b',128:'#edcf72',256:'#edcc61',512:'#edc850',1024:'#edc53f',2048:'#edc22e'};
+  const cellHtml=g2048.map(row=>row.map(v=>`<div style="width:64px;height:64px;border-radius:8px;background:${colors[v]||'#3c3a32'};display:flex;align-items:center;justify-content:center;font-size:${v>99?(v>999?14:16):20}px;font-weight:900;color:${v>4?'#f9f6f2':'#776e65'};">${v||''}</div>`).join('')).join('');
+  area.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 16px;text-align:center;min-width:96px;"><div style="font-size:18px;font-weight:900;color:var(--primary);">${g2048Score}</div><div style="font-size:9px;color:var(--muted);">Очки</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="start2048()">🔄 Новая</button>
+    </div>
+    <div id="g2048grid" tabindex="0" style="display:grid;grid-template-columns:repeat(4,64px);gap:4px;margin:0 auto 12px;width:fit-content;background:var(--surface);border:2px solid var(--border);padding:6px;border-radius:var(--r-sm);touch-action:none;user-select:none;"
+      ontouchstart="g2048TS(event)" ontouchend="g2048TE(event)">${cellHtml}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,52px);gap:6px;justify-content:center;margin-bottom:12px;">
+      <div></div><button class="btn btn-ghost btn-sm" style="padding:10px 0;" onclick="move2048('ArrowUp')">▲</button><div></div>
+      <button class="btn btn-ghost btn-sm" style="padding:10px 0;" onclick="move2048('ArrowLeft')">◄</button>
+      <button class="btn btn-primary btn-sm" style="padding:10px 0;" onclick="start2048()">⟳</button>
+      <button class="btn btn-ghost btn-sm" style="padding:10px 0;" onclick="move2048('ArrowRight')">►</button>
+      <div></div><button class="btn btn-ghost btn-sm" style="padding:10px 0;" onclick="move2048('ArrowDown')">▼</button><div></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;">Свайп, стрелки или кнопки для управления</div>
+    ${g2048Won?'<div style="text-align:center;margin-top:10px;font-size:14px;font-weight:900;color:var(--gold);">Есть 2048 — можно продолжать дальше!</div>':''}
+    ${g2048Done?'<div style="text-align:center;margin-top:8px;font-size:16px;font-weight:900;color:var(--red);">Игра окончена!</div>':''}
+  `;
+}
+
+async function initSnakeGame(){
+  const owned=await checkGameOwned('snake');
+  const area=document.getElementById('gameSnakeArea'); if(!area) return;
+  if(!owned){ area.innerHTML=gameLockedHTML('snake',29); return; }
+  await recordGameStart('snake');
+  renderSnakeSetup();
+}
+
+function snakeDrawFrame(){
+  const canvas=document.getElementById('snakeCanvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='rgba(12,17,23,0.9)';ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#f87171';
+  ctx.beginPath();ctx.arc(snakeFood.x*SNAKE_CELL+SNAKE_CELL/2,snakeFood.y*SNAKE_CELL+SNAKE_CELL/2,SNAKE_CELL/2-2,0,Math.PI*2);ctx.fill();
+  snakeBody.forEach((s,i)=>{
+    ctx.fillStyle=i===0?'#22d3a5':'#0fa87e';
+    ctx.beginPath();ctx.roundRect(s.x*SNAKE_CELL+1,s.y*SNAKE_CELL+1,SNAKE_CELL-2,SNAKE_CELL-2,4);ctx.fill();
+  });
+}
+
+const SNAKE_W=16,SNAKE_H=16,SNAKE_CELL=20;
+let snakeBody=[],snakeDir={x:1,y:0},snakeFood={x:5,y:5},snakeScore=0,snakeRunning=false,snakeRAF2=null,snakeLastTime=0,snakeSpeed=150,snakeNextDir=null,snakeGameOverFlag=false;
+
+function renderSnakeSetup(){
+  const area=document.getElementById('gameSnakeArea'); if(!area) return;
+  area.innerHTML=`
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 16px;text-align:center;"><div id="snakeScoreEl" style="font-size:18px;font-weight:900;color:var(--primary);">0</div><div style="font-size:9px;color:var(--muted);">Очки</div></div>
+    </div>
+    <canvas id="snakeCanvas" width="${SNAKE_W*SNAKE_CELL}" height="${SNAKE_H*SNAKE_CELL}" style="border-radius:12px;border:1px solid var(--border);background:var(--surface2);display:block;margin:0 auto 10px;touch-action:none;"></canvas>
+    <div style="display:grid;grid-template-columns:repeat(3,52px);gap:4px;margin:0 auto 10px;width:fit-content;">
+      <div></div><button class="btn btn-ghost btn-sm" style="padding:10px;" onclick="snakeSetDir(0,-1)">▲</button><div></div>
+      <button class="btn btn-ghost btn-sm" style="padding:10px;" onclick="snakeSetDir(-1,0)">◄</button>
+      <button class="btn btn-primary btn-sm" style="padding:10px;" onclick="snakeToggle()">▶</button>
+      <button class="btn btn-ghost btn-sm" style="padding:10px;" onclick="snakeSetDir(1,0)">►</button>
+      <div></div><button class="btn btn-ghost btn-sm" style="padding:10px;" onclick="snakeSetDir(0,1)">▼</button><div></div>
+    </div>
+    <div id="snakeMsg" style="font-size:13px;text-align:center;color:var(--muted);min-height:20px;margin-bottom:8px;">Нажми ▶ для старта</div>
+  `;
+  snakeStartNew();
+  let sx=0,sy=0;
+  const canvas=document.getElementById('snakeCanvas');
+  canvas?.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  canvas?.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>Math.abs(dy)){snakeSetDir(dx>0?1:-1,0);}else{snakeSetDir(0,dy>0?1:-1);}
+  });
+}
+
+function snakeStartNew(){
+  snakeBody=[{x:8,y:8},{x:7,y:8},{x:6,y:8}];
+  snakeDir={x:1,y:0};snakeNextDir=null;
+  snakeScore=0;snakeRunning=false;snakeSpeed=150;snakeGameOverFlag=false;
+  snakePlaceFood();snakeDrawFrame();
+  const msg=document.getElementById('snakeMsg');if(msg)msg.textContent='Нажми ▶ для старта';
+  const sc=document.getElementById('snakeScoreEl');if(sc)sc.textContent='0';
+}
+
+function snakePlaceFood(){
+  do{snakeFood={x:Math.floor(Math.random()*SNAKE_W),y:Math.floor(Math.random()*SNAKE_H)};}
+  while(snakeBody.some(s=>s.x===snakeFood.x&&s.y===snakeFood.y));
+}
+
+window.snakeToggle=function(){
+  if(snakeGameOverFlag) return;
+  if(snakeRunning){snakeRunning=false;if(snakeRAF2){cancelAnimationFrame(snakeRAF2);snakeRAF2=null;}const msg=document.getElementById('snakeMsg');if(msg)msg.textContent='Пауза';}
+  else{snakeRunning=true;snakeLastTime=0;snakeRAF2=requestAnimationFrame(snakeLoop);}
+};
+
+window.snakeSetDir=function(x,y){
+  if(snakeGameOverFlag) return;
+  if(x===1&&snakeDir.x===-1)return;if(x===-1&&snakeDir.x===1)return;
+  if(y===1&&snakeDir.y===-1)return;if(y===-1&&snakeDir.y===1)return;
+  snakeNextDir={x,y};
+  if(!snakeRunning)snakeToggle();
+};
+
+function snakeLoop(ts){
+  if(!snakeRunning)return;
+  if(!snakeLastTime)snakeLastTime=ts;
+  if(ts-snakeLastTime>=snakeSpeed){
+    snakeLastTime=ts;
+    if(snakeNextDir){snakeDir=snakeNextDir;snakeNextDir=null;}
+    const head={x:snakeBody[0].x+snakeDir.x,y:snakeBody[0].y+snakeDir.y};
+    if(head.x<0||head.x>=SNAKE_W||head.y<0||head.y>=SNAKE_H){snakeGameOver();return;}
+    if(snakeBody.some(s=>s.x===head.x&&s.y===head.y)){snakeGameOver();return;}
+    snakeBody.unshift(head);
+    if(head.x===snakeFood.x&&head.y===snakeFood.y){
+      snakeScore+=10;snakeSpeed=Math.max(60,snakeSpeed-2);
+      const sc=document.getElementById('snakeScoreEl');if(sc)sc.textContent=snakeScore;
+      snakePlaceFood();
+    } else {snakeBody.pop();}
+    snakeDrawFrame();
+  }
+  snakeRAF2=requestAnimationFrame(snakeLoop);
+}
+
+async function snakeGameOver(){
+  snakeRunning=false;snakeGameOverFlag=true;if(snakeRAF2){cancelAnimationFrame(snakeRAF2);snakeRAF2=null;}
+  const msg=document.getElementById('snakeMsg');
+  if(msg)msg.innerHTML=`💀 Игра окончена! Счёт: ${snakeScore} <button class="btn btn-primary btn-sm" onclick="snakeStartNew();document.getElementById('snakeMsg').textContent='Нажми ▶ для старта'" style="margin-left:8px;">🔄 Снова</button>`;
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
+  const prev=(u.gameStats||{}).snakeBest||0;
+  if(snakeScore>prev) await update(userRef(currentNick),{'gameStats/snakeBest':snakeScore});
+}
+
 const bizItemRef = (id) => ref(db, `businesses/${id}`);
 const bizAppsRef = () => ref(db, 'businessApps');
 const bizAppRef = (id) => ref(db, `businessApps/${id}`);
