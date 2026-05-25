@@ -1167,11 +1167,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card">
       <div class="msg-tabs" style="flex-wrap:wrap;gap:6px;">
         <button class="msg-tab active" onclick="switchRatingTab('balance',this)">💰 Богатство</button>
-        <button class="msg-tab" onclick="switchRatingTab('tower',this)">🏗️ Башня</button>
-        <button class="msg-tab" onclick="switchRatingTab('match3',this)">💎 Три в ряд</button>
-        <button class="msg-tab" onclick="switchRatingTab('duel',this)">⚔️ Дуэли</button>
-        <button class="msg-tab" onclick="switchRatingTab('abandoned',this)">🏚️ Заброшка</button>
-        <button class="msg-tab" onclick="switchRatingTab('wordle',this)">🔤 Словарь</button>
       </div>
       <div id="lbList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div>
     </div>
@@ -5286,25 +5281,8 @@ function renderLeaderboard(users){
 
   const lbEl=qs('lbList'); if(!lbEl) return;
 
-  if(currentRatingTab==='balance'){
-    const sorted=usersArr.sort((a,b)=>(b.balance||0)-(a.balance||0));
-    lbEl.innerHTML=`<div class="card-title">💰 Рейтинг по богатству</div>`+sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div>`)).join('');
-  } else if(currentRatingTab==='tower'){
-    const sorted=usersArr.filter(u=>u.gameStats?.towerBest).sort((a,b)=>(b.gameStats?.towerBest||0)-(a.gameStats?.towerBest||0));
-    lbEl.innerHTML=`<div class="card-title">🏗️ Башня — самая высокая</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--gold);">${u.gameStats.towerBest} уровней</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не играл</div>`);
-  } else if(currentRatingTab==='match3'){
-    const sorted=usersArr.filter(u=>u.gameStats?.match3Best).sort((a,b)=>(b.gameStats?.match3Best||0)-(a.gameStats?.match3Best||0));
-    lbEl.innerHTML=`<div class="card-title">💎 Три в ряд — лучший результат</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--primary);">${u.gameStats.match3Best} очков</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не играл</div>`);
-  } else if(currentRatingTab==='duel'){
-    const sorted=usersArr.filter(u=>u.gameStats?.duelWins).sort((a,b)=>(b.gameStats?.duelWins||0)-(a.gameStats?.duelWins||0));
-    lbEl.innerHTML=`<div class="card-title">⚔️ Дуэли — больше всего побед</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--red);">${u.gameStats.duelWins} побед</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не побеждал</div>`);
-  } else if(currentRatingTab==='abandoned'){
-    const sorted=usersArr.filter(u=>u.gameStats?.abandonedBest).sort((a,b)=>(b.gameStats?.abandonedBest||0)-(a.gameStats?.abandonedBest||0));
-    lbEl.innerHTML=`<div class="card-title">🏚️ Заброшка — лучший куш</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--gold);">${u.gameStats.abandonedBest}₽</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не искал хабар</div>`);
-  } else if(currentRatingTab==='wordle'){
-    const sorted=usersArr.filter(u=>u.gameStats?.wordleTotal).sort((a,b)=>(b.gameStats?.wordleTotal||0)-(a.gameStats?.wordleTotal||0));
-    lbEl.innerHTML=`<div class="card-title">🔤 Угадай слово — угадано слов</div>`+(sorted.length?sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal" style="color:var(--primary);">${u.gameStats.wordleTotal} слов</div>`)).join(''):`<div style="color:var(--muted);text-align:center;padding:20px;">Ещё никто не угадывал</div>`);
-  }
+  const sorted=usersArr.sort((a,b)=>(b.balance||0)-(a.balance||0));
+  lbEl.innerHTML=`<div class="card-title">💰 Рейтинг по богатству</div>`+sorted.map((u,i)=>makeRow(u,i,`<div class="lb-bal">${(u.balance||0).toLocaleString()} ₽</div>`)).join('');
 }
 
 // ─── JOBS ─────────────────────────────────
