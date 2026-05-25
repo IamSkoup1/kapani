@@ -879,7 +879,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
         <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
-        <div class="quick-card" onclick="navTo('games')" role="button" tabindex="0" aria-label="Библиотека игр" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(251,191,36,.10));border-color:rgba(34,211,165,.3);"><div class="qico">🎮</div><div class="qlbl">Библиотека игр</div><div class="qsub">Игры за капанёвские рубли</div></div>
+        <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.10));border-color:rgba(251,191,36,.3);"><div class="qico">🏁</div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
     </div>
     <div id="homeOrders"></div>
     <div id="workerSection" style="display:none">
@@ -908,144 +908,18 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 </div>
 
 <!-- GAMES LIBRARY -->
-<div id="games" class="section">
-  <div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.08),rgba(251,191,36,.06));border-color:rgba(34,211,165,.25);">
-    <div style="font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--primary),var(--gold));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">🎮 Библиотека игр</div>
-    <div style="font-size:12px;color:var(--muted);">Покупай игры и играй с друзьями за капанёвские рубли</div>
-    <div style="margin-top:10px;font-size:13px;font-weight:800;">Ваш баланс: <span id="gamesBalDisplay" style="color:var(--primary);">0₽</span></div>
+<div id="events" class="section">
+  <div class="card" style="background:linear-gradient(145deg,rgba(251,191,36,.08),rgba(248,113,113,.06));border-color:rgba(251,191,36,.25);">
+    <div style="font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--red));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">🏁 Мероприятия</div>
+    <div style="font-size:12px;color:var(--muted);">Ежедневные гонки на время — делай ставку и докажи, кто быстрее</div>
   </div>
-  <div id="gamesGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"></div>
+  <div id="eventsGrid"></div>
 </div>
 
-<!-- GAME: КТО ШПИОН -->
-<div id="gameSpySection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card">
-    <div style="font-size:26px;margin-bottom:6px;">🕵️</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Кто шпион?</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Один из игроков — шпион. Он не знает локацию. Остальные знают. Найдите шпиона!</div>
-    <div id="spyGameArea"></div>
-  </div>
-</div>
-
-<!-- GAME: МАФИЯ -->
-<div id="gameMafiaSection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card">
-    <div style="font-size:26px;margin-bottom:6px;">🃏</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Мафия</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Классическая игра. Мирные жители против мафии. Ведущий раздаёт роли.</div>
-    <div id="mafiaGameArea"></div>
-  </div>
-</div>
-
-<!-- GAME: ТРИ В РЯД -->
-<div id="gameMatch3Section" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card" style="text-align:center;">
-    <div style="font-size:26px;margin-bottom:4px;">💎</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Три в ряд</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Нажми на камень → нажми на соседний, чтобы поменять местами. Собери 3+ одинаковых в ряд!</div>
-    <div id="match3BalRow" style="font-size:12px;color:var(--primary);font-weight:800;margin-bottom:8px;"></div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px;">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;"><div id="m3Score" style="font-size:18px;font-weight:900;color:var(--primary);">0</div><div style="font-size:9px;color:var(--muted);">Очки</div></div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;"><div id="m3Moves" style="font-size:18px;font-weight:900;color:var(--gold);">20</div><div style="font-size:9px;color:var(--muted);">Ходы</div></div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;"><div id="m3Combo" style="font-size:18px;font-weight:900;color:var(--red);">x1</div><div style="font-size:9px;color:var(--muted);">Комбо</div></div>
-    </div>
-    <div id="match3Board" style="display:inline-grid;grid-template-columns:repeat(6,46px);gap:4px;margin:0 auto 12px;touch-action:none;"></div>
-    <style>
-    .m3cell{width:46px;height:46px;border-radius:12px;background:var(--surface2);border:2px solid var(--border);font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s,border-color .12s,background .12s;user-select:none;-webkit-user-select:none;}
-    .m3cell:active{transform:scale(.88);}
-    .m3cell.sel{border-color:var(--primary);background:var(--pri-dim);transform:scale(1.1);}
-    .m3cell.hint-cell{border-color:var(--gold);background:var(--gold-dim);animation:hintPulse .6s ease-in-out infinite alternate;}
-    .m3cell.pop{animation:m3Pop .25s ease-out;}
-    @keyframes hintPulse{from{transform:scale(1);}to{transform:scale(1.12);}}
-    @keyframes m3Pop{0%{transform:scale(1.3);}100%{transform:scale(1);}}
-    </style>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:8px;">
-      <button class="btn btn-primary btn-sm" onclick="match3NewGame()">🔄 Новая</button>
-      <button class="btn btn-gold btn-sm" onclick="match3BuyHint()">💡 Подсказка (5₽)</button>
-      <button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border:1px solid var(--red);" onclick="match3BuyRevive()">❤️ +10 ходов (10₽)</button>
-    </div>
-    <div id="match3Msg" style="font-size:13px;color:var(--muted);min-height:20px;font-weight:700;"></div>
-  </div>
-</div>
-
-<!-- GAME: ДУЭЛИ -->
-<div id="gameDuelSection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card">
-    <div style="font-size:26px;margin-bottom:6px;">⚔️</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:4px;">Дуэли</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Играй с другом на рубли — с одного телефона или по сети! Победитель забирает банк.</div>
-    <div id="duelGameArea"></div>
-  </div>
-</div>
-
-<!-- GAME: ЗАБРОШКА -->
-<div id="gameAbandonedSection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card">
-    <div style="font-size:26px;margin-bottom:4px;">🏚️</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Заброшка: Поиск сокровищ</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Открывай клетки туманного поля, ищи хабар и избегай гопников!</div>
-    <div id="abandonedGameArea"></div>
-  </div>
-</div>
-
-<!-- GAME: БАШНЯ КАПАНИ -->
-<div id="gameTowerSection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card" style="text-align:center;">
-    <div style="font-size:26px;margin-bottom:4px;">🏗️</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Башня Капани</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Кликни в нужный момент, чтобы поставить блок точно на платформу!</div>
-    <div id="towerGameArea"></div>
-  </div>
-</div>
-
-<!-- GAME: УГАДАЙ СЛОВО -->
-<div id="gameWordleSection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card" style="text-align:center;">
-    <div style="font-size:26px;margin-bottom:4px;">🔤</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Угадай слово</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">🟩 — буква на месте &nbsp; 🟨 — буква есть, но не там &nbsp; ⬜ — такой буквы нет</div>
-    <div id="wordleGameArea"></div>
-  </div>
-</div>
-
-<!-- GAME: РЕАКЦИЯ -->
-<div id="gameReactionSection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card" style="text-align:center;">
-    <div style="font-size:26px;margin-bottom:4px;">⚡</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Реакция</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Нажми как можно быстрее, когда экран станет зелёным! Топ-5 → запись в рейтинг</div>
-    <div id="reactionGameArea"></div>
-  </div>
-</div>
-
-<!-- GAME: ЧИСЛА -->
-<div id="game2048Section" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card" style="text-align:center;">
-    <div style="font-size:26px;margin-bottom:4px;">🔢</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">2048</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Сдвигай плитки, складывай одинаковые числа. Доберись до 2048!</div>
-    <div id="game2048Area"></div>
-  </div>
-</div>
-
-<!-- GAME: ЗМЕЙКА -->
-<div id="gameSnakeSection" class="section">
-  <button class="btn btn-ghost btn-sm" onclick="navTo('games')" style="width:auto;margin-bottom:14px;">← Назад</button>
-  <div class="card" style="text-align:center;">
-    <div style="font-size:26px;margin-bottom:4px;">🐍</div>
-    <div style="font-weight:900;font-size:18px;margin-bottom:2px;">Змейка</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px;">Управляй змейкой, собирай еду. Не врезайся в стены и хвост!</div>
-    <div id="gameSnakeArea"></div>
-  </div>
+<!-- EVENT DETAIL -->
+<div id="eventDetail" class="section">
+  <button class="btn btn-ghost btn-sm" onclick="navTo('events')" style="width:auto;margin-bottom:14px;">← Назад</button>
+  <div id="eventDetailContent"></div>
 </div>
 
 <!-- MESSAGES -->
@@ -1355,6 +1229,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
             <div style="margin-bottom:8px;">✅ <b>Неограниченные объявления</b></div>
             <div style="margin-bottom:8px;">✅ <b>10% скидка</b> на такси, доставку и маркет</div>
+            <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 20%</b> на аренду зданий</div>
+            <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>250₽</b> вместо 500₽</div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона сообщений</b> в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Переливающиеся цвета</b> и спецэффекты в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Видео на аватарку</b></div>
@@ -1444,10 +1320,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div id="wallFeed" style="margin-top:14px;"></div>
     </div>
 
-    <div class="card">
-        <div class="card-title">🏅 Достижения</div>
-        <div id="achievementsList" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
-    </div>
     <button class="btn btn-ghost" onclick="logout()" style="margin-bottom:14px;color:var(--red);border-color:var(--red-dim);">🚪 Выйти</button>
 
 </div>
@@ -1471,7 +1343,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div id="vpfSubscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;text-align:center;display:none;"></div>
             <div class="upm-online" id="vpfOnline" style="justify-content:center;margin-top:8px;"><div class="upm-dot"></div><span></span></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
-                <button class="btn btn-gold btn-sm" type="button" onclick="openAchievementsPage(window._visitorProfileNick||'', 'visitorProfile')" style="flex:1;">🏅 Достижения</button>
                 <button class="btn btn-primary btn-sm" type="button" onclick="visitorProfileDm()" style="flex:1;">💬 Написать</button>
                 <button class="btn btn-gold btn-sm" type="button" onclick="visitorProfileTransfer()" style="flex:1;">💸 Перевести</button>
             </div>
@@ -1510,14 +1381,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
 </div>
 
-<!-- ACHIEVEMENTS PAGE -->
-<div id="achievementsPage" class="section">
-    <button class="btn btn-ghost btn-sm" onclick="closeAchievementsPage()" style="width:auto;margin-bottom:14px;">← Назад</button>
-    <div class="card">
-        <div class="card-title" id="achievementsTitle">🏅 Достижения</div>
-        <div id="achievementsListPage" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
-    </div>
-</div>
 
 <!-- TASKS -->
 <div id="tasks" class="section">
@@ -1703,6 +1566,12 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
     <div class="card"><div class="card-title">👥 Все жители</div><div id="allUsersList"></div></div>
     <div class="card"><div class="card-title">📦 Активные заказы</div><div id="adminOrders"></div></div>
+    <div class="card">
+        <div class="card-title">🏁 Мероприятия — Гонки</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Добавляйте, редактируйте и удаляйте гонки. Они будут видны жителям в разделе Мероприятия.</div>
+        <button class="btn btn-primary" onclick="openRaceFormModal(null)" style="margin-bottom:14px;">➕ Добавить гонку</button>
+        <div id="adminRacesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
 </div>
 
 <!-- BUSINESSES LIST -->
@@ -1816,13 +1685,75 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 </div><!-- end container -->
 
 <!-- BIZ APPLY MODAL -->
+
+<!-- RACE FORM MODAL (Admin) -->
+<div id="raceFormModal" style="display:none;position:fixed;inset:0;background:rgba(12,17,23,0.95);z-index:9500;overflow-y:auto;padding:24px 16px;" onclick="if(event.target===this)closeRaceFormModal()">
+  <div style="max-width:480px;margin:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-weight:900;font-size:18px;">🏁 Гонка</div>
+      <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeRaceFormModal()">✕</span>
+    </div>
+    <input type="hidden" id="raceFormId">
+    <input type="text" id="raceFormName" placeholder="Название трассы" maxlength="80">
+    <select id="raceFormType" onchange="toggleRaceLapsRow()">
+      <option value="circuit">🔄 Круг</option>
+      <option value="sprint">🏃 Спринт</option>
+      <option value="drag">🚗 Драг-рейсинг</option>
+      <option value="streetx">🌀 Стрит-X</option>
+    </select>
+    <div id="raceFormLapsRow" style="margin-top:0;">
+      <input type="number" id="raceFormLaps" placeholder="Количество кругов" min="1" max="100" step="1">
+    </div>
+    <textarea id="raceFormDesc" placeholder="Описание трассы..." style="min-height:72px;"></textarea>
+    <div style="font-size:12px;color:var(--muted);margin:8px 0 4px;">🗺️ Карта трассы (из галереи)</div>
+    <label class="btn btn-ghost" for="raceFormMapFile" style="width:100%;text-align:center;cursor:pointer;display:block;padding:12px;font-size:13px;font-weight:800;">📷 Выбрать изображение карты</label>
+    <input type="file" id="raceFormMapFile" accept="image/*" style="display:none;" onchange="handleRaceMapPhoto(event)">
+    <div id="raceFormMapPreview" style="margin-top:8px;display:none;">
+      <img id="raceFormMapImg" src="" style="width:100%;border-radius:var(--r-sm);max-height:200px;object-fit:cover;cursor:pointer;" onclick="openImgViewer(this.src)">
+      <button class="btn btn-ghost btn-sm" onclick="clearRaceMapPhoto()" style="margin-top:6px;">🗑 Удалить фото</button>
+    </div>
+    <div style="margin:16px 0 8px;padding:14px;background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.2);border-radius:var(--r-sm);">
+      <div style="font-weight:900;font-size:13px;color:var(--primary);margin-bottom:10px;">🟢 Легко</div>
+      <input type="text" id="raceFormEasyTime" placeholder="Целевое время (напр. 2:30)" maxlength="10">
+      <input type="number" id="raceFormEasyWin" placeholder="Ставка за выигрыш (₽)" min="1" step="1">
+      <input type="number" id="raceFormEasyLoss" placeholder="Ставка за проигрыш (₽)" min="1" step="1">
+    </div>
+    <div style="margin-bottom:8px;padding:14px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:var(--r-sm);">
+      <div style="font-weight:900;font-size:13px;color:var(--gold);margin-bottom:10px;">🟡 Средне</div>
+      <input type="text" id="raceFormMedTime" placeholder="Целевое время (напр. 2:00)" maxlength="10">
+      <input type="number" id="raceFormMedWin" placeholder="Ставка за выигрыш (₽)" min="1" step="1">
+      <input type="number" id="raceFormMedLoss" placeholder="Ставка за проигрыш (₽)" min="1" step="1">
+    </div>
+    <div style="margin-bottom:16px;padding:14px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:var(--r-sm);">
+      <div style="font-weight:900;font-size:13px;color:var(--red);margin-bottom:10px;">🔴 Сложно</div>
+      <input type="text" id="raceFormHardTime" placeholder="Целевое время (напр. 1:30)" maxlength="10">
+      <input type="number" id="raceFormHardWin" placeholder="Ставка за выигрыш (₽)" min="1" step="1">
+      <input type="number" id="raceFormHardLoss" placeholder="Ставка за проигрыш (₽)" min="1" step="1">
+    </div>
+    <button class="btn btn-primary" onclick="submitRaceForm()" style="margin-top:4px;">💾 Сохранить гонку</button>
+    <button class="btn btn-ghost" onclick="closeRaceFormModal()" style="margin-top:8px;">Отмена</button>
+  </div>
+</div>
+
+<!-- EVENT DETAIL DIFFICULTY MODAL -->
+<div id="eventDiffModal" style="display:none;position:fixed;inset:0;background:rgba(12,17,23,0.95);z-index:9500;overflow-y:auto;padding:24px 16px;" onclick="if(event.target===this)closeEventDiffModal()">
+  <div style="max-width:460px;margin:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-weight:900;font-size:18px;" id="eventDiffTitle">Уровень сложности</div>
+      <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeEventDiffModal()">✕</span>
+    </div>
+    <div id="eventDiffContent"></div>
+    <button class="btn btn-ghost" onclick="closeEventDiffModal()" style="margin-top:14px;">Закрыть</button>
+  </div>
+</div>
+
 <div id="bizApplyModal" style="display:none;position:fixed;inset:0;background:rgba(12,17,23,0.92);z-index:9500;overflow-y:auto;padding:24px 16px;" onclick="if(event.target===this)closeBizApplyModal()">
     <div style="max-width:460px;margin:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
             <div style="font-weight:900;font-size:18px;">🏪 Открыть бизнес</div>
             <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeBizApplyModal()">✕</span>
         </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — 500 ₽.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — <span id="bizFeeDisplay">500 ₽</span>. С подпиской Ultra — 250 ₽.</div>
         <input type="text" id="bapName" placeholder="Название бизнеса" maxlength="60">
         <textarea id="bapDesc" placeholder="Описание бизнеса" style="min-height:72px;"></textarea>
         <input type="text" id="bapAddress" placeholder="Адрес (где находится)" maxlength="120">
@@ -2365,6 +2296,7 @@ const rentBuildingsRef = () => ref(db, 'rentBuildings');
 const rentBuildingRef = (id) => ref(db, `rentBuildings/${id}`);
 const bizOrdersRef = (bizId) => ref(db, `bizOrders/${bizId}`);
 const bizOrderRef = (bizId, orderId) => ref(db, `bizOrders/${bizId}/${orderId}`);
+const bizRef = () => ref(db, 'businesses');
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
@@ -5530,6 +5462,7 @@ async function renderAdmin(){
     renderAdminBizApps();
     renderAdminBizDeleteReqs();
     renderAdminRentBuildings(rSnap.val()||{});
+    if(typeof renderAdminRaces === 'function') renderAdminRaces();
 }
 window.approveApp=async function(id,ok){
     const snap=await get(appRef(id));if(!snap.exists())return;
@@ -6034,7 +5967,7 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,achievementsPage:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,games:0,gameSpySection:0,gameMafiaSection:0,gameMatch3Section:0,gameDuelSection:0,gameAbandonedSection:0,gameTowerSection:0,gameWordleSection:0,gameReactionSection:0,game2048Section:0,gameSnakeSection:0};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
@@ -6052,8 +5985,7 @@ window.navTo=function(id){
         chatLoading = true;
         get(chatRef()).then(s=>{ chatLoading = false; renderChat(s.val()||{}); });
     }
-    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();renderAchievements(currentNick); }
-    if(id==='achievementsPage') { renderAchievements(achievementsViewNick || currentNick); }
+    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded(); }
     if(id==='market') { renderDebtNotice('marketDebtNotice', allUsersCache[currentNick] || {}); get(marketRef()).then(s=>renderMarket(s.val()||{})); }
     if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
     if(id==='subscription') renderSubscription();
@@ -6068,7 +6000,8 @@ window.navTo=function(id){
     if(id==='janitorPage') renderJanitorPage();
     if(id==='businesses') renderBusinesses();
     if(id==='bizOwnerPanel') renderBizOwnerPanel();
-    if(id==='games') renderGamesLibrary();
+    if(id==='events') renderEventsSection();
+    if(id==='eventDetail') {} // handled by openEventDetail
     if(id==='gameSpySection') initSpyGame();
     if(id==='gameMafiaSection') initMafiaGame();
     if(id==='gameMatch3Section') initMatch3();
@@ -6079,7 +6012,7 @@ window.navTo=function(id){
     if(id==='gameReactionSection') initReactionGame();
     if(id==='game2048Section') init2048Game();
     if(id==='gameSnakeSection') initSnakeGame();
-    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();renderAchievements(currentNick); }
+    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded(); }
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -7974,6 +7907,8 @@ window.openBizApplyModal = async function(){
     if(myBiz){ return toast('✅ У вас уже есть бизнес','gold'); }
     // Clear and show modal
     ['bapName','bapDesc','bapAddress','bapCategory','bapServices'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
+    const hasUltraBizModal = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const feeEl = qs('bizFeeDisplay'); if(feeEl) feeEl.textContent = hasUltraBizModal ? '250 ₽' : '500 ₽';
     qs('bizApplyModal').style.display = 'block';
 };
 window.closeBizApplyModal = function(){ qs('bizApplyModal').style.display='none'; };
@@ -7988,14 +7923,16 @@ window.submitBizApply = async function(){
     if(!address) return toast('⚠️ Укажите адрес','gold');
     const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
-    if((u.balance || 0) < ECONOMY_BUSINESS_CREATION_FEE) return toast('❌ Для создания бизнеса нужно 100₽ госпошлины','red');
-    await update(userRef(currentNick), { balance: (u.balance || 0) - ECONOMY_BUSINESS_CREATION_FEE });
-    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:ECONOMY_BUSINESS_CREATION_FEE, desc:'Госпошлина за создание бизнеса' });
-    await pushNotification(currentNick, `🏛 Списана госпошлина ${ECONOMY_BUSINESS_CREATION_FEE}₽ за заявку на бизнес`, 'money');
+    const hasUltraForBiz = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const actualFee = hasUltraForBiz ? 250 : ECONOMY_BUSINESS_CREATION_FEE;
+    if((u.balance || 0) < actualFee) return toast(`❌ Для создания бизнеса нужно ${actualFee}₽ госпошлины`,'red');
+    await update(userRef(currentNick), { balance: (u.balance || 0) - actualFee });
+    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasUltraForBiz ? ' (Ultra -50%)' : ''}` });
+    await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasUltraForBiz ? ' (скидка Ultra)' : ''}`, 'money');
     const id = genId();
     await set(bizAppRef(id), {
         id, owner: currentNick, name, desc, address, category, services,
-        status: 'pending', createdAt: Date.now(), feePaid: ECONOMY_BUSINESS_CREATION_FEE
+        status: 'pending', createdAt: Date.now(), feePaid: actualFee
     });
     await pushNotification(ADMIN, `🏪 Новая заявка на бизнес от ${currentNick}: «${name}»`, 'system');
     closeBizApplyModal();
@@ -9040,12 +8977,16 @@ window.rentBuilding = async function(id){
     const b = snap.val();
     if(b.renter) return toast('⚠️ Уже арендовано','gold');
     const uSnap = await get(userRef(currentNick)); const u = uSnap.val() || {};
-    if((u.balance||0) < (b.weekPrice||0)) return toast('❌ Недостаточно средств','red');
-    if(!confirm(`Арендовать «${b.name}» за ${(b.weekPrice||0).toLocaleString()}₽ в неделю?`)) return;
-    await update(userRef(currentNick), { balance: (u.balance||0) - (b.weekPrice||0) });
+    const hasUltra = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const basePrice = b.weekPrice || 0;
+    const finalPrice = hasUltra ? Math.max(1, Math.round(basePrice * 0.8)) : basePrice;
+    const discountNote = hasUltra ? ` (скидка Ultra -20%, было ${basePrice}₽)` : '';
+    if((u.balance||0) < finalPrice) return toast('❌ Недостаточно средств','red');
+    if(!confirm(`Арендовать «${b.name}» за ${finalPrice.toLocaleString()}₽ в неделю?${discountNote}`)) return;
+    await update(userRef(currentNick), { balance: (u.balance||0) - finalPrice });
     await update(rentBuildingRef(id), { renter: currentNick, renterName: displayNick(u) || currentNick, rentedAt: Date.now() });
-    await logTx(currentNick, {type:'out', who:b.name, amt:b.weekPrice||0, desc:`Аренда здания «${b.name}»`});
-    toast('🏘 Здание арендовано','green');
+    await logTx(currentNick, {type:'out', who:b.name, amt:finalPrice, desc:`Аренда здания «${b.name}»${discountNote}`});
+    toast(`🏘 Здание арендовано${hasUltra ? '! Скидка Ultra 20%' : ''}`, 'green');
     renderRentBuildings();
 };
 window.renderRentBuildings = async function(){
@@ -9086,6 +9027,217 @@ window.renderRentBuildings = async function(){
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет зданий</div>';
 };
 window.refreshRentBuildingsIfNeeded = renderRentBuildings;
+
+// ─── EVENTS / RACES ──────────────────────
+const racesRef = () => ref(db, 'races');
+const raceRef = (id) => ref(db, `races/${id}`);
+
+let _raceMapPhotoData = null;
+let _raceFormEditId = null;
+
+const RACE_TYPE_LABELS = { circuit:'🔄 Круг', sprint:'🏃 Спринт', drag:'🚗 Драг-рейсинг', streetx:'🌀 Стрит-X' };
+
+window.openRaceFormModal = async function(raceId){
+  _raceFormEditId = raceId || null;
+  _raceMapPhotoData = null;
+  ['raceFormName','raceFormDesc','raceFormLaps','raceFormEasyTime','raceFormEasyWin','raceFormEasyLoss',
+   'raceFormMedTime','raceFormMedWin','raceFormMedLoss','raceFormHardTime','raceFormHardWin','raceFormHardLoss'].forEach(id=>{
+    const el=qs(id); if(el) el.value='';
+  });
+  const typeEl = qs('raceFormType'); if(typeEl) typeEl.value='circuit';
+  toggleRaceLapsRow();
+  const preview = qs('raceFormMapPreview'); if(preview) preview.style.display='none';
+  const fileInput = qs('raceFormMapFile'); if(fileInput) fileInput.value='';
+
+  if(raceId){
+    const snap = await get(raceRef(raceId));
+    if(snap.exists()){
+      const r = snap.val();
+      const set = (id,v) => { const el=qs(id); if(el) el.value=v||''; };
+      set('raceFormName', r.name);
+      set('raceFormDesc', r.desc);
+      if(typeEl) typeEl.value = r.type || 'circuit';
+      set('raceFormLaps', r.laps);
+      toggleRaceLapsRow();
+      set('raceFormEasyTime', r.easy?.time); set('raceFormEasyWin', r.easy?.win); set('raceFormEasyLoss', r.easy?.loss);
+      set('raceFormMedTime', r.med?.time); set('raceFormMedWin', r.med?.win); set('raceFormMedLoss', r.med?.loss);
+      set('raceFormHardTime', r.hard?.time); set('raceFormHardWin', r.hard?.win); set('raceFormHardLoss', r.hard?.loss);
+      if(r.mapImg){
+        const img = qs('raceFormMapImg'); if(img) img.src = r.mapImg;
+        if(preview) preview.style.display='block';
+      }
+    }
+  }
+  qs('raceFormModal').style.display='block';
+};
+window.closeRaceFormModal = function(){ qs('raceFormModal').style.display='none'; _raceMapPhotoData=null; _raceFormEditId=null; };
+
+function toggleRaceLapsRow(){
+  const type = qs('raceFormType')?.value;
+  const row = qs('raceFormLapsRow');
+  if(row) row.style.display = (type==='circuit'||type==='streetx') ? 'block' : 'none';
+}
+const raceTypeEl = () => qs('raceFormType');
+document.addEventListener('DOMContentLoaded', ()=>{
+  const t = raceTypeEl(); if(t) t.addEventListener('change', toggleRaceLapsRow);
+});
+// Also hook via onchange since dynamic
+window.toggleRaceLapsRow = toggleRaceLapsRow;
+
+window.handleRaceMapPhoto = async function(e){
+  const f = e.target.files[0]; if(!f) return;
+  _raceMapPhotoData = await compressImage(f, 1000, 0.85);
+  const img = qs('raceFormMapImg'); if(img){ img.src = _raceMapPhotoData; }
+  const preview = qs('raceFormMapPreview'); if(preview) preview.style.display='block';
+};
+window.clearRaceMapPhoto = function(){
+  _raceMapPhotoData = null;
+  const img = qs('raceFormMapImg'); if(img) img.src='';
+  const preview = qs('raceFormMapPreview'); if(preview) preview.style.display='none';
+  const fileInput = qs('raceFormMapFile'); if(fileInput) fileInput.value='';
+};
+
+window.submitRaceForm = async function(){
+  const name = (qs('raceFormName')?.value||'').trim();
+  const type = qs('raceFormType')?.value || 'circuit';
+  const laps = parseInt(qs('raceFormLaps')?.value||'0',10);
+  const desc = (qs('raceFormDesc')?.value||'').trim();
+  const easy = { time:(qs('raceFormEasyTime')?.value||'').trim(), win:parseInt(qs('raceFormEasyWin')?.value||'0',10), loss:parseInt(qs('raceFormEasyLoss')?.value||'0',10) };
+  const med  = { time:(qs('raceFormMedTime')?.value||'').trim(),  win:parseInt(qs('raceFormMedWin')?.value||'0',10),  loss:parseInt(qs('raceFormMedLoss')?.value||'0',10)  };
+  const hard = { time:(qs('raceFormHardTime')?.value||'').trim(), win:parseInt(qs('raceFormHardWin')?.value||'0',10), loss:parseInt(qs('raceFormHardLoss')?.value||'0',10) };
+  if(!name) return toast('⚠️ Укажите название трассы','gold');
+  if(!easy.time||!easy.win||!easy.loss||!med.time||!med.win||!med.loss||!hard.time||!hard.win||!hard.loss) return toast('⚠️ Заполните все уровни сложности','gold');
+  if((type==='circuit'||type==='streetx')&&(!laps||laps<1)) return toast('⚠️ Укажите количество кругов','gold');
+
+  const id = _raceFormEditId || genId();
+  const existing = _raceFormEditId ? (await get(raceRef(id))).val() || {} : {};
+  let mapImg = existing.mapImg || '';
+  if(_raceMapPhotoData) mapImg = _raceMapPhotoData;
+
+  await set(raceRef(id), {
+    id, name, type, laps: (type==='circuit'||type==='streetx') ? laps : null,
+    desc, mapImg, easy, med, hard,
+    createdAt: existing.createdAt || Date.now(), updatedAt: Date.now(), createdBy: currentNick
+  });
+  closeRaceFormModal();
+  toast(_raceFormEditId ? '✅ Гонка обновлена' : '🏁 Гонка добавлена', 'green');
+  renderAdminRaces();
+};
+
+window.deleteRace = async function(id){
+  if(!confirm('Удалить эту гонку?')) return;
+  await remove(raceRef(id));
+  toast('🗑 Гонка удалена','red');
+  renderAdminRaces();
+};
+
+window.renderAdminRaces = async function(){
+  const el = qs('adminRacesList'); if(!el) return;
+  const snap = await get(racesRef());
+  const races = Object.values(snap.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!races.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;">Гонок пока нет</div>'; return; }
+  el.innerHTML = races.map(r=>`
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+      <div style="font-weight:900;font-size:14px;margin-bottom:2px;">${escHtml(r.name)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${RACE_TYPE_LABELS[r.type]||r.type}${r.laps?` · ${r.laps} кр.`:''}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="openRaceFormModal('${jsEsc(r.id)}')">✏️ Редактировать</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="deleteRace('${jsEsc(r.id)}')">🗑 Удалить</button>
+      </div>
+    </div>`).join('');
+};
+
+// ─── EVENTS SECTION (user view) ──────────
+window.renderEventsSection = async function(){
+  const el = qs('eventsGrid'); if(!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div>';
+  const snap = await get(racesRef());
+  const races = Object.values(snap.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  if(!races.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Мероприятий пока нет</div>'; return; }
+  el.innerHTML = races.map(r=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;cursor:pointer;transition:.2s;" onclick="openEventDetail('${jsEsc(r.id)}')" onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
+      ${r.mapImg ? `<img src="${escHtml(r.mapImg)}" style="width:100%;height:180px;object-fit:cover;display:block;" onclick="event.stopPropagation();openImgViewer('${jsEsc(r.mapImg)}')">` : '<div style="width:100%;height:120px;background:linear-gradient(135deg,var(--surface2),rgba(251,191,36,.06));display:flex;align-items:center;justify-content:center;font-size:48px;">🏁</div>'}
+      <div style="padding:14px;">
+        <div style="font-weight:900;font-size:16px;margin-bottom:4px;">${escHtml(r.name)}</div>
+        <div style="font-size:12px;color:var(--gold);font-weight:800;margin-bottom:6px;">${RACE_TYPE_LABELS[r.type]||r.type}${r.laps?` · ${r.laps} кр.`:''}</div>
+        ${r.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">${escHtml(r.desc)}</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','easy');" style="border-color:rgba(34,211,165,.4);color:var(--primary);">🟢 Легко</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','med');"  style="border-color:rgba(251,191,36,.4);color:var(--gold);">🟡 Средне</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','hard');" style="border-color:rgba(248,113,113,.4);color:var(--red);">🔴 Сложно</button>
+        </div>
+      </div>
+    </div>`).join('');
+};
+
+window.openEventDetail = async function(raceId){
+  const snap = await get(raceRef(raceId)); if(!snap.exists()) return toast('❌ Гонка не найдена','red');
+  const r = snap.val();
+  const el = qs('eventDetailContent'); if(!el) return;
+  el.innerHTML = `
+    ${r.mapImg ? `<div style="position:relative;margin-bottom:14px;">
+      <img src="${escHtml(r.mapImg)}" style="width:100%;border-radius:var(--r-sm);max-height:260px;object-fit:cover;cursor:zoom-in;" onclick="openImgViewer('${jsEsc(r.mapImg)}')" title="Нажмите для полного экрана">
+      <div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.5);border-radius:8px;padding:4px 10px;font-size:11px;color:#fff;font-weight:800;">🔍 Полный экран</div>
+    </div>` : ''}
+    <div class="card" style="border-color:rgba(251,191,36,.25);background:linear-gradient(145deg,rgba(251,191,36,.06),transparent);">
+      <div style="font-size:24px;font-weight:900;margin-bottom:4px;">${escHtml(r.name)}</div>
+      <div style="font-size:13px;color:var(--gold);font-weight:800;margin-bottom:8px;">${RACE_TYPE_LABELS[r.type]||r.type}${r.laps?` · ${r.laps} кр.`:''}</div>
+      ${r.desc ? `<div style="font-size:13px;color:var(--muted);line-height:1.6;">${escHtml(r.desc)}</div>` : ''}
+    </div>
+    <div style="font-weight:900;font-size:14px;margin:14px 0 10px;">🎯 Выбери уровень сложности:</div>
+    <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+      ${['easy','med','hard'].map((lvl,i)=>{
+        const labels = ['🟢 Легко','🟡 Средне','🔴 Сложно'];
+        const colors = ['var(--primary)','var(--gold)','var(--red)'];
+        const bgs = ['rgba(34,211,165,.06)','rgba(251,191,36,.06)','rgba(248,113,113,.06)'];
+        const borders = ['rgba(34,211,165,.25)','rgba(251,191,36,.25)','rgba(248,113,113,.25)'];
+        const d = r[lvl] || {};
+        return `<div style="padding:14px;background:${bgs[i]};border:1px solid ${borders[i]};border-radius:var(--r-sm);cursor:pointer;" onclick="openEventDiff('${jsEsc(r.id)}','${lvl}')">
+          <div style="font-weight:900;font-size:15px;color:${colors[i]};margin-bottom:8px;">${labels[i]}</div>
+          <div style="font-size:13px;"><span style="color:var(--muted);">⏱ Цель:</span> <b>${escHtml(d.time||'—')}</b></div>
+          <div style="font-size:13px;margin-top:4px;"><span style="color:var(--primary);">💰 Выигрыш:</span> <b>${(d.win||0)}₽</b> &nbsp; <span style="color:var(--red);">📉 Проигрыш:</span> <b>${(d.loss||0)}₽</b></div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  navTo('eventDetail');
+};
+
+window.openEventDiff = async function(raceId, level){
+  const snap = await get(raceRef(raceId)); if(!snap.exists()) return;
+  const r = snap.val();
+  const labels = {easy:'🟢 Легко', med:'🟡 Средне', hard:'🔴 Сложно'};
+  const colors = {easy:'var(--primary)', med:'var(--gold)', hard:'var(--red)'};
+  const d = r[level] || {};
+  const el = qs('eventDiffContent'); if(!el) return;
+  qs('eventDiffTitle').textContent = `${r.name} — ${labels[level]}`;
+  el.innerHTML = `
+    <div style="text-align:center;padding:10px 0 20px;">
+      <div style="font-size:48px;margin-bottom:12px;">${level==='easy'?'🏅':level==='med'?'🏆':'🔥'}</div>
+      <div style="font-size:16px;font-weight:900;color:${colors[level]};margin-bottom:4px;">${labels[level]}</div>
+    </div>
+    <div style="display:grid;gap:10px;">
+      <div style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:800;">⏱ Целевое время</div>
+        <div style="font-size:24px;font-weight:900;">${escHtml(d.time||'—')}</div>
+      </div>
+      <div style="padding:14px;background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:800;">💰 Ставка за выигрыш</div>
+        <div style="font-size:24px;font-weight:900;color:var(--primary);">+${(d.win||0)}₽</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Если уложишься в целевое время</div>
+      </div>
+      <div style="padding:14px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.25);border-radius:var(--r-sm);">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:800;">📉 Ставка за проигрыш</div>
+        <div style="font-size:24px;font-weight:900;color:var(--red);">-${(d.loss||0)}₽</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Если не уложишься</div>
+      </div>
+    </div>`;
+  qs('eventDiffModal').style.display='block';
+};
+window.closeEventDiffModal = function(){ qs('eventDiffModal').style.display='none'; };
+
+// Load races for admin panel when navigating there
+const _origRenderAdmin = typeof renderAdmin === 'function' ? renderAdmin : null;
+
 // ─── TERMINAL ────────────────────────────
 let _terminalBizId = null;
 let _terminalAmt = 0;
