@@ -877,8 +877,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="quick-grid">
         <div class="quick-card" onclick="navTo('shop')" role="button" tabindex="0" aria-label="Перейти в магазин"><div class="qico">🛒</div><div class="qlbl">Магазин</div><div class="qsub">Ресурсы поселка</div></div>
         <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
+        <div class="quick-card" onclick="navTo('deliveryOrderPage')" role="button" tabindex="0" aria-label="Заказать доставку из бизнеса"><div class="qico">🚚</div><div class="qlbl">Доставка</div><div class="qsub">Бизнесы и маркет</div></div>
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
         <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
+        <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub">Узнай о главном экзамене</div></div>
+        <div class="quick-card" onclick="navTo('deputySession')" id="deputySessionQuickBtn" role="button" tabindex="0" aria-label="Заседание" style="display:none;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.06));border-color:rgba(251,191,36,.35);"><div class="qico">🏛</div><div class="qlbl">Заседание</div><div class="qsub">Предложения и запросы</div></div>
         <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.10));border-color:rgba(251,191,36,.3);"><div class="qico">🏁</div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
     </div>
     <div id="homeOrders"></div>
@@ -1359,6 +1362,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <option value="Доставщик">📦 Курьер / Доставщик</option>
             <option value="Уборщик">🧹 Уборщик</option>
             <option value="Журналист">📰 Журналист</option>
+            <option value="КСБ">🛡 КСБ (служба безопасности)</option>
+            <option value="Депутат">🏛 Депутат</option>
         </select>
         <textarea id="jAppText" placeholder="Расскажите о себе и почему должны принять именно вас на эту работу..." style="min-height:80px;margin-top:8px;"></textarea>
         <button class="btn btn-primary" onclick="sendApp()">Подать заявку</button>
@@ -1367,11 +1372,13 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
     <div class="card">
         <div class="card-title">📜 О профессиях</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.9;">
-            <b style="color:var(--text)">🛵 Водитель</b> — принимает заказы такси, получает оплату за поездку. Зарплата: в зависимости от заказов<br>
-            <b style="color:var(--text)">📦 Курьер</b> — доставляет ресурсы, зарабатывает комиссию. Зарплата: в зависимости от заказов<br>
-            <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. Зарплата: 250 рублей/день<br>
-            <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. Зарплата: <b style="color:var(--gold)">150 рублей/объявление</b>. В случае выкладывания неподобающих объявлений — <b style="color:var(--red)">увольнение</b>.
+        <div style="font-size:13px;color:var(--muted);line-height:2;">
+            <b style="color:var(--text)">🛵 Водитель</b> — принимает заказы такси, получает оплату за поездку. <b style="color:var(--primary)">Нужный балл КВЭ: 60.</b> Зарплата: <b style="color:var(--gold)">в зависимости от заказов</b><br>
+            <b style="color:var(--text)">📦 Курьер / Доставщик</b> — доставляет ресурсы, товары из бизнесов и маркетплейса, зарабатывает комиссию. <b style="color:var(--primary)">Нужный балл КВЭ: 53.</b> Зарплата: <b style="color:var(--gold)">в зависимости от заказов</b><br>
+            <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 40.</b> Зарплата: <b style="color:var(--gold)">1800 рублей/неделю</b><br>
+            <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. <b style="color:var(--primary)">Нужный балл КВЭ: 71.</b> Зарплата: <b style="color:var(--gold)">3000 рублей/неделю</b>. В случае выкладывания неподобающих объявлений — <b style="color:var(--red)">увольнение</b>.<br>
+            <b style="color:var(--text)">🛡 КСБ (Капанёвская служба безопасности)</b> — обеспечивает порядок, имеет доступ к выписыванию штрафов жителям и приоритетный доступ к чату с Денисом. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">5000 рублей/неделю</b><br>
+            <b style="color:var(--text)">🏛 Депутат</b> — представляет интересы жителей, отправляет предложения и запросы в мэрию. Запросы рассматриваются, отклоняются или одобряются мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 95.</b> Зарплата: <b style="color:var(--gold)">7000 рублей/неделю</b>
         </div>
     </div>
 </div>
@@ -1561,6 +1568,12 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
     <div class="card"><div class="card-title">👥 Все жители</div><div id="allUsersList"></div></div>
     <div class="card"><div class="card-title">📦 Активные заказы</div><div id="adminOrders"></div></div>
+    <div class="card"><div class="card-title">🏛 Предложения депутатов</div><div id="adminDeputyProposals"><div style="color:var(--muted);font-size:13px;">Нет предложений</div></div></div>
+    <div class="card" id="ksbFineSection" style="display:none;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);">
+        <div class="card-title" style="color:var(--red);">🛡 КСБ — Выписать штраф</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Как сотрудник КСБ вы можете штрафовать нарушителей.</div>
+        <button class="btn btn-red" onclick="ksbFineWorker()">💸 Выписать штраф</button>
+    </div>
     <div class="card">
         <div class="card-title">🏁 Мероприятия — Гонки</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Добавляйте, редактируйте и удаляйте гонки. Они будут видны жителям в разделе Мероприятия.</div>
@@ -1672,6 +1685,97 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <input type="file" id="bizProdPhotoFile" accept="image/*" onchange="handleBizProdPhoto(event)">
         <button class="btn btn-gold" onclick="addBizProduct()" style="margin-top:4px;">➕ Добавить товар</button>
         <div id="bizProductsList" style="margin-top:12px;"></div>
+    </div>
+</div>
+
+<!-- КВЭ ЭКЗАМЕН SECTION -->
+<div id="kveExam" class="section">
+    <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="margin-bottom:14px;width:auto;">← Главная</button>
+    <div class="card" style="border-color:rgba(34,211,165,.35);background:linear-gradient(145deg,rgba(34,211,165,.08),transparent);">
+        <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;color:var(--primary);margin-bottom:6px;">📝 КВЭ</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Капанёвский Внутренний Экзамен</div>
+    </div>
+    <div class="card">
+        <div class="card-title">📋 Что такое КВЭ?</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.7;">
+            КВЭ (Капанёвский внутренний экзамен) — один из основных экзаменов, который определит ваше будущее в Капани.
+            <br><br>
+            Чтобы <b style="color:var(--primary)">быть на сайте</b>, вам необходимо написать хотя бы на <b style="color:var(--gold)">проходной балл — 32 балла</b>.
+            <br><br>
+            Чтобы <b style="color:var(--primary)">работать нормально</b>, нужно написать хорошо. Информация о баллах представлена в разделе <b style="color:var(--text)">«Работа»</b> → <b style="color:var(--text)">«О профессиях»</b>.
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">📊 Проходные баллы по профессиям</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="item-row" style="justify-content:space-between;"><span>🛵 Водитель</span><b style="color:var(--primary)">60 баллов</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>📦 Доставщик</span><b style="color:var(--primary)">53 балла</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>🧹 Уборщик</span><b style="color:var(--primary)">40 баллов</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>📰 Журналист</span><b style="color:var(--primary)">71 балл</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>🛡 КСБ</span><b style="color:var(--primary)">90 баллов</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>🏛 Депутат</span><b style="color:var(--primary)">95 баллов</b></div>
+            <div class="item-row" style="background:var(--pri-dim);border-color:rgba(34,211,165,.3);justify-content:space-between;"><span style="color:var(--primary);font-weight:900;">Минимум (остаться на сайте)</span><b style="color:var(--gold)">32 балла</b></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">💡 Советы</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+            Чем выше ваш балл, тем лучше профессия вам доступна. Готовьтесь тщательно — от результата КВЭ зависит ваш путь в Капани!
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px;" onclick="navTo('jobs')">🛠 Перейти к работе</button>
+    </div>
+</div>
+
+<!-- ЗАСЕДАНИЕ ДЕПУТАТА -->
+<div id="deputySession" class="section">
+    <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="margin-bottom:14px;width:auto;">← Главная</button>
+    <div class="card" style="border-color:rgba(251,191,36,.35);background:linear-gradient(145deg,rgba(251,191,36,.08),transparent);">
+        <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;color:var(--gold);margin-bottom:6px;">🏛 Заседание</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Депутатская деятельность</div>
+    </div>
+    <div class="card">
+        <div class="card-title">📋 Отправить предложение / запрос</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Ваше предложение будет рассмотрено мэрией. Мэрия может одобрить или отклонить его.</div>
+        <select id="deputyProposalType" style="margin-bottom:8px;">
+            <option value="proposal">💡 Предложение</option>
+            <option value="request">📩 Запрос</option>
+            <option value="complaint">⚠️ Жалоба</option>
+            <option value="initiative">🚀 Инициатива</option>
+        </select>
+        <input type="text" id="deputyProposalTitle" placeholder="Заголовок (кратко)" maxlength="100">
+        <textarea id="deputyProposalText" placeholder="Подробное описание предложения или запроса..." style="min-height:100px;margin-top:8px;"></textarea>
+        <button class="btn btn-gold" onclick="submitDeputyProposal()" style="margin-top:8px;">📤 Отправить в мэрию</button>
+    </div>
+    <div class="card">
+        <div class="card-title">📜 Мои предложения</div>
+        <div id="myDeputyProposals"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Нет предложений</div></div>
+    </div>
+</div>
+
+<!-- ДОСТАВКА ИЗ БИЗНЕСА / МАРКЕТПЛЕЙСА -->
+<div id="deliveryOrderPage" class="section">
+    <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="margin-bottom:14px;width:auto;">← Главная</button>
+    <div class="card">
+        <div class="card-title">📦 Заказать доставку</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Закажите доставку товаров из бизнеса или маркетплейса прямо к вашему адресу.</div>
+        <select id="deliveryOrderSource" style="margin-bottom:8px;" onchange="updateDeliverySourceHint()">
+            <option value="business">🏪 Из бизнеса</option>
+            <option value="marketplace">🛍 С маркетплейса</option>
+        </select>
+        <div id="deliverySourceHint" style="font-size:12px;color:var(--primary);font-weight:800;margin-bottom:8px;padding:8px 12px;background:var(--pri-dim);border-radius:var(--r-sm);display:none;"></div>
+        <input type="text" id="deliveryOrderFrom" placeholder="Название бизнеса или продавца" maxlength="100">
+        <textarea id="deliveryOrderItems" placeholder="Что хотите доставить? Перечислите товары..." style="min-height:80px;margin-top:8px;"></textarea>
+        <input type="text" id="deliveryOrderAddr" placeholder="📍 Ваш адрес доставки" maxlength="150" style="margin-top:8px;">
+        <input type="text" id="deliveryOrderContact" placeholder="Контакт / способ связи (опционально)" maxlength="100" style="margin-top:8px;">
+        <div class="total-row" style="margin-top:10px;">
+            <span>Стоимость доставки</span>
+            <span class="total-val" style="font-size:16px;">Определяет доставщик</span>
+        </div>
+        <button class="btn btn-primary" onclick="placeDeliveryOrder()" style="margin-top:4px;">📤 Разместить заказ на доставку</button>
+    </div>
+    <div class="card">
+        <div class="card-title">📋 Мои заказы доставки</div>
+        <div id="myDeliveryOrders"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Нет заказов</div></div>
     </div>
 </div>
 
@@ -2837,6 +2941,10 @@ function updateHeader(u) {
     if(vDisp){if(u.vehicle){vDisp.style.display='block';vDisp.textContent='🛵 '+u.vehicle;}else vDisp.style.display='none';}
     const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=(u.job&&u.job!=='Житель')?'block':'none';
     if(isDriver&&qs('vehicleInput')) qs('vehicleInput').value=u.vehicle||'';
+    // Кнопка заседания — только для депутатов
+    const depBtn=qs('deputySessionQuickBtn'); if(depBtn) depBtn.style.display=(u.job==='Депутат')?'block':'none';
+    // Блок КСБ-штрафов
+    const ksbFineSection=qs('ksbFineSection'); if(ksbFineSection) ksbFineSection.style.display=(u.job==='КСБ')?'block':'none';
 }
 function updateHeader_balance(u){if(!u)return;qs('hBal').textContent=(u.balance||0).toLocaleString();}
 window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const job=snap.val().job;if(job==='Водитель')navTo('driverPage');else if(job==='Доставщик')navTo('deliveryPage');else if(job===JOB_JANITOR)navTo('janitorPage');});};
@@ -3293,6 +3401,10 @@ async function renderWorkerPage(orders){
         const dlcc=qs('deliveryClientCard'); if(dlcc) dlcc.style.display='none';
         const avail=ordersArr.filter(o=>o.type===type&&o.status==='waiting');
         el.innerHTML=avail.length===0?'<div style="color:var(--muted);text-align:center;padding:20px 0;">Нет заказов</div>':avail.map(o=>`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:700;margin-bottom:6px;">${escHtml(o.info)}</div>${o.distanceKm?`<div style="font-size:12px;color:var(--muted);">📏 ${o.distanceKm.toFixed(1)} км · ~${Math.ceil(o.distanceKm/MAX_SPEED_KMH*60)} мин</div>`:''} ${o.address?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📍 ${escHtml(o.address)}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;"><span style="color:var(--primary);font-weight:900;">${o.price}₽</span><button class="btn btn-primary btn-sm" onclick="takeOrder('${o.id}')">✅ Взять</button></div></div>`).join('');
+    }
+    // Показываем кастомные заказы (из бизнесов/маркетплейса) тоже
+    if (!isDriver && typeof renderDeliveryCustomOrders === 'function') {
+        setTimeout(renderDeliveryCustomOrders, 200);
     }
 }
 
@@ -5441,7 +5553,53 @@ async function renderAdmin(){
     renderAdminBizDeleteReqs();
     renderAdminRentBuildings(rSnap.val()||{});
     if(typeof renderAdminRaces === 'function') renderAdminRaces();
+    renderAdminDeputyProposals();
 }
+
+async function renderAdminDeputyProposals() {
+    const el = qs('adminDeputyProposals');
+    if (!el) return;
+    try {
+        const snap = await get(ref(db, 'deputyProposals'));
+        const all = snap.val() || {};
+        const pending = Object.values(all).filter(p => p.status === 'pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        const done = Object.values(all).filter(p => p.status !== 'pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,5);
+        if (!pending.length && !done.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Нет предложений</div>'; return; }
+        const renderProposal = (p) => {
+            const stColors = { pending:'gold', approved:'primary', rejected:'red' };
+            const sc = stColors[p.status] || 'gold';
+            return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px;">
+                    <div><b style="font-size:13px;">${escHtml(p.title)}</b><div style="font-size:10px;color:var(--muted);">${escHtml(p.typeLabel||'')} · от ${escHtml(p.author)} · ${escHtml(p.date||'')} ${escHtml(p.time||'')}</div></div>
+                    <span style="font-size:10px;font-weight:900;color:var(--${sc});white-space:nowrap;">${p.status==='pending'?'⏳':p.status==='approved'?'✅':'❌'}</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${escHtml(p.text)}</div>
+                ${p.status === 'pending' ? `
+                <input type="text" id="dpComment_${p.id}" placeholder="Комментарий мэрии (опц.)" style="margin-bottom:6px;">
+                <div style="display:flex;gap:6px;">
+                    <button class="btn btn-primary btn-sm" onclick="reviewDeputyProposal('${p.id}','approved')">✅ Одобрить</button>
+                    <button class="btn btn-red btn-sm" onclick="reviewDeputyProposal('${p.id}','rejected')">❌ Отклонить</button>
+                </div>` : `<div style="font-size:11px;color:var(--muted);">Ответ: ${escHtml(p.adminComment||'—')}</div>`}
+            </div>`;
+        };
+        el.innerHTML = (pending.length ? '<div style="font-size:11px;font-weight:900;color:var(--gold);margin-bottom:6px;">ОЖИДАЮТ РАССМОТРЕНИЯ</div>' + pending.map(renderProposal).join('') : '') +
+            (done.length ? '<div style="font-size:11px;font-weight:900;color:var(--muted);margin:8px 0 4px;">РАССМОТРЕННЫЕ</div>' + done.map(renderProposal).join('') : '');
+    } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>'; }
+}
+
+window.reviewDeputyProposal = async function(id, status) {
+    const commentEl = qs('dpComment_' + id);
+    const comment = (commentEl?.value || '').trim();
+    await update(ref(db, `deputyProposals/${id}`), { status, adminComment: comment || null, reviewedAt: Date.now() });
+    const snap = await get(ref(db, `deputyProposals/${id}`));
+    const p = snap.val();
+    if (p && p.author) {
+        const msg = status === 'approved' ? `✅ Ваше предложение «${p.title}» одобрено мэрией!${comment?' Комментарий: '+comment:''}` : `❌ Ваше предложение «${p.title}» отклонено.${comment?' Причина: '+comment:''}`;
+        await pushNotification(p.author, msg, 'system');
+    }
+    toast(status === 'approved' ? '✅ Одобрено' : '❌ Отклонено', status === 'approved' ? 'green' : 'red');
+    renderAdminDeputyProposals();
+};
 window.approveApp=async function(id,ok){
     const snap=await get(appRef(id));if(!snap.exists())return;
     const a=snap.val();
@@ -5945,7 +6103,7 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0,kveExam:0,deputySession:0,deliveryOrderPage:0};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
@@ -5978,6 +6136,9 @@ window.navTo=function(id){
     if(id==='janitorPage') renderJanitorPage();
     if(id==='businesses') renderBusinesses();
     if(id==='bizOwnerPanel') renderBizOwnerPanel();
+    if(id==='kveExam') {} // static content
+    if(id==='deputySession') { renderDeputyProposals(); }
+    if(id==='deliveryOrderPage') { renderMyDeliveryOrders(); updateDeliverySourceHint(); }
     if(id==='events') renderEventsSection();
     if(id==='eventDetail') {} // handled by openEventDetail
     if(id==='gameSpySection') initSpyGame();
@@ -10286,6 +10447,239 @@ window.sendGiftSubscription = async function(){
     // Update header balance
     updateHeader_balance({...giver, balance: (giver.balance || 0) - price});
 };
+
+// ═══════════════════════════════════════════════════════
+// 🏛 ДЕПУТАТСКИЕ ПРЕДЛОЖЕНИЯ
+// ═══════════════════════════════════════════════════════
+const deputyProposalsRef = () => ref(db, 'deputyProposals');
+const deputyProposalRef = (id) => ref(db, `deputyProposals/${id}`);
+
+window.submitDeputyProposal = async function() {
+    const snap = await get(userRef(currentNick));
+    if (!snap.exists()) return;
+    const u = snap.val();
+    if (u.job !== 'Депутат' && currentNick !== ADMIN) {
+        return toast('🚫 Отправлять предложения могут только Депутаты', 'red');
+    }
+    const type = qs('deputyProposalType').value;
+    const title = (qs('deputyProposalTitle').value || '').trim();
+    const text = (qs('deputyProposalText').value || '').trim();
+    if (!title) return toast('⚠️ Введите заголовок', 'gold');
+    if (!text) return toast('⚠️ Введите текст предложения', 'gold');
+    const id = genId();
+    const typeLabels = { proposal: '💡 Предложение', request: '📩 Запрос', complaint: '⚠️ Жалоба', initiative: '🚀 Инициатива' };
+    await set(deputyProposalRef(id), {
+        id, type, typeLabel: typeLabels[type] || type, title, text,
+        author: currentNick, date: new Date().toLocaleDateString('ru'),
+        time: nowTime(), createdAt: Date.now(), status: 'pending'
+    });
+    await pushNotification(ADMIN, `🏛 Депутат ${currentNick}: ${typeLabels[type] || type} — «${title}»`, 'system');
+    qs('deputyProposalTitle').value = '';
+    qs('deputyProposalText').value = '';
+    toast('✅ Предложение отправлено в мэрию', 'green');
+    renderDeputyProposals();
+};
+
+async function renderDeputyProposals() {
+    const el = qs('myDeputyProposals');
+    if (!el) return;
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div>';
+    try {
+        const snap = await get(deputyProposalsRef());
+        const all = snap.val() || {};
+        const mine = Object.values(all).filter(p => p.author === currentNick).sort((a,b) => (b.createdAt||0)-(a.createdAt||0));
+        if (!mine.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Нет предложений</div>'; return; }
+        const statusColors = { pending: 'gold', approved: 'primary', rejected: 'red' };
+        const statusLabels = { pending: '⏳ На рассмотрении', approved: '✅ Одобрено', rejected: '❌ Отклонено' };
+        el.innerHTML = mine.map(p => {
+            const sc = statusColors[p.status] || 'gold';
+            const sl = statusLabels[p.status] || '⏳ На рассмотрении';
+            return `<div class="work-order" style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <div><div style="font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;">${escHtml(p.typeLabel||p.type)}</div>
+                    <div style="font-weight:900;font-size:15px;margin-top:2px;">${escHtml(p.title)}</div></div>
+                    <span style="font-size:10px;font-weight:900;color:var(--${sc});white-space:nowrap;padding:4px 8px;border-radius:8px;background:var(--${sc}-dim);">${sl}</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);">${escHtml(p.text)}</div>
+                ${p.adminComment ? `<div style="margin-top:8px;font-size:12px;color:var(--text);background:var(--surface2);padding:8px 10px;border-radius:8px;border-left:3px solid var(--primary);"><b>Ответ мэрии:</b> ${escHtml(p.adminComment)}</div>` : ''}
+                <div style="font-size:10px;color:var(--muted);margin-top:6px;">${escHtml(p.date||'')} ${escHtml(p.time||'')}</div>
+            </div>`;
+        }).join('');
+    } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>'; }
+}
+
+// ═══════════════════════════════════════════════════════
+// 🛡 КСБ — ВЫПИСЫВАНИЕ ШТРАФОВ
+// ═══════════════════════════════════════════════════════
+window.ksbFineWorker = async function() {
+    const snap = await get(userRef(currentNick));
+    if (!snap.exists()) return;
+    const u = snap.val();
+    if (u.job !== 'КСБ' && currentNick !== ADMIN) return toast('🚫 Только сотрудники КСБ могут выписывать штрафы', 'red');
+    const target = prompt('Никнейм нарушителя:');
+    if (!target || !target.trim()) return;
+    const reason = prompt('Причина штрафа:');
+    if (!reason || !reason.trim()) return toast('⚠️ Укажите причину', 'gold');
+    const amtStr = prompt('Размер штрафа (₽):');
+    const amt = parseInt(amtStr);
+    if (!amt || amt <= 0) return toast('⚠️ Укажите корректную сумму', 'gold');
+    const tSnap = await get(userRef(target.trim()));
+    if (!tSnap.exists()) return toast('❌ Пользователь не найден', 'red');
+    const tUser = tSnap.val();
+    await update(userRef(target.trim()), { balance: (tUser.balance || 0) - amt });
+    await logTx(target.trim(), { type: 'out', who: `КСБ (${currentNick})`, amt, desc: `Штраф: ${reason}` });
+    await pushNotification(target.trim(), `🛡 КСБ выписало штраф ${amt}₽ — ${reason} (от ${currentNick})`, 'money');
+    await pushNotification(ADMIN, `🛡 КСБ ${currentNick} оштрафовал ${target.trim()} на ${amt}₽ — ${reason}`, 'system');
+    toast(`✅ Штраф ${amt}₽ выписан ${target.trim()}`, 'green');
+};
+
+// ═══════════════════════════════════════════════════════
+// 🚚 ДОСТАВКА ИЗ БИЗНЕСА / МАРКЕТПЛЕЙСА
+// ═══════════════════════════════════════════════════════
+const deliveryCustomOrdersRef = () => ref(db, 'deliveryCustomOrders');
+const deliveryCustomOrderRef = (id) => ref(db, `deliveryCustomOrders/${id}`);
+
+window.updateDeliverySourceHint = function() {
+    const sel = qs('deliveryOrderSource');
+    const hint = qs('deliverySourceHint');
+    if (!sel || !hint) return;
+    if (sel.value === 'business') {
+        hint.textContent = '🏪 Укажите название бизнеса и что хотите заказать';
+        hint.style.display = 'block';
+    } else {
+        hint.textContent = '🛍 Укажите продавца и товар с маркетплейса';
+        hint.style.display = 'block';
+    }
+};
+
+window.placeDeliveryOrder = async function() {
+    if (!await requireSpendable()) return;
+    const source = qs('deliveryOrderSource')?.value || 'business';
+    const from = (qs('deliveryOrderFrom')?.value || '').trim();
+    const items = (qs('deliveryOrderItems')?.value || '').trim();
+    const addr = (qs('deliveryOrderAddr')?.value || '').trim();
+    if (!from) return toast('⚠️ Укажите название бизнеса или продавца', 'gold');
+    if (!items) return toast('⚠️ Укажите что хотите доставить', 'gold');
+    if (!addr) return toast('⚠️ Укажите адрес доставки', 'gold');
+    const contact = (qs('deliveryOrderContact')?.value || '').trim();
+    const sourceLabels = { business: '🏪 Бизнес', marketplace: '🛍 Маркетплейс' };
+    const id = genId();
+    const order = {
+        id, source, sourceLabel: sourceLabels[source] || source,
+        from, items, address: addr, contact,
+        client: currentNick, status: 'waiting',
+        date: new Date().toLocaleDateString('ru'), time: nowTime(), createdAt: Date.now()
+    };
+    await set(deliveryCustomOrderRef(id), order);
+    await pushNotification(ADMIN, `🚚 Новый заказ доставки от ${currentNick}: из «${from}» — ${items.slice(0,60)}`, 'delivery_orders');
+    // Notify all delivery workers
+    const usersSnap = await get(ref(db, 'users'));
+    const allUsers = usersSnap.val() || {};
+    for (const [nick, u] of Object.entries(allUsers)) {
+        if (u.job === 'Доставщик') {
+            await pushNotification(nick, `📦 Новый заказ: ${sourceLabels[source]} «${from}» → ${addr}`, 'delivery_orders');
+        }
+    }
+    if (qs('deliveryOrderFrom')) qs('deliveryOrderFrom').value = '';
+    if (qs('deliveryOrderItems')) qs('deliveryOrderItems').value = '';
+    if (qs('deliveryOrderAddr')) qs('deliveryOrderAddr').value = '';
+    if (qs('deliveryOrderContact')) qs('deliveryOrderContact').value = '';
+    toast('✅ Заказ на доставку размещён! Доставщики уведомлены.', 'green');
+    renderMyDeliveryOrders();
+};
+
+async function renderMyDeliveryOrders() {
+    const el = qs('myDeliveryOrders');
+    if (!el) return;
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Загрузка...</div>';
+    try {
+        const snap = await get(deliveryCustomOrdersRef());
+        const all = snap.val() || {};
+        const mine = Object.values(all).filter(o => o.client === currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        if (!mine.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Нет заказов</div>'; return; }
+        const stColors = { waiting:'gold', in_progress:'primary', done:'primary', cancelled:'red' };
+        const stLabels = { waiting:'⏳ Ожидает', in_progress:'🔄 В пути', done:'✅ Доставлено', cancelled:'❌ Отменён' };
+        el.innerHTML = mine.map(o => {
+            const sc = stColors[o.status] || 'gold';
+            const sl = stLabels[o.status] || '⏳ Ожидает';
+            return `<div class="work-order" style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <div><div style="font-size:10px;color:var(--muted);font-weight:800;">${escHtml(o.sourceLabel||o.source)}</div>
+                    <div style="font-weight:900;font-size:14px;">${escHtml(o.from)}</div></div>
+                    <span style="font-size:10px;font-weight:900;color:var(--${sc});white-space:nowrap;padding:4px 8px;border-radius:8px;background:var(--${sc}-dim);">${sl}</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📋 ${escHtml(o.items)}</div>
+                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>
+                ${o.worker ? `<div style="font-size:12px;color:var(--primary);margin-top:4px;">🛵 Доставщик: ${escHtml(o.worker)}</div>` : ''}
+                <div style="font-size:10px;color:var(--muted);margin-top:4px;">${escHtml(o.date||'')} ${escHtml(o.time||'')}</div>
+                ${o.status==='waiting'?`<button class="btn btn-red btn-sm" style="margin-top:8px;" onclick="cancelCustomDelivery('${o.id}')">❌ Отменить</button>`:''}
+            </div>`;
+        }).join('');
+    } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>'; }
+}
+
+window.cancelCustomDelivery = async function(orderId) {
+    if (!confirm('Отменить заказ?')) return;
+    await update(deliveryCustomOrderRef(orderId), { status: 'cancelled' });
+    toast('❌ Заказ отменён', 'gold');
+    renderMyDeliveryOrders();
+};
+
+// Показываем в deliveryPage кастомные заказы тоже
+const _origRenderWorkerPage = typeof renderWorkerPage === 'function' ? renderWorkerPage : null;
+
+// Доп. отображение кастомных заказов на странице доставщика
+async function renderDeliveryCustomOrders() {
+    const snap = await get(userRef(currentNick));
+    if (!snap.exists()) return;
+    const u = snap.val();
+    if (u.job !== 'Доставщик' && currentNick !== ADMIN) return;
+    const ordersSnap = await get(deliveryCustomOrdersRef());
+    const all = ordersSnap.val() || {};
+    const waiting = Object.values(all).filter(o => o.status === 'waiting').sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    const myActive = Object.values(all).filter(o => o.worker === currentNick && o.status === 'in_progress');
+    const delivList = qs('deliveryList');
+    if (!delivList) return;
+    let extraHtml = '';
+    if (myActive.length || waiting.length) {
+        extraHtml = `<div style="font-size:12px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;">📦 Заказы из бизнесов / маркетплейса</div>`;
+        [...myActive, ...waiting].forEach(o => {
+            const isMine = o.worker === currentNick;
+            extraHtml += `<div class="work-order${isMine?' work-active':''}" style="margin-bottom:10px;">
+                <div style="font-weight:900;font-size:14px;margin-bottom:4px;">${escHtml(o.sourceLabel||'')} «${escHtml(o.from)}»</div>
+                <div style="font-size:12px;color:var(--muted);">📋 ${escHtml(o.items)}</div>
+                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>
+                <div style="font-size:12px;color:var(--muted);">👤 Клиент: ${escHtml(o.client)}</div>
+                ${o.contact ? `<div style="font-size:12px;color:var(--muted);">📞 ${escHtml(o.contact)}</div>` : ''}
+                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+                    ${!isMine && o.status==='waiting' ? `<button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">✅ Взять заказ</button>` : ''}
+                    ${isMine ? `<button class="btn btn-gold btn-sm" onclick="completeCustomDelivery('${o.id}')">✅ Доставлено</button>` : ''}
+                </div>
+            </div>`;
+        });
+    }
+    if (extraHtml) delivList.insertAdjacentHTML('beforeend', extraHtml);
+}
+
+window.takeCustomDelivery = async function(orderId) {
+    await update(deliveryCustomOrderRef(orderId), { worker: currentNick, status: 'in_progress' });
+    const snap = await get(deliveryCustomOrderRef(orderId));
+    const o = snap.val();
+    if (o && o.client) await pushNotification(o.client, `🛵 ${currentNick} взял ваш заказ на доставку из «${o.from}»`, 'delivery_orders');
+    toast('✅ Заказ принят!', 'green');
+    renderDeliveryCustomOrders();
+};
+
+window.completeCustomDelivery = async function(orderId) {
+    await update(deliveryCustomOrderRef(orderId), { status: 'done', completedAt: Date.now() });
+    const snap = await get(deliveryCustomOrderRef(orderId));
+    const o = snap.val();
+    if (o && o.client) await pushNotification(o.client, `✅ Ваш заказ из «${o.from}» доставлен!`, 'delivery_orders');
+    toast('✅ Заказ выполнен!', 'green');
+    renderDeliveryCustomOrders();
+};
+
+
 </script>
 
 <script>
