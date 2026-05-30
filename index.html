@@ -371,8 +371,13 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 .msg-edit-area .edit-btns{display:flex;gap:6px;}
 #historyModal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9980;display:none;align-items:flex-end;justify-content:center;}
 #historyModal.open{display:flex;}
-.history-sheet{background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:min(92vh,900px);height:min(92vh,900px);display:flex;flex-direction:column;overflow:hidden;padding:24px 18px max(28px,env(safe-area-inset-bottom));animation:sheetUp .3s ease-out;box-sizing:border-box;}
+.history-sheet{background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:min(52vh,520px);height:min(52vh,520px);display:flex;flex-direction:column;overflow:hidden;padding:24px 18px max(28px,env(safe-area-inset-bottom));animation:sheetUp .3s ease-out;box-sizing:border-box;}
 .history-sheet-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+.delivery-order-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
+.delivery-choice-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
+.delivery-choice-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-bottom:6px;}
+.delivery-choice-note{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px;}
+.delivery-summary{margin-top:10px;padding:12px 14px;border-radius:var(--r-sm);background:rgba(34,211,165,.08);border:1px solid rgba(34,211,165,.22);font-size:13px;line-height:1.45;}
 @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
 .history-close{font-size:22px;cursor:pointer;color:var(--muted);}
 .history-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
@@ -1757,16 +1762,38 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="margin-bottom:14px;width:auto;">← Главная</button>
     <div class="card">
         <div class="card-title">📦 Заказать доставку</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Закажите доставку товаров из бизнеса или маркетплейса прямо к вашему адресу.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Выберите конкретный бизнес или объявление с маркетплейса, а потом укажите товар и адрес.</div>
         <select id="deliveryOrderSource" style="margin-bottom:8px;" onchange="updateDeliverySourceHint()">
             <option value="business">🏪 Из бизнеса</option>
             <option value="marketplace">🛍 С маркетплейса</option>
         </select>
         <div id="deliverySourceHint" style="font-size:12px;color:var(--primary);font-weight:800;margin-bottom:8px;padding:8px 12px;background:var(--pri-dim);border-radius:var(--r-sm);display:none;"></div>
-        <input type="text" id="deliveryOrderFrom" placeholder="Название бизнеса или продавца" maxlength="100">
-        <textarea id="deliveryOrderItems" placeholder="Что хотите доставить? Перечислите товары..." style="min-height:80px;margin-top:8px;"></textarea>
+
+        <div class="delivery-order-grid" id="deliveryBusinessBlock">
+            <div class="delivery-choice-box">
+                <div class="delivery-choice-label">🏪 Бизнес</div>
+                <select id="deliveryOrderBiz" onchange="updateDeliveryBizProducts()"></select>
+                <div class="delivery-choice-note">Список активных бизнесов с товарами.</div>
+            </div>
+            <div class="delivery-choice-box">
+                <div class="delivery-choice-label">📦 Товар бизнеса</div>
+                <select id="deliveryOrderBizProduct"></select>
+                <div class="delivery-choice-note">Выберите конкретный товар из каталога бизнеса.</div>
+            </div>
+        </div>
+
+        <div class="delivery-order-grid" id="deliveryMarketplaceBlock" style="display:none;">
+            <div class="delivery-choice-box">
+                <div class="delivery-choice-label">🛍 Объявление с маркетплейса</div>
+                <select id="deliveryOrderMarketItem"></select>
+                <div class="delivery-choice-note">Только активные объявления, которые ещё не скрыты и не проданы.</div>
+            </div>
+        </div>
+
+        <textarea id="deliveryOrderNotes" placeholder="Комментарий для доставщика (необязательно): подъезд, время, что уточнить..." style="min-height:88px;margin-top:8px;"></textarea>
         <input type="text" id="deliveryOrderAddr" placeholder="📍 Ваш адрес доставки" maxlength="150" style="margin-top:8px;">
         <input type="text" id="deliveryOrderContact" placeholder="Контакт / способ связи (опционально)" maxlength="100" style="margin-top:8px;">
+        <div id="deliverySelectionSummary" class="delivery-summary" style="display:none;"></div>
         <div class="total-row" style="margin-top:10px;">
             <span>Стоимость доставки</span>
             <span class="total-val" style="font-size:16px;">Определяет доставщик</span>
@@ -5129,6 +5156,7 @@ function renderMarket(listings){
         }
         myEl.innerHTML=html;
     }
+    if (curPage === 'deliveryOrderPage' && typeof renderDeliveryOrderOptions === 'function') renderDeliveryOrderOptions();
 }
 const categoryEmoji={other:'📦',food:'🍎',tools:'🔧',clothes:'👕',electronics:'📱',building:'🧱',work:'💼',service:'🤝'};
 function isListingPinned(l){
@@ -6138,7 +6166,7 @@ window.navTo=function(id){
     if(id==='bizOwnerPanel') renderBizOwnerPanel();
     if(id==='kveExam') {} // static content
     if(id==='deputySession') { renderDeputyProposals(); }
-    if(id==='deliveryOrderPage') { renderMyDeliveryOrders(); updateDeliverySourceHint(); }
+    if(id==='deliveryOrderPage') { renderMyDeliveryOrders(); if(typeof renderDeliveryOrderOptions==='function') renderDeliveryOrderOptions(true); else updateDeliverySourceHint(); }
     if(id==='events') renderEventsSection();
     if(id==='eventDetail') {} // handled by openEventDetail
     if(id==='gameSpySection') initSpyGame();
@@ -8256,6 +8284,7 @@ async function renderBusinesses(){
                 ${b.delivery ? '<div style="font-size:11px;color:var(--primary);font-weight:800;margin-top:4px;">🚚 Доставка</div>' : ''}
             </div>
         </div>`).join('')}</div>`;
+    if (curPage === 'deliveryOrderPage' && typeof renderDeliveryOrderOptions === 'function') renderDeliveryOrderOptions();
 }
 
 // ─── BUSINESS DETAIL ──────────────────────
@@ -10539,52 +10568,223 @@ window.ksbFineWorker = async function() {
 const deliveryCustomOrdersRef = () => ref(db, 'deliveryCustomOrders');
 const deliveryCustomOrderRef = (id) => ref(db, `deliveryCustomOrders/${id}`);
 
+function deliveryBusinessOptions() {
+    return Object.values(allBusinessesCache || {})
+        .filter(b => b && b.status === 'active' && b.products && Object.keys(b.products).length)
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ru'));
+}
+
+function deliveryMarketplaceOptions() {
+    return Object.values(lastMarketListings || {})
+        .filter(l => l && !l.archived && l.status !== 'sold' && l.category !== 'work' && l.category !== 'service')
+        .sort((a, b) => (b.pinnedUntil || 0) - (a.pinnedUntil || 0) || (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+function fillSelectOptions(sel, optionsHtml, placeholder) {
+    if (!sel) return;
+    sel.innerHTML = optionsHtml || `<option value="">${placeholder || 'Нет вариантов'}</option>`;
+}
+
 window.updateDeliverySourceHint = function() {
     const sel = qs('deliveryOrderSource');
     const hint = qs('deliverySourceHint');
+    const businessBlock = qs('deliveryBusinessBlock');
+    const marketBlock = qs('deliveryMarketplaceBlock');
     if (!sel || !hint) return;
+
     if (sel.value === 'business') {
-        hint.textContent = '🏪 Укажите название бизнеса и что хотите заказать';
+        hint.textContent = '🏪 Сначала выберите бизнес, затем конкретный товар из его каталога.';
         hint.style.display = 'block';
+        if (businessBlock) businessBlock.style.display = 'grid';
+        if (marketBlock) marketBlock.style.display = 'none';
     } else {
-        hint.textContent = '🛍 Укажите продавца и товар с маркетплейса';
+        hint.textContent = '🛍 Выберите конкретное объявление с маркетплейса.';
         hint.style.display = 'block';
+        if (businessBlock) businessBlock.style.display = 'none';
+        if (marketBlock) marketBlock.style.display = 'grid';
     }
+    updateDeliverySummary();
+};
+
+window.updateDeliveryBizProducts = function() {
+    const bizSel = qs('deliveryOrderBiz');
+    const prodSel = qs('deliveryOrderBizProduct');
+    if (!bizSel || !prodSel) return;
+    const bizId = bizSel.value;
+    const b = (allBusinessesCache || {})[bizId];
+    if (!b || !b.products) {
+        prodSel.innerHTML = '<option value="">Нет товаров</option>';
+        updateDeliverySummary();
+        return;
+    }
+    const products = Object.entries(b.products || {})
+        .sort((a, b) => String(a[1]?.name || '').localeCompare(String(b[1]?.name || ''), 'ru'));
+    prodSel.innerHTML = products.length
+        ? products.map(([pid, p]) => `<option value="${escHtml(pid)}">${escHtml(p.name || 'Товар')} — ${(p.price || 0).toLocaleString()} ₽</option>`).join('')
+        : '<option value="">Нет товаров</option>';
+    updateDeliverySummary();
+};
+
+window.updateDeliverySummary = function() {
+    const summary = qs('deliverySelectionSummary');
+    if (!summary) return;
+    const source = qs('deliveryOrderSource')?.value || 'business';
+    if (source === 'business') {
+        const bizSel = qs('deliveryOrderBiz');
+        const prodSel = qs('deliveryOrderBizProduct');
+        const b = (allBusinessesCache || {})[bizSel?.value || ''];
+        const p = b?.products?.[prodSel?.value || ''];
+        if (b && p) {
+            summary.style.display = 'block';
+            summary.innerHTML = `Выбрано: <b>${escHtml(b.name || 'Бизнес')}</b> → <b>${escHtml(p.name || 'Товар')}</b>${p.price ? ` · ${Number(p.price).toLocaleString()} ₽` : ''}`;
+            return;
+        }
+    } else {
+        const item = deliveryMarketplaceOptions().find(x => x.id === (qs('deliveryOrderMarketItem')?.value || ''));
+        if (item) {
+            const seller = allUsersCache?.[item.seller]?.displayName || item.seller || 'Продавец';
+            summary.style.display = 'block';
+            summary.innerHTML = `Выбрано: <b>${escHtml(item.title || 'Объявление')}</b> от <b>${escHtml(seller)}</b>${item.price ? ` · ${Number(item.price).toLocaleString()} ₽` : ''}`;
+            return;
+        }
+    }
+    summary.style.display = 'none';
+    summary.innerHTML = '';
+};
+
+window.renderDeliveryOrderOptions = async function(forceFetch = false) {
+    const sourceSel = qs('deliveryOrderSource');
+    const bizSel = qs('deliveryOrderBiz');
+    const prodSel = qs('deliveryOrderBizProduct');
+    const marketSel = qs('deliveryOrderMarketItem');
+    if (!sourceSel || !bizSel || !prodSel || !marketSel) return;
+
+    if (forceFetch || !Object.keys(allBusinessesCache || {}).length) {
+        try {
+            const snap = await get(bizRef());
+            const raw = snap.val() || {};
+            if (raw && Object.keys(raw).length) allBusinessesCache = raw;
+        } catch(e) {}
+    }
+    if (forceFetch || !Object.keys(lastMarketListings || {}).length) {
+        try {
+            const snap = await get(marketRef());
+            const raw = snap.val() || {};
+            if (raw && Object.keys(raw).length) lastMarketListings = raw;
+        } catch(e) {}
+    }
+
+    const businesses = deliveryBusinessOptions();
+    const businessOptions = businesses.length
+        ? ['<option value="">Выберите бизнес…</option>', ...businesses.map(b => `<option value="${escHtml(b.id)}">${escHtml(b.name || 'Бизнес')} (${Object.keys(b.products || {}).length})</option>`)].join('')
+        : '<option value="">Нет подходящих бизнесов</option>';
+    fillSelectOptions(bizSel, businessOptions, 'Нет подходящих бизнесов');
+
+    const marketItems = deliveryMarketplaceOptions();
+    const marketOptions = marketItems.length
+        ? ['<option value="">Выберите объявление…</option>', ...marketItems.map(l => {
+            const seller = allUsersCache?.[l.seller]?.displayName || l.seller || 'Продавец';
+            return `<option value="${escHtml(l.id)}">${escHtml(l.title || 'Объявление')} — ${escHtml(seller)}</option>`;
+        })].join('')
+        : '<option value="">Нет подходящих объявлений</option>';
+    fillSelectOptions(marketSel, marketOptions, 'Нет подходящих объявлений');
+
+    if (!bizSel.value && businesses.length) bizSel.value = businesses[0].id;
+    if (!marketSel.value && marketItems.length) marketSel.value = marketItems[0].id;
+
+    updateDeliveryBizProducts();
+    updateDeliverySourceHint();
+    updateDeliverySummary();
 };
 
 window.placeDeliveryOrder = async function() {
     if (!await requireSpendable()) return;
     const source = qs('deliveryOrderSource')?.value || 'business';
-    const from = (qs('deliveryOrderFrom')?.value || '').trim();
-    const items = (qs('deliveryOrderItems')?.value || '').trim();
     const addr = (qs('deliveryOrderAddr')?.value || '').trim();
-    if (!from) return toast('⚠️ Укажите название бизнеса или продавца', 'gold');
-    if (!items) return toast('⚠️ Укажите что хотите доставить', 'gold');
-    if (!addr) return toast('⚠️ Укажите адрес доставки', 'gold');
     const contact = (qs('deliveryOrderContact')?.value || '').trim();
+    const notes = (qs('deliveryOrderNotes')?.value || '').trim();
     const sourceLabels = { business: '🏪 Бизнес', marketplace: '🛍 Маркетплейс' };
+
+    let from = '';
+    let items = '';
+    let summaryText = '';
+    let payload = { source, sourceLabel: sourceLabels[source] || source };
+
+    if (source === 'business') {
+        const bizId = qs('deliveryOrderBiz')?.value || '';
+        const productId = qs('deliveryOrderBizProduct')?.value || '';
+        const b = (allBusinessesCache || {})[bizId];
+        const p = b?.products?.[productId];
+        if (!bizId || !b) return toast('⚠️ Выберите бизнес', 'gold');
+        if (!productId || !p) return toast('⚠️ Выберите товар бизнеса', 'gold');
+        from = b.name || 'Бизнес';
+        items = p.name || 'Товар';
+        summaryText = `🏪 ${from} → ${items}`;
+        payload = {
+            ...payload,
+            bizId,
+            businessName: b.name || '',
+            productId,
+            productName: p.name || '',
+            productPrice: Number(p.price || 0),
+            itemKind: 'business_product'
+        };
+    } else {
+        const listingId = qs('deliveryOrderMarketItem')?.value || '';
+        const l = (lastMarketListings || {})[listingId];
+        if (!listingId || !l) return toast('⚠️ Выберите объявление с маркетплейса', 'gold');
+        from = l.seller || 'Продавец';
+        items = l.title || 'Объявление';
+        summaryText = `🛍 ${items} → ${from}`;
+        payload = {
+            ...payload,
+            listingId,
+            listingTitle: l.title || '',
+            listingPrice: Number(l.price || 0),
+            sellerNick: l.seller || '',
+            itemKind: 'marketplace_listing'
+        };
+    }
+
+    if (!addr) return toast('⚠️ Укажите адрес доставки', 'gold');
+
     const id = genId();
     const order = {
-        id, source, sourceLabel: sourceLabels[source] || source,
-        from, items, address: addr, contact,
-        client: currentNick, status: 'waiting',
-        date: new Date().toLocaleDateString('ru'), time: nowTime(), createdAt: Date.now()
+        id,
+        ...payload,
+        from,
+        items,
+        notes,
+        address: addr,
+        contact,
+        client: currentNick,
+        status: 'waiting',
+        date: new Date().toLocaleDateString('ru'),
+        time: nowTime(),
+        createdAt: Date.now()
     };
     await set(deliveryCustomOrderRef(id), order);
-    await pushNotification(ADMIN, `🚚 Новый заказ доставки от ${currentNick}: из «${from}» — ${items.slice(0,60)}`, 'delivery_orders');
-    // Notify all delivery workers
+
+    const notifyText = source === 'business'
+        ? `🚚 Новый заказ доставки от ${currentNick}: бизнес «${from}», товар «${items}»`
+        : `🚚 Новый заказ доставки от ${currentNick}: маркетплейс «${items}»`;
+    await pushNotification(ADMIN, notifyText, 'delivery_orders');
+
     const usersSnap = await get(ref(db, 'users'));
     const allUsers = usersSnap.val() || {};
     for (const [nick, u] of Object.entries(allUsers)) {
         if (u.job === 'Доставщик') {
-            await pushNotification(nick, `📦 Новый заказ: ${sourceLabels[source]} «${from}» → ${addr}`, 'delivery_orders');
+            await pushNotification(nick, source === 'business'
+                ? `📦 Новый заказ: бизнес «${from}» → ${items}`
+                : `📦 Новый заказ: маркетплейс «${items}»`, 'delivery_orders');
         }
     }
-    if (qs('deliveryOrderFrom')) qs('deliveryOrderFrom').value = '';
-    if (qs('deliveryOrderItems')) qs('deliveryOrderItems').value = '';
+
+    if (qs('deliveryOrderNotes')) qs('deliveryOrderNotes').value = '';
     if (qs('deliveryOrderAddr')) qs('deliveryOrderAddr').value = '';
     if (qs('deliveryOrderContact')) qs('deliveryOrderContact').value = '';
-    toast('✅ Заказ на доставку размещён! Доставщики уведомлены.', 'green');
+
+    toast(`✅ Заказ на доставку размещён! ${summaryText}`, 'green');
     renderMyDeliveryOrders();
 };
 
@@ -10602,13 +10802,15 @@ async function renderMyDeliveryOrders() {
         el.innerHTML = mine.map(o => {
             const sc = stColors[o.status] || 'gold';
             const sl = stLabels[o.status] || '⏳ Ожидает';
+            const itemLine = o.productName ? `${o.from} · ${o.productName}` : o.listingTitle ? o.listingTitle : o.items;
             return `<div class="work-order" style="margin-bottom:10px;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
                     <div><div style="font-size:10px;color:var(--muted);font-weight:800;">${escHtml(o.sourceLabel||o.source)}</div>
-                    <div style="font-weight:900;font-size:14px;">${escHtml(o.from)}</div></div>
+                    <div style="font-weight:900;font-size:14px;">${escHtml(itemLine || o.from)}</div></div>
                     <span style="font-size:10px;font-weight:900;color:var(--${sc});white-space:nowrap;padding:4px 8px;border-radius:8px;background:var(--${sc}-dim);">${sl}</span>
                 </div>
                 <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📋 ${escHtml(o.items)}</div>
+                ${o.notes ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📝 ${escHtml(o.notes)}</div>` : ''}
                 <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>
                 ${o.worker ? `<div style="font-size:12px;color:var(--primary);margin-top:4px;">🛵 Доставщик: ${escHtml(o.worker)}</div>` : ''}
                 <div style="font-size:10px;color:var(--muted);margin-top:4px;">${escHtml(o.date||'')} ${escHtml(o.time||'')}</div>
