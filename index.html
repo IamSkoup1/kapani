@@ -2500,8 +2500,10 @@ async function processEconomyChargesForUser(nick, opts = {}){
             const taxBase = balance;
             const accountFee = ECONOMY_ACCOUNT_WEEKLY_FEE;
             let wealthTax = 0;
-            if(taxBase >= 1000 && taxBase <= 10000) wealthTax = Math.round(taxBase * 0.03);
-            else if(taxBase > 10000) wealthTax = Math.round(taxBase * 0.08);
+            if(taxBase > 0 && taxBase < 1000) wealthTax = Math.round(taxBase * 0.05);
+            else if(taxBase >= 1000 && taxBase <= 10000) wealthTax = Math.round(taxBase * 0.07);
+            else if(taxBase > 10000 && taxBase <= 100000) wealthTax = Math.round(taxBase * 0.10);
+            else if(taxBase > 100000) wealthTax = Math.round(taxBase * 0.20);
 
             const total = accountFee + wealthTax;
             balance -= total;
@@ -2516,7 +2518,10 @@ async function processEconomyChargesForUser(nick, opts = {}){
             for(const n of notifications){
                 if(n.total <= 0) continue;
                 const parts = [`абонентская плата ${n.accountFee}₽`];
-                if(n.wealthTax > 0) parts.push(`налог ${n.wealthTax}₽`);
+                if(n.wealthTax > 0){
+                    let taxPct = n.taxBase < 1000 ? 5 : n.taxBase <= 10000 ? 7 : n.taxBase <= 100000 ? 10 : 20;
+                    parts.push(`налог ${taxPct}% = ${n.wealthTax}₽`);
+                }
                 const text = `💳 Списано за неделю: ${parts.join(' + ')}.`;
                 await pushNotification(nick, text, 'money');
             }
@@ -4698,77 +4703,61 @@ window.openUserProfile=async function(nick){
     
     // Apply avatar frame if user has subscription and frame
     const frameContainer = qs('upmAvatarWrap');
-    if(frameContainer && isActive && u.avatarFrame){
-        // Remove existing frame
+    if(frameContainer){
+        // Always remove existing frame first (fixes bleed-over between profiles)
         const existingFrame = frameContainer.querySelector('.avatar-frame');
         if(existingFrame) existingFrame.remove();
         
-        // Add new frame
-        const frameEl = document.createElement('div');
-        frameEl.className = 'avatar-frame';
-        frameEl.style.cssText = 'position:absolute;inset:-8px;border-radius:inherit;pointer-events:none;z-index:1;';
-        
-        if(u.avatarFrame === 'gold') frameEl.classList.add('avatar-frame-gold');
-        else if(u.avatarFrame === 'rainbow') frameEl.classList.add('avatar-frame-rainbow');
-        else if(u.avatarFrame === 'pulse') frameEl.classList.add('avatar-frame-pulse');
-        else if(u.avatarFrame === 'glow') frameEl.classList.add('avatar-frame-glow');
-        else if(u.avatarFrame === 'neon') frameEl.classList.add('avatar-frame-neon');
-        else if(u.avatarFrame === 'fire') frameEl.classList.add('avatar-frame-fire');
-        else if(u.avatarFrame === 'crystal') frameEl.classList.add('avatar-frame-crystal');
-        else if(u.avatarFrame === 'ice') frameEl.classList.add('avatar-frame-ice');
-        else if(u.avatarFrame === 'rose') frameEl.classList.add('avatar-frame-rose');
+        if(isActive && u.avatarFrame){
+            // Add new frame
+            const frameEl = document.createElement('div');
+            frameEl.className = 'avatar-frame';
+            frameEl.style.cssText = 'position:absolute;inset:-8px;border-radius:inherit;pointer-events:none;z-index:1;';
+            
+            if(u.avatarFrame === 'gold') frameEl.classList.add('avatar-frame-gold');
+            else if(u.avatarFrame === 'rainbow') frameEl.classList.add('avatar-frame-rainbow');
+            else if(u.avatarFrame === 'pulse') frameEl.classList.add('avatar-frame-pulse');
+            else if(u.avatarFrame === 'glow') frameEl.classList.add('avatar-frame-glow');
+            else if(u.avatarFrame === 'neon') frameEl.classList.add('avatar-frame-neon');
+            else if(u.avatarFrame === 'fire') frameEl.classList.add('avatar-frame-fire');
+            else if(u.avatarFrame === 'crystal') frameEl.classList.add('avatar-frame-crystal');
+            else if(u.avatarFrame === 'ice') frameEl.classList.add('avatar-frame-ice');
+            else if(u.avatarFrame === 'rose') frameEl.classList.add('avatar-frame-rose');
             else if(u.avatarFrame === 'plasma') frameEl.classList.add('avatar-frame-plasma');
             else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
             else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
             else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
-        
-        frameContainer.appendChild(frameEl);
+            
+            frameContainer.appendChild(frameEl);
+        }
     }
     
     // Apply profile background effect if user has subscription
     const profileSheet = document.querySelector('#userProfileModal .user-profile-sheet');
     const wallHost = document.getElementById('upmWallHost');
+    const BG_CLASSES = ['profile-bg-shimmer','profile-bg-particles','profile-bg-gradient-animated',
+                        'profile-bg-ocean','profile-bg-sunset','profile-bg-aurora',
+                        'profile-bg-galaxy','profile-bg-fire','profile-bg-plasma',
+                        'profile-bg-thunder','profile-bg-hologram','profile-bg-dragon'];
+    
+    // Always remove old background classes first (fixes bleed-over between profiles)
+    if(profileSheet) profileSheet.classList.remove(...BG_CLASSES);
+    if(wallHost) wallHost.classList.remove(...BG_CLASSES);
     
     if(profileSheet && isActive && u.profileBgEffect){
-        // Remove existing background classes
-        profileSheet.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
-                                   'profile-bg-ocean', 'profile-bg-sunset', 'profile-bg-aurora', 
-                                   'profile-bg-galaxy', 'profile-bg-fire', 'profile-bg-plasma',
-                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon');
-        
         // Add new background class
-        if(u.profileBgEffect === 'shimmer') profileSheet.classList.add('profile-bg-shimmer');
-        else if(u.profileBgEffect === 'particles') profileSheet.classList.add('profile-bg-particles');
-        else if(u.profileBgEffect === 'gradient') profileSheet.classList.add('profile-bg-gradient-animated');
-        else if(u.profileBgEffect === 'ocean') profileSheet.classList.add('profile-bg-ocean');
-        else if(u.profileBgEffect === 'sunset') profileSheet.classList.add('profile-bg-sunset');
-        else if(u.profileBgEffect === 'aurora') profileSheet.classList.add('profile-bg-aurora');
-        else if(u.profileBgEffect === 'galaxy') profileSheet.classList.add('profile-bg-galaxy');
-        else if(u.profileBgEffect === 'fire') profileSheet.classList.add('profile-bg-fire');
-        else if(u.profileBgEffect === 'plasma') profileSheet.classList.add('profile-bg-plasma');
-        else if(u.profileBgEffect === 'thunder') profileSheet.classList.add('profile-bg-thunder');
-        else if(u.profileBgEffect === 'hologram') profileSheet.classList.add('profile-bg-hologram');
-        else if(u.profileBgEffect === 'dragon') profileSheet.classList.add('profile-bg-dragon');
-        
-        // Apply background effect to wall host as well
-        if(wallHost){
-            wallHost.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
-                                   'profile-bg-ocean', 'profile-bg-sunset', 'profile-bg-aurora', 
-                                   'profile-bg-galaxy', 'profile-bg-fire', 'profile-bg-plasma',
-                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon');
-            
-            if(u.profileBgEffect === 'shimmer') wallHost.classList.add('profile-bg-shimmer');
-            else if(u.profileBgEffect === 'particles') wallHost.classList.add('profile-bg-particles');
-            else if(u.profileBgEffect === 'gradient') wallHost.classList.add('profile-bg-gradient-animated');
-            else if(u.profileBgEffect === 'ocean') wallHost.classList.add('profile-bg-ocean');
-            else if(u.profileBgEffect === 'sunset') wallHost.classList.add('profile-bg-sunset');
-            else if(u.profileBgEffect === 'aurora') wallHost.classList.add('profile-bg-aurora');
-            else if(u.profileBgEffect === 'galaxy') wallHost.classList.add('profile-bg-galaxy');
-            else if(u.profileBgEffect === 'fire') wallHost.classList.add('profile-bg-fire');
-            else if(u.profileBgEffect === 'plasma') wallHost.classList.add('profile-bg-plasma');
-            else if(u.profileBgEffect === 'thunder') wallHost.classList.add('profile-bg-thunder');
-            else if(u.profileBgEffect === 'hologram') wallHost.classList.add('profile-bg-hologram');
-            else if(u.profileBgEffect === 'dragon') wallHost.classList.add('profile-bg-dragon');
+        const bgMap = {
+            shimmer:'profile-bg-shimmer', particles:'profile-bg-particles',
+            gradient:'profile-bg-gradient-animated', ocean:'profile-bg-ocean',
+            sunset:'profile-bg-sunset', aurora:'profile-bg-aurora',
+            galaxy:'profile-bg-galaxy', fire:'profile-bg-fire',
+            plasma:'profile-bg-plasma', thunder:'profile-bg-thunder',
+            hologram:'profile-bg-hologram', dragon:'profile-bg-dragon'
+        };
+        const bgClass = bgMap[u.profileBgEffect];
+        if(bgClass){
+            profileSheet.classList.add(bgClass);
+            if(wallHost) wallHost.classList.add(bgClass);
         }
     }
     
