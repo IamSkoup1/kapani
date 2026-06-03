@@ -1138,7 +1138,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="bank" class="section">
     <div class="card">
         <div class="card-title">💸 Перевод денег</div>
-        <input type="text" id="bTo" placeholder="Никнейм получателя" autocomplete="off" required minlength="2" maxlength="20">
+        <input type="text" id="bTo" placeholder="Логин получателя (ЛОГИН, А НЕ ИМЯ)" autocomplete="off" required minlength="2" maxlength="20">
         <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
     </div>
