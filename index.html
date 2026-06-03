@@ -1210,6 +1210,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
             <div style="margin-bottom:8px;">✅ <b>10 объявлений</b> в месяц на маркетплейсе</div>
             <div style="margin-bottom:8px;">✅ <b>5% скидка</b> на такси и доставку</div>
+            <div style="margin-bottom:8px;">✅ <b>3 бизнеса одновременно</b></div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона</b> сообщений в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Рамки для аватара</b> (Золотая, Пульсирующая)</div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона профиля</b> (Мерцание, Частицы)</div>
@@ -1234,6 +1235,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="margin-bottom:8px;">✅ <b>10% скидка</b> на такси, доставку и маркет</div>
             <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 20%</b> на аренду зданий</div>
             <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>250₽</b> вместо 500₽</div>
+            <div style="margin-bottom:8px;">✅ <b>5 бизнеса одновременно</b></div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона сообщений</b> в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Переливающиеся цвета</b> и спецэффекты в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Видео на аватарку</b></div>
@@ -1254,6 +1256,9 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         </div>
         <div id="subscriptionManageNone" style="font-size:13px;color:var(--muted);">
             У вас нет активной подписки. Выберите тариф выше.
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;">
+            Бизнесы, которые уже созданы по подписке, остаются у вас даже после отмены.
         </div>
     </div>
 </div>
@@ -2454,6 +2459,30 @@ const rentBuildingRef = (id) => ref(db, `rentBuildings/${id}`);
 const bizOrdersRef = (bizId) => ref(db, `bizOrders/${bizId}`);
 const bizOrderRef = (bizId, orderId) => ref(db, `bizOrders/${bizId}/${orderId}`);
 const bizRef = () => ref(db, 'businesses');
+
+function getBusinessIds(u){
+    const ids = [];
+    const pushId = (v) => {
+        if(!v) return;
+        if(Array.isArray(v)){ v.forEach(pushId); return; }
+        const id = String(v).trim();
+        if(id && !ids.includes(id)) ids.push(id);
+    };
+    pushId(u?.businessIds);
+    pushId(u?.businessId);
+    return ids;
+}
+function getOwnedActiveBusinesses(u){
+    const scan = Object.values(allBusinessesCache || {});
+    return scan.filter(b => b && b.status === 'active' && b.owner === (u?.nick || currentNick));
+}
+function getBusinessLimitForUser(u){
+    const hasUltraBiz = (u?.subscription === 'ultra') && u?.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    if(hasUltraBiz) return 5;
+    const hasPlusBiz = (u?.subscription === 'plus') && u?.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    if(hasPlusBiz) return 3;
+    return 1;
+}
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
@@ -8091,10 +8120,11 @@ window.openBizApplyModal = async function(){
     const apps = appsSnap.val() || {};
     const myPending = Object.values(apps).find(a => a.owner === currentNick && a.status === 'pending');
     if(myPending){ return toast('⏳ Ваша заявка уже на рассмотрении','gold'); }
-    const bizSnap = await get(bizRef());
-    const bizneses = bizSnap.val() || {};
-    const myBiz = Object.values(bizneses).find(b => b.owner === currentNick && b.status === 'active');
-    if(myBiz){ return toast('✅ У вас уже есть бизнес','gold'); }
+    const limit = getBusinessLimitForUser(u);
+    const ownedCount = getBusinessIds(u).length;
+    if(ownedCount >= limit){
+        return toast(`⚠️ У вас уже ${ownedCount}/${limit} бизнес${ownedCount === 1 ? '' : 'ов'}. Лимит подписки достигнут.`, 'gold');
+    }
     // Clear and show modal
     ['bapName','bapDesc','bapAddress','bapCategory','bapServices'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
     const hasUltraBizModal = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
@@ -8113,6 +8143,11 @@ window.submitBizApply = async function(){
     if(!address) return toast('⚠️ Укажите адрес','gold');
     const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
+    const limit = getBusinessLimitForUser(u);
+    const ownedCount = getBusinessIds(u).length;
+    if(ownedCount >= limit){
+        return toast(`⚠️ У вас уже ${ownedCount}/${limit} бизнес${ownedCount === 1 ? '' : 'ов'}.`, 'gold');
+    }
     const hasUltraForBiz = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const actualFee = hasUltraForBiz ? 250 : ECONOMY_BUSINESS_CREATION_FEE;
     if((u.balance || 0) < actualFee) return toast(`❌ Для создания бизнеса нужно ${actualFee}₽ госпошлины`,'red');
@@ -8160,7 +8195,13 @@ window.adminDeleteBiz = async function(bizId){
     if(!confirm(`Удалить бизнес «${b.name}»? Это необратимо.`)) return;
     await update(bizItemRef(bizId), { status: 'deleted', deletedAt: Date.now(), deletedBy: ADMIN });
     // Remove businessId from owner
-    if(b.owner) await update(userRef(b.owner), { businessId: null, employerBizId: null, job: 'Житель' });
+    if(b.owner){
+        const ownerSnap = await get(userRef(b.owner));
+        const owner = ownerSnap.val() || {};
+        const businessIds = getBusinessIds(owner).filter(id => id !== bizId);
+        const ownerUpdate = { businessIds, businessId: businessIds[0] || null, employerBizId: null, job: 'Житель' };
+        await update(userRef(b.owner), ownerUpdate);
+    }
     if(b.owner) await pushNotification(b.owner, `🗑 Ваш бизнес «${b.name}» закрыт мэрией.`, 'system');
     toast(`🗑 Бизнес «${b.name}» закрыт`, 'red');
     renderBusinesses();
@@ -8189,7 +8230,12 @@ window.adminApproveBizDelete = async function(reqId, bizId){
     if(!rSnap.exists()||!bSnap.exists()) return;
     const r=rSnap.val(), b=bSnap.val();
     await update(bizItemRef(bizId), { status:'deleted', deletedAt:Date.now(), deletedBy:ADMIN });
-    if(b.owner) await update(userRef(b.owner), { businessId:null, job:'Житель' });
+    if(b.owner){
+        const ownerSnap = await get(userRef(b.owner));
+        const owner = ownerSnap.val() || {};
+        const businessIds = getBusinessIds(owner).filter(id => id !== bizId);
+        await update(userRef(b.owner), { businessIds, businessId: businessIds[0] || null, job:'Житель' });
+    }
     await update(ref(db,`bizDeleteRequests/${reqId}`), { status:'approved' });
     if(b.owner) await pushNotification(b.owner, `✅ Ваш бизнес «${b.name}» закрыт по вашей заявке.`, 'system');
     toast(`✅ Бизнес «${b.name}» закрыт`, 'red');
@@ -8239,7 +8285,14 @@ window.adminApproveBiz = async function(id){
         createdAt: Date.now(), status: 'active'
     });
 
-    await update(userRef(a.owner), { businessId: bizId });
+    const ownerSnap = await get(userRef(a.owner));
+    const owner = ownerSnap.val() || {};
+    const businessIds = getBusinessIds(owner);
+    if(!businessIds.includes(bizId)) businessIds.push(bizId);
+    const ownerUpdate = { businessIds, businessId: businessIds[0] || bizId };
+    if(!owner.businessId) ownerUpdate.businessId = bizId;
+    await update(userRef(a.owner), ownerUpdate);
+
     await update(bizAppRef(id), { status: 'approved' });
     await pushNotification(a.owner, `🎉 Ваш бизнес «${a.name}» одобрен мэрией!`, 'system');
     toast(`✅ Бизнес «${a.name}» одобрен`, 'green');
@@ -8260,33 +8313,45 @@ async function renderBusinesses(){
     const el = qs('bizList'); if(!el) return;
     el.innerHTML = loadingHtml('Загружаем бизнесы...');
 
-    // Show my biz panel if owner
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val() || {};
-    const myBizPanel = qs('myBizPanel');
-    if(u.businessId){
-        const bSnap = await get(bizItemRef(u.businessId));
-        if(bSnap.exists()){
-            const b = bSnap.val();
-            myBizPanel.style.display = 'block';
-            myBizPanel.innerHTML = `<div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.05);">
-                <div style="display:flex;align-items:center;gap:12px;">
-                    ${b.icon ? `<img src="${escHtml(b.icon)}" style="width:48px;height:48px;border-radius:14px;object-fit:cover;border:2px solid var(--primary);">` : '<div style="width:48px;height:48px;border-radius:14px;background:var(--surface2);border:2px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:20px;">🏪</div>'}
-                    <div style="flex:1;">
-                        <div style="font-weight:900;font-size:15px;">${escHtml(b.name)}</div>
-                        <div style="font-size:12px;color:var(--primary);font-weight:700;">Ваш бизнес · 💰 ${(b.balance||0).toLocaleString()} ₽</div>
-                    </div>
-                    <button class="btn btn-primary btn-sm" onclick="navTo('bizOwnerPanel')">Управление →</button>
-                </div>
-            </div>`;
-            currentBizId = u.businessId;
-        }
-    } else { myBizPanel.style.display = 'none'; }
-
     const snap = await get(bizRef());
     const biznesesRaw = snap.val() || {};
     allBusinessesCache = biznesesRaw;
     const bizneses = Object.values(biznesesRaw).filter(b => b.status === 'active');
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    const myBizPanel = qs('myBizPanel');
+    const ownedLimit = getBusinessLimitForUser(u);
+    const ownedBizs = bizneses.filter(b => b.owner === currentNick);
+
+    if(ownedBizs.length){
+        myBizPanel.style.display = 'block';
+        myBizPanel.innerHTML = `
+            <div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.05);">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                    <div>
+                        <div style="font-weight:900;font-size:15px;">Мои бизнесы</div>
+                        <div style="font-size:12px;color:var(--muted);">${ownedBizs.length}/${ownedLimit} по подписке</div>
+                    </div>
+                    <div style="font-size:12px;font-weight:800;color:var(--primary);">🏪 ${ownedBizs.length} шт.</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    ${ownedBizs.map(b => `
+                        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;">
+                            ${b.icon ? `<img src="${escHtml(b.icon)}" style="width:44px;height:44px;border-radius:14px;object-fit:cover;border:2px solid var(--primary);">` : '<div style="width:44px;height:44px;border-radius:14px;background:var(--surface2);border:2px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;">🏪</div>'}
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(b.name)}</div>
+                                <div style="font-size:12px;color:var(--primary);font-weight:700;">💰 ${(b.balance||0).toLocaleString()} ₽</div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="currentBizId='${jsEsc(b.id)}'; navTo('bizOwnerPanel');">Управление →</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        currentBizId = ownedBizs[0]?.id || currentBizId;
+    } else {
+        myBizPanel.style.display = 'none';
+    }
+
     if(!bizneses.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Бизнесов пока нет</div>'; return; }
     el.innerHTML = `<div class="biz-grid">${bizneses.map(b => `
         <div class="biz-card" onclick="openBizDetail('${jsEsc(b.id)}')">
@@ -8634,7 +8699,8 @@ window.buyBizProduct = window.addBizToCart;
 // ─── OWNER PANEL ─────────────────────────
 async function renderBizOwnerPanel(){
     const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
-    const bizId = u.businessId || currentBizId;
+    const bizIds = getBusinessIds(u);
+    const bizId = currentBizId || bizIds[0] || u.businessId;
     if(!bizId) return;
     currentBizId = bizId;
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
