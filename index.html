@@ -1585,6 +1585,20 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <button class="btn btn-primary" onclick="openRaceFormModal(null)" style="margin-bottom:14px;">➕ Добавить гонку</button>
         <div id="adminRacesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
     </div>
+    <div class="card" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.03);">
+        <div class="card-title" style="color:var(--gold);">📅 Группы дней гонок</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Создайте группы «1 день», «2 день» и т.д. В каждую добавьте нужные гонки. Жители видят гонки только своего дня.</div>
+        <button class="btn btn-ghost" onclick="openDayGroupFormModal(null)" style="margin-bottom:12px;border-color:rgba(251,191,36,.4);color:var(--gold);">➕ Добавить день</button>
+        <div id="adminDayGroupsList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
+    <div class="card" style="border-color:rgba(34,211,165,.2);">
+        <div class="card-title">🗓 Назначить день гонок жителю</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Выберите жителя и укажите, на каком дне он находится. Он увидит только гонки этого дня.</div>
+        <select id="raceDayUserSelect" style="margin-bottom:8px;"><option value="">— Выберите жителя —</option></select>
+        <select id="raceDayGroupSelect" style="margin-bottom:12px;"><option value="">— Выберите день —</option></select>
+        <button class="btn btn-primary" onclick="adminSetUserRaceDay()">✅ Назначить день</button>
+        <div id="raceDayAssignStatus" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>
+    </div>
 </div>
 
 <!-- BUSINESSES LIST -->
@@ -1811,6 +1825,23 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 </div><!-- end container -->
 
 <!-- BIZ APPLY MODAL -->
+
+<!-- DAY GROUP FORM MODAL (Admin) -->
+<div id="dayGroupFormModal" style="display:none;position:fixed;inset:0;background:rgba(12,17,23,0.97);z-index:9600;overflow-y:auto;padding:24px 16px;" onclick="if(event.target===this)closeDayGroupFormModal()">
+  <div style="max-width:480px;margin:auto;background:var(--surface);border:1px solid rgba(251,191,36,.25);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-weight:900;font-size:18px;">📅 Группа дня</div>
+      <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeDayGroupFormModal()">✕</span>
+    </div>
+    <input type="hidden" id="dayGroupFormId">
+    <input type="text" id="dayGroupFormName" placeholder="Название (например: 1 день)" maxlength="40">
+    <div style="font-weight:800;font-size:13px;margin:14px 0 8px;">🏁 Гонки в этой группе</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Отметьте гонки, которые войдут в этот день</div>
+    <div id="dayGroupRaceCheckboxes" style="display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;margin-bottom:16px;"></div>
+    <button class="btn btn-primary" onclick="submitDayGroupForm()" style="margin-top:4px;">💾 Сохранить группу</button>
+    <button class="btn btn-ghost" onclick="closeDayGroupFormModal()" style="margin-top:8px;">Отмена</button>
+  </div>
+</div>
 
 <!-- RACE FORM MODAL (Admin) -->
 <div id="raceFormModal" style="display:none;position:fixed;inset:0;background:rgba(12,17,23,0.95);z-index:9500;overflow-y:auto;padding:24px 16px;" onclick="if(event.target===this)closeRaceFormModal()">
@@ -5570,6 +5601,9 @@ async function renderAdmin(){
     renderAdminBizDeleteReqs();
     renderAdminRentBuildings(rSnap.val()||{});
     if(typeof renderAdminRaces === 'function') renderAdminRaces();
+    if(typeof renderAdminDayGroups === 'function') renderAdminDayGroups();
+    if(typeof populateRaceDayGroupSelect === 'function') populateRaceDayGroupSelect();
+    if(typeof populateRaceDayUserSelect === 'function') populateRaceDayUserSelect();
     renderAdminDeputyProposals();
 }
 
@@ -9304,28 +9338,227 @@ window.renderAdminRaces = async function(){
     </div>`).join('');
 };
 
+
+// ─── RACE DAY GROUPS ─────────────────────
+const raceDayGroupsRef = () => ref(db, 'raceDayGroups');
+const raceDayGroupRef = (key) => ref(db, 'raceDayGroups/' + key);
+
+let _dayGroupFormEditKey = null;
+
+window.openDayGroupFormModal = async function(groupKey) {
+  _dayGroupFormEditKey = groupKey || null;
+  const nameEl = qs('dayGroupFormName');
+  const idEl = qs('dayGroupFormId');
+  const cbWrap = qs('dayGroupRaceCheckboxes');
+  if (nameEl) nameEl.value = '';
+  if (idEl) idEl.value = '';
+  if (cbWrap) cbWrap.innerHTML = '<div style="color:var(--muted);font-size:13px;">Загрузка гонок...</div>';
+
+  // Load all races
+  const racesSnap = await get(racesRef());
+  const allRaces = Object.values(racesSnap.val() || {}).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+
+  let selectedIds = {};
+  if (groupKey) {
+    const snap = await get(raceDayGroupRef(groupKey));
+    if (snap.exists()) {
+      const g = snap.val();
+      if (nameEl) nameEl.value = g.name || '';
+      if (idEl) idEl.value = groupKey;
+      (g.raceIds || []).forEach(id => { selectedIds[id] = true; });
+    }
+  }
+
+  if (cbWrap) {
+    if (!allRaces.length) {
+      cbWrap.innerHTML = '<div style="color:var(--muted);font-size:13px;">Сначала добавьте гонки</div>';
+    } else {
+      cbWrap.innerHTML = allRaces.map(r => `
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;">
+          <input type="checkbox" data-race-id="${escHtml(r.id)}" ${selectedIds[r.id] ? 'checked' : ''} style="width:18px;height:18px;flex-shrink:0;accent-color:var(--gold);">
+          <span style="font-weight:700;font-size:13px;">${escHtml(r.name)}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:auto;">${escHtml(RACE_TYPE_LABELS[r.type]||r.type)}</span>
+        </label>`).join('');
+    }
+  }
+
+  qs('dayGroupFormModal').style.display = 'block';
+};
+
+window.closeDayGroupFormModal = function() {
+  qs('dayGroupFormModal').style.display = 'none';
+  _dayGroupFormEditKey = null;
+};
+
+window.submitDayGroupForm = async function() {
+  const name = (qs('dayGroupFormName')?.value || '').trim();
+  if (!name) return toast('⚠️ Введите название дня','gold');
+  const cbWrap = qs('dayGroupRaceCheckboxes');
+  const checked = cbWrap ? Array.from(cbWrap.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.dataset.raceId) : [];
+
+  const key = _dayGroupFormEditKey || genId();
+  const existing = _dayGroupFormEditKey ? (await get(raceDayGroupRef(key))).val() || {} : {};
+
+  await set(raceDayGroupRef(key), {
+    key, name, raceIds: checked,
+    createdAt: existing.createdAt || Date.now(),
+    updatedAt: Date.now()
+  });
+
+  closeDayGroupFormModal();
+  toast(_dayGroupFormEditKey ? '✅ День обновлён' : '📅 День добавлен', 'green');
+  renderAdminDayGroups();
+  populateRaceDayGroupSelect();
+};
+
+window.deleteDayGroup = async function(key) {
+  if (!confirm('Удалить эту группу дня? Жители, назначенные на этот день, потеряют назначение.')) return;
+  await remove(raceDayGroupRef(key));
+  toast('🗑 Группа дня удалена', 'red');
+  renderAdminDayGroups();
+  populateRaceDayGroupSelect();
+};
+
+window.renderAdminDayGroups = async function() {
+  const el = qs('adminDayGroupsList'); if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Загрузка...</div>';
+  const [dgSnap, racesSnap] = await Promise.all([get(raceDayGroupsRef()), get(racesRef())]);
+  const groups = Object.values(dgSnap.val() || {}).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const racesMap = racesSnap.val() || {};
+
+  if (!groups.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Групп пока нет</div>';
+    return;
+  }
+
+  el.innerHTML = groups.map(g => {
+    const raceNames = (g.raceIds || []).map(id => racesMap[id]?.name || id);
+    return `
+    <div style="background:var(--surface2);border:1px solid rgba(251,191,36,.2);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+      <div style="font-weight:900;font-size:14px;color:var(--gold);margin-bottom:4px;">📅 ${escHtml(g.name)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${raceNames.length ? raceNames.map(n=>`🏁 ${escHtml(n)}`).join(' · ') : 'Гонок нет'}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" style="border-color:rgba(251,191,36,.35);color:var(--gold);" onclick="openDayGroupFormModal('${jsEsc(g.key)}')">✏️ Редактировать</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="deleteDayGroup('${jsEsc(g.key)}')">🗑 Удалить</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+async function populateRaceDayGroupSelect() {
+  const sel = qs('raceDayGroupSelect'); if (!sel) return;
+  const snap = await get(raceDayGroupsRef());
+  const groups = Object.values(snap.val() || {}).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  sel.innerHTML = '<option value="">— Выберите день —</option>' +
+    groups.map(g=>`<option value="${escHtml(g.key)}">${escHtml(g.name)}</option>`).join('');
+}
+
+async function populateRaceDayUserSelect() {
+  const sel = qs('raceDayUserSelect'); if (!sel) return;
+  const snap = await get(ref(db,'users'));
+  const users = snap.val() || {};
+  sel.innerHTML = '<option value="">— Выберите жителя —</option>' +
+    Object.keys(users).map(nick=>`<option value="${escHtml(nick)}">${escHtml(nick)}</option>`).join('');
+}
+
+window.adminSetUserRaceDay = async function() {
+  const nick = qs('raceDayUserSelect')?.value;
+  const dayKey = qs('raceDayGroupSelect')?.value;
+  const statusEl = qs('raceDayAssignStatus');
+  if (!nick) { toast('⚠️ Выберите жителя','gold'); return; }
+
+  const snap = await get(raceDayGroupRef(dayKey));
+  const dayName = dayKey && snap.exists() ? snap.val().name : null;
+
+  await update(ref(db, 'users/' + nick), { raceDay: dayKey || null });
+
+  if (statusEl) {
+    statusEl.textContent = dayKey && dayName
+      ? `✅ ${nick} → ${dayName}`
+      : `✅ ${nick} — день снят`;
+    statusEl.style.color = 'var(--primary)';
+  }
+  toast(dayKey && dayName ? `✅ ${nick} назначен: ${dayName}` : `✅ День снят с ${nick}`, 'green');
+
+  // notify user
+  if (dayKey && dayName) {
+    try { await pushNotification(nick, `🏁 Тебе назначен ${dayName} гонок — загляни в Мероприятия!`, 'system'); } catch(e){}
+  }
+};
+
 // ─── EVENTS SECTION (user view) ──────────
 window.renderEventsSection = async function(){
   const el = qs('eventsGrid'); if(!el) return;
   el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div>';
-  const snap = await get(racesRef());
-  const races = Object.values(snap.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  if(!races.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Мероприятий пока нет</div>'; return; }
-  el.innerHTML = races.map(r=>`
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;cursor:pointer;transition:.2s;" onclick="openEventDetail('${jsEsc(r.id)}')" onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
-      ${r.mapImg ? `<img src="${escHtml(r.mapImg)}" style="width:100%;height:180px;object-fit:cover;display:block;" onclick="event.stopPropagation();openImgViewer('${jsEsc(r.mapImg)}')">` : '<div style="width:100%;height:120px;background:linear-gradient(135deg,var(--surface2),rgba(251,191,36,.06));display:flex;align-items:center;justify-content:center;font-size:48px;">🏁</div>'}
-      <div style="padding:14px;">
-        <div style="font-weight:900;font-size:16px;margin-bottom:4px;">${escHtml(r.name)}</div>
-        <div style="font-size:12px;color:var(--gold);font-weight:800;margin-bottom:6px;">${RACE_TYPE_LABELS[r.type]||r.type}${r.laps?` · ${r.laps} кр.`:''}</div>
-        ${r.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">${escHtml(r.desc)}</div>` : ''}
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','easy');" style="border-color:rgba(34,211,165,.4);color:var(--primary);">🟢 Легко</button>
-          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','med');"  style="border-color:rgba(251,191,36,.4);color:var(--gold);">🟡 Средне</button>
-          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','hard');" style="border-color:rgba(248,113,113,.4);color:var(--red);">🔴 Сложно</button>
-        </div>
+
+  // Determine user's assigned race day
+  const uSnap = await get(ref(db, 'users/' + currentNick));
+  const userData = uSnap.val() || {};
+  const userRaceDay = userData.raceDay || null;
+
+  const [racesSnap, dgSnap] = await Promise.all([get(racesRef()), get(raceDayGroupsRef())]);
+  const allRacesMap = racesSnap.val() || {};
+  const dayGroups = dgSnap.val() || {};
+
+  // Admin sees all races (unchanged)
+  if (currentNick === ADMIN) {
+    const races = Object.values(allRacesMap).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(!races.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Мероприятий пока нет</div>'; return; }
+    el.innerHTML = races.map(r=>renderRaceCard(r)).join('');
+    return;
+  }
+
+  // For regular users: show only races from their assigned day group
+  if (!userRaceDay || !dayGroups[userRaceDay]) {
+    el.innerHTML = `<div style="text-align:center;padding:48px 16px;">
+      <div style="font-size:52px;margin-bottom:14px;">🏁</div>
+      <div style="font-weight:900;font-size:16px;margin-bottom:8px;">День гонок не назначен</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;">Мэрия ещё не назначила тебе день. Скоро появится!</div>
+    </div>`;
+    return;
+  }
+
+  const dayGroup = dayGroups[userRaceDay];
+  const raceIds = dayGroup.raceIds || [];
+
+  if (!raceIds.length) {
+    el.innerHTML = `<div style="text-align:center;padding:48px 16px;">
+      <div style="font-size:52px;margin-bottom:14px;">📅</div>
+      <div style="font-weight:900;font-size:16px;margin-bottom:8px;">${escHtml(dayGroup.name)}</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;">В твоём дне пока нет гонок</div>
+    </div>`;
+    return;
+  }
+
+  const dayRaces = raceIds.map(id => allRacesMap[id]).filter(Boolean).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:var(--r-sm);margin-bottom:14px;">
+      <div style="font-size:28px;">📅</div>
+      <div>
+        <div style="font-weight:900;font-size:15px;color:var(--gold);">${escHtml(dayGroup.name)}</div>
+        <div style="font-size:12px;color:var(--muted);">${dayRaces.length} ${dayRaces.length===1?'гонка':'гонок'} сегодня</div>
       </div>
-    </div>`).join('');
+    </div>
+    ${dayRaces.map(r=>renderRaceCard(r)).join('')}`;
 };
+
+function renderRaceCard(r){
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;cursor:pointer;transition:.2s;" onclick="openEventDetail('${jsEsc(r.id)}')" onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
+    ${r.mapImg ? `<img src="${escHtml(r.mapImg)}" style="width:100%;height:180px;object-fit:cover;display:block;" onclick="event.stopPropagation();openImgViewer('${jsEsc(r.mapImg)}')">` : '<div style="width:100%;height:120px;background:linear-gradient(135deg,var(--surface2),rgba(251,191,36,.06));display:flex;align-items:center;justify-content:center;font-size:48px;">🏁</div>'}
+    <div style="padding:14px;">
+      <div style="font-weight:900;font-size:16px;margin-bottom:4px;">${escHtml(r.name)}</div>
+      <div style="font-size:12px;color:var(--gold);font-weight:800;margin-bottom:6px;">${escHtml(RACE_TYPE_LABELS[r.type]||r.type)}${r.laps?` · ${r.laps} кр.`:''}</div>
+      ${r.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">${escHtml(r.desc)}</div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','easy');" style="border-color:rgba(34,211,165,.4);color:var(--primary);">🟢 Легко</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','med');"  style="border-color:rgba(251,191,36,.4);color:var(--gold);">🟡 Средне</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','hard');" style="border-color:rgba(248,113,113,.4);color:var(--red);">🔴 Сложно</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 
 window.openEventDetail = async function(raceId){
   const snap = await get(raceRef(raceId)); if(!snap.exists()) return toast('❌ Гонка не найдена','red');
