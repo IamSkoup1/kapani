@@ -856,6 +856,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
     <button class="bn-item" id="bn9" onclick="navTo('businesses')" aria-label="Бизнесы поселка"><span class="ico">🏪</span>Бизнесы</button>
     <button class="bn-item" id="bn10" onclick="navTo('rentBuildings')" aria-label="Аренда зданий"><span class="ico">🏘️</span>Здания</button>
+    <button class="bn-item" id="bn11" onclick="navTo('kveExam')" aria-label="Экзамен КВЭ" style="display:none;"><span class="ico">📝</span>КВЭ<span class="bn-badge" id="kveBadge"></span></button>
 </div>
 
 <div class="container">
@@ -885,7 +886,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="quick-card" onclick="navTo('deliveryOrderPage')" role="button" tabindex="0" aria-label="Заказать доставку из бизнеса"><div class="qico">🚚</div><div class="qlbl">Доставка</div><div class="qsub">Бизнесы и маркет</div></div>
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
         <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
-        <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub">Узнай о главном экзамене</div></div>
+        <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" id="kveHomeCard" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub" id="kveHomeSub">Узнай о главном экзамене</div></div>
         <div class="quick-card" onclick="navTo('deputySession')" id="deputySessionQuickBtn" role="button" tabindex="0" aria-label="Заседание" style="display:none;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.06));border-color:rgba(251,191,36,.35);"><div class="qico">🏛</div><div class="qlbl">Заседание</div><div class="qsub">Предложения и запросы</div></div>
         <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.10));border-color:rgba(251,191,36,.3);"><div class="qico">🏁</div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
     </div>
@@ -1197,6 +1198,27 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             Если баланс уходит в минус, такси и маркетплейс блокируются до погашения долга.
         </div>
     </div>
+    <div class="card" style="background:rgba(248,113,113,.05);border-color:rgba(248,113,113,.2);">
+        <div class="card-title" style="color:var(--red);">🧾 Налоги на имущество</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--text);">
+            Каждую неделю вместе с абонентской платой автоматически списывается <b style="color:var(--red);">налог на богатство</b>:
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:12px;">
+                <span style="color:var(--muted);">До 1 000 ₽</span><b style="color:var(--red);">5%</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:12px;">
+                <span style="color:var(--muted);">1 000 – 10 000 ₽</span><b style="color:var(--red);">7%</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:12px;">
+                <span style="color:var(--muted);">10 001 – 100 000 ₽</span><b style="color:var(--red);">10%</b>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(248,113,113,.1);border-radius:10px;border:1px solid rgba(248,113,113,.25);font-size:12px;">
+                <span style="color:var(--muted);">Более 100 000 ₽</span><b style="color:var(--red);">20%</b>
+            </div>
+        </div>
+        <div id="taxNextInfo" style="font-size:12px;color:var(--muted);padding:10px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);margin-top:4px;">Загрузка расписания...</div>
+    </div>
     
     <!-- Kapani Plus -->
     <div class="card" style="border:2px solid var(--gold);background:linear-gradient(145deg,rgba(251,191,36,.1),transparent);">
@@ -1367,6 +1389,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card">
         <div class="card-title">🛠 Трудоустройство</div>
         <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Выберите профессию и подайте заявку.</p>
+        <!-- KVE score notice -->
+        <div id="jobKveNotice" style="margin-bottom:12px;"></div>
         <select id="jSel">
             <option value="Водитель">🛵 Водитель такси</option>
             <option value="Доставщик">📦 Курьер / Доставщик</option>
@@ -1566,6 +1590,20 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;" required min="1" step="1">
         <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;" required minlength="5" maxlength="200">
     </div>
+    <div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.04);">
+        <div class="card-title" style="color:var(--primary);">📝 КВЭ — Баллы экзамена</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.55;">Выставьте балл КВЭ жителю. После сохранения он получит уведомление и сможет посмотреть результат во вкладке КВЭ. Профессии доступны только при достаточном балле.</div>
+        <select id="kveTarget" style="margin-bottom:8px;"><option value="">— Выберите жителя —</option></select>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <input type="number" id="kveScoreInput" placeholder="Балл (0–100)" min="0" max="100" step="1" style="margin:0;flex:1;">
+            <div style="font-size:20px;font-weight:900;color:var(--primary);" id="kveScorePreview">—</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">
+            Проходной на сайт: 32 · Уборщик: 40 · Доставщик: 53 · Водитель: 60 · Журналист: 71 · КСБ: 90 · Депутат: 95
+        </div>
+        <button class="btn btn-primary" onclick="adminSetKveScore()">📝 Выставить балл КВЭ</button>
+        <div id="kveAdminStatus" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>
+    </div>
     <div class="card">
         <div class="card-title">🏘️ Здания для аренды</div>
         <input type="text" id="rentBuildName" placeholder="Название здания" maxlength="80">
@@ -1719,6 +1757,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;color:var(--primary);margin-bottom:6px;">📝 КВЭ</div>
         <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Капанёвский Внутренний Экзамен</div>
     </div>
+
+    <!-- Блок результата экзамена (заполняется JS) -->
+    <div id="kveResultCard"></div>
+
     <div class="card">
         <div class="card-title">📋 Что такое КВЭ?</div>
         <div style="font-size:14px;color:var(--text);line-height:1.7;">
@@ -2700,7 +2742,7 @@ function startApp() {
     const hw=qs('headerAvatarWrap'); if(hw) hw.classList.add('online');
     startOnlineHeartbeat();
     attachListeners();
-    ensureEconomyFresh({notify:false}).catch(()=>{});
+    ensureEconomyFresh({notify:true}).catch(()=>{});
     window._economyTimer && clearInterval(window._economyTimer);
     window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(()=>{}), 5 * 60 * 1000);
     navTo('home');
@@ -2732,6 +2774,22 @@ function attachListeners() {
             if(curPage==='market') renderDebtNotice('marketDebtNotice', u);
             if(curPage==='taxi') renderDebtNotice('taxiDebtNotice', u);
             if(curPage==='subscription' && typeof renderSubscription === 'function') renderSubscription();
+            if(curPage==='kveExam') renderKveSection(u);
+            if(curPage==='jobs') renderKveSection(u);
+            // Show KVE nav button if user has a score assigned
+            const kveBtn = qs('bn11');
+            if(kveBtn) kveBtn.style.display = (u.kveScore !== undefined && u.kveScore !== null) ? '' : 'none';
+            // Update home KVE card subtitle
+            const kveHomeSub = qs('kveHomeSub');
+            if(kveHomeSub){
+                if(u.kveScore !== undefined && u.kveScore !== null){
+                    kveHomeSub.textContent = 'Ваш балл: ' + u.kveScore;
+                    const kveCard = qs('kveHomeCard');
+                    if(kveCard) kveCard.style.borderColor = 'rgba(34,211,165,.6)';
+                } else {
+                    kveHomeSub.textContent = 'Результат ещё не получен';
+                }
+            }
         }
     };
     onValue(uRef,uFn); listeners.user={ref:uRef,fn:uFn};
@@ -5478,12 +5536,24 @@ function renderLeaderboard(users){
 window.sendApp=async function(){
     const target=qs('jSel').value;
     const appText=qs('jAppText').value.trim();
+    // Fetch user data to check KVE score
+    const uSnap=await get(userRef(currentNick));
+    const u=uSnap.val()||{};
+    const kveScore = (u.kveScore !== undefined && u.kveScore !== null) ? Number(u.kveScore) : null;
+    const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95};
+    const required=KVE_REQUIREMENTS[target]||0;
+    if(kveScore===null){
+        return toast('📝 У вас ещё нет результата КВЭ. Дождитесь выставления балла мэрией.','gold');
+    }
+    if(kveScore<required){
+        return toast(`❌ Для профессии «${target}» нужен балл КВЭ: ${required}. Ваш балл: ${kveScore}.`,'red');
+    }
     const snap=await get(appsRef());
     const apps=snap.val()||{};
     const already=Object.values(apps).some(a=>a.from===currentNick&&a.status==='new');
     if(already)return toast('⚠️ Заявка уже есть','gold');
     const id=genId();
-    await set(appRef(id),{id,from:currentNick,target,status:'new',appText,createdAt:Date.now()});
+    await set(appRef(id),{id,from:currentNick,target,status:'new',appText,kveScore,createdAt:Date.now()});
     await pushNotification(currentNick,`📝 Заявка на "${target}" отправлена`,'system');
     toast('📝 Отправлено!','green');
     renderJobAppStatus();
@@ -5581,6 +5651,92 @@ window.submitJanitorDone=async function(){
     toast('📨 Отчёт в мэрии','green');
 };
 
+// ─── KVE EXAM ─────────────────────────────
+const KVE_JOB_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95};
+function getKveJobAccess(score){
+    return Object.entries(KVE_JOB_REQUIREMENTS).filter(([,req])=>score>=req).map(([job])=>job);
+}
+async function renderKveSection(u){
+    const el=qs('kveResultCard');
+    if(!el)return;
+    if(!u){
+        const snap=await get(userRef(currentNick));
+        if(!snap.exists()){el.innerHTML='';return;}
+        u=snap.val();
+    }
+    const score=(u.kveScore!==undefined&&u.kveScore!==null)?Number(u.kveScore):null;
+    // Update KVE tab notice on jobs page
+    const jNotice=qs('jobKveNotice');
+    if(jNotice){
+        if(score===null){
+            jNotice.innerHTML=`<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:var(--r-sm);padding:12px;font-size:13px;"><b style="color:var(--gold);">📝 Балл КВЭ не выставлен</b><br><span style="color:var(--muted);">Мэрия ещё не выставила вам балл КВЭ. Заявки на работу будут заблокированы до получения результата.</span></div>`;
+        } else {
+            const available=getKveJobAccess(score);
+            const blocked=Object.keys(KVE_JOB_REQUIREMENTS).filter(j=>!available.includes(j));
+            jNotice.innerHTML=`<div style="background:rgba(34,211,165,.07);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:12px;font-size:13px;"><b style="color:var(--primary);">📝 Ваш балл КВЭ: <span style="font-size:18px;">${score}</span></b>${available.length?`<div style="margin-top:6px;color:var(--text);">✅ Доступные профессии: <b>${available.join(', ')}</b></div>`:''}${blocked.length?`<div style="margin-top:4px;color:var(--muted);">🔒 Недоступно: ${blocked.join(', ')}</div>`:''}</div>`;
+        }
+    }
+    if(score===null){
+        el.innerHTML=`<div class="card" style="border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06);">
+            <div style="text-align:center;padding:10px 0;">
+                <div style="font-size:40px;margin-bottom:8px;">⏳</div>
+                <div style="font-weight:900;font-size:17px;color:var(--gold);margin-bottom:4px;">Результат ещё не получен</div>
+                <div style="font-size:13px;color:var(--muted);line-height:1.5;">Мэрия ещё не выставила вам балл.<br>Вы получите уведомление, когда результат появится.</div>
+            </div>
+        </div>`;
+        return;
+    }
+    const isPassed=score>=32;
+    const available=getKveJobAccess(score);
+    const blocked=Object.keys(KVE_JOB_REQUIREMENTS).filter(j=>!available.includes(j));
+    const scoreColor=score>=90?'#22d3a5':score>=60?'#22c55e':score>=32?'#fbbf24':'#f87171';
+    const examDate=u.kveExamDate?`<div style="font-size:11px;color:var(--muted);margin-top:6px;">Дата выставления: ${u.kveExamDate}</div>`:'';
+    el.innerHTML=`<div class="card" style="border-color:${scoreColor}44;background:${scoreColor}11;">
+        <div style="text-align:center;padding:8px 0 4px;">
+            <div style="font-size:56px;font-weight:900;font-family:'Unbounded',sans-serif;color:${scoreColor};line-height:1;">${score}</div>
+            <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:${scoreColor};margin-top:2px;">баллов КВЭ</div>
+            ${examDate}
+            <div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:900;background:${isPassed?'rgba(34,211,165,.14)':'rgba(248,113,113,.14)'};color:${isPassed?'var(--primary)':'var(--red)'};">
+                ${isPassed?'✅ Порог пройден':'❌ Ниже минимума (32)'}
+            </div>
+        </div>
+        ${available.length?`<div style="margin-top:14px;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">✅ Доступные профессии</div>${available.map(j=>`<div style="padding:8px 12px;background:rgba(34,211,165,.09);border:1px solid rgba(34,211,165,.2);border-radius:10px;font-size:13px;font-weight:800;margin-bottom:6px;">✅ ${j} — нужно ${KVE_JOB_REQUIREMENTS[j]}б.</div>`).join('')}</div>`:''}
+        ${blocked.length?`<div style="margin-top:8px;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">🔒 Недоступные профессии</div>${blocked.map(j=>`<div style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted);margin-bottom:6px;">🔒 ${j} — нужно ${KVE_JOB_REQUIREMENTS[j]}б.</div>`).join('')}</div>`:''}
+        <button class="btn btn-ghost" style="margin-top:12px;font-size:12px;" onclick="navTo('jobs')">🛠 Перейти к работе →</button>
+    </div>`;
+}
+window.adminSetKveScore=async function(){
+    if(currentNick!==ADMIN)return;
+    const target=qs('kveTarget')?.value;
+    const scoreRaw=qs('kveScoreInput')?.value;
+    const statusEl=qs('kveAdminStatus');
+    if(!target){if(statusEl)statusEl.textContent='⚠️ Выберите жителя';return;}
+    const score=parseInt(scoreRaw,10);
+    if(isNaN(score)||score<0||score>100){if(statusEl)statusEl.textContent='⚠️ Введите балл от 0 до 100';return;}
+    const snap=await get(userRef(target));
+    if(!snap.exists()){if(statusEl)statusEl.textContent='❌ Житель не найден';return;}
+    const now=new Date();
+    const dateStr=now.toLocaleDateString('ru');
+    await update(userRef(target),{kveScore:score,kveExamDate:dateStr,kveScoreSetBy:ADMIN,kveScoreSetAt:Date.now()});
+    const isPassed=score>=32;
+    const available=getKveJobAccess(score).join(', ')||'нет';
+    const msg=`📝 Результат КВЭ: ${score} баллов. ${isPassed?'✅ Порог пройден. Доступные профессии: '+available:'❌ Ниже минимума (32). Обратитесь к мэру.'}`;
+    await pushNotification(target,msg,'system');
+    await logTx(target,{type:'in',who:'Мэрия',amt:0,desc:`КВЭ выставлен: ${score} баллов`});
+    if(statusEl)statusEl.innerHTML=`<span style="color:var(--primary);">✅ Балл ${score} выставлен жителю <b>${target}</b>. Уведомление отправлено.</span>`;
+    if(qs('kveScoreInput'))qs('kveScoreInput').value='';
+    // Refresh user list in select
+    const allSnap=await get(ref(db,'users'));
+    renderAdminUserSelect(allSnap.val()||{});
+    toast(`📝 КВЭ: ${target} = ${score} балл`,'green');
+};
+// Live preview of KVE score
+document.addEventListener('input',function(e){
+    if(e.target.id==='kveScoreInput'){
+        const prev=qs('kveScorePreview');
+        if(prev){const v=parseInt(e.target.value,10);prev.textContent=isNaN(v)?'—':v+'б.';}
+    }
+});
 // ─── ADMIN ────────────────────────────────
 function renderAdminApps(apps){const pending=Object.values(apps||{}).filter(a=>a.status==='new');qs('appList').innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':pending.map(a=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;"><b>${escHtml(a.from)}</b> → ${escHtml(a.target)}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="approveApp('${a.id}',true)">✅</button><button class="btn btn-red btn-sm" onclick="approveApp('${a.id}',false)">❌</button></div></div>`).join('');}
 function renderAdminUsers(users){
@@ -5590,7 +5746,20 @@ function renderAdminUsers(users){
     const aStats=qs('adminStats');if(aStats)aStats.innerHTML=`<div class="stat-box"><div class="sv" style="color:var(--gold)">${Object.keys(users).length}</div><div class="sl">Жителей</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)" id="adminOrderCount">—</div><div class="sl">Заказов</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)">${Math.round(total/1000)}к</div><div class="sl">₽ оборот</div></div>`;
 }
 function renderAdminOrders(orders){const el=qs('adminOrders');if(!el)return;const arr=Object.entries(orders||{}).map(([id,o])=>({...o,id}));const cnt=qs('adminOrderCount');if(cnt)cnt.textContent=arr.length;el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':arr.map(o=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;font-size:13px;"><b>${o.type==='taxi'?'🛵 Такси':'📦 Доставка'}</b> · ${escHtml(o.info)}<br>Клиент: ${escHtml(o.client)} · ${o.price}₽${o.worker?` · Курьер: ${escHtml(o.worker)}`:'·  <span style="color:var(--muted)">Ожидает</span>'}<button class="btn btn-red btn-sm" style="margin-top:8px;" onclick="adminDeleteOrder('${o.id}')">Удалить</button></div>`).join('');}
-function renderAdminUserSelect(users){const sel=qs('adminTarget');if(!sel)return;const cur=sel.value;sel.innerHTML=Object.keys(users).map(n=>`<option value="${n}">${n}</option>`).join('');if(cur)sel.value=cur;}
+function renderAdminUserSelect(users){
+    const sel=qs('adminTarget');
+    if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML=Object.keys(users).map(n=>`<option value="${n}">${n}</option>`).join('');
+    if(cur)sel.value=cur;
+    // Also populate kveTarget select
+    const kveSel=qs('kveTarget');
+    if(kveSel){
+        const kveVal=kveSel.value;
+        kveSel.innerHTML='<option value="">— Выберите жителя —</option>'+Object.entries(users).map(([n,u])=>`<option value="${n}">${n}${u.kveScore!==undefined&&u.kveScore!==null?' ('+u.kveScore+'б.)':' (нет балла)'}</option>`).join('');
+        if(kveVal)kveSel.value=kveVal;
+    }
+}
 function renderAdminJanitorSubmissions(subs){
     const el=qs('janitorAdminList');if(!el)return;
     const pending=Object.values(subs||{}).filter(s=>s.status==='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -6183,14 +6352,16 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0,kveExam:0,deputySession:0,deliveryOrderPage:0};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0,kveExam:11,deputySession:0,deliveryOrderPage:0};
 window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
-    for(let i=0;i<11;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
+    for(let i=0;i<12;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
     window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
+    if(id==='kveExam') renderKveSection();
+    if(id==='jobs') renderKveSection();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
     if(id==='messages'){
         // Show loaders immediately on first open
@@ -10533,6 +10704,23 @@ window.renderSubscription = async function(){
         if(manageNoneEl) manageNoneEl.style.display = 'none';
         if(btnPlus) btnPlus.style.display = 'none';
         if(btnUltra) btnUltra.textContent = 'Продлить Ultra';
+    }
+    // Render upcoming tax/fee info
+    const taxEl = qs('taxNextInfo');
+    if(taxEl){
+        const lastProcessed = u.economyLastProcessedAt ? Number(u.economyLastProcessedAt) : Date.now();
+        const nextCharge = new Date(lastProcessed + 7 * 24 * 60 * 60 * 1000);
+        const daysLeft = Math.max(0, Math.ceil((nextCharge - Date.now()) / (1000 * 60 * 60 * 24)));
+        const balance = Number(u.balance || 0);
+        const ACCOUNT_FEE = 15;
+        let wealthTax = 0;
+        let taxPct = 0;
+        if(balance > 0 && balance < 1000){ wealthTax = Math.round(balance * 0.05); taxPct = 5; }
+        else if(balance >= 1000 && balance <= 10000){ wealthTax = Math.round(balance * 0.07); taxPct = 7; }
+        else if(balance > 10000 && balance <= 100000){ wealthTax = Math.round(balance * 0.10); taxPct = 10; }
+        else if(balance > 100000){ wealthTax = Math.round(balance * 0.20); taxPct = 20; }
+        const totalNext = ACCOUNT_FEE + wealthTax;
+        taxEl.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-weight:800;">📅 Следующее списание</span><b style="color:var(--red);">−${totalNext} ₽</b></div><div style="font-size:11px;color:var(--muted);">Через <b style="color:var(--text);">${daysLeft} ${daysLeft===1?'день':(daysLeft>=2&&daysLeft<=4?'дня':'дней')}</b> · ${nextCharge.toLocaleDateString('ru',{day:'numeric',month:'long'})}<br>Абонентская плата: <b>15 ₽</b>${wealthTax>0?` + налог ${taxPct}% = <b>${wealthTax} ₽</b>`:'<br><span style="color:var(--primary);">Налог на богатство: не начисляется (баланс ≤ 0)</span>'}</div>`;
     }
 };
 
