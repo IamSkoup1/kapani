@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0c1117">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -339,8 +339,9 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 .chat-msg{-webkit-backface-visibility:hidden;backface-visibility:hidden;}
 .profile-header{-webkit-backface-visibility:hidden;backface-visibility:hidden;-webkit-transform:translateZ(0);transform:translateZ(0);}
 .avatar-frame{-webkit-backface-visibility:hidden;backface-visibility:hidden;-webkit-transform:translateZ(0);transform:translateZ(0);}
-#userProfileModal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9985;display:none;align-items:flex-end;justify-content:center;-webkit-transform:translateZ(0);transform:translateZ(0);}
+#userProfileModal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9985;display:none;align-items:flex-end;justify-content:center;-webkit-overflow-scrolling:touch;}
 #userProfileModal.open{display:flex;}
+.user-profile-sheet{-webkit-overflow-scrolling:touch;overflow-y:auto;max-height:90vh;overscroll-behavior:contain;}
 .user-profile-sheet{background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;}
 .upm-online{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;margin-top:6px;}
 .upm-online.is-online{color:#22c55e;}
@@ -595,11 +596,12 @@ input[type=file]{display:none;}
 .wall-post-actions{display:flex;justify-content:flex-end;gap:6px;margin-bottom:6px;}
 /* ─── iOS FIXES ─────────────────────────── */
 /* Prevent scroll-lock / flicker on iOS when modals open */
-body.modal-open{overflow:hidden;position:fixed;width:100%;}
+/* iOS modal-open: handled entirely by JS lockBodyScroll/unlockBodyScroll */
+body.modal-open{/* position:fixed applied via JS */}
 /* Fix backdrop-filter flicker on iOS Safari */
 .g-header,.bottom-nav{-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);}
-/* Ensure modals have proper GPU layer on iOS */
-#userProfileModal,#historyModal,#imgViewer,#videoViewer{-webkit-transform:translate3d(0,0,0);transform:translate3d(0,0,0);}
+/* Ensure modals render on top layer on iOS */
+#userProfileModal,#historyModal,#imgViewer,#videoViewer{isolation:isolate;}
 .user-profile-sheet,.history-sheet{-webkit-overflow-scrolling:touch;overflow-y:auto;}
 /* Fix touch events passing through on iOS */
 #userProfileModal.open,.section.active{pointer-events:auto;}
@@ -609,29 +611,22 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .msg-video-wrap{contain:layout paint;will-change:auto;}
 .msg-media-img{contain:layout paint;will-change:auto;}
 
-/* ─── SAFARI iOS CHAT FIXES ─────────────────────────── */
-/* Prevent flickering and ensure smooth scrolling in chat */
+/* === SAFARI iOS CHAT FIXES === */
+/* Smooth scrolling in chat, no unnecessary GPU layers */
 #chatMessages,#dmMessages{
     -webkit-overflow-scrolling:touch;
-    -webkit-transform:translateZ(0);
-    transform:translateZ(0);
-    -webkit-backface-visibility:hidden;
-    backface-visibility:hidden;
-    will-change:scroll-position;
+    overscroll-behavior:contain;
+    isolation:isolate;
 }
 /* Fix buttons not responding in chat on Safari iOS */
 #chatMessages .chat-msg,
 #dmMessages .chat-msg,
 #chatMessages .msg-action-btn,
 #dmMessages .msg-action-btn{
-    -webkit-transform:translateZ(0);
-    transform:translateZ(0);
     pointer-events:auto;
 }
 /* Ensure chat input area is always interactive */
 .chat-input-row{
-    -webkit-transform:translateZ(0);
-    transform:translateZ(0);
     position:relative;
     z-index:100;
 }
@@ -642,17 +637,16 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 }
 /* Fix Safari iOS double-tap and scroll issues */
 @supports (-webkit-touch-callout:none){
-    /* iOS specific fixes */
-    .section{min-height:100vh;min-height:-webkit-fill-available;}
-    #messages{min-height:100vh;min-height:-webkit-fill-available;}
-    /* Prevent chat flickering during scroll */
-    .chat-bubble{-webkit-transform:translateZ(0);transform:translateZ(0);-webkit-backface-visibility:hidden;backface-visibility:hidden;}
+    /* iOS: prevent auto-zoom on input focus (requires font-size >= 16px) */
+    input,select{font-size:max(16px,1em);}
+    /* Prevent chat flickering — backface only, no translateZ (too many GPU layers) */
+    .chat-bubble{-webkit-backface-visibility:hidden;backface-visibility:hidden;}
     /* Ensure buttons work after chat entry */
     .btn,.msg-action-btn{position:relative;z-index:10;}
     /* Fix bottom nav on iPhone with safe area */
     .bottom-nav{padding-bottom:max(10px,env(safe-area-inset-bottom));}
-    /* Prevent visual viewport issues */
-    body{min-height:100vh;min-height:-webkit-fill-available;}
+    /* Body height */
+    body{min-height:100dvh;}
 }
 /* Prevent momentum scrolling issues in chat */
 #chatWrapper,#dmWrapper{
@@ -662,8 +656,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 /* Ensure emoji panel and media bar are clickable */
 .emoji-panel,.media-bar,.media-bar-btn{
     pointer-events:auto;
-    -webkit-transform:translateZ(0);
-    transform:translateZ(0);
 }
 /* Fix message actions appearing and buttons clickable */
 .msg-actions{
@@ -698,8 +690,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .msg-action-btn{padding:8px 12px;font-size:12px;}
 .msg-edit-area textarea{min-height:58px;}
 @media (hover:none){
-    /* On touch devices show action buttons but NOT edit area */
-    .msg-actions{display:flex!important;opacity:1!important;visibility:visible!important;}
+    /* On touch: don't force edit area open, msg-actions shown via JS on long-press */
     .msg-edit-area{display:none!important;}
 }
 .news-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
@@ -2747,7 +2738,9 @@ function startApp() {
     window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(()=>{}), 5 * 60 * 1000);
     navTo('home');
     requestPersistentStorage();
-    setTimeout(()=>requestPushPermission(),2500);
+    // NOTE: Push permission must only be requested from a user gesture (browser security requirement)
+    // requestPushPermission() is called via the UI button instead
+    // On iOS Safari, auto-requesting is silently ignored anyway
     buildEmojiPanels();
     try { const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); if(auth && auth.nick && auth.pass && (!currentNick || currentNick!==auth.nick)) { localStorage.setItem('kp_s', auth.nick); sessionStorage.setItem('kp_s', auth.nick); currentNick = auth.nick; } } catch(e) {}
     hideLoadingSafe();
@@ -3112,6 +3105,18 @@ function savePushPrefs(p){try{localStorage.setItem('kp_push',JSON.stringify(p));
 function isPushOn(){const p=getPushPrefs();return p.enabled!==false;}
 function isPushCatEnabled(cat){if(!isPushOn())return false;const p=getPushPrefs();return p[cat]!==false;}
 let _swReg=null;
+// Detect Safari/iOS for notifications
+function isSafariBrowser(){
+    const ua = navigator.userAgent || '';
+    return /Safari\//.test(ua) && !/Chrome\/|CriOS\/|FxiOS\/|OPiOS\//.test(ua);
+}
+function isIOSDevice(){
+    const ua = navigator.userAgent || '';
+    return /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isIOSPWA(){
+    return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
+}
 async function getSwReg(){
     if(_swReg) return _swReg;
     if(location.protocol === 'file:') return null;
@@ -3123,11 +3128,39 @@ async function getSwReg(){
         return _swReg;
     } catch(err){console.warn('SW register failed:',err);return null;}
 }
+async function requestNotificationPermission(){
+    // Cross-browser permission request — handles old Safari callback API and modern Promise API
+    if(!('Notification' in window)) return 'unsupported';
+    if(Notification.permission === 'granted') return 'granted';
+    if(Notification.permission === 'denied') return 'denied';
+    try {
+        // Modern browsers: returns a Promise
+        const result = await Notification.requestPermission();
+        return result;
+    } catch(e) {
+        // Older Safari: requestPermission only supports callback
+        return new Promise(resolve => {
+            try { Notification.requestPermission(resolve); }
+            catch(e2) { resolve('denied'); }
+        });
+    }
+}
 async function requestPushPermission(){
     if(!('Notification' in window)) return false;
+    // iOS Safari < 16.4: No web push support unless added to home screen
+    if(isIOSDevice() && !isIOSPWA()){
+        const majorVer = parseInt((navigator.userAgent.match(/OS (\d+)_/)||[])[1]||'0', 10);
+        if(majorVer < 16){
+            toast('📲 iOS не поддерживает уведомления в браузере. Добавьте сайт на главный экран.','gold');
+            return false;
+        }
+        // iOS 16.4+: only works as installed PWA
+        toast('📲 Для уведомлений добавьте сайт на главный экран iPhone (Поделиться → На экран «Домой»)','gold');
+        return false;
+    }
     if(Notification.permission==='granted'){await tryRegisterFcm();return true;}
     if(Notification.permission==='denied') return false;
-    const result=await Notification.requestPermission();
+    const result = await requestNotificationPermission();
     if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);await getSwReg();await tryRegisterFcm();toast('🔔 Push-уведомления включены!','green');return true;}
     return false;
 }
@@ -3148,6 +3181,8 @@ async function sendPushNotification(title,body,cat){
     cat=cat||'system';
     if(!('Notification' in window)||Notification.permission!=='granted') return;
     if(!isPushCatEnabled(cat)) return;
+    // iOS Safari PWA: only send if installed as PWA
+    if(isIOSDevice() && !isIOSPWA()) return;
     try{
         const reg = await getSwReg();
         if(reg && typeof reg.showNotification === 'function'){
@@ -3161,9 +3196,20 @@ function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const 
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
     if(!container) return;
+    // iOS device in browser (not PWA) — show special message
+    if(isIOSDevice() && !isIOSPWA()){
+        if(btn){
+            btn.textContent='📲 Добавьте на экран «Домой»';
+            btn.disabled=false;
+            btn.className='btn btn-gold';
+            btn.onclick=()=>toast('Откройте Safari → Поделиться → «На экран «Домой»» — затем откройте приложение оттуда для уведомлений','gold');
+        }
+        container.style.display='none';
+        return;
+    }
     const perm=('Notification' in window)?Notification.permission:'unsupported';
     if(perm==='unsupported'){if(btn){btn.textContent='❌ Не поддерживается';btn.disabled=true;btn.className='btn btn-ghost';}container.style.display='none';return;}
-    if(perm==='denied'){if(btn){btn.textContent='🚫 Заблокировано';btn.disabled=false;btn.className='btn btn-ghost';btn.onclick=()=>toast('Откройте настройки браузера → Уведомления','gold');}container.style.display='none';return;}
+    if(perm==='denied'){if(btn){btn.textContent='🚫 Заблокировано';btn.disabled=false;btn.className='btn btn-ghost';btn.onclick=()=>toast('Откройте настройки браузера → Уведомления и разрешите для этого сайта','gold');}container.style.display='none';return;}
     if(perm==='default'){if(btn){btn.textContent='🔔 Включить push-уведомления';btn.disabled=false;btn.className='btn btn-primary';btn.onclick=handlePushBtn;}container.style.display='none';return;}
     if(btn) btn.style.display='none'; if(statusTxt) statusTxt.style.display='none';
     const masterOn=isPushOn();
@@ -3178,7 +3224,16 @@ function updatePushSettingsUI(){
     container.style.display='block';
     container.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:2px solid var(--border);margin-bottom:2px;"><div><div style="font-weight:900;font-size:14px;">🔔 Все уведомления</div><div style="font-size:11px;color:var(--muted);">Главный переключатель</div></div>${makeSw(masterOn,"toggleMasterPush()")}</div>`+cats.map(c=>{const catOn=masterOn&&getPushPrefs()[c.id]!==false;const rowOp=masterOn?'':'opacity:.45;pointer-events:none;';return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);${rowOp}"><div><div style="font-weight:800;font-size:13px;">${c.label}</div><div style="font-size:11px;color:var(--muted);">${c.desc}</div></div>${makeSw(catOn,"togglePushCat('"+c.id+"')")}</div>`;}).join('');
 }
-window.handlePushBtn=async function(){if(!('Notification' in window)){toast('❌ Браузер не поддерживает уведомления','red');return;}if(Notification.permission==='denied'){toast('⚠️ Заблокировано — разрешите в настройках браузера','gold');return;}const ok=await requestPushPermission();if(ok)updatePushSettingsUI();};
+window.handlePushBtn=async function(){
+    // iOS Safari in browser: show install instructions
+    if(isIOSDevice() && !isIOSPWA()){
+        toast('📲 Добавьте сайт на экран «Домой» в Safari (Поделиться → На экран «Домой»), затем откройте из него и включите уведомления','gold');
+        return;
+    }
+    if(!('Notification' in window)){toast('❌ Браузер не поддерживает уведомления','red');return;}
+    if(Notification.permission==='denied'){toast('⚠️ Заблокировано — разрешите в настройках браузера → Уведомления','gold');return;}
+    const ok=await requestPushPermission();if(ok)updatePushSettingsUI();
+};
 window.toggleMasterPush=function(){const p=getPushPrefs();p.enabled=p.enabled!==false?false:true;savePushPrefs(p);toast(p.enabled?'🔔 Включены':'🔕 Выключены',p.enabled?'green':'gold');updatePushSettingsUI();};
 window.togglePushCat=function(cat){const p=getPushPrefs();p[cat]=p[cat]===false?true:false;savePushPrefs(p);updatePushSettingsUI();toast((p[cat]!==false?'🔔 ':'🔕 ')+'Обновлено','green');};
 
@@ -4781,7 +4836,10 @@ window.publishWallPost=async function(){
 };
 
 window.openUserProfile=async function(nick){
-    if(nick===currentNick){navTo('profile');return;}viewingProfileNick=nick;
+    if(nick===currentNick){navTo('profile');return;}
+    // Prevent rapid double-open
+    if(viewingProfileNick === nick && qs('userProfileModal').classList.contains('open')) return;
+    viewingProfileNick=nick;
     const snap=await get(userRef(nick));if(!snap.exists())return toast('❌ Не найден','red');const u=snap.val();const online=isUserOnline(u);
     
     // Check subscription status
@@ -4889,15 +4947,25 @@ window.openUserProfile=async function(nick){
     lockBodyScroll();
     const modal = qs('userProfileModal');
     modal.style.display = 'flex';
-    // Force reflow before adding class to ensure animation plays
-    modal.offsetHeight;
-    modal.classList.add('open');
+    modal.style.pointerEvents = 'auto';
+    // rAF ensures display:flex is applied before class triggers animation
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            modal.classList.add('open');
+        });
+    });
 };
 window.closeUserProfile=function(){
     const modal = qs('userProfileModal');
     modal.classList.remove('open');
-    // Delay hiding to allow animation
-    setTimeout(()=>{ if(!modal.classList.contains('open')) modal.style.display='none'; }, 350);
+    modal.style.pointerEvents = 'none';
+    // Delay hiding to allow close animation, then restore scroll
+    setTimeout(()=>{
+        if(!modal.classList.contains('open')){
+            modal.style.display='none';
+            modal.style.pointerEvents = '';
+        }
+    }, 350);
     unlockBodyScroll();
     viewingProfileNick=null;
 };
@@ -6357,6 +6425,10 @@ window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
     for(let i=0;i<12;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
+    // Ensure body scroll is unlocked when navigating (in case a modal left it locked)
+    if(document.body.style.position === 'fixed'){
+        unlockBodyScroll();
+    }
     window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
@@ -10403,14 +10475,26 @@ window.openJumpToDate = function(ctx){
 // ─── iOS MODAL BODY LOCK ──────────────────
 let _scrollY = 0;
 function lockBodyScroll(){
-    _scrollY = window.scrollY;
+    // iOS-safe scroll lock: capture scroll position before fixing body
+    _scrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
     document.body.style.top = `-${_scrollY}px`;
-    document.body.classList.add('modal-open');
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.bottom = '0';
 }
 function unlockBodyScroll(){
-    document.body.classList.remove('modal-open');
+    const y = _scrollY || 0;
+    document.body.style.overflow = '';
+    document.body.style.position = '';
     document.body.style.top = '';
-    window.scrollTo(0, _scrollY);
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.bottom = '';
+    // Restore scroll position (iOS needs requestAnimationFrame to avoid flicker)
+    requestAnimationFrame(() => window.scrollTo(0, y));
+    _scrollY = 0;
 }
 
 // ─── VIDEO CIRCLE: NO MIRROR / SWITCH WHILE RECORDING / 60s ─────────────────
@@ -11361,15 +11445,21 @@ window.completeCustomDelivery = async function(orderId) {
 </script>
 
 <script>
+// ═══════════════════════════════════════════════════
+// iOS / SAFARI COMPATIBILITY LAYER  (runs last)
+// ═══════════════════════════════════════════════════
 (function(){
   const ua = navigator.userAgent || '';
   const iOS = /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if (!iOS) return;
+  const isSafari = /Safari\//.test(ua) && !/Chrome\/|CriOS\/|FxiOS\/|OPiOS\//.test(ua);
 
-  document.documentElement.classList.add('ios-device');
+  if(iOS) document.documentElement.classList.add('ios-device');
+  if(isSafari) document.documentElement.classList.add('safari-browser');
 
+  // ─── CSS PATCHES ─────────────────────────────
   const style = document.createElement('style');
   style.textContent = `
+    /* ── Remove backdrop-filter on iOS (causes GPU memory spikes & freezes) ── */
     .ios-device .g-header,
     .ios-device .bottom-nav,
     .ios-device #userProfileModal,
@@ -11381,8 +11471,10 @@ window.completeCustomDelivery = async function(orderId) {
     .ios-device .history-sheet {
       -webkit-backdrop-filter: none !important;
       backdrop-filter: none !important;
+      background-color: rgba(12,17,23,0.97) !important;
     }
 
+    /* ── Disable animations/transitions on profile backgrounds (CPU-heavy) ── */
     .ios-device .profile-bg-shimmer,
     .ios-device .profile-bg-particles,
     .ios-device .profile-bg-gradient-animated,
@@ -11406,8 +11498,10 @@ window.completeCustomDelivery = async function(orderId) {
     .ios-device .avatar-frame-hologram,
     .ios-device .avatar-frame-dragon {
       animation: none !important;
+      transition: none !important;
     }
 
+    /* ── Remove will-change and GPU-forcing transforms on list items ── */
     .ios-device .chat-msg,
     .ios-device .chat-bubble,
     .ios-device .lb-row,
@@ -11418,8 +11512,10 @@ window.completeCustomDelivery = async function(orderId) {
     .ios-device .card {
       transform: none !important;
       will-change: auto !important;
+      -webkit-transform: none !important;
     }
 
+    /* ── Fast tap on ALL interactive elements ── */
     .ios-device .lb-row,
     .ios-device .dm-user-row,
     .ios-device .market-seller,
@@ -11434,60 +11530,125 @@ window.completeCustomDelivery = async function(orderId) {
     .ios-device .jump-date-text,
     .ios-device .market-tab,
     .ios-device .msg-tab,
-    .ios-device .btn {
-      -webkit-tap-highlight-color: transparent;
+    .ios-device .btn,
+    .ios-device button,
+    .ios-device [role=button] {
+      -webkit-tap-highlight-color: transparent !important;
+      touch-action: manipulation !important;
+      cursor: pointer !important;
+    }
+
+    /* ── Fix bottom nav safe area ── */
+    .ios-device .bottom-nav {
+      padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    }
+
+    /* ── Prevent double-tap zoom everywhere ── */
+    .ios-device * {
       touch-action: manipulation;
+    }
+    /* Restore pan-y for scrollable containers */
+    .ios-device #chatMessages,
+    .ios-device #dmMessages,
+    .ios-device #newsDiscussionMessages,
+    .ios-device .user-profile-sheet,
+    .ios-device .history-sheet,
+    .ios-device .container {
+      touch-action: pan-y !important;
+    }
+
+    /* ── Fix modals: no GPU compositing overflow ── */
+    .ios-device #userProfileModal.open,
+    .ios-device #historyModal.open,
+    .ios-device #imgViewer.open,
+    .ios-device #videoViewer.open {
+      pointer-events: auto !important;
     }
   `;
   document.head.appendChild(style);
 
-  const tappableSelector = [
-    '.lb-row', '.dm-user-row', '.market-seller', '.chat-sender', '.driver-card-header',
-    '.submission-top', '.quick-card', '.bn-item', '.msg-action-btn', '.media-ico-btn',
-    '.media-bar-btn', '.jump-date-text', '.market-tab', '.msg-tab', '.btn', '.notif-item'
-  ].join(', ');
-
-  // Note: Removed aggressive touchend handler that was causing iOS freezes.
-  // Touch events are now handled natively through proper touch-action CSS and 
-  // -webkit-tap-highlight-color:transparent on interactive elements.
-
+  // ─── FIX STALE pointer-events AFTER HIDDEN OVERLAYS ────────────────
+  // iOS bug: when an overlay is hidden its pointer-events block can persist
   const clearBlockingLayers = () => {
-    ['loadingOverlay', 'notifPopup'].forEach(id => {
+    ['loadingOverlay','notifPopup'].forEach(id => {
       const el = document.getElementById(id);
-      if (el && getComputedStyle(el).display === 'none') el.style.pointerEvents = 'none';
+      if(el && getComputedStyle(el).display === 'none'){
+        el.style.pointerEvents = 'none';
+      }
+    });
+    // Also ensure closed modals don't block
+    ['userProfileModal','historyModal','imgViewer','videoViewer','vcModal'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el && !el.classList.contains('open') && el.style.display === 'none'){
+        el.style.pointerEvents = 'none';
+      }
     });
   };
   window.addEventListener('pageshow', clearBlockingLayers);
   window.addEventListener('focus', clearBlockingLayers);
-  setTimeout(clearBlockingLayers, 400);
+  setTimeout(clearBlockingLayers, 300);
+  setInterval(clearBlockingLayers, 2000);
 
-  // Keep heavy chat/rating screens responsive on iPhone.
-  const patchListRenderer = (name) => {
-    const original = window[name];
-    if (typeof original !== 'function') return;
-    window[name] = function(data){
-      return original.call(this, data);
+  // ─── FIX MODAL OPEN/CLOSE POINTER EVENTS ────────────────────────
+  // Monkey-patch openUserProfile and closeUserProfile to ensure pointer-events are correct
+  const _origOpenProfile = window.openUserProfile;
+  if(typeof _origOpenProfile === 'function'){
+    window.openUserProfile = async function(nick){
+      const modal = document.getElementById('userProfileModal');
+      if(modal) modal.style.pointerEvents = 'auto';
+      return _origOpenProfile.apply(this, arguments);
     };
-  };
-  patchListRenderer('renderChat');
-  patchListRenderer('renderDmMessages');
-  patchListRenderer('renderLeaderboard');
+  }
 
-  const patchOpen = (name, modalId) => {
-    const original = window[name];
-    if (typeof original !== 'function') return;
-    window[name] = function(...args){
-      const result = original.apply(this, args);
-      const el = document.getElementById(modalId);
-      if (el) el.style.pointerEvents = 'auto';
-      return result;
-    };
-  };
-  patchOpen('openUserProfile', 'userProfileModal');
-  patchOpen('openImgViewer', 'imgViewer');
-  patchOpen('openVideoViewer', 'videoViewer');
-  patchOpen('openHistoryModal', 'historyModal');
-  patchOpen('openVcModal', 'vcModal');
+  // ─── FIX iOS SCROLL LOCK EDGE CASE ──────────────────────────────
+  // When modals are closed while keyboard is open, scrollY can be wrong
+  // Listen for visual viewport changes and update scroll lock
+  if(window.visualViewport && iOS){
+    window.visualViewport.addEventListener('resize', () => {
+      // If modal is open and keyboard shown/hidden, reposition modal
+      const modal = document.getElementById('userProfileModal');
+      if(modal && modal.classList.contains('open')){
+        const sheet = modal.querySelector('.user-profile-sheet');
+        if(sheet){
+          const vh = window.visualViewport.height;
+          sheet.style.maxHeight = Math.floor(vh * 0.9) + 'px';
+        }
+      }
+    });
+  }
+
+  // ─── FIX iOS SAFARI MESSAGE ACTIONS ─────────────────────────────
+  // On iOS, use touchstart for long-press to show message actions
+  // instead of the always-visible hack (which causes touch interception)
+  if(iOS){
+    let _longPressTimer = null;
+    let _longPressEl = null;
+    document.addEventListener('touchstart', function(e){
+      const msgBody = e.target.closest('.chat-msg-body');
+      if(!msgBody) return;
+      const actions = msgBody.querySelector('.msg-actions');
+      if(!actions) return;
+      _longPressEl = actions;
+      _longPressTimer = setTimeout(() => {
+        if(_longPressEl){
+          _longPressEl.style.display = 'flex';
+          _longPressEl.style.opacity = '1';
+          _longPressEl.style.visibility = 'visible';
+          // Auto-hide after 4s
+          setTimeout(() => {
+            if(_longPressEl){ _longPressEl.style.display = ''; }
+            _longPressEl = null;
+          }, 4000);
+        }
+      }, 500);
+    }, { passive: true });
+    document.addEventListener('touchend', function(){
+      clearTimeout(_longPressTimer);
+    }, { passive: true });
+    document.addEventListener('touchmove', function(){
+      clearTimeout(_longPressTimer);
+    }, { passive: true });
+  }
 
 })();
 </script>
