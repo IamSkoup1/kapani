@@ -2607,6 +2607,16 @@ async function processEconomyChargesForUser(nick, opts = {}){
         const patch = { balance, economyLastProcessedAt: cursor };
         await update(userRef(nick), patch);
 
+        for(const n of notifications){
+            if(n.accountFee > 0){
+                await logTx(nick, { type: 'out', who: 'Мэрия', amt: n.accountFee, desc: 'Абонентская плата за неделю' });
+            }
+            if(n.wealthTax > 0){
+                let taxPct = n.taxBase < 1000 ? 5 : n.taxBase <= 10000 ? 7 : n.taxBase <= 100000 ? 10 : 20;
+                await logTx(nick, { type: 'out', who: 'Налоговая', amt: n.wealthTax, desc: `Налог на богатство ${taxPct}%` });
+            }
+        }
+
         if(opts.notify !== false){
             for(const n of notifications){
                 if(n.total <= 0) continue;
@@ -4379,7 +4389,12 @@ window.doTransfer=async function(){
 async function renderRecentTransfers(){
     const el=qs('txHistory');if(!el)return;const snap=await get(txLogRef(currentNick));
     const arr=Object.values(snap.val()||{}).sort((a,b)=>(b.ts||'').localeCompare(a.ts||'')).slice(0,5);
-    el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет операций</div>':arr.map(tx=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:20px;">${tx.type==='in'?'💰':'💸'}</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:12px;line-height:1.35;">${tx.desc?escHtml(tx.desc):(tx.type==='in'?'от '+escHtml(tx.who):'→ '+escHtml(tx.who))}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${escHtml(tx.date||'')} · ${escHtml(tx.time||'')}</div></div><div style="font-weight:900;font-size:14px;white-space:nowrap;${tx.type==='in'?'color:var(--primary)':'color:var(--red)'};">${tx.type==='in'?'+':'−'}${tx.amt}₽</div></div>`).join('');
+    el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет операций</div>':arr.map(tx=>{
+        const whoLine = tx.who ? (tx.type==='in' ? 'От: '+escHtml(tx.who) : '→ '+escHtml(tx.who)) : '';
+        const descLine = tx.desc ? escHtml(tx.desc) : (tx.who ? '' : (tx.type==='in'?'Поступление':'Списание'));
+        const title = [whoLine, descLine].filter(Boolean).join(' · ');
+        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:20px;">${tx.type==='in'?'💰':'💸'}</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:12px;line-height:1.35;">${title}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${escHtml(tx.date||'')} · ${escHtml(tx.time||'')}</div></div><div style="font-weight:900;font-size:14px;white-space:nowrap;${tx.type==='in'?'color:var(--primary)':'color:var(--red)'};">${tx.type==='in'?'+':'−'}${tx.amt}₽</div></div>`;
+    }).join('');
 }
 window.renderFinancialStats=async function(){
     const snap=await get(txLogRef(currentNick));
@@ -4456,7 +4471,12 @@ window.openHistoryModal=async function(){
     qs('historyList').innerHTML=Object.entries(byMonth).map(([key, txs])=>{
         const sample=txs[0]?.date||'';
         const title=sample&&sample.includes('.')?monthTitleRu(sample):`Период ${key}`;
-        return `<div style="font-size:12px;font-weight:900;color:var(--gold);padding:16px 0 8px;border-bottom:1px solid var(--border);">${escHtml(title)}</div>${txs.map(tx=>`<div class="tx-item" style="align-items:flex-start;"><div class="tx-ico">${tx.type==='in'?'💰':'💸'}</div><div class="tx-info" style="min-width:0;overflow:hidden;"><div class="tx-what" style="font-weight:800;font-size:13px;color:var(--text);">${escHtml(tx.date||'')} · ${escHtml(tx.time||'')}</div><div class="tx-who" style="font-size:12px;margin-top:4px;line-height:1.45;word-break:break-word;overflow-wrap:anywhere;">${tx.desc?escHtml(tx.desc):(tx.type==='in'?'от '+escHtml(tx.who):'к '+escHtml(tx.who))}</div></div><div class="tx-amt ${tx.type==='in'?'plus':'minus'}" style="flex-shrink:0;align-self:flex-start;">${tx.type==='in'?'+':'−'}${tx.amt}₽</div></div>`).join('')}`;
+        return `<div style="font-size:12px;font-weight:900;color:var(--gold);padding:16px 0 8px;border-bottom:1px solid var(--border);">${escHtml(title)}</div>${txs.map(tx=>{
+            const whoLine = tx.who ? (tx.type==='in' ? 'От: '+escHtml(tx.who) : 'Кому: '+escHtml(tx.who)) : '';
+            const descLine = tx.desc ? escHtml(tx.desc) : (tx.who ? '' : (tx.type==='in'?'Поступление':'Списание'));
+            const subLines = [whoLine, descLine].filter(Boolean).join('<br>');
+            return `<div class="tx-item" style="align-items:flex-start;"><div class="tx-ico">${tx.type==='in'?'💰':'💸'}</div><div class="tx-info" style="min-width:0;overflow:hidden;"><div class="tx-what" style="font-weight:800;font-size:13px;color:var(--text);">${escHtml(tx.date||'')} · ${escHtml(tx.time||'')}</div><div class="tx-who" style="font-size:12px;margin-top:4px;line-height:1.45;word-break:break-word;overflow-wrap:anywhere;">${subLines}</div></div><div class="tx-amt ${tx.type==='in'?'plus':'minus'}" style="flex-shrink:0;align-self:flex-start;">${tx.type==='in'?'+':'−'}${tx.amt}₽</div></div>`;
+        }).join('')}`;
     }).join('');
 };
 window.closeHistoryModal=function(){qs('historyModal').classList.remove('open');unlockBodyScroll();};
@@ -4496,8 +4516,10 @@ window.sendPendingPhotos=async function(ctx){
 
 window.sendChat=async function(){
     const inp=qs('chatInput');const text=inp.value.trim();if(!text)return;
-    await sendChatMsg(text,null,null);inp.value='';
+    inp.value='';
     setChatTypingState('idle');
+    try{ await sendChatMsg(text,null,null); }
+    catch(e){ inp.value=text; toast('❌ Не удалось отправить сообщение','red'); }
 };
 async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     const uSnap=await get(userRef(currentNick));const u=uSnap.val();
@@ -4729,8 +4751,10 @@ window.closeDmChat=function(){
 };
 window.sendDm=async function(){
     const inp=qs('dmInput');const text=inp.value.trim();if(!text||!currentDmNick)return;
-    await sendDmMsg(text,null,null);inp.value='';
+    inp.value='';
     setDmTypingState('idle');
+    try{ await sendDmMsg(text,null,null); }
+    catch(e){ inp.value=text; toast('❌ Не удалось отправить сообщение','red'); }
 };
 async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(!currentDmNick)return;
@@ -11468,10 +11492,35 @@ window.completeCustomDelivery = async function(orderId) {
     .ios-device #videoViewer,
     .ios-device #vcModal,
     .ios-device .user-profile-sheet,
-    .ios-device .history-sheet {
+    .ios-device .history-sheet,
+    .ios-device .card,
+    .ios-device .toast,
+    .ios-device #notifPopup {
       -webkit-backdrop-filter: none !important;
       backdrop-filter: none !important;
+      background-color: rgba(17,24,32,0.92) !important;
+    }
+    .ios-device .g-header,
+    .ios-device .bottom-nav,
+    .ios-device #userProfileModal,
+    .ios-device #historyModal,
+    .ios-device #imgViewer,
+    .ios-device #videoViewer,
+    .ios-device #vcModal,
+    .ios-device .user-profile-sheet,
+    .ios-device .history-sheet {
       background-color: rgba(12,17,23,0.97) !important;
+    }
+
+    /* ── Cheapen large soft box-shadows on iOS: they force extra GPU layers
+         and, combined with backdrop-filter removal, stacked across dozens
+         of .card elements were a major cause of freezes/lag ── */
+    .ios-device .card,
+    .ios-device .toast,
+    .ios-device #notifPopup,
+    .ios-device .user-profile-sheet,
+    .ios-device .history-sheet {
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25) !important;
     }
 
     /* ── Disable animations/transitions on profile backgrounds (CPU-heavy) ── */
@@ -11509,10 +11558,21 @@ window.completeCustomDelivery = async function(orderId) {
     .ios-device .market-card,
     .ios-device .work-order,
     .ios-device .status-card,
-    .ios-device .card {
+    .ios-device .card,
+    .ios-device .section,
+    .ios-device .profile-header,
+    .ios-device .avatar-frame {
       transform: none !important;
       will-change: auto !important;
       -webkit-transform: none !important;
+    }
+
+    /* ── Section switch animation + forced layer promotion causes WebKit
+         to leave the new section in a stale, non-interactive paint state
+         on iOS (taps highlight but don't fire; profile modal flashes and
+         closes). Disable the animation entirely on iOS. ── */
+    .ios-device .section {
+      animation: none !important;
     }
 
     /* ── Fast tap on ALL interactive elements ── */
@@ -11538,7 +11598,10 @@ window.completeCustomDelivery = async function(orderId) {
       cursor: pointer !important;
     }
 
-    /* ── Fix bottom nav safe area ── */
+    /* ── Fixed decorative background gradient repaints on every scroll on iOS ── */
+    .ios-device body::before {
+      position: absolute !important;
+    }
     .ios-device .bottom-nav {
       padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
     }
@@ -11586,8 +11649,9 @@ window.completeCustomDelivery = async function(orderId) {
   };
   window.addEventListener('pageshow', clearBlockingLayers);
   window.addEventListener('focus', clearBlockingLayers);
+  document.addEventListener('visibilitychange', clearBlockingLayers);
   setTimeout(clearBlockingLayers, 300);
-  setInterval(clearBlockingLayers, 2000);
+  setInterval(clearBlockingLayers, 5000);
 
   // ─── FIX MODAL OPEN/CLOSE POINTER EVENTS ────────────────────────
   // Monkey-patch openUserProfile and closeUserProfile to ensure pointer-events are correct
@@ -11647,6 +11711,19 @@ window.completeCustomDelivery = async function(orderId) {
     }, { passive: true });
     document.addEventListener('touchmove', function(){
       clearTimeout(_longPressTimer);
+    }, { passive: true });
+  }
+
+  // ─── FORCE REPAINT AFTER TAPS (iOS stale-layer workaround) ──────
+  if(iOS){
+    document.addEventListener('touchend', function(){
+      setTimeout(() => {
+        void document.body.offsetHeight;
+        const active = document.querySelector('.section.active');
+        if(active) void active.offsetHeight;
+        const openModal = document.querySelector('#userProfileModal.open, #historyModal.open');
+        if(openModal) void openModal.offsetHeight;
+      }, 50);
     }, { passive: true });
   }
 
