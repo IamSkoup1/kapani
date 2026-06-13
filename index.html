@@ -235,6 +235,10 @@ select option{background:#1a2332;}
 @keyframes hologramGlitch{0%,90%,100%{transform:translateY(0);opacity:1;}91%{transform:translateY(-2px);opacity:0.8;}92%{transform:translateY(2px);opacity:0.6;}93%{transform:translateY(-1px);opacity:0.9;}94%{transform:translateY(1px);opacity:0.7;}}
 .avatar-frame-dragon{border:3px solid #ff6600!important;box-shadow:0 0 35px rgba(255,102,0,.8),inset 0 0 25px rgba(255,102,0,.4),0 0 0 3px #ff3300;animation:dragonBreath 3s ease-in-out infinite;position:relative;z-index:1;}
 @keyframes dragonBreath{0%,100%{box-shadow:0 0 35px rgba(255,102,0,.8),inset 0 0 25px rgba(255,102,0,.4),0 0 0 3px #ff3300;}50%{box-shadow:0 0 50px rgba(255,51,0,1),inset 0 0 35px rgba(255,51,0,.6),0 0 0 5px #ff0000;}}
+/* Kapani Prime Frame - shimmering rainbow/gold */
+.avatar-frame-prime{border:4px solid transparent!important;background:linear-gradient(90deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419) border-box!important;animation:primeFrameShift 4s linear infinite,primeFramePulse 2.5s ease-in-out infinite;position:relative;z-index:1;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
+@keyframes primeFrameShift{0%{background-position:0% 50%;}100%{background-position:200% 50%;}}
+@keyframes primeFramePulse{0%,100%{box-shadow:0 0 20px rgba(240,196,25,.6),0 0 40px rgba(120,115,245,.4);}50%{box-shadow:0 0 35px rgba(255,110,196,.8),0 0 55px rgba(74,222,128,.5);}}
 
 /* Profile Background Effects - Enhanced */
 .profile-bg-shimmer{background:linear-gradient(90deg,var(--pri-dim) 0%,rgba(34,211,165,.2) 50%,var(--pri-dim) 100%);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;position:relative;isolation:isolate;}
@@ -274,6 +278,11 @@ select option{background:#1a2332;}
 .profile-bg-dragon{background:linear-gradient(180deg,rgba(255,102,0,.2),rgba(255,51,0,.15),rgba(139,0,0,.1));position:relative;isolation:isolate;}
 .profile-bg-dragon::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 30%,rgba(255,51,0,.4) 0%,transparent 60%);animation:dragonFire 3s ease-in-out infinite;pointer-events:none;z-index:-1;}
 @keyframes dragonFire{0%,100%{transform:scale(1) rotate(0deg);opacity:0.7;}50%{transform:scale(1.2) rotate(5deg);opacity:1;}}
+/* Kapani Prime Profile Background - animated shimmering gradient */
+.profile-bg-prime{background:linear-gradient(120deg,rgba(240,196,25,.25),rgba(255,110,196,.2),rgba(120,115,245,.2),rgba(74,222,128,.2));background-size:300% 300%;animation:primeBgShift 8s ease infinite;position:relative;isolation:isolate;}
+.profile-bg-prime::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.25) 1px,transparent 1px);background-size:24px 24px;animation:primeSparkle 12s linear infinite;pointer-events:none;z-index:-1;}
+@keyframes primeBgShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+@keyframes primeSparkle{0%{transform:translateY(0) rotate(0deg);}100%{transform:translateY(-24px) rotate(360deg);}}
 
 /* Chat Message Backgrounds - Enhanced */
 .chat-bubble-custom{background:var(--msg-bg-color,linear-gradient(135deg,var(--surface2),var(--surface)))!important;}
@@ -303,6 +312,9 @@ select option{background:#1a2332;}
 @keyframes hologramBubble{0%,90%,100%{opacity:1;transform:translateY(0);}91%{opacity:0.8;transform:translateY(-1px);}92%{opacity:0.6;transform:translateY(1px);}93%{opacity:0.9;transform:translateY(-1px);}94%{opacity:0.7;transform:translateY(1px);}}
 .chat-bubble-dragon{background:linear-gradient(135deg,rgba(255,102,0,.25),rgba(255,51,0,.15))!important;border-color:rgba(255,102,0,.5)!important;box-shadow:0 0 20px rgba(255,102,0,.4),inset 0 0 15px rgba(255,51,0,.2)!important;animation:dragonBubble 3s ease-in-out infinite;}
 @keyframes dragonBubble{0%,100%{box-shadow:0 0 20px rgba(255,102,0,.4),inset 0 0 15px rgba(255,51,0,.2);}50%{box-shadow:0 0 35px rgba(255,51,0,.6),inset 0 0 25px rgba(255,0,0,.3);}}
+/* Kapani Prime Chat Bubble - shimmering animated gradient */
+.chat-bubble-prime{animation:primeBubbleShift 6s ease infinite!important;background:linear-gradient(120deg,rgba(240,196,25,.25),rgba(255,110,196,.2),rgba(120,115,245,.2),rgba(74,222,128,.2))!important;background-size:300% 300%!important;border-color:rgba(240,196,25,.5)!important;box-shadow:0 0 18px rgba(255,110,196,.3)!important;}
+@keyframes primeBubbleShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 
 /* Interface Themes */
 .theme-gold{--primary:#fbbf24;--pri-dim:rgba(251,191,36,.14);}
@@ -310,15 +322,14 @@ select option{background:#1a2332;}
 .theme-gold .btn-primary{background:linear-gradient(135deg,var(--gold),#d97706)!important;color:#0c1117!important;}
 .theme-gold .h-avatar{border-color:var(--gold)!important;}
 .theme-gold .chat-msg.me .chat-bubble{background:rgba(251,191,36,.1)!important;border-color:rgba(251,191,36,.3)!important;}
-.theme-emerald{--primary:#10b981;--pri-dim:rgba(16,185,129,.14);}
-.theme-emerald .h-bal{background:linear-gradient(135deg,#10b981,#059669)!important;}
-.theme-emerald .btn-primary{background:linear-gradient(135deg,#10b981,#059669)!important;}
-.theme-emerald .h-avatar{border-color:#10b981!important;}
-.theme-cyber{--primary:#00d4ff;--pri-dim:rgba(0,212,255,.14);--gold:#ff00ff;--gold-dim:rgba(255,0,255,.14);}
-.theme-cyber .h-bal{background:linear-gradient(135deg,#00d4ff,#0099cc)!important;}
-.theme-cyber .btn-primary{background:linear-gradient(135deg,#00d4ff,#0099cc)!important;}
-.theme-cyber .h-avatar{border-color:#00d4ff!important;box-shadow:0 0 15px rgba(0,212,255,.5)!important;}
-.theme-cyber body::before{background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(0,212,255,.1) 0%,transparent 70%),radial-gradient(ellipse 50% 50% at 85% 75%,rgba(255,0,255,.08) 0%,transparent 70%)!important;}
+/* Kapani Prime Interface Theme - shimmering animated colors */
+.theme-prime{--primary:#f0c419;--pri-dim:rgba(240,196,25,.14);animation:primeThemeShift 10s ease infinite;}
+.theme-prime .h-bal{background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419)!important;background-size:300% 300%!important;animation:primeGradientShift 6s ease infinite!important;color:#0c1117!important;}
+.theme-prime .btn-primary{background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419)!important;background-size:300% 300%!important;animation:primeGradientShift 6s ease infinite!important;color:#0c1117!important;}
+.theme-prime .h-avatar{border-color:#f0c419!important;box-shadow:0 0 15px rgba(240,196,25,.5)!important;}
+.theme-prime .chat-msg.me .chat-bubble{background:linear-gradient(120deg,rgba(240,196,25,.15),rgba(255,110,196,.15),rgba(120,115,245,.15))!important;background-size:300% 300%!important;animation:primeGradientShift 6s ease infinite!important;border-color:rgba(240,196,25,.4)!important;}
+@keyframes primeGradientShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+@keyframes primeThemeShift{0%,100%{filter:hue-rotate(0deg);}50%{filter:hue-rotate(15deg);}}
 
 /* === GAMES LIBRARY === */
 #gamesGrid .card{transition:.2s;}
@@ -328,6 +339,7 @@ select option{background:#1a2332;}
 .sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#d97706);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
 .sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,#22d3a5,#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
 @keyframes pulseUltra{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+.sub-badge-prime{display:inline-block;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;color:#0c1117;padding:4px 12px;border-radius:20px;font-weight:900;animation:primeGradientShift 4s ease infinite;}
 
 /* iPhone Fix - Enhanced Performance */
 body{-webkit-overflow-scrolling:touch;touch-action:pan-y pinch-zoom;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;}
@@ -710,7 +722,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 
 /* ─── BUSINESSES ─────────────────────────── */
 .biz-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
-.biz-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:0;overflow:hidden;cursor:pointer;transition:.25s;}
+.biz-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:0;overflow:hidden;cursor:pointer;transition:.25s;position:relative;}
 .biz-card:hover{transform:translateY(-3px);border-color:var(--primary);}
 .biz-card-img{width:100%;height:110px;object-fit:cover;background:var(--surface2);display:block;}
 .biz-card-body{padding:12px;}
@@ -1130,7 +1142,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="bank" class="section">
     <div class="card">
         <div class="card-title">💸 Перевод денег</div>
-        <input type="text" id="bTo" placeholder="Логин получателя (ЛОГИН, А НЕ ИМЯ)" autocomplete="off" required minlength="2" maxlength="20">
+        <input type="text" id="bTo" placeholder="Введите никнейм получателя" autocomplete="off" required minlength="2" maxlength="20">
         <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
     </div>
@@ -1221,7 +1233,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
-            <div style="margin-bottom:8px;">✅ <b>10 объявлений</b> в месяц на маркетплейсе</div>
+            <div style="margin-bottom:8px;">✅ <b>4 объявления</b> в неделю на маркетплейсе</div>
             <div style="margin-bottom:8px;">✅ <b>5% скидка</b> на такси и доставку</div>
             <div style="margin-bottom:8px;">✅ <b>3 бизнеса одновременно</b></div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона</b> сообщений в чатах</div>
@@ -1244,14 +1256,13 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
-            <div style="margin-bottom:8px;">✅ <b>Неограниченные объявления</b></div>
+            <div style="margin-bottom:8px;">✅ <b>8 объявлений</b> в неделю на маркетплейсе</div>
             <div style="margin-bottom:8px;">✅ <b>10% скидка</b> на такси, доставку и маркет</div>
             <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 20%</b> на аренду зданий</div>
             <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>250₽</b> вместо 500₽</div>
             <div style="margin-bottom:8px;">✅ <b>5 бизнеса одновременно</b></div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона сообщений</b> в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Переливающиеся цвета</b> и спецэффекты в чатах</div>
-            <div style="margin-bottom:8px;">✅ <b>Видео на аватарку</b></div>
             <div style="margin-bottom:8px;">✅ <b>Все рамки</b> для аватарки (Радужная, Свечение)</div>
             <div style="margin-bottom:8px;">✅ <b>Уникальные переливающиеся цвета</b> на фон профиля</div>
             <div style="margin-bottom:8px;">✅ <b>Спецэффекты</b> для профиля</div>
@@ -1259,6 +1270,35 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <button class="btn btn-primary" onclick="buySubscription('ultra')" id="btnBuyUltra">Оформить Ultra</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('ultra')">
             <span>🎁</span> Подарить Ultra (499₽)
+        </button>
+    </div>
+
+    <!-- Kapani Prime -->
+    <div class="card" style="border:2px solid #f0c419;background:linear-gradient(120deg,rgba(240,196,25,.18),rgba(255,110,196,.12),rgba(120,115,245,.12),rgba(74,222,128,.12));background-size:300% 300%;animation:primeGradientShift 6s ease infinite;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="font-size:32px;">👑</div>
+            <div>
+                <div style="font-size:20px;font-weight:900;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:primeGradientShift 4s ease infinite;">Kapani Prime</div>
+                <div style="font-size:14px;color:#f0c419;font-weight:700;">1499 ₽/неделя</div>
+            </div>
+        </div>
+        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
+            <div style="margin-bottom:8px;">✅ <b>Неограниченные объявления</b></div>
+            <div style="margin-bottom:8px;">✅ <b>20% скидка</b> на такси, доставку и маркет</div>
+            <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 35%</b> на аренду зданий</div>
+            <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>200₽</b> вместо 500₽</div>
+            <div style="margin-bottom:8px;">✅ <b>8 бизнесов одновременно</b></div>
+            <div style="margin-bottom:8px;">✅ <b>Уникальные переливающиеся фоны</b> сообщений в чатах</div>
+            <div style="margin-bottom:8px;">✅ <b>Эксклюзивные фоны профиля</b> и крутые переливающиеся рамки аватара</div>
+            <div style="margin-bottom:8px;">✅ <b>Переливающаяся тема интерфейса Prime</b></div>
+            <div style="margin-bottom:8px;">✅ <b>Уникальные задания</b> с повышенными выплатами</div>
+            <div style="margin-bottom:8px;">✅ Закрепить объявление как <b>«ХИТ ПРОДАЖ!»</b> бесплатно (вместо 160₽)</div>
+            <div style="margin-bottom:8px;">✅ Эксклюзивная кнопка <b>«ТОП!»</b> — продвижение бизнеса за 600₽</div>
+            <div style="margin-bottom:8px;">✅ <b>Комиссия за перевод — всего 1%</b></div>
+        </div>
+        <button class="btn btn-primary" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;" onclick="buySubscription('prime')" id="btnBuyPrime">Оформить Prime</button>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('prime')">
+            <span>🎁</span> Подарить Prime (1499₽)
         </button>
     </div>
     
@@ -1293,9 +1333,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div id="subscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;display:none;"></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;position:relative;z-index:1;">
                 <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="changeDisplayName()">✏️ Имя в приложении</button>
-                <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="changeLoginNick()">🔑 Сменить логин</button>
                 <label class="btn btn-ghost btn-sm" style="font-size:11px;cursor:pointer;" for="avatarFileInput">📷 Из галереи</label>
-                <input type="file" id="avatarFileInput" accept="image/*,video/*" onchange="handleAvatarUpload(event)">
+                <input type="file" id="avatarFileInput" accept="image/*" onchange="handleAvatarUpload(event)">
                 <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="changeAvatarUrl()">🔗 По URL</button>
                 <button class="btn btn-ghost btn-sm" style="font-size:11px;display:none;" id="vehicleBtn" onclick="changeVehicle()">🛵 Транспорт</button>
             </div>
@@ -1948,7 +1987,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-weight:900;font-size:18px;">🏪 Открыть бизнес</div>
             <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeBizApplyModal()">✕</span>
         </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — <span id="bizFeeDisplay">500 ₽</span>. С подпиской Ultra — 250 ₽.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — <span id="bizFeeDisplay">500 ₽</span>. С подпиской Ultra — 250 ₽, с Kapani Prime — 200 ₽.</div>
         <input type="text" id="bapName" placeholder="Название бизнеса" maxlength="60">
         <textarea id="bapDesc" placeholder="Описание бизнеса" style="min-height:72px;"></textarea>
         <input type="text" id="bapAddress" placeholder="Адрес (где находится)" maxlength="120">
@@ -1992,7 +2031,7 @@ const CONFIG = {
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
     location: { kapani: { lat: 52.628825753234985, lng: 38.416863347119566 } },
     rewards: { customAvatar: 40, firstWall: 60 },
-    subscriptions: { plus: { price: 199, name: "Kapani Plus" }, ultra: { price: 499, name: "Kapani Ultra" } },
+    subscriptions: { plus: { price: 199, name: "Kapani Plus" }, ultra: { price: 499, name: "Kapani Ultra" }, prime: { price: 1499, name: "Kapani Prime" } },
     limits: { chatMessages: 60, dmMessages: 80, videoCircleMaxDuration: 30, debounceTimeout: 50 },
     ui: { defaultAvatarUrl: "https://cdn-icons-png.flaticon.com/512/149/149071.png" }
 };
@@ -2027,6 +2066,8 @@ const ECONOMY_MARKET_COMMISSION = 0.02;
 const ECONOMY_BUSINESS_CREATION_FEE = 500;
 const ECONOMY_MARKET_PIN_PRICE = 160;
 const ECONOMY_MARKET_PIN_DURATION_MS = ECONOMY_WEEK_MS;
+const ECONOMY_BUSINESS_PROMOTE_PRICE = 600;
+const ECONOMY_BUSINESS_PROMOTE_DURATION_MS = ECONOMY_WEEK_MS;
 let messagingInstance = null;
 
 const PRICE_PER_KM = CONFIG.finance.pricePerKm;
@@ -2363,14 +2404,15 @@ async function fallbackTransferMoney(data) {
     if(!fromUser.accountVerified) throw new Error('Ваш аккаунт не подтверждён');
     if(!toUser.accountVerified) throw new Error('Аккаунт получателя не подтверждён');
     const amount = Math.max(0, Number(data.amount) || 0);
-    const fee = calcCommission(amount, ECONOMY_TRANSFER_COMMISSION);
+    const rate = (typeof data.commissionRate === 'number') ? data.commissionRate : ECONOMY_TRANSFER_COMMISSION;
+    const fee = calcCommission(amount, rate);
     const total = amount + fee;
     if(fromUser.balance < total) throw new Error('Недостаточно средств');
 
     await update(userRef(currentNick), { balance: fromUser.balance - total });
     await update(userRef(data.toUid), { balance: (toUser.balance || 0) + amount });
     await logTx(currentNick, { type: 'out', who: data.toUid, amt: amount, desc: data.description || 'Перевод' });
-    if(fee > 0) await logTx(currentNick, { type: 'out', who: 'Комиссия', amt: fee, desc: `Комиссия 2% за перевод` });
+    if(fee > 0) await logTx(currentNick, { type: 'out', who: 'Комиссия', amt: fee, desc: `Комиссия ${Math.round(rate*100)}% за перевод` });
     await logTx(data.toUid, { type: 'in', who: currentNick, amt: amount, desc: data.description || 'Перевод' });
 
     return { success: true, commissionCharged: true, commission: fee, totalSpent: total };
@@ -2510,10 +2552,10 @@ function getOwnedActiveBusinesses(u){
     return scan.filter(b => b && b.status === 'active' && b.owner === (u?.nick || currentNick));
 }
 function getBusinessLimitForUser(u){
-    const hasUltraBiz = (u?.subscription === 'ultra') && u?.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    if(hasUltraBiz) return 5;
-    const hasPlusBiz = (u?.subscription === 'plus') && u?.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    if(hasPlusBiz) return 3;
+    const active = u?.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    if((u?.subscription === 'prime') && active) return 8;
+    if((u?.subscription === 'ultra') && active) return 5;
+    if((u?.subscription === 'plus') && active) return 3;
     return 1;
 }
 
@@ -2971,6 +3013,7 @@ function updateHeader(u) {
         else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
         else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
         else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
+        else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
         headerAvatarWrap.appendChild(frameEl);
     } else if(headerAvatarWrap) {
         // Remove frame if no subscription or no frame
@@ -3021,6 +3064,10 @@ function updateHeader(u) {
             subBadge.innerHTML = '<span class="sub-badge-ultra">💎 Kapani Ultra</span>';
             subBadge.style.display = 'block';
             if(profileCust) profileCust.style.display = 'block';
+        } else if(u.subscription === 'prime' && isActive){
+            subBadge.innerHTML = '<span class="sub-badge-prime">👑 Kapani Prime</span>';
+            subBadge.style.display = 'block';
+            if(profileCust) profileCust.style.display = 'block';
         } else {
             subBadge.style.display = 'none';
             if(profileCust) profileCust.style.display = 'none';
@@ -3047,6 +3094,7 @@ function updateHeader(u) {
             else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
             else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
             else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
+            else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
             else frameEl.style.display = 'none';
         }
     }
@@ -3059,7 +3107,7 @@ function updateHeader(u) {
         headerBg.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
                                    'profile-bg-ocean', 'profile-bg-sunset', 'profile-bg-aurora', 
                                    'profile-bg-galaxy', 'profile-bg-fire', 'profile-bg-plasma',
-                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon');
+                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon', 'profile-bg-prime');
         
         if(u.profileBgEffect && isActive){
             if(u.profileBgEffect === 'shimmer') headerBg.classList.add('profile-bg-shimmer');
@@ -3074,6 +3122,7 @@ function updateHeader(u) {
             else if(u.profileBgEffect === 'thunder') headerBg.classList.add('profile-bg-thunder');
             else if(u.profileBgEffect === 'hologram') headerBg.classList.add('profile-bg-hologram');
             else if(u.profileBgEffect === 'dragon') headerBg.classList.add('profile-bg-dragon');
+            else if(u.profileBgEffect === 'prime') headerBg.classList.add('profile-bg-prime');
         }
     }
     
@@ -3661,37 +3710,9 @@ window.handleAvatarUpload=async function(e){
         return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
     }
     
-    const hasUltra = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    
-    // Check if video and has Ultra
+    // Check if video - video avatars are no longer supported
     if(file.type.startsWith('video/')){
-        if(!hasUltra){
-            return toast('❌ Видео-аватар доступен только для Kapani Ultra','red');
-        }
-        if(file.size>8*1024*1024)return toast('❌ Видео > 8 МБ','red');
-        const duration = await new Promise((resolve, reject) => {
-            const url = URL.createObjectURL(file);
-            const v = document.createElement('video');
-            v.preload = 'metadata';
-            v.onloadedmetadata = () => {
-                const d = v.duration || 0;
-                URL.revokeObjectURL(url);
-                resolve(d);
-            };
-            v.onerror = () => {
-                URL.revokeObjectURL(url);
-                reject(new Error('metadata'));
-            };
-            v.src = url;
-        }).catch(() => 0);
-        if(!duration) return toast('❌ Не удалось прочитать длительность видео','red');
-        if(duration > 15) return toast('❌ Видео-аватар должен быть не длиннее 15 секунд','red');
-        const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>rej('err');r.readAsDataURL(file);});
-        await update(userRef(currentNick),{avatar:dataUrl});
-        toggleAvatarMedia(qs('uAv'), qs('uAvVideo'), dataUrl);
-        toggleAvatarMedia(qs('hAv'), qs('hAvVideo'), dataUrl);
-        toast('🎬 Видео-аватар установлен','green');
-        return;
+        return toast('❌ Видео-аватары больше не поддерживаются','red');
     }
     
     // Image avatar
@@ -3707,10 +3728,9 @@ window.handleAvatarUpload=async function(e){
 window.openProfileCustomizer=async function(){
     const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
-    const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    const hasUltra = u.subscription === 'ultra' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    
-    // Build modal HTML
+    const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const hasUltra = (u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const hasPrime = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     let frameOptions = '';
     if(hasUltra){
         frameOptions = `
@@ -3728,6 +3748,7 @@ window.openProfileCustomizer=async function(){
             <option value="thunder">⚡ Гром (Ultra)</option>
             <option value="hologram">👻 Голограф (Ultra)</option>
             <option value="dragon">🐲 Дракон (Ultra)</option>
+            ${hasPrime ? "<option value=\"prime\">👑 Kapani Prime (переливающаяся)</option>" : ""}
         `;
     } else if(hasPlus){
         frameOptions = `
@@ -3757,6 +3778,7 @@ window.openProfileCustomizer=async function(){
             <option value="thunder">⚡ Гром (Ultra)</option>
             <option value="hologram">👻 Голограф (Ultra)</option>
             <option value="dragon">🐲 Дракон (Ultra)</option>
+            ${hasPrime ? "<option value=\"prime\">👑 Kapani Prime (переливающаяся)</option>" : ""}
         `;
     } else if(hasPlus){
         bgOptions = `
@@ -3783,6 +3805,7 @@ window.openProfileCustomizer=async function(){
             <option value="fire">🔥 Огненный (Ultra)</option>
             <option value="neon">💫 Неоновый (Plus)</option>
             <option value="rose">🌹 Розовый (Ultra)</option>
+            ${hasPrime ? '<option value="prime">👑 Kapani Prime (переливающийся)</option>' : ''}
         `;
     } else if(hasPlus){
         chatBgOptions = `
@@ -3802,15 +3825,12 @@ window.openProfileCustomizer=async function(){
         themeOptions = `
             <option value="default">🌙 Стандартная (тёмная)</option>
             <option value="gold">⭐ Золотая (Plus)</option>
-            <option value="emerald">💎 Изумрудная (Ultra)</option>
-            <option value="cyber">🌆 Киберпанк (Ultra)</option>
+            ${hasPrime ? '<option value="prime">👑 Kapani Prime (переливающаяся)</option>' : ''}
         `;
     } else if(hasPlus){
         themeOptions = `
             <option value="default">🌙 Стандартная (тёмная)</option>
             <option value="gold">⭐ Золотая (Plus)</option>
-            <option value="" disabled>──────────</option>
-            <option value="" disabled>🔒 Ultra: Изумрудная, Киберпанк</option>
         `;
     }
     
@@ -3913,6 +3933,7 @@ window.previewAvatarFrame=function(frame){
     else if(frame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
     else if(frame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
     else if(frame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
+    else if(frame === 'prime') frameEl.classList.add('avatar-frame-prime');
 };
 
 window.previewProfileBg=function(effect){
@@ -3922,7 +3943,7 @@ window.previewProfileBg=function(effect){
     headerBg.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
                                'profile-bg-ocean', 'profile-bg-sunset', 'profile-bg-aurora', 
                                'profile-bg-galaxy', 'profile-bg-fire', 'profile-bg-plasma',
-                               'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon');
+                               'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon', 'profile-bg-prime');
     
     if(effect === 'shimmer') headerBg.classList.add('profile-bg-shimmer');
     else if(effect === 'particles') headerBg.classList.add('profile-bg-particles');
@@ -3936,13 +3957,14 @@ window.previewProfileBg=function(effect){
     else if(effect === 'thunder') headerBg.classList.add('profile-bg-thunder');
     else if(effect === 'hologram') headerBg.classList.add('profile-bg-hologram');
     else if(effect === 'dragon') headerBg.classList.add('profile-bg-dragon');
+    else if(effect === 'prime') headerBg.classList.add('profile-bg-prime');
 };
 
 window.previewChatBg=function(style){
     // Preview in chat bubbles
     const bubbles = document.querySelectorAll('.chat-bubble.me');
     bubbles.forEach(b => {
-        b.classList.remove('chat-bubble-gold', 'chat-bubble-rainbow', 'chat-bubble-ocean', 'chat-bubble-sunset', 'chat-bubble-aurora', 'chat-bubble-galaxy', 'chat-bubble-fire', 'chat-bubble-neon', 'chat-bubble-rose', 'chat-bubble-plasma', 'chat-bubble-thunder', 'chat-bubble-hologram', 'chat-bubble-dragon');
+        b.classList.remove('chat-bubble-gold', 'chat-bubble-rainbow', 'chat-bubble-ocean', 'chat-bubble-sunset', 'chat-bubble-aurora', 'chat-bubble-galaxy', 'chat-bubble-fire', 'chat-bubble-neon', 'chat-bubble-rose', 'chat-bubble-plasma', 'chat-bubble-thunder', 'chat-bubble-hologram', 'chat-bubble-dragon', 'chat-bubble-prime');
         if(style === 'gold') b.classList.add('chat-bubble-gold');
         else if(style === 'rainbow') b.classList.add('chat-bubble-rainbow');
         else if(style === 'ocean') b.classList.add('chat-bubble-ocean');
@@ -3956,12 +3978,13 @@ window.previewChatBg=function(style){
         else if(style === 'thunder') b.classList.add('chat-bubble-thunder');
         else if(style === 'hologram') b.classList.add('chat-bubble-hologram');
         else if(style === 'dragon') b.classList.add('chat-bubble-dragon');
+        else if(style === 'prime') b.classList.add('chat-bubble-prime');
     });
 };
 
 window.previewInterfaceTheme=function(theme){
     // Temporarily apply theme to body for preview
-    document.body.classList.remove('theme-gold', 'theme-emerald', 'theme-cyber');
+    document.body.classList.remove('theme-gold', 'theme-prime');
     if(theme && theme !== 'default') {
         document.body.classList.add('theme-' + theme);
     }
@@ -3969,7 +3992,7 @@ window.previewInterfaceTheme=function(theme){
 
 window.applyInterfaceTheme=function(theme){
     // Apply theme class to body
-    document.body.classList.remove('theme-gold', 'theme-emerald', 'theme-cyber');
+    document.body.classList.remove('theme-gold', 'theme-prime');
     if(theme && theme !== 'default') {
         document.body.classList.add('theme-' + theme);
     }
@@ -3996,7 +4019,7 @@ window.saveProfileCustomization=async function(){
 };
 
 window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.balance=(u.balance||0)+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_CUSTOM_AVATAR,desc:'Бонус за установку своей аватарки'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
-window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Как вас показывать в приложении? (логин не меняется)',cur);if(v===null)return;const t=v.trim().slice(0,40);await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
+window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Как вас показывать в приложении? (никнейм не меняется)',cur);if(v===null)return;const t=v.trim().slice(0,40);await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
 window.editProfileDescription=async function(){
     const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
@@ -4007,70 +4030,6 @@ window.editProfileDescription=async function(){
     await update(userRef(currentNick),{profileDescription:trimmed||null});
     toast('✅ Описание обновлено','green');
     renderProfile(); // Refresh profile display
-};
-window.changeLoginNick=async function(){
-    const newNick=(prompt('Новый логин (никнейм), 2–24 символа: буквы, цифры, _')||'').trim();
-    if(!newNick||newNick===currentNick)return;
-    if(!/^[a-zA-Zа-яА-ЯёЁ0-9_]{2,24}$/.test(newNick))return toast('⚠️ Недопустимый ник','gold');
-    const pass=prompt('Введите текущий пароль для подтверждения:');
-    if(pass===null)return;
-    const oldSnap=await get(userRef(currentNick));if(!oldSnap.exists())return;
-    const u=oldSnap.val();if(u.pass!==pass)return toast('❌ Неверный пароль','red');
-    if((await get(userRef(newNick))).exists())return toast('❌ Этот ник уже занят','red');
-    if(!confirm('Сменить логин? Обновятся заказы, чаты и объявления. Страница перезагрузится.'))return;
-    const old=currentNick;
-    const data={...u,nick:newNick};
-    try{
-        await set(userRef(newNick),data);
-        const[notifs,txs,wallSnap]=await Promise.all([get(notifRef(old)),get(txLogRef(old)),get(wallRef(old))]);
-        if(notifs.exists())await set(notifRef(newNick),notifs.val());
-        if(txs.exists())await set(txLogRef(newNick),txs.val());
-        if(wallSnap.exists()){await set(wallRef(newNick),wallSnap.val());await remove(wallRef(old));}
-        const ordSnap=await get(ordersRef());
-        for(const[id,o]of Object.entries(ordSnap.val()||{})){
-            const patch={};
-            if(o.client===old)patch.client=newNick;
-            if(o.worker===old)patch.worker=newNick;
-            if(Object.keys(patch).length)await update(orderRef(id),patch);
-        }
-        const mSnap=await get(marketRef());
-        for(const[id,l]of Object.entries(mSnap.val()||{})){
-            const patch={};
-            if(l.seller===old)patch.seller=newNick;
-            if(l.buyer===old)patch.buyer=newNick;
-            if(Object.keys(patch).length)await update(listingRef(id),patch);
-        }
-        const apps=(await get(appsRef())).val()||{};
-        for(const[id,a]of Object.entries(apps)){if(a.from===old)await update(appRef(id),{from:newNick});}
-        const jsubs=(await get(janitorSubsRef())).val()||{};
-        for(const[id,s]of Object.entries(jsubs)){if(s.worker===old)await update(janitorSubRef(id),{worker:newNick});}
-        const chatSnap=await get(chatRef());
-        for(const[msgId,m]of Object.entries(chatSnap.val()||{})){if(m&&m.nick===old)await update(ref(db,`chat/${msgId}`),{nick:newNick});}
-        const dmsAll=(await get(ref(db,'dms'))).val()||{};
-        for(const[key,convo]of Object.entries(dmsAll)){
-            if(!key.includes('__dm__'))continue;
-            const parts=key.split('__dm__');
-            if(!parts.includes(old))continue;
-            const newKey=parts.map(x=>x===old?newNick:x).sort().join('__dm__');
-            const messages=convo.messages||{};
-            const lastRead=convo.lastRead||{};
-            const newLastRead={};
-            Object.entries(lastRead).forEach(([k,v])=>{newLastRead[k===old?newNick:k]=v;});
-            const newMsgs={};
-            for(const[mid,msg]of Object.entries(messages)){
-                newMsgs[mid]=msg&&msg.nick===old?{...msg,nick:newNick}:msg;
-            }
-            await set(ref(db,`dms/${newKey}`),{messages:newMsgs,lastRead:newLastRead});
-            if(newKey!==key)await remove(ref(db,`dms/${key}`));
-        }
-        const rs=(await get(ref(db,'readState'))).val()||{};
-        if(rs[old]){await set(ref(db,`readState/${newNick}`),rs[old]);await remove(ref(db,`readState/${old}`));}
-        await remove(userRef(old));
-        localStorage.setItem('kp_s',newNick);sessionStorage.setItem('kp_s',newNick);
-        localStorage.setItem('kp_auth',JSON.stringify({nick:newNick,pass:u.pass}));
-        toast('✅ Логин изменён','green');
-        setTimeout(()=>location.reload(),600);
-    }catch(e){toast('❌ Ошибка: '+e.message,'red');}
 };
 window.changeAvatar=window.changeAvatarUrl;
 window.handleMktPhoto=async function(e){const file=e.target.files[0];if(!file)return;toast('📷 Сжимаем...','gold');const dataUrl=await compressImage(file,900,0.82);qs('mktPhoto').value='';qs('mktPhotoImg').src=dataUrl;qs('mktPhotoPreview').style.display='block';window._mktPhotoData=dataUrl;e.target.value='';};
@@ -4110,10 +4069,13 @@ window.buyShop=async function(){
     const total = itemsTotal + DELIVERY_FEE;
     
     // Apply subscription discount
-    const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    const hasUltra = u.subscription === 'ultra' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra' || u.subscription === 'prime') && isSubActive;
+    const hasUltra = (u.subscription === 'ultra' || u.subscription === 'prime') && isSubActive;
+    const hasPrime = u.subscription === 'prime' && isSubActive;
     let discountPercent = 0;
-    if(hasUltra){ discountPercent = 10; }
+    if(hasPrime){ discountPercent = 20; }
+    else if(hasUltra){ discountPercent = 10; }
     else if(hasPlus){ discountPercent = 5; }
     
     const finalTotal = Math.max(1, Math.round(total * (1 - discountPercent / 100)));
@@ -4172,11 +4134,13 @@ window.orderTaxi=async function(){
     // Apply subscription discount
     const uSnap=await get(userRef(currentNick));
     const u=uSnap.val()||{};
-    const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    const hasUltra = u.subscription === 'ultra' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const hasUltra = (u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const hasPrime = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     let discountPercent = 0;
     let discountName = '';
-    if(hasUltra){ discountPercent = 10; discountName = 'Ultra (-10%)'; }
+    if(hasPrime){ discountPercent = 20; discountName = 'Prime (-20%)'; }
+    else if(hasUltra){ discountPercent = 10; discountName = 'Ultra (-10%)'; }
     else if(hasPlus){ discountPercent = 5; discountName = 'Plus (-5%)'; }
     
     const finalPrice = Math.max(1, Math.round(basePrice * (1 - discountPercent / 100)));
@@ -4343,12 +4307,14 @@ window.doTransfer=async function(){
     const to=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
     if(!to)return toast('⚠️ Введите никнейм','gold');if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
 
-    const commission = calcCommission(amt, ECONOMY_TRANSFER_COMMISSION);
-    const total = amt + commission;
-
     const[fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
     const fromUser = fromSnap.val();
     const toUser = toSnap.val();
+    const hasPrimeTransfer = fromUser?.subscription === 'prime' && fromUser?.subscriptionExpiry && new Date(fromUser.subscriptionExpiry) > new Date();
+    const commissionRate = hasPrimeTransfer ? 0.01 : ECONOMY_TRANSFER_COMMISSION;
+    const commission = calcCommission(amt, commissionRate);
+    const total = amt + commission;
+
     if(isMigrantUser(fromUser)) return toast(`🚫 ${ROLE_MIGRANT}: переводы недоступны`,'red');
     if(isMigrantUser(toUser)) return toast(`🚫 Нельзя переводить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
     if(!fromUser.accountVerified) {
@@ -4367,13 +4333,14 @@ window.doTransfer=async function(){
             toUid: to, 
             amount: amt,
             commission,
+            commissionRate,
             total,
             description: `Перевод пользователю ${to}` 
         }, fallbackTransferMoney);
 
         if (result.success) {
             if(!result.commissionCharged){
-                await chargeCommissionAndLog(currentNick, commission, `Комиссия 2% за перевод пользователю ${to}`);
+                await chargeCommissionAndLog(currentNick, commission, `Комиссия ${Math.round(commissionRate*100)}% за перевод пользователю ${to}`);
             }
             await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
             qs('bTo').value='';qs('bAmt').value='';
@@ -4624,6 +4591,7 @@ function renderDmContactList(users, pinnedOnly=false){
             else if(u.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
             else if(u.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
             else if(u.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+            else if(u.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
             
             avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
         }
@@ -4715,6 +4683,7 @@ window.openDmChat=async function(nick){
             else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
             else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
             else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
+            else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
             
             chatHeaderAv.appendChild(frameEl);
         }
@@ -4876,6 +4845,8 @@ window.openUserProfile=async function(nick){
         subscriptionHtml = '<div style="margin-bottom:8px;text-align:center;"><span class="sub-badge-plus">⭐ Kapani Plus</span></div>';
     } else if(u.subscription === 'ultra' && isActive){
         subscriptionHtml = '<div style="margin-bottom:8px;text-align:center;"><span class="sub-badge-ultra">💎 Kapani Ultra</span></div>';
+    } else if(u.subscription === 'prime' && isActive){
+        subscriptionHtml = '<div style="margin-bottom:8px;text-align:center;"><span class="sub-badge-prime">👑 Kapani Prime</span></div>';
     }
     
     toggleAvatarMedia(qs('upmAv'), qs('upmAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
@@ -4893,6 +4864,10 @@ window.openUserProfile=async function(nick){
         } else if(u.subscription === 'ultra' && isActive){
             vpfSubBadge.textContent = '💎 Kapani Ultra';
             vpfSubBadge.style.color = '#22d3a5';
+            vpfSubBadge.style.display = 'block';
+        } else if(u.subscription === 'prime' && isActive){
+            vpfSubBadge.textContent = '👑 Kapani Prime';
+            vpfSubBadge.style.color = '#f0c419';
             vpfSubBadge.style.display = 'block';
         } else {
             vpfSubBadge.style.display = 'none';
@@ -4927,6 +4902,7 @@ window.openUserProfile=async function(nick){
             else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
             else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
             else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
+            else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
             
             frameContainer.appendChild(frameEl);
         }
@@ -4938,7 +4914,7 @@ window.openUserProfile=async function(nick){
     const BG_CLASSES = ['profile-bg-shimmer','profile-bg-particles','profile-bg-gradient-animated',
                         'profile-bg-ocean','profile-bg-sunset','profile-bg-aurora',
                         'profile-bg-galaxy','profile-bg-fire','profile-bg-plasma',
-                        'profile-bg-thunder','profile-bg-hologram','profile-bg-dragon'];
+                        'profile-bg-thunder','profile-bg-hologram','profile-bg-dragon','profile-bg-prime'];
     
     // Always remove old background classes first (fixes bleed-over between profiles)
     if(profileSheet) profileSheet.classList.remove(...BG_CLASSES);
@@ -4952,7 +4928,7 @@ window.openUserProfile=async function(nick){
             sunset:'profile-bg-sunset', aurora:'profile-bg-aurora',
             galaxy:'profile-bg-galaxy', fire:'profile-bg-fire',
             plasma:'profile-bg-plasma', thunder:'profile-bg-thunder',
-            hologram:'profile-bg-hologram', dragon:'profile-bg-dragon'
+            hologram:'profile-bg-hologram', dragon:'profile-bg-dragon', prime:'profile-bg-prime'
         };
         const bgClass = bgMap[u.profileBgEffect];
         if(bgClass){
@@ -5038,7 +5014,7 @@ async function renderVisitorProfilePage(nick){
         profileBgEffect.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
                                    'profile-bg-ocean', 'profile-bg-sunset', 'profile-bg-aurora', 
                                    'profile-bg-galaxy', 'profile-bg-fire', 'profile-bg-plasma',
-                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon');
+                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon', 'profile-bg-prime');
         
         // Add new background class
         if(u.profileBgEffect === 'shimmer') profileBgEffect.classList.add('profile-bg-shimmer');
@@ -5053,6 +5029,7 @@ async function renderVisitorProfilePage(nick){
         else if(u.profileBgEffect === 'thunder') profileBgEffect.classList.add('profile-bg-thunder');
         else if(u.profileBgEffect === 'hologram') profileBgEffect.classList.add('profile-bg-hologram');
         else if(u.profileBgEffect === 'dragon') profileBgEffect.classList.add('profile-bg-dragon');
+        else if(u.profileBgEffect === 'prime') profileBgEffect.classList.add('profile-bg-prime');
     }
     
     const wSnap=await get(wallRef(nick));
@@ -5102,6 +5079,37 @@ function getDailyTasksForToday(){
         [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
     }
     return shuffled.slice(0,3);
+}
+// ─── KAPANI PRIME DAILY TASKS (выше выплаты) ─────
+const ALL_PRIME_DAILY_TASKS = [
+    { id:'prime_listing', title:'👑 Новое объявление (Prime)', desc:'Опубликуйте новое объявление на маркетплейсе сегодня.', reward:60 },
+    { id:'prime_transfer_big', title:'👑 Крупный перевод (Prime)', desc:'Переведите от 200₽ другому жителю сегодня.', reward:70 },
+    { id:'prime_taxi2', title:'👑 2 заказа такси (Prime)', desc:'Сделайте 2 заказа такси сегодня.', reward:90 },
+    { id:'prime_chat5', title:'👑 Активность в чате (Prime)', desc:'Отправьте 5 сообщений в общий чат сегодня.', reward:50 },
+    { id:'prime_dm3', title:'👑 Переписка (Prime)', desc:'Отправьте 3 личных сообщения сегодня.', reward:65 },
+    { id:'prime_shop_big', title:'👑 Крупная покупка (Prime)', desc:'Сделайте заказ в магазине на сумму от 150₽ сегодня.', reward:80 },
+];
+function getPrimeDailyTasksForToday(){
+    const dateNum = parseInt(todayKey().replace(/-/g,''), 10);
+    const seed = (dateNum * 31) % 991;
+    const shuffled = [...ALL_PRIME_DAILY_TASKS];
+    for(let i=shuffled.length-1;i>0;i--){
+        const j=(seed*(i+1)+i*53)%shuffled.length;
+        [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+    }
+    return shuffled.slice(0,2);
+}
+async function checkPrimeDailyTaskCondition(taskId, u, ordersVal, marketVal, chatVal, wallVal, dmVal, txVal){
+    const today = todayKey();
+    switch(taskId){
+        case 'prime_listing': return Object.values(marketVal||{}).some(l=>l.seller===currentNick&&localDateKey(l.createdAt||0)===today);
+        case 'prime_transfer_big': return Object.values(txVal||{}).some(tx=>tx.type==='out'&&tx.date===new Date().toLocaleDateString('ru')&&tx.desc&&tx.desc.startsWith('Перевод пользователю')&&Number(tx.amt||0)>=200);
+        case 'prime_taxi2': return Object.values(ordersVal||{}).filter(o=>o.client===currentNick&&o.type==='taxi'&&localDateKey(o.createdAt||0)===today).length>=2;
+        case 'prime_chat5': return Object.values(chatVal||{}).filter(m=>m.nick===currentNick&&localDateKey(m.createdAt||0)===today).length>=5;
+        case 'prime_dm3': return Object.values(dmVal||{}).filter(m=>m.nick===currentNick&&localDateKey(m.createdAt||0)===today).length>=3;
+        case 'prime_shop_big': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='shop'&&Number(o.total||o.amount||0)>=150);
+        default: return false;
+    }
 }
 async function checkDailyTaskCondition(taskId, u, ordersVal, marketVal, chatVal, wallVal, dmVal, txVal){
     const today = todayKey();
@@ -5192,6 +5200,16 @@ window.renderTasks = async function(){
             return { ...task, conditionMet, alreadyClaimed };
         }));
 
+        // Prime-only daily tasks
+        const isSubActivePrime = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+        const hasPrimeTasks = u.subscription === 'prime' && isSubActivePrime;
+        const primeDailyTasks = hasPrimeTasks ? getPrimeDailyTasksForToday() : [];
+        const primeDailyRows = await Promise.all(primeDailyTasks.map(async task=>{
+            const conditionMet = await checkPrimeDailyTaskCondition(task.id, u, ordersVal, marketVal, chatVal, wallVal, dmTodayMsgs, txVal);
+            const alreadyClaimed = claimed.includes(task.id);
+            return { ...task, conditionMet, alreadyClaimed };
+        }));
+
         function oneTimeRow(t){
             // Auto-claim if done but not yet rewarded (for job and market purchase)
             const canClaim = t.done && !t.done_originally;
@@ -5224,6 +5242,26 @@ window.renderTasks = async function(){
             </div>`;
         }
 
+        function primeDailyRow(t){
+            const { conditionMet, alreadyClaimed } = t;
+            let stateHtml;
+            if(alreadyClaimed){
+                stateHtml = `<div class="task-state done">✅ Получено</div>`;
+            } else if(conditionMet){
+                stateHtml = `<button class="btn btn-sm" style="font-size:11px;padding:7px 12px;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;border:none;font-weight:900;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
+            } else {
+                stateHtml = `<div class="task-state todo">В процессе</div>`;
+            }
+            return `<div class="task-item" style="border-color:rgba(240,196,25,.35);background:linear-gradient(120deg,rgba(240,196,25,.08),rgba(255,110,196,.06),rgba(120,115,245,.06));">
+                <div class="task-main">
+                    <div class="task-name">${escHtml(t.title)}</div>
+                    <div class="task-desc">${escHtml(t.desc)}</div>
+                    <div class="task-reward" style="color:#f0c419;">+${t.reward} ₽</div>
+                </div>
+                ${stateHtml}
+            </div>`;
+        }
+
         // Auto-reward new one-time tasks (job and market purchase) if just completed
         if(isMigrantUser(u)){
             // Migrants cannot receive money from tasks
@@ -5244,6 +5282,11 @@ window.renderTasks = async function(){
         }
 
         el.innerHTML = `
+            ${hasPrimeTasks ? `
+            <div class="task-group" style="margin-top:0;">
+                <div class="task-group-title" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:primeGradientShift 4s ease infinite;">👑 Kapani Prime — эксклюзивные задания</div>
+                ${primeDailyRows.map(primeDailyRow).join('')}
+            </div>` : ''}
             <div class="task-group">
                 <div class="task-group-title">📅 Ежедневные (обновляются каждый день)</div>
                 ${dailyRows.map(dailyRow).join('')}
@@ -5259,47 +5302,60 @@ window.renderTasks = async function(){
 };
 
 // ─── MARKETPLACE ──────────────────────────
+function getWeekKey(date){
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = (d.getUTCDay() + 6) % 7;
+    d.setUTCDate(d.getUTCDate() - dayNum + 3);
+    const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    const weekNum = 1 + Math.round(((d - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2,'0')}`;
+}
+function daysUntilNextWeek(date){
+    const day = date.getDay();
+    return ((1 - day + 7) % 7) || 7;
+}
 window.updateMarketLimitInfo = async function(){
     const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const subscription = isSubActive ? (u.subscription || 'none') : 'none';
-    const listingsThisMonth = u.listingsThisMonth || 0;
-    const lastListingMonth = u.lastListingMonth || '';
+    const listingsThisWeek = u.listingsThisWeek || 0;
+    const lastListingWeek = u.lastListingWeek || '';
     
-    // Определяем текущий месяц и дату сброса
+    // Определяем текущую неделю и дату сброса
     const now = new Date();
-    const currentMonth = now.toISOString().slice(0,7); // YYYY-MM
-    const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1); // Первое число следующего месяца
-    const daysUntilReset = Math.ceil((resetDate - now) / (1000 * 60 * 60 * 24));
+    const currentWeek = getWeekKey(now);
+    const daysUntilReset = daysUntilNextWeek(now);
+    const resetDate = new Date(now); resetDate.setDate(resetDate.getDate() + daysUntilReset);
     
-    // Сбрасываем счетчик если новый месяц
-    let actualListingsThisMonth = (lastListingMonth === currentMonth) ? listingsThisMonth : 0;
+    // Сбрасываем счетчик если новая неделя
+    let actualListingsThisWeek = (lastListingWeek === currentWeek) ? listingsThisWeek : 0;
     
     // Определяем лимит
-    let listingLimit = 5; // default
+    let listingLimit = 2; // default
     let limitColor = 'var(--red)';
-    if(subscription === 'plus') { listingLimit = 10; limitColor = 'var(--gold)'; }
-    if(subscription === 'ultra') { listingLimit = 999999; limitColor = 'var(--primary)'; }
+    if(subscription === 'plus') { listingLimit = 4; limitColor = 'var(--gold)'; }
+    if(subscription === 'ultra') { listingLimit = 8; limitColor = 'var(--primary)'; }
+    if(subscription === 'prime') { listingLimit = 999999; limitColor = 'var(--prime-color, #f0c419)'; }
     
     // Обновляем UI
     const limitText = qs('listingLimitText');
     const resetInfo = qs('listingResetInfo');
     
     if(limitText){
-        const remaining = listingLimit - actualListingsThisMonth;
-        if(subscription === 'ultra'){
+        const remaining = listingLimit - actualListingsThisWeek;
+        if(subscription === 'prime'){
             limitText.textContent = '♾️ Безлимитно';
-            limitText.style.color = 'var(--primary)';
+            limitText.style.color = 'var(--prime-color, #f0c419)';
         } else {
-            limitText.textContent = `${actualListingsThisMonth} / ${listingLimit}`;
+            limitText.textContent = `${actualListingsThisWeek} / ${listingLimit}`;
             limitText.style.color = remaining > 0 ? limitColor : 'var(--red)';
         }
     }
     
     if(resetInfo){
-        if(subscription === 'ultra'){
-            resetInfo.textContent = '🎯 Ultra подписка — безлимитные объявления';
+        if(subscription === 'prime'){
+            resetInfo.textContent = '🎯 Kapani Prime — безлимитные объявления';
         } else {
             resetInfo.textContent = `📅 Сброс через ${daysUntilReset} ${daysUntilReset === 1 ? 'день' : daysUntilReset < 5 ? 'дня' : 'дней'} (${resetDate.toLocaleDateString('ru', {day:'numeric',month:'long'})})`;
         }
@@ -5396,14 +5452,15 @@ function marketCard(l,isMine, isArchived=false){
         else if(su.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
         else if(su.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
         else if(su.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-        else if(su.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';        
+        else if(su.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+        else if(su.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
         frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
     }
     
     const workBadge=isWork&&l.workAcceptedBy?`<span class="market-status-pending" style="margin-left:8px;">✅ Подтверждено</span>`:'';
     const serviceBadge=isService?`<span class="market-status-service" style="margin-left:8px;">🤝 Услуга</span>`:'';
     const archivedBadge=isArchived?`<span class="market-status-sold" style="margin-left:8px;">🕓 Скрыто</span>`:'';
-    const pinnedBadge=isListingPinned(l)?'<span class="market-status-pin">⭐ Лидер продаж!</span>':'';
+    const pinnedBadge=isListingPinned(l)?(l.pinnedLabel==='ХИТ ПРОДАЖ!'?'<span class="market-status-pin" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;">🔥 ХИТ ПРОДАЖ!</span>':'<span class="market-status-pin">⭐ Лидер продаж!</span>'):'';
     const statusBadge=l.status==='sold'&&!isService?'<span class="market-status-sold">Продано</span>':(l.status!=='active'&&!isWork&&!isService?'<span class="market-status-pending">Ожидание</span>':'');
     return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'" onclick="openImgViewer('${jsEsc(l.photo)}')">`:''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:6px;flex-wrap:wrap;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${pinnedBadge}${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div></div>
@@ -5421,7 +5478,7 @@ function marketCard(l,isMine, isArchived=false){
             ${pendingSellerConfirm&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
             ${pendingBuyerConfirm&&!isArchived?`<button class="btn btn-primary btn-sm" onclick="confirmPurchase('${l.id}')">✅ ${isService?'Подтвердить заказ':'Оплатить и подтвердить'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
             ${showChat?`<button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(chatPartner)}')">💬 Написать</button>`:''}
-            ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" onclick="pinListing('${l.id}')">📌 ${isListingPinned(l)?'Закреплено':'Лидер продаж!'} (${ECONOMY_MARKET_PIN_PRICE}₽)</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
+            ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" onclick="pinListing('${l.id}')">${(()=>{const me=allUsersCache[currentNick]||{};const mePrime=me.subscription==='prime'&&me.subscriptionExpiry&&new Date(me.subscriptionExpiry)>new Date();return mePrime?`🔥 ${isListingPinned(l)?'Закреплено':'ХИТ ПРОДАЖ!'} (бесплатно)`:`📌 ${isListingPinned(l)?'Закреплено':'Лидер продаж!'} (${ECONOMY_MARKET_PIN_PRICE}₽)`;})()}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
             ${isMine&&isArchived?`<button class="btn btn-primary btn-sm" onclick="restoreListing('${l.id}')">↩ Вернуть</button><button class="btn btn-red btn-sm" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
         </div></div>`;
 }
@@ -5442,23 +5499,26 @@ window.publishListing=async function(){
     if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: маркетплейс недоступен`,'red');
     const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const subscription = isSubActive ? (u.subscription || 'none') : 'none';
-    const listingsThisMonth = u.listingsThisMonth || 0;
-    const currentMonth=new Date().toISOString().slice(0,7); // YYYY-MM
-    const lastListingMonth=u.lastListingMonth||'';
+    const listingsThisWeek = u.listingsThisWeek || 0;
+    const currentWeek=getWeekKey(new Date());
+    const lastListingWeek=u.lastListingWeek||'';
     
-    // Сбрасываем счетчик если новый месяц
-    let actualListingsThisMonth = (lastListingMonth===currentMonth) ? listingsThisMonth : 0;
+    // Сбрасываем счетчик если новая неделя
+    let actualListingsThisWeek = (lastListingWeek===currentWeek) ? listingsThisWeek : 0;
     
     // Определяем лимит
-    let listingLimit=5; // default for free users
-    if(subscription==='plus') listingLimit=20;
-    if(subscription==='ultra') listingLimit=999999; // unlimited
+    let listingLimit=2; // default for free users
+    if(subscription==='plus') listingLimit=4;
+    if(subscription==='ultra') listingLimit=8;
+    if(subscription==='prime') listingLimit=999999; // unlimited
     
-    if(actualListingsThisMonth>=listingLimit){
+    if(actualListingsThisWeek>=listingLimit){
         if(subscription==='none'){
-            return toast(`⚠️ Лимит ${listingLimit} объявлений в месяц достигнут. Оформите подписку Kapani Plus или Ultra!`,'gold');
+            return toast(`⚠️ Лимит ${listingLimit} объявления в неделю достигнут. Оформите подписку Kapani Plus, Ultra или Prime!`,'gold');
         } else if(subscription==='plus'){
-            return toast(`⚠️ Лимит ${listingLimit} объявлений в месяц достигнут. Обновитесь до Kapani Ultra для неограниченных объявлений!`,'gold');
+            return toast(`⚠️ Лимит ${listingLimit} объявлений в неделю достигнут. Обновитесь до Kapani Ultra или Prime для большего лимита!`,'gold');
+        } else if(subscription==='ultra'){
+            return toast(`⚠️ Лимит ${listingLimit} объявлений в неделю достигнут. Обновитесь до Kapani Prime для неограниченных объявлений!`,'gold');
         } else {
             return toast(`⚠️ Достигнут лимит объявлений`,'gold');
         }
@@ -5470,8 +5530,8 @@ window.publishListing=async function(){
     
     // Обновляем счетчик объявлений
     await update(userRef(currentNick),{
-        listingsThisMonth: actualListingsThisMonth+1,
-        lastListingMonth: currentMonth
+        listingsThisWeek: actualListingsThisWeek+1,
+        lastListingWeek: currentWeek
     });
     
     if(!u.rewardedListing){
@@ -5546,13 +5606,33 @@ window.pinListing=async function(id){
     if((l.pinnedUntil || 0) > Date.now()) return toast('⭐ Уже закреплено','gold');
     const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
-    if((u.balance || 0) < ECONOMY_MARKET_PIN_PRICE) return toast(`❌ Нужно ${ECONOMY_MARKET_PIN_PRICE}₽ для закрепления`,'red');
-    await update(userRef(currentNick), { balance: (u.balance || 0) - ECONOMY_MARKET_PIN_PRICE });
-    await update(listingRef(id), { pinnedUntil: Date.now() + ECONOMY_MARKET_PIN_DURATION_MS, pinnedBy: currentNick, pinnedLabel: 'Лидер продаж!' });
-    await logTx(currentNick, { type:'out', who:'Маркетплейс', amt:ECONOMY_MARKET_PIN_PRICE, desc:`Закрепление объявления «${l.title}»` });
-    await pushNotification(currentNick, `📌 Объявление «${l.title}» закреплено как «Лидер продаж!»`, 'market');
+    const hasPrimePin = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const pinPrice = hasPrimePin ? 0 : ECONOMY_MARKET_PIN_PRICE;
+    const pinLabel = hasPrimePin ? 'ХИТ ПРОДАЖ!' : 'Лидер продаж!';
+    if((u.balance || 0) < pinPrice) return toast(`❌ Нужно ${pinPrice}₽ для закрепления`,'red');
+    if(pinPrice > 0) await update(userRef(currentNick), { balance: (u.balance || 0) - pinPrice });
+    await update(listingRef(id), { pinnedUntil: Date.now() + ECONOMY_MARKET_PIN_DURATION_MS, pinnedBy: currentNick, pinnedLabel: pinLabel });
+    if(pinPrice > 0) await logTx(currentNick, { type:'out', who:'Маркетплейс', amt:pinPrice, desc:`Закрепление объявления «${l.title}»` });
+    await pushNotification(currentNick, `📌 Объявление «${l.title}» закреплено как «${pinLabel}»`, 'market');
     toast('📌 Объявление закреплено!', 'green');
     get(marketRef()).then(s=>renderMarket(s.val()||{}));
+};
+window.promoteBusiness=async function(bizId){
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+    const hasPrimeBiz = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    if(!hasPrimeBiz) return toast('❌ Продвижение бизнеса в ТОП доступно только для Kapani Prime','red');
+    const bSnap = await get(bizItemRef(bizId)); if(!bSnap.exists()) return toast('❌ Бизнес не найден','red');
+    const b = bSnap.val();
+    if(b.owner !== currentNick) return toast('❌ Нет прав','red');
+    if(Number(b.promotedUntil||0) > Date.now()) return toast('🔥 Бизнес уже в ТОПе','gold');
+    if((u.balance || 0) < ECONOMY_BUSINESS_PROMOTE_PRICE) return toast(`❌ Нужно ${ECONOMY_BUSINESS_PROMOTE_PRICE}₽ для продвижения`,'red');
+    await update(userRef(currentNick), { balance: (u.balance || 0) - ECONOMY_BUSINESS_PROMOTE_PRICE });
+    await update(bizItemRef(bizId), { promotedUntil: Date.now() + ECONOMY_BUSINESS_PROMOTE_DURATION_MS });
+    await logTx(currentNick, { type:'out', who:'Бизнес', amt:ECONOMY_BUSINESS_PROMOTE_PRICE, desc:`Продвижение «${b.name}» в ТОП` });
+    await pushNotification(currentNick, `🔥 Бизнес «${b.name}» продвинут в ТОП на 7 дней!`, 'money');
+    toast('🔥 Бизнес продвинут в ТОП!', 'green');
+    renderBusinesses();
 };
 window.deleteListing=async function(id){
     const snap=await get(listingRef(id));
@@ -5613,6 +5693,7 @@ function renderLeaderboard(users){
       else if(u.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
       else if(u.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
       else if(u.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+      else if(u.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
       frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
     }
     return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div>${valHtml}</div>`;
@@ -8395,7 +8476,8 @@ window.openBizApplyModal = async function(){
     // Clear and show modal
     ['bapName','bapDesc','bapAddress','bapCategory','bapServices'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
     const hasUltraBizModal = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    const feeEl = qs('bizFeeDisplay'); if(feeEl) feeEl.textContent = hasUltraBizModal ? '250 ₽' : '500 ₽';
+    const hasPrimeBizModal = (u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const feeEl = qs('bizFeeDisplay'); if(feeEl) feeEl.textContent = hasPrimeBizModal ? '200 ₽' : (hasUltraBizModal ? '250 ₽' : '500 ₽');
     qs('bizApplyModal').style.display = 'block';
 };
 window.closeBizApplyModal = function(){ qs('bizApplyModal').style.display='none'; };
@@ -8416,11 +8498,12 @@ window.submitBizApply = async function(){
         return toast(`⚠️ У вас уже ${ownedCount}/${limit} бизнес${ownedCount === 1 ? '' : 'ов'}.`, 'gold');
     }
     const hasUltraForBiz = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    const actualFee = hasUltraForBiz ? 250 : ECONOMY_BUSINESS_CREATION_FEE;
+    const hasPrimeForBiz = (u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const actualFee = hasPrimeForBiz ? 200 : (hasUltraForBiz ? 250 : ECONOMY_BUSINESS_CREATION_FEE);
     if((u.balance || 0) < actualFee) return toast(`❌ Для создания бизнеса нужно ${actualFee}₽ госпошлины`,'red');
     await update(userRef(currentNick), { balance: (u.balance || 0) - actualFee });
-    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasUltraForBiz ? ' (Ultra -50%)' : ''}` });
-    await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasUltraForBiz ? ' (скидка Ultra)' : ''}`, 'money');
+    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -60%)' : (hasUltraForBiz ? ' (Ultra -50%)' : '')}` });
+    await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasPrimeForBiz ? ' (скидка Prime)' : (hasUltraForBiz ? ' (скидка Ultra)' : '')}`, 'money');
     const id = genId();
     await set(bizAppRef(id), {
         id, owner: currentNick, name, desc, address, category, services,
@@ -8583,7 +8666,8 @@ async function renderBusinesses(){
     const snap = await get(bizRef());
     const biznesesRaw = snap.val() || {};
     allBusinessesCache = biznesesRaw;
-    const bizneses = Object.values(biznesesRaw).filter(b => b.status === 'active');
+    const bizneses = Object.values(biznesesRaw).filter(b => b.status === 'active')
+        .sort((a,b)=>Number(Number(b.promotedUntil||0) > Date.now()) - Number(Number(a.promotedUntil||0) > Date.now()));
     const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
     const myBizPanel = qs('myBizPanel');
@@ -8610,6 +8694,7 @@ async function renderBusinesses(){
                                 <div style="font-size:12px;color:var(--primary);font-weight:700;">💰 ${(b.balance||0).toLocaleString()} ₽</div>
                             </div>
                             <button class="btn btn-primary btn-sm" onclick="currentBizId='${jsEsc(b.id)}'; navTo('bizOwnerPanel');">Управление →</button>
+                            ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;border:none;" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 ТОП! (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -8622,6 +8707,7 @@ async function renderBusinesses(){
     if(!bizneses.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Бизнесов пока нет</div>'; return; }
     el.innerHTML = `<div class="biz-grid">${bizneses.map(b => `
         <div class="biz-card" onclick="openBizDetail('${jsEsc(b.id)}')">
+            ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 ТОП!</span>` : ''}
             ${b.banner ? `<img class="biz-card-img" src="${escHtml(b.banner)}" loading="lazy">` : '<div class="biz-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;">🏪</div>'}
             <div class="biz-card-body">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -9501,16 +9587,19 @@ window.rentBuilding = async function(id){
     const b = snap.val();
     if(b.renter) return toast('⚠️ Уже арендовано','gold');
     const uSnap = await get(userRef(currentNick)); const u = uSnap.val() || {};
-    const hasUltra = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    const hasUltra = (u.subscription === 'ultra') && isSubActive;
+    const hasPrime = (u.subscription === 'prime') && isSubActive;
     const basePrice = b.weekPrice || 0;
-    const finalPrice = hasUltra ? Math.max(1, Math.round(basePrice * 0.8)) : basePrice;
-    const discountNote = hasUltra ? ` (скидка Ultra -20%, было ${basePrice}₽)` : '';
+    const discountPct = hasPrime ? 0.35 : (hasUltra ? 0.20 : 0);
+    const finalPrice = discountPct > 0 ? Math.max(1, Math.round(basePrice * (1 - discountPct))) : basePrice;
+    const discountNote = discountPct > 0 ? ` (скидка ${hasPrime ? 'Prime -35%' : 'Ultra -20%'}, было ${basePrice}₽)` : '';
     if((u.balance||0) < finalPrice) return toast('❌ Недостаточно средств','red');
     if(!confirm(`Арендовать «${b.name}» за ${finalPrice.toLocaleString()}₽ в неделю?${discountNote}`)) return;
     await update(userRef(currentNick), { balance: (u.balance||0) - finalPrice });
     await update(rentBuildingRef(id), { renter: currentNick, renterName: displayNick(u) || currentNick, rentedAt: Date.now() });
     await logTx(currentNick, {type:'out', who:b.name, amt:finalPrice, desc:`Аренда здания «${b.name}»${discountNote}`});
-    toast(`🏘 Здание арендовано${hasUltra ? '! Скидка Ultra 20%' : ''}`, 'green');
+    toast(`🏘 Здание арендовано${discountPct > 0 ? `! Скидка ${hasPrime ? 'Prime 35%' : 'Ultra 20%'}` : ''}`, 'green');
     renderRentBuildings();
 };
 window.renderRentBuildings = async function(){
@@ -10178,6 +10267,7 @@ window.renderChat = async function(msgs){
                     else if(style === 'thunder') bubbleClass += ' chat-bubble-thunder';
                     else if(style === 'hologram') bubbleClass += ' chat-bubble-hologram';
                     else if(style === 'dragon') bubbleClass += ' chat-bubble-dragon';
+                    else if(style === 'prime') bubbleClass += ' chat-bubble-prime';
                 }
             }
             // Apply avatar frame for users with subscriptions
@@ -10199,6 +10289,7 @@ window.renderChat = async function(msgs){
                     else if(senderUser.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
                     else if(senderUser.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
                     else if(senderUser.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+                    else if(senderUser.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
                     
                     avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
                 }
@@ -10324,6 +10415,7 @@ window.renderDmMessages = async function(msgs){
                     else if(style === 'thunder') bubbleClass += ' chat-bubble-thunder';
                     else if(style === 'hologram') bubbleClass += ' chat-bubble-hologram';
                     else if(style === 'dragon') bubbleClass += ' chat-bubble-dragon';
+                    else if(style === 'prime') bubbleClass += ' chat-bubble-prime';
                 }
             }
             // Apply avatar frame for users with subscriptions
@@ -10345,6 +10437,7 @@ window.renderDmMessages = async function(msgs){
                     else if(senderUser.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
                     else if(senderUser.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
                     else if(senderUser.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
+                    else if(senderUser.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
                     
                     avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
                 }
@@ -10775,6 +10868,7 @@ window.renderSubscription = async function(){
     const manageNoneEl = qs('subscriptionManageNone');
     const btnPlus = qs('btnBuyPlus');
     const btnUltra = qs('btnBuyUltra');
+    const btnPrime = qs('btnBuyPrime');
     
     if(!statusEl) return;
     
@@ -10792,7 +10886,8 @@ window.renderSubscription = async function(){
             btnPlus.textContent = 'Оформить Plus';
             btnPlus.style.display = 'block';
         }
-        if(btnUltra) btnUltra.textContent = 'Оформить Ultra';
+        if(btnUltra) { btnUltra.textContent = 'Оформить Ultra'; btnUltra.style.display = 'block'; }
+        if(btnPrime) { btnPrime.textContent = 'Оформить Prime'; btnPrime.style.display = 'block'; }
     } else if(subscription === 'plus'){
         statusEl.textContent = '⭐ Kapani Plus';
         statusEl.style.color = 'var(--gold)';
@@ -10803,7 +10898,8 @@ window.renderSubscription = async function(){
             btnPlus.textContent = 'Продлить Plus';
             btnPlus.style.display = 'block';
         }
-        if(btnUltra) btnUltra.textContent = 'Обновить до Ultra';
+        if(btnUltra) { btnUltra.textContent = 'Обновить до Ultra'; btnUltra.style.display = 'block'; }
+        if(btnPrime) { btnPrime.textContent = 'Обновить до Prime'; btnPrime.style.display = 'block'; }
     } else if(subscription === 'ultra'){
         statusEl.textContent = '💎 Kapani Ultra';
         statusEl.style.color = 'var(--primary)';
@@ -10811,7 +10907,17 @@ window.renderSubscription = async function(){
         if(manageEl) manageEl.style.display = 'block';
         if(manageNoneEl) manageNoneEl.style.display = 'none';
         if(btnPlus) btnPlus.style.display = 'none';
-        if(btnUltra) btnUltra.textContent = 'Продлить Ultra';
+        if(btnUltra) { btnUltra.textContent = 'Продлить Ultra'; btnUltra.style.display = 'block'; }
+        if(btnPrime) { btnPrime.textContent = 'Обновить до Prime'; btnPrime.style.display = 'block'; }
+    } else if(subscription === 'prime'){
+        statusEl.textContent = '👑 Kapani Prime';
+        statusEl.style.color = '#f0c419';
+        expiryEl.textContent = 'Действует до: ' + new Date(subscriptionExpiry).toLocaleDateString('ru');
+        if(manageEl) manageEl.style.display = 'block';
+        if(manageNoneEl) manageNoneEl.style.display = 'none';
+        if(btnPlus) btnPlus.style.display = 'none';
+        if(btnUltra) btnUltra.style.display = 'none';
+        if(btnPrime) btnPrime.textContent = 'Продлить Prime';
     }
     // Render upcoming tax/fee info
     const taxEl = qs('taxNextInfo');
@@ -10837,8 +10943,8 @@ window.buySubscription = async function(type){
     const u = snap.val() || {};
     const currentBal = u.balance || 0;
     
-    const price = type === 'plus' ? 199 : 499;
-    const name = type === 'plus' ? 'Kapani Plus' : 'Kapani Ultra';
+    const price = CONFIG.subscriptions[type].price;
+    const name = CONFIG.subscriptions[type].name;
     
     if(currentBal < price){
         return toast(`❌ Недостаточно средств. Нужно ${price}₽`, 'red');
@@ -10915,8 +11021,8 @@ let giftSubscriptionType = '';
 
 window.openGiftSubscriptionModal = async function(type){
     giftSubscriptionType = type;
-    const price = type === 'plus' ? 199 : 499;
-    const name = type === 'plus' ? 'Kapani Plus' : 'Kapani Ultra';
+    const price = CONFIG.subscriptions[type].price;
+    const name = CONFIG.subscriptions[type].name;
     
     // Get all users for selection
     const usersSnap = await get(ref(db, 'users'));
@@ -10939,11 +11045,11 @@ window.openGiftSubscriptionModal = async function(type){
                     <span style="cursor:pointer;font-size:20px;" onclick="closeGiftSubscriptionModal()">✕</span>
                 </div>
                 
-                <div style="background:linear-gradient(135deg,${type==='plus'?'var(--gold-dim),rgba(251,191,36,.1)':'var(--pri-dim),rgba(34,211,165,.1)'});border:2px solid ${type==='plus'?'var(--gold)':'var(--primary)'};border-radius:16px;padding:16px;margin-bottom:20px;">
+                <div style="background:linear-gradient(135deg,${type==='plus'?'var(--gold-dim),rgba(251,191,36,.1)':type==='ultra'?'var(--pri-dim),rgba(34,211,165,.1)':'rgba(240,196,25,.15),rgba(255,110,196,.1)'});border:2px solid ${type==='plus'?'var(--gold)':type==='ultra'?'var(--primary)':'#f0c419'};border-radius:16px;padding:16px;margin-bottom:20px;${type==='prime'?'background-size:300% 300%;animation:primeGradientShift 6s ease infinite;':''}">
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-                        <div style="font-size:28px;">${type==='plus'?'⭐':'💎'}</div>
+                        <div style="font-size:28px;">${type==='plus'?'⭐':type==='ultra'?'💎':'👑'}</div>
                         <div>
-                            <div style="font-weight:900;font-size:16px;color:${type==='plus'?'var(--gold)':'var(--primary)'};">${name}</div>
+                            <div style="font-weight:900;font-size:16px;color:${type==='plus'?'var(--gold)':type==='ultra'?'var(--primary)':'#f0c419'};">${name}</div>
                             <div style="font-size:13px;color:var(--muted);">${price} ₽ / неделя</div>
                         </div>
                     </div>
@@ -10987,8 +11093,8 @@ window.sendGiftSubscription = async function(){
     if(!recipient) return toast('⚠️ Выберите получателя', 'gold');
     if(!giftSubscriptionType) return;
     
-    const price = giftSubscriptionType === 'plus' ? 199 : 499;
-    const name = giftSubscriptionType === 'plus' ? 'Kapani Plus' : 'Kapani Ultra';
+    const price = CONFIG.subscriptions[giftSubscriptionType].price;
+    const name = CONFIG.subscriptions[giftSubscriptionType].name;
     
     // Check giver's balance
     const giverSnap = await get(userRef(currentNick));
