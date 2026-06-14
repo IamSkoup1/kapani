@@ -870,10 +870,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="logo-card"><div class="logo-title">КАПАНИ</div><div class="logo-sub">Наш поселок · Наш сайт</div></div>
     <div class="card">
         <div class="card-title">Вход / Регистрация</div>
-        <input id="lgNick" type="text" placeholder="Никнейм" autocomplete="username" required minlength="2" maxlength="20">
+        <input id="lgNick" type="text" placeholder="Ваше имя в Капани" autocomplete="username" required minlength="2" maxlength="40">
         <input id="lgPass" type="password" placeholder="Пароль" autocomplete="current-password" required minlength="4" maxlength="50">
         <button class="btn btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px" aria-label="Войти в аккаунт или создать новый">Войти / Создать аккаунт</button>
-        <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Нет аккаунта? Создастся автоматически.<br>Стартовый баланс: <b style="color:var(--primary)">0 ₽</b></div>
+        <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Вход и переводы — по отображаемому имени.<br>Стартовый баланс: <b style="color:var(--primary)">0 ₽</b></div>
     </div>
 </div>
 
@@ -1142,9 +1142,24 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="bank" class="section">
     <div class="card">
         <div class="card-title">💸 Перевод денег</div>
-        <input type="text" id="bTo" placeholder="Введите никнейм получателя" autocomplete="off" required minlength="2" maxlength="20">
+        <input type="text" id="bTo" placeholder="Имя получателя" autocomplete="off" required minlength="2" maxlength="40">
         <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
+    </div>
+    <div class="card" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.04);">
+        <div class="card-title">📈 Накопительный счёт</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px;background:var(--surface2);border-radius:var(--r-sm);border:1px solid var(--border);">
+            <div>
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;">На счёте</div>
+                <div style="font-size:24px;font-weight:900;color:var(--gold);" id="savingsBalanceDisplay">0 ₽</div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);text-align:right;line-height:1.5;">+0,5% каждый день<br>от суммы на счёте</div>
+        </div>
+        <input type="number" id="savingsAmt" placeholder="Сумма (₽)" min="1" step="1">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+            <button class="btn btn-gold btn-sm" onclick="savingsDeposit()">➕ Пополнить</button>
+            <button class="btn btn-ghost btn-sm" onclick="savingsWithdraw()">➖ Снять</button>
+        </div>
     </div>
     <div class="card">
         <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -1327,8 +1342,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <video id="uAvVideo" src="" class="p-av" style="cursor:pointer;position:absolute;inset:0;z-index:1;display:none;object-fit:cover;border-radius:26px;" autoplay muted loop playsinline onclick="openImgViewer(this.currentSrc||this.src)"></video>
             </div>
             <div class="p-name" id="uNick"></div>
-            <div style="font-size:11px;color:var(--muted);font-weight:700;" id="uNickLogin"></div>
             <div class="p-job" id="uJobDisp"></div>
+            <div id="jobTitleSelectWrap" style="margin-top:10px;display:none;position:relative;z-index:1;">
+                <label style="font-size:11px;color:var(--muted);font-weight:800;display:block;margin-bottom:4px;">Выбор звания</label>
+                <select id="jobTitleSelect" onchange="saveDisplayJob()" style="margin:0;font-size:13px;padding:10px 12px;"></select>
+            </div>
             <div id="profileDescription" style="margin-top:8px;font-size:13px;color:var(--text);line-height:1.4;text-align:center;display:none;"></div>
             <div id="subscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;display:none;"></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;position:relative;z-index:1;">
@@ -1397,7 +1415,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
                 <img id="vpfAv" src="" class="p-av" style="cursor:pointer;" onclick="openImgViewer(this.src)" alt=""><video id="vpfAvVideo" class="p-av" style="cursor:pointer;position:absolute;inset:0;display:none;object-fit:cover;border-radius:26px;" muted autoplay loop playsinline onclick="openVideoViewer(this.currentSrc||this.src)"></video>
             </div>
             <div class="p-name" id="vpfName" style="text-align:center;"></div>
-            <div style="font-size:11px;color:var(--muted);font-weight:700;text-align:center;" id="vpfLogin"></div>
             <div class="p-job" id="vpfJob" style="text-align:center;"></div>
             <div id="profileDescription" style="margin-top:8px;font-size:13px;color:var(--text);line-height:1.4;text-align:center;display:none;"></div>
             <div id="vpfSubscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;text-align:center;display:none;"></div>
@@ -1418,7 +1435,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="jobs" class="section">
     <div class="card">
         <div class="card-title">🛠 Трудоустройство</div>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Выберите профессию и подайте заявку.</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Выберите профессию и подайте заявку. Можно работать на нескольких работах: без подписки — 2, Plus — 3, Ultra — 4, Prime — 5 (включая работу в бизнесе).</p>
+        <div id="myJobsList" style="margin-bottom:12px;"></div>
         <!-- KVE score notice -->
         <div id="jobKveNotice" style="margin-bottom:12px;"></div>
         <select id="jSel">
@@ -1717,6 +1735,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <button class="btn btn-ghost btn-sm" onclick="navTo('bizDetail')" style="margin-bottom:14px;">← К бизнесу</button>
     <div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.05);">
         <div class="card-title" style="color:var(--primary);">🏢 Панель владельца</div>
+        <div id="bizOwnerSwitcher" style="margin-bottom:10px;"></div>
         <div id="bizOwnerName" style="font-weight:900;font-size:18px;margin-bottom:4px;"></div>
         <div style="display:flex;gap:10px;margin-top:12px;">
             <div style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;text-align:center;">
@@ -1733,6 +1752,19 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         </div>
     </div>
 
+    <div class="card">
+        <div class="card-title">📬 Жалобы и запросы</div>
+        <div id="bizComplaintsList"><div style="color:var(--muted);font-size:13px;">Нет сообщений</div></div>
+    </div>
+    <div class="card">
+        <div class="card-title">📊 Лимиты бизнеса</div>
+        <div id="bizLimitsInfo" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+        <div id="bizLimitsUpgrades" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+    <div class="card">
+        <div class="card-title">🎨 Оформление бизнеса</div>
+        <div id="bizBgEffectsShop" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
     <div class="card">
         <div class="card-title">👥 Сотрудники</div>
         <div id="bizEmployeesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
@@ -2013,6 +2045,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    window.openBizOwnerPanel = function(bizId){ currentBizId = bizId; try{sessionStorage.setItem('kapani:lastBizId',bizId);}catch(e){} navTo('bizOwnerPanel'); };
+    </script>
+
 <script>
 // Конфигурация приложения (встроена для работы через file:// протокол)
 const CONFIG = {
@@ -2037,6 +2074,11 @@ const CONFIG = {
 };
 </script>
 <script type="module">
+    window.openBizOwnerPanel = function(bizId){
+    currentBizId = bizId;
+    try { sessionStorage.setItem('kapani:lastBizId', bizId); } catch(e) {}
+    navTo('bizOwnerPanel');
+};
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -2068,6 +2110,20 @@ const ECONOMY_MARKET_PIN_PRICE = 160;
 const ECONOMY_MARKET_PIN_DURATION_MS = ECONOMY_WEEK_MS;
 const ECONOMY_BUSINESS_PROMOTE_PRICE = 600;
 const ECONOMY_BUSINESS_PROMOTE_DURATION_MS = ECONOMY_WEEK_MS;
+const ECONOMY_BUSINESS_WEEKLY_FEE = 500;
+const ECONOMY_SAVINGS_DAILY_RATE = 0.005;
+const ECONOMY_DAY_MS = 24 * 60 * 60 * 1000;
+const BIZ_BASE_LIMITS = { employees: 3, products: 3, maxProductPrice: 1000 };
+const BIZ_UPGRADE_PRICES = { employee: 350, product: 250, priceCap: 400 };
+const BIZ_BG_EFFECTS = [
+    { id: 'shimmer', name: '✨ Мерцание', price: 199, cls: 'profile-bg-shimmer' },
+    { id: 'particles', name: '🌟 Частицы', price: 249, cls: 'profile-bg-particles' },
+    { id: 'aurora', name: '🌌 Аврора', price: 399, cls: 'profile-bg-aurora' },
+    { id: 'fire', name: '🔥 Пламя', price: 449, cls: 'profile-bg-fire' },
+    { id: 'plasma', name: '💜 Плазма', price: 499, cls: 'profile-bg-plasma' },
+    { id: 'galaxy', name: '🌠 Галактика', price: 549, cls: 'profile-bg-galaxy' },
+    { id: 'prime', name: '👑 Прайм', price: 799, cls: 'profile-bg-prime' }
+];
 let messagingInstance = null;
 
 const PRICE_PER_KM = CONFIG.finance.pricePerKm;
@@ -2547,9 +2603,9 @@ function getBusinessIds(u){
     pushId(u?.businessId);
     return ids;
 }
-function getOwnedActiveBusinesses(u){
+function getOwnedActiveBusinesses(u, nick = currentNick){
     const scan = Object.values(allBusinessesCache || {});
-    return scan.filter(b => b && b.status === 'active' && b.owner === (u?.nick || currentNick));
+    return scan.filter(b => b && b.status === 'active' && b.owner === (u?.nick || nick));
 }
 function getBusinessLimitForUser(u){
     const active = u?.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
@@ -2561,6 +2617,104 @@ function getBusinessLimitForUser(u){
 
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
+function normalizePublicName(s){ return String(s||'').trim().toLowerCase(); }
+async function findUserByPublicName(name){
+    const q = normalizePublicName(name);
+    if(!q) return null;
+    if(allUsersCache && Object.keys(allUsersCache).length){
+        for(const [nick, u] of Object.entries(allUsersCache)){
+            const dn = normalizePublicName(displayNick(u));
+            if(dn === q || normalizePublicName(nick) === q) return { nick, ...u };
+        }
+    }
+    const snap = await get(ref(db, 'users'));
+    const users = snap.val() || {};
+    for(const [nick, u] of Object.entries(users)){
+        const dn = normalizePublicName(displayNick(u));
+        if(dn === q || normalizePublicName(nick) === q) return { nick, ...u };
+    }
+    return null;
+}
+function makeNickFromName(name){
+    let base = String(name||'').trim().replace(/\s+/g, '_').replace(/[^\wа-яА-ЯёЁ_-]/gi, '').slice(0, 24);
+    if(!base) base = 'user';
+    return base;
+}
+async function ensureUniqueNick(baseNick){
+    let nick = baseNick;
+    let i = 1;
+    while(true){
+        const snap = await get(userRef(nick));
+        if(!snap.exists()) return nick;
+        nick = `${baseNick.slice(0, 20)}_${i}`;
+        i++;
+        if(i > 99) return genId();
+    }
+}
+function getJobLimit(u){
+    const active = u?.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+    if(u?.subscription === 'prime' && active) return 5;
+    if(u?.subscription === 'ultra' && active) return 4;
+    if(u?.subscription === 'plus' && active) return 3;
+    return 2;
+}
+function getBizLimits(b){
+    const bonus = b?.limitBonus || {};
+    return {
+        employees: BIZ_BASE_LIMITS.employees + Number(bonus.employees || 0),
+        products: BIZ_BASE_LIMITS.products + Number(bonus.products || 0),
+        maxProductPrice: BIZ_BASE_LIMITS.maxProductPrice + Number(bonus.priceCap || 0) * 500
+    };
+}
+function collectEmploymentsFromData(u, nick){
+    const list = [];
+    const seen = new Set();
+    const push = (item) => {
+        if(!item || !item.id || seen.has(item.id)) return;
+        seen.add(item.id);
+        list.push(item);
+    };
+    if(Array.isArray(u?.employments)) u.employments.forEach(push);
+    if(u?.job && u.job !== 'Житель') push({ id: `muni_${u.job}`, type: 'municipal', role: u.job });
+    const scan = Object.values(allBusinessesCache || {});
+    scan.forEach(b => {
+        if(!b || b.status !== 'active') return;
+        const emp = b.employees?.[nick];
+        if(emp) push({ id: `biz_${b.id}`, type: 'business', bizId: b.id, role: getBizEmployeeRoleName(emp), bizName: b.name || 'Бизнес' });
+    });
+    return list;
+}
+function countActiveEmployments(u, nick){ return collectEmploymentsFromData(u, nick).length; }
+function getDisplayJobLabel(u, nick){
+    if(u?.displayJob) return u.displayJob;
+    const emps = collectEmploymentsFromData(u, nick);
+    if(emps.length) return emps[0].role;
+    return (u && u.job) || 'Житель';
+}
+function hasMunicipalJob(u, jobName){
+    return collectEmploymentsFromData(u, u?.nick || currentNick).some(e => e.type === 'municipal' && e.role === jobName);
+}
+function hasEmploymentRole(u, nick, role){
+    return collectEmploymentsFromData(u, nick).some(e => e.role === role);
+}
+async function syncUserEmployments(nick, u){
+    const emps = collectEmploymentsFromData(u, nick);
+    if(Array.isArray(u?.employments) && u.employments.length === emps.length) return emps;
+    await update(userRef(nick), { employments: emps });
+    return emps;
+}
+async function canTakeAnotherJob(u, nick){
+    await syncUserEmployments(nick, u);
+    const fresh = (await get(userRef(nick))).val() || u;
+    return countActiveEmployments(fresh, nick) < getJobLimit(fresh);
+}
+function applyBizBgEffect(el, effectId){
+    if(!el) return;
+    const cls = ['profile-bg-shimmer','profile-bg-particles','profile-bg-gradient-animated','profile-bg-ocean','profile-bg-sunset','profile-bg-aurora','profile-bg-galaxy','profile-bg-fire','profile-bg-plasma','profile-bg-thunder','profile-bg-hologram','profile-bg-dragon','profile-bg-prime'];
+    el.classList.remove(...cls);
+    const eff = BIZ_BG_EFFECTS.find(x => x.id === effectId);
+    if(eff?.cls) el.classList.add(eff.cls);
+}
 function formatMoneyLine(tx){
     const sign = tx.type==='in' ? '+' : '−';
     const amt = Math.abs(tx.amt||0);
@@ -2570,7 +2724,7 @@ function formatMoneyLine(tx){
     return `${d}, ${t} — ${sign}${amt} ₽ — ${desc}`;
 }
 async function syncJanitorTaskState(u){
-    if(!currentNick || !u || u.job!==JOB_JANITOR) return;
+    if(!currentNick || !u || !hasMunicipalJob(u, JOB_JANITOR)) return;
     const today = todayKey();
     if(u.janitorTaskDate === today) return;
     try {
@@ -2611,53 +2765,65 @@ function renderDebtNotice(targetId, u){
     el.innerHTML = balance < 0 ? getDebtHelpHtml() : '';
 }
 let economyMaintenanceBusy = false;
-async function processEconomyChargesForUser(nick, opts = {}){
+async function processBusinessWeeklyFees(nick, u, opts = {}){
+    const owned = getOwnedActiveBusinesses(u, nick);
+    if(!owned.length) return;
+    const now = Date.now();
+    let balance = Number(u.balance || 0);
+    let charged = 0;
+    for(const b of owned){
+        const last = Number(b.bizWeeklyFeeAt || b.createdAt || now);
+        const weeks = Math.floor((now - last) / ECONOMY_WEEK_MS);
+        if(weeks <= 0) continue;
+        const fee = ECONOMY_BUSINESS_WEEKLY_FEE * weeks;
+        balance -= fee;
+        charged += fee;
+        await update(bizItemRef(b.id), { bizWeeklyFeeAt: last + weeks * ECONOMY_WEEK_MS });
+        await logTx(nick, { type: 'out', who: b.name || 'Бизнес', amt: fee, desc: `Абонентская плата бизнеса «${b.name}» (${weeks} нед.)` });
+        if(opts.notify !== false) await pushNotification(nick, `🏪 Списано ${fee}₽ за ${weeks} нед. наличия бизнеса «${b.name}»`, 'money');
+    }
+    if(charged > 0) await update(userRef(nick), { balance });
+}
+async function processSavingsInterest(nick, u, opts = {}){
+    const savings = Number(u.savingsBalance || 0);
+    if(savings <= 0) return u;
+    const now = Date.now();
+    const last = Number(u.savingsLastInterestAt || u.createdAt || now);
+    const days = Math.floor((now - last) / ECONOMY_DAY_MS);
+    if(days <= 0) return u;
+    let total = savings;
+    for(let i = 0; i < days; i++) total = Math.round(total * (1 + ECONOMY_SAVINGS_DAILY_RATE));
+    const interest = total - savings;
+    const patch = { savingsBalance: total, savingsLastInterestAt: last + days * ECONOMY_DAY_MS };
+    await update(userRef(nick), patch);
+    if(interest > 0 && opts.notify !== false){
+        await logTx(nick, { type: 'in', who: 'Накопительный счёт', amt: interest, desc: `Начисление ${days} дн. (+0,5%/день)` });
+        await pushNotification(nick, `📈 Накопительный счёт: +${interest}₽ за ${days} дн.`, 'money');
+    }
+    return { ...u, ...patch };
+}
+
+async function processEconomyChargesForUser(nick, opts = {}) {
     if(!nick || economyMaintenanceBusy) return null;
     economyMaintenanceBusy = true;
-    try{
+    try {
         const snap = await get(userRef(nick));
         if(!snap.exists()) return null;
         const u = snap.val() || {};
         const now = Date.now();
         const hasMarker = !!u.economyLastProcessedAt;
         const lastProcessed = hasMarker ? Number(u.economyLastProcessedAt) : now;
+        
         if(!hasMarker){
             await update(userRef(nick), { economyLastProcessedAt: now });
             return u;
         }
+        
         const weeks = Math.floor((now - lastProcessed) / ECONOMY_WEEK_MS);
         if(weeks <= 0) return u;
 
-        let balance = Number(u.balance || 0);
-        let cursor = lastProcessed;
-        const notifications = [];
-        for(let i = 0; i < weeks; i++){
-            const taxBase = balance;
-            const accountFee = ECONOMY_ACCOUNT_WEEKLY_FEE;
-            let wealthTax = 0;
-            if(taxBase > 0 && taxBase < 1000) wealthTax = Math.round(taxBase * 0.05);
-            else if(taxBase >= 1000 && taxBase <= 10000) wealthTax = Math.round(taxBase * 0.07);
-            else if(taxBase > 10000 && taxBase <= 100000) wealthTax = Math.round(taxBase * 0.10);
-            else if(taxBase > 100000) wealthTax = Math.round(taxBase * 0.20);
-
-            const total = accountFee + wealthTax;
-            balance -= total;
-            cursor += ECONOMY_WEEK_MS;
-            notifications.push({ total, accountFee, wealthTax, taxBase, cursor });
-        }
-
-        const patch = { balance, economyLastProcessedAt: cursor };
-        await update(userRef(nick), patch);
-
-        for(const n of notifications){
-            if(n.accountFee > 0){
-                await logTx(nick, { type: 'out', who: 'Мэрия', amt: n.accountFee, desc: 'Абонентская плата за неделю' });
-            }
-            if(n.wealthTax > 0){
-                let taxPct = n.taxBase < 1000 ? 5 : n.taxBase <= 10000 ? 7 : n.taxBase <= 100000 ? 10 : 20;
-                await logTx(nick, { type: 'out', who: 'Налоговая', amt: n.wealthTax, desc: `Налог на богатство ${taxPct}%` });
-            }
-        }
+        const notifications = []; 
+        const patch = { economyLastProcessedAt: lastProcessed + weeks * ECONOMY_WEEK_MS };
 
         if(opts.notify !== false){
             for(const n of notifications){
@@ -2674,18 +2840,27 @@ async function processEconomyChargesForUser(nick, opts = {}){
                 toast(`💳 Списания по аккаунту: ${notifications.length} нед.`, 'gold');
             }
         }
+        await update(userRef(nick), patch);
         return {...u, ...patch};
-    } catch(e){
+    } catch(e) {
         console.warn('Economy maintenance failed:', e);
         return null;
     } finally {
         economyMaintenanceBusy = false;
     }
 }
+
 async function ensureEconomyFresh(opts = {}){
     if(!currentNick) return null;
-    return await processEconomyChargesForUser(currentNick, opts);
-}
+    const result = await processEconomyChargesForUser(currentNick, opts);
+    if(result){
+        const snap = await get(userRef(currentNick));
+        const u = snap.val() || result;
+        await processBusinessWeeklyFees(currentNick, u, opts); // Теперь достучится до оригинальной функции!
+        await processSavingsInterest(currentNick, u, opts);
+    }
+    return result;
+} // <--- А ЭТА СКОБКА ЗАКРЫВАЕТ ensureEconomyFresh
 async function requireMarketTaxiAccess(){
     if(!await requireSpendable()) return false;
     const snap = await get(userRef(currentNick));
@@ -2745,33 +2920,35 @@ async function logTx(nick, entry){
 
 // ─── AUTH ─────────────────────────────────
 window.handleAuth = async function() {
-    const nick=qs('lgNick').value.trim(), pass=qs('lgPass').value;
-    if(!nick||!pass) return toast('⚠️ Заполните все поля','gold');
+    const nameInput=qs('lgNick').value.trim(), pass=qs('lgPass').value;
+    if(!nameInput||!pass) return toast('⚠️ Заполните все поля','gold');
     const btn=qs('authBtn'); btn.disabled=true; btn.textContent='Подключение...';
     try {
-        const snap=await get(userRef(nick));
-        if(!snap.exists()) {
+        const existing = await findUserByPublicName(nameInput);
+        if(!existing) {
+            const baseNick = makeNickFromName(nameInput);
+            const nick = await ensureUniqueNick(baseNick);
             const now = Date.now();
             await set(userRef(nick),{
                 nick,pass,balance:0,job:'Житель',avatar:DEFAULT_AVATAR_URL,
                 joinDate:new Date().toLocaleDateString('ru'),vehicle:'',lastSeen:Date.now(),
-                displayName:'',accountFrozen:false,rewardedAvatar:false,rewardedWall:false,
+                displayName:nameInput,accountFrozen:false,rewardedAvatar:false,rewardedWall:false,
                 createdAt: now,
                 economyLastProcessedAt: now,
+                savingsBalance: 0,
+                savingsLastInterestAt: now,
+                employments: [],
                 totalEarned: 0,
-                accountVerified: false // New accounts need mayor approval
+                accountVerified: false
             });
-            
-            // Send notification to mayor about new account
-            await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nick}`, 'system');
-            
+            await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
             toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
+            localStorage.setItem('kp_s',nick); sessionStorage.setItem('kp_s',nick); localStorage.setItem('kp_auth', JSON.stringify({nick, pass, name: nameInput})); currentNick=nick; startApp();
         } else {
-            const u=snap.val();
-            if(u.pass!==pass){btn.disabled=false;btn.textContent='Войти / Создать аккаунт';return toast('❌ Неверный пароль','red');}
+            if(existing.pass!==pass){btn.disabled=false;btn.textContent='Войти / Создать аккаунт';return toast('❌ Неверный пароль','red');}
             toast('👋 С возвращением!','green');
+            localStorage.setItem('kp_s',existing.nick); sessionStorage.setItem('kp_s',existing.nick); localStorage.setItem('kp_auth', JSON.stringify({nick: existing.nick, pass, name: displayNick(existing)})); currentNick=existing.nick; startApp();
         }
-            localStorage.setItem('kp_s',nick); sessionStorage.setItem('kp_s',nick); localStorage.setItem('kp_auth', JSON.stringify({nick, pass})); currentNick=nick; startApp();
     } catch(e) { btn.disabled=false;btn.textContent='Войти / Создать аккаунт';toast('❌ Ошибка: '+e.message,'red'); }
 };
 
@@ -3038,8 +3215,18 @@ function updateHeader(u) {
     }
     
     qs('uNick').textContent=shown;
-    const ul = qs('uNickLogin'); if(ul) ul.textContent = '@' + (u.nick || '');
     qs('uJobDisp').textContent=getUserBusinessRoleLabel(u, u.nick || currentNick);
+    const emps = collectEmploymentsFromData(u, u.nick || currentNick);
+    const jtw = qs('jobTitleSelectWrap');
+    const jts = qs('jobTitleSelect');
+    if(jtw && jts){
+        if(emps.length > 1){
+            jtw.style.display = 'block';
+            jts.innerHTML = emps.map(e => `<option value="${escHtml(e.role)}" ${u.displayJob===e.role?'selected':''}>${escHtml(e.role)}</option>`).join('');
+        } else {
+            jtw.style.display = 'none';
+        }
+    }
     
     // Profile description
     const descEl = qs('profileDescription');
@@ -3127,7 +3314,7 @@ function updateHeader(u) {
     }
     
     updateFrozenOverlay(u);
-    const isAdmin=currentNick===ADMIN, isDriver=u.job==='Водитель', isDelivery=u.job==='Доставщик', isJanitor=u.job===JOB_JANITOR;
+    const isAdmin=currentNick===ADMIN, isDriver=hasMunicipalJob(u,'Водитель'), isDelivery=hasMunicipalJob(u,'Доставщик'), isJanitor=hasMunicipalJob(u,JOB_JANITOR);
     qs('adminQuickBtn').style.display=isAdmin?'block':'none';
     qs('workerSection').style.display=(isDriver||isDelivery||isJanitor)?'block':'none';
     if(isDriver) qs('workerTitle').textContent='🛵 Вызовы такси';
@@ -3141,15 +3328,15 @@ function updateHeader(u) {
     // nav layout handled by flex
     const vDisp=qs('vehicleDisplay');
     if(vDisp){if(u.vehicle){vDisp.style.display='block';vDisp.textContent='🛵 '+u.vehicle;}else vDisp.style.display='none';}
-    const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=(u.job&&u.job!=='Житель')?'block':'none';
+    const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=collectEmploymentsFromData(u, u.nick||currentNick).length?'block':'none';
     if(isDriver&&qs('vehicleInput')) qs('vehicleInput').value=u.vehicle||'';
     // Кнопка заседания — только для депутатов
-    const depBtn=qs('deputySessionQuickBtn'); if(depBtn) depBtn.style.display=(u.job==='Депутат')?'block':'none';
+    const depBtn=qs('deputySessionQuickBtn'); if(depBtn) depBtn.style.display=hasMunicipalJob(u,'Депутат')?'block':'none';
     // Блок КСБ-штрафов
-    const ksbFineSection=qs('ksbFineSection'); if(ksbFineSection) ksbFineSection.style.display=(u.job==='КСБ')?'block':'none';
+    const ksbFineSection=qs('ksbFineSection'); if(ksbFineSection) ksbFineSection.style.display=hasMunicipalJob(u,'КСБ')?'block':'none';
 }
-function updateHeader_balance(u){if(!u)return;qs('hBal').textContent=(u.balance||0).toLocaleString();}
-window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const job=snap.val().job;if(job==='Водитель')navTo('driverPage');else if(job==='Доставщик')navTo('deliveryPage');else if(job===JOB_JANITOR)navTo('janitorPage');});};
+function updateHeader_balance(u){if(!u)return;qs('hBal').textContent=(u.balance||0).toLocaleString();if(curPage==='bank')renderSavingsDisplay();}
+window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const u=snap.val();if(hasMunicipalJob(u,'Водитель'))navTo('driverPage');else if(hasMunicipalJob(u,'Доставщик'))navTo('deliveryPage');else if(hasMunicipalJob(u,JOB_JANITOR))navTo('janitorPage');});};
 function updateBadge(count){const badge=qs('notifyBadge');badge.textContent=count>0?(count>9?'9+':count):'';badge.style.display=count>0?'block':'none';}
 
 // ─── HOME STATS ───────────────────────────
@@ -3629,7 +3816,7 @@ async function renderHomeWorker(orders){
     const wl=qs('workerList'); if(!wl) return;
     const snap=await get(userRef(currentNick)); if(!snap.exists()) return;
     const u=snap.val();
-    if(u.job===JOB_JANITOR){
+    if(hasMunicipalJob(u,JOB_JANITOR)){
         const status=u.janitorSubmissionStatus||'ready';
         const statusTxt=status==='pending'?'⏳ Отчёт в мэрии':status==='approved'?'✅ День оплачен':status==='rejected'?'❌ Отказано':'🟢 Можно выполнять';
         wl.innerHTML=`<div class="work-order work-active"><div style="color:var(--primary);font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">Ежедневная задача</div><div style="font-weight:700;font-size:15px;margin-bottom:4px;">🧹 ${JANITOR_TASK_TEXT}</div><div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Сегодня: ${todayKey()}</div><div style="font-size:12px;color:var(--muted);">${statusTxt}</div><div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="navTo('janitorPage')">Открыть →</button></div></div>`;
@@ -3638,13 +3825,13 @@ async function renderHomeWorker(orders){
     const ordersArr=Object.entries(orders).map(([id,o])=>({...o,id}));
     const active=ordersArr.find(o=>o.worker===currentNick&&o.status==='in_progress');
     if(active){wl.innerHTML=`<div class="work-order work-active"><div style="color:var(--primary);font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">Активный заказ</div><div style="font-weight:700;font-size:15px;margin-bottom:4px;">${escHtml(active.info)}</div>${active.address?`<div style="color:var(--muted);font-size:12px;">📍 ${escHtml(active.address)}</div>`:''}<div style="color:var(--muted);font-size:12px;margin-top:4px;">Клиент: ${active.client} · ${active.price}₽</div></div>`;}
-    else{const type=u.job==='Водитель'?'taxi':'shop';const avail=ordersArr.filter(o=>o.type===type&&o.status==='waiting');wl.innerHTML=avail.length===0?'<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Нет заказов</div>':avail.map(o=>`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:700;margin-bottom:6px;">${escHtml(o.info)}</div>${o.address?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📍 ${escHtml(o.address)}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--primary);font-weight:900;">${o.price}₽</span><button class="btn btn-primary btn-sm" onclick="takeOrder('${o.id}')">✅ Взять</button></div></div>`).join('');}
+    else{const type=hasMunicipalJob(u,'Водитель')?'taxi':'shop';const avail=ordersArr.filter(o=>o.type===type&&o.status==='waiting');wl.innerHTML=avail.length===0?'<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Нет заказов</div>':avail.map(o=>`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:700;margin-bottom:6px;">${escHtml(o.info)}</div>${o.address?`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📍 ${escHtml(o.address)}</div>`:''}<div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:var(--primary);font-weight:900;">${o.price}₽</span><button class="btn btn-primary btn-sm" onclick="takeOrder('${o.id}')">✅ Взять</button></div></div>`).join('');}
 }
 
 // ─── WORKER PAGES ─────────────────────────
 async function renderWorkerPage(orders){
     const snap=await get(userRef(currentNick)); if(!snap.exists()) return;
-    const u=snap.val(); const isDriver=u.job==='Водитель';
+    const u=snap.val(); const isDriver=hasMunicipalJob(u,'Водитель');
     const type=isDriver?'taxi':'shop'; const listId=isDriver?'driverList':'deliveryList';
     const el=qs(listId); if(!el) return;
     if(!orders){const oSnap=await get(ordersRef());orders=oSnap.val()||{};}
@@ -4019,7 +4206,44 @@ window.saveProfileCustomization=async function(){
 };
 
 window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.balance=(u.balance||0)+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_CUSTOM_AVATAR,desc:'Бонус за установку своей аватарки'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
-window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Как вас показывать в приложении? (никнейм не меняется)',cur);if(v===null)return;const t=v.trim().slice(0,40);await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
+window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Ваше имя в Капани (для входа и переводов):',cur);if(v===null)return;const t=v.trim().slice(0,40);if(!t)return toast('⚠️ Имя не может быть пустым','gold');const dup=await findUserByPublicName(t);if(dup&&dup.nick!==currentNick)return toast('❌ Это имя уже занято','red');await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
+window.saveDisplayJob=async function(){
+    const sel=qs('jobTitleSelect'); if(!sel) return;
+    const role=sel.value;
+    if(!role) return;
+    await update(userRef(currentNick), { displayJob: role });
+    toast('✅ Звание обновлено','green');
+    const snap=await get(userRef(currentNick)); if(snap.exists()) updateHeader(snap.val());
+};
+window.savingsDeposit=async function(){
+    if(!await requireSpendable()) return;
+    const amt=parseInt(qs('savingsAmt')?.value||'0',10)||0;
+    if(amt<=0) return toast('⚠️ Введите сумму','gold');
+    const snap=await get(userRef(currentNick)); const u=snap.val()||{};
+    if((u.balance||0)<amt) return toast('❌ Недостаточно средств','red');
+    const savings = Number(u.savingsBalance||0)+amt;
+    await update(userRef(currentNick), { balance: (u.balance||0)-amt, savingsBalance: savings, savingsLastInterestAt: u.savingsLastInterestAt || Date.now() });
+    await logTx(currentNick, { type:'out', who:'Накопительный счёт', amt, desc:'Пополнение накопительного счёта' });
+    if(qs('savingsAmt')) qs('savingsAmt').value='';
+    toast(`📈 +${amt}₽ на накопительный счёт`,'green');
+    renderSavingsDisplay();
+};
+window.savingsWithdraw=async function(){
+    const amt=parseInt(qs('savingsAmt')?.value||'0',10)||0;
+    if(amt<=0) return toast('⚠️ Введите сумму','gold');
+    const snap=await get(userRef(currentNick)); const u=snap.val()||{};
+    if((u.savingsBalance||0)<amt) return toast('❌ Недостаточно на накопительном счёте','red');
+    await update(userRef(currentNick), { balance: (u.balance||0)+amt, savingsBalance: (u.savingsBalance||0)-amt });
+    await logTx(currentNick, { type:'in', who:'Накопительный счёт', amt, desc:'Снятие с накопительного счёта' });
+    if(qs('savingsAmt')) qs('savingsAmt').value='';
+    toast(`💰 Снято ${amt}₽ с накопительного счёта`,'green');
+    renderSavingsDisplay();
+};
+function renderSavingsDisplay(){
+    const el=qs('savingsBalanceDisplay');
+    const u=allUsersCache[currentNick]||{};
+    if(el) el.textContent=(u.savingsBalance||0).toLocaleString()+' ₽';
+}
 window.editProfileDescription=async function(){
     const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
@@ -4199,7 +4423,7 @@ window.takeOrder=async function(id){
             sendPushNotification('Капани 📦',notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
             toast('✅ Заказ принят!','green');
             if(o.type==='taxi'&&isDriver) navTo('driverPage');
-            if(o.type==='shop'&&u.job==='Доставщик') navTo('deliveryPage');
+            if(o.type==='shop'&&hasMunicipalJob(u,'Доставщик')) navTo('deliveryPage');
         }
     } catch (error) {
         console.error('Ошибка принятия заказа:', error);
@@ -4304,24 +4528,28 @@ window.cancelOrder=async function(id){
 window.doTransfer=async function(){
     if(!await requireNotMigrant('переводы недоступны')) return;
     if(!await requireSpendable())return;
-    const to=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
-    if(!to)return toast('⚠️ Введите никнейм','gold');if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
+    const toName=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
+    if(!toName)return toast('⚠️ Введите имя получателя','gold');
+    const toUser = await findUserByPublicName(toName);
+    if(!toUser) return toast('❌ Получатель не найден','red');
+    const to = toUser.nick;
+    if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
 
     const[fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
     const fromUser = fromSnap.val();
-    const toUser = toSnap.val();
+    const toUserData = toSnap.val();
     const hasPrimeTransfer = fromUser?.subscription === 'prime' && fromUser?.subscriptionExpiry && new Date(fromUser.subscriptionExpiry) > new Date();
     const commissionRate = hasPrimeTransfer ? 0.01 : ECONOMY_TRANSFER_COMMISSION;
     const commission = calcCommission(amt, commissionRate);
     const total = amt + commission;
 
     if(isMigrantUser(fromUser)) return toast(`🚫 ${ROLE_MIGRANT}: переводы недоступны`,'red');
-    if(isMigrantUser(toUser)) return toast(`🚫 Нельзя переводить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
+    if(isMigrantUser(toUserData)) return toast(`🚫 Нельзя переводить пользователю с ролью «${ROLE_MIGRANT}»`,'red');
     if(!fromUser.accountVerified) {
         return toast('❌ Ваш аккаунт не подтверждён мэрией. Подождите подтверждения.','red');
     }
     if(!toSnap.exists())return toast('❌ Не найден','red');
-    if(!toUser.accountVerified) {
+    if(!toUserData.accountVerified) {
         return toast('❌ Аккаунт получателя не подтверждён мэрией.','red');
     }
     if((fromUser.balance || 0) < total){
@@ -4342,9 +4570,9 @@ window.doTransfer=async function(){
             if(!result.commissionCharged){
                 await chargeCommissionAndLog(currentNick, commission, `Комиссия ${Math.round(commissionRate*100)}% за перевод пользователю ${to}`);
             }
-            await pushNotification(to,`💰 Перевод ${amt}₽ от ${currentNick}`,'money');
+            await pushNotification(to,`💰 Перевод ${amt}₽ от ${displayNick(fromUser)}`,'money');
             qs('bTo').value='';qs('bAmt').value='';
-            toast(`💸 ${amt}₽ → ${to} (комиссия ${commission}₽)`,'green');
+            toast(`💸 ${amt}₽ → ${displayNick(toUserData)} (комиссия ${commission}₽)`,'green');
             renderRecentTransfers();renderFinancialStats();
         }
     } catch (error) {
@@ -4937,7 +5165,7 @@ window.openUserProfile=async function(nick){
         }
     }
     
-    qs('upmStats').innerHTML = (subscriptionHtml ? `<div style="grid-column:1/-1;text-align:center;margin-bottom:8px;">${subscriptionHtml}</div>` : '') + `<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:11px;color:var(--muted);">@${escHtml(u.nick)}</div><div class="sl">Логин</div></div><div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:16px;">${escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div><div class="sl">Должность</div></div>${u.vehicle?`<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:14px;">🛵 ${escHtml(u.vehicle)}</div><div class="sl">Транспорт</div></div>`:''}`;
+    qs('upmStats').innerHTML = (subscriptionHtml ? `<div style="grid-column:1/-1;text-align:center;margin-bottom:8px;">${subscriptionHtml}</div>` : '') + `<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:16px;">${escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div><div class="sl">Должность</div></div>${u.vehicle?`<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:14px;">🛵 ${escHtml(u.vehicle)}</div><div class="sl">Транспорт</div></div>`:''}`;
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,12);
     const wallHtml=posts.length?`<div style="margin-top:16px;"><div style="font-weight:900;font-size:12px;color:var(--muted);margin-bottom:8px;">📰 Лента</div>${posts.map(p=>wallPostCardHtml(nick,p.id||'',p)).join('')}</div>`:'';
@@ -4984,7 +5212,6 @@ async function renderVisitorProfilePage(nick){
     
     toggleAvatarMedia(qs('vpfAv'), qs('vpfAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
     qs('vpfName').textContent=(u.nicknameEmoji ? u.nicknameEmoji + ' ' : '') + (displayNick(u)||u.nick)+(u.nick===ADMIN?' 👑':'');
-    const vpl=qs('vpfLogin');if(vpl)vpl.textContent='@'+u.nick;
     qs('vpfJob').textContent=getUserBusinessRoleLabel(u, u.nick || currentNick);
     
     // Profile description
@@ -5709,9 +5936,10 @@ function renderLeaderboard(users){
 window.sendApp=async function(){
     const target=qs('jSel').value;
     const appText=qs('jAppText').value.trim();
-    // Fetch user data to check KVE score
     const uSnap=await get(userRef(currentNick));
     const u=uSnap.val()||{};
+    if(hasMunicipalJob(u, target)) return toast('⚠️ Вы уже работаете на этой должности','gold');
+    if(!await canTakeAnotherJob(u, currentNick)) return toast(`⚠️ Лимит работ: ${getJobLimit(u)}. Увольтесь с одной работы или оформите подписку.`,'gold');
     const kveScore = (u.kveScore !== undefined && u.kveScore !== null) ? Number(u.kveScore) : null;
     const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95};
     const required=KVE_REQUIREMENTS[target]||0;
@@ -5747,11 +5975,23 @@ window.renderJobAppStatus=async function(){
     const apps=snap.val()||{};
     const myApp=Object.values(apps).find(a=>a.from===currentNick);
     const statusEl=qs('myAppStatus');
+    const jobsListEl=qs('myJobsList');
+    const uSnap=await get(userRef(currentNick));
+    const u=uSnap.val()||{};
+    if(jobsListEl){
+        const emps=collectEmploymentsFromData(u, currentNick);
+        const limit=getJobLimit(u);
+        jobsListEl.innerHTML=emps.length?`<div style="padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;">
+            <div style="font-weight:800;margin-bottom:6px;">Ваши работы (${emps.length}/${limit})</div>
+            ${emps.map(e=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);">${escHtml(e.role)}${e.bizName?` <span style="color:var(--muted);font-size:11px;">· ${escHtml(e.bizName)}</span>`:''}</div>`).join('')}
+        </div>`:'';
+    }
+    
     if(!statusEl) return;
     
     if(!myApp){
         statusEl.innerHTML='';
-        qs('jAppText').value='';
+        if(qs('jAppText')) { qs('jAppText').value=''; qs('jAppText').disabled=false; }
         return;
     }
     
@@ -5773,7 +6013,39 @@ window.renderJobAppStatus=async function(){
 // ─── PROFILE ──────────────────────────────
 window.changeVehicle=async function(){const v=prompt('Транспорт:');if(v!==null){await update(userRef(currentNick),{vehicle:v});toast('🛵 Обновлено','green');}};
 window.saveVehicle=async function(){const v=qs('vehicleInput').value.trim();await update(userRef(currentNick),{vehicle:v});toast('🛵 Сохранено','green');};
-window.quitJob=async function(){const snap=await get(userRef(currentNick));if(!snap.exists())return;const u=snap.val();if(!u.job||u.job==='Житель') return toast('⚠️ Вы не трудоустроены','gold'); if(!confirm('Уволиться с работы?')) return; await update(userRef(currentNick),{job:'Житель',vehicle:'',janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''}); toast('🚪 Вы уволились','green');};
+window.quitJob=async function(){
+    const snap=await get(userRef(currentNick));if(!snap.exists())return;
+    const u=snap.val();
+    const emps=collectEmploymentsFromData(u, currentNick);
+    if(!emps.length) return toast('⚠️ Вы не трудоустроены','gold');
+    let targetRole = u.job && u.job !== 'Житель' ? u.job : null;
+    if(emps.length > 1){
+        const list = emps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
+        const pick = prompt(`С какой работы уволиться?\n${list}\n\nВведите номер или название:`);
+        if(!pick) return;
+        const num = parseInt(pick,10);
+        if(num>=1 && num<=emps.length) targetRole = emps[num-1].role;
+        else targetRole = emps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role || pick.trim();
+    } else {
+        targetRole = emps[0].role;
+    }
+    const emp = emps.find(e=>e.role===targetRole);
+    if(!emp) return toast('⚠️ Работа не найдена','gold');
+    if(!confirm(`Уволиться с должности «${emp.role}»?`)) return;
+    if(emp.type==='business' && emp.bizId){
+        await update(bizItemRef(emp.bizId), { [`employees/${currentNick}`]: null });
+    }
+    const newEmps = emps.filter(e=>e.id!==emp.id);
+    const patch = { employments: newEmps, displayJob: newEmps[0]?.role || null };
+    if(emp.type==='municipal' && u.job===emp.role) {
+        patch.job = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
+        if(emp.role===JOB_JANITOR || patch.job!==JOB_JANITOR) Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''});
+        if(emp.role==='Водитель' || emp.role==='Доставщик') patch.vehicle='';
+    }
+    if(!patch.displayJob) patch.displayJob = newEmps[0]?.role || null;
+    await update(userRef(currentNick), patch);
+    toast('🚪 Вы уволились','green');
+};
 
 function renderJanitorTaskCard(u){
     const el=qs('janitorTaskCard');if(!el||!u)return;
@@ -5806,7 +6078,7 @@ window.submitJanitorDone=async function(){
     const uSnap=await get(userRef(currentNick));if(!uSnap.exists())return;
     const u=uSnap.val();
     if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: задания недоступны`,'red');
-    if(u.job!==JOB_JANITOR)return toast('⚠️ Только для уборщика','gold');
+    if(!hasMunicipalJob(u,JOB_JANITOR))return toast('⚠️ Только для уборщика','gold');
     if(u.janitorSubmissionStatus==='pending')return toast('⏳ Уже отправлено','gold');
     if(u.janitorSubmissionStatus==='approved')return toast('✅ Сегодня уже закрыто','green');
     if(!window._janitorProofData)return toast('⚠️ Прикрепите фото','gold');
@@ -6026,11 +6298,20 @@ window.approveApp=async function(id,ok){
     const snap=await get(appRef(id));if(!snap.exists())return;
     const a=snap.val();
     if(ok){
-        const patch={job:a.target,vehicle:''};
+        const uSnap=await get(userRef(a.from));
+        const u=uSnap.val()||{};
+        if(!await canTakeAnotherJob(u, a.from)) {
+            toast(`❌ Лимит работ (${getJobLimit(u)}) для ${a.from}`,'red');
+            return;
+        }
+        const emps = collectEmploymentsFromData(u, a.from);
+        const newEmp = { id: `muni_${a.target}`, type: 'municipal', role: a.target };
+        const patch={job:a.target,vehicle:'',employments:[...emps.filter(e=>e.id!==newEmp.id), newEmp], displayJob: u.displayJob || a.target};
         if(a.target===JOB_JANITOR){Object.assign(patch,{janitorTaskDate:todayKey(),janitorSubmissionId:'',janitorSubmissionStatus:'ready',janitorProof:'',janitorComment:''});}
         else{Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''});}
-        await update(userRef(a.from),patch);        await pushNotification(a.from,`✅ Должность: ${a.target}`,'system');
-        toast(`✅ ${a.from} — ${a.target}`,'green');
+        await update(userRef(a.from),patch);
+        await pushNotification(a.from,`✅ Должность: ${a.target}`,'system');
+        toast(`✅ ${displayNick(u)||a.from} — ${a.target}`,'green');
     }else{
         await pushNotification(a.from,`❌ Заявка на ${a.target} отклонена`,'system');
         toast('❌ Отклонено','red');
@@ -6551,7 +6832,7 @@ window.navTo=function(id){
     }
     if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded(); }
     if(id==='market') { renderDebtNotice('marketDebtNotice', allUsersCache[currentNick] || {}); get(marketRef()).then(s=>renderMarket(s.val()||{})); }
-    if(id==='bank') {renderRecentTransfers();renderFinancialStats();}
+    if(id==='bank') {renderRecentTransfers();renderFinancialStats();renderSavingsDisplay();}
     if(id==='subscription') renderSubscription();
     if(id==='home') { renderHomeBizOrders(); }
     if(id==='rentBuildings') renderRentBuildings();
@@ -8632,7 +8913,7 @@ window.adminApproveBiz = async function(id){
         address: a.address, category: a.category, services: a.services,
         icon: '', banner: '', balance: 0, delivery: false,
         roles: {}, employees: {}, products: {},
-        createdAt: Date.now(), status: 'active'
+        createdAt: Date.now(), bizWeeklyFeeAt: Date.now(), status: 'active'
     });
 
     const ownerSnap = await get(userRef(a.owner));
@@ -8693,13 +8974,15 @@ async function renderBusinesses(){
                                 <div style="font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(b.name)}</div>
                                 <div style="font-size:12px;color:var(--primary);font-weight:700;">💰 ${(b.balance||0).toLocaleString()} ₽</div>
                             </div>
-                            <button class="btn btn-primary btn-sm" onclick="currentBizId='${jsEsc(b.id)}'; navTo('bizOwnerPanel');">Управление →</button>
+                            <button class="btn btn-primary btn-sm" onclick="openBizOwnerPanel('${jsEsc(b.id)}');">Управление →</button>
                             ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;border:none;" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 ТОП! (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
                         </div>
                     `).join('')}
                 </div>
             </div>`;
-        currentBizId = ownedBizs[0]?.id || currentBizId;
+            if(!currentBizId && ownedBizs[0]){
+    currentBizId = ownedBizs[0].id;
+}
     } else {
         myBizPanel.style.display = 'none';
     }
@@ -8739,9 +9022,16 @@ window.openBizDetail = async function(bizId){
     const isAdmin = currentNick === ADMIN;
 
     // Header
-    qs('bizDetailHeader').innerHTML = `
-        ${b.banner ? `<img class="biz-detail-banner" src="${escHtml(b.banner)}" onclick="openImgViewer('${jsEsc(b.banner)}')">` : '<div class="biz-detail-banner" style="display:flex;align-items:center;justify-content:center;font-size:60px;">🏪</div>'}
+    const headerEl = qs('bizDetailHeader');
+    if(headerEl){
+        headerEl.innerHTML = `
+        <div id="bizDetailBgWrap" style="position:relative;border-radius:var(--r);overflow:hidden;">
+            ${b.banner ? `<img class="biz-detail-banner" src="${escHtml(b.banner)}" onclick="openImgViewer('${jsEsc(b.banner)}')">` : '<div class="biz-detail-banner" style="display:flex;align-items:center;justify-content:center;font-size:60px;">🏪</div>'}
+            <div id="bizDetailBgEffect" style="position:absolute;inset:0;pointer-events:none;z-index:1;"></div>
+        </div>
         ${b.icon ? `<img class="biz-detail-icon" src="${escHtml(b.icon)}" onclick="openImgViewer('${jsEsc(b.icon)}')">` : '<div class="biz-detail-icon" style="display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--surface2);">🏪</div>'}`;
+        applyBizBgEffect(qs('bizDetailBgEffect'), b.bgEffect);
+    }
 
     // About tab
     const roles = b.roles || {};
@@ -8761,7 +9051,7 @@ window.openBizDetail = async function(bizId){
                 <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.owner)}')">
                     <img src="${escHtml(safeAvatar(b.owner))}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;border:2px solid var(--primary);flex-shrink:0;">
                     <div style="flex:1;">
-                        <div style="font-weight:900;font-size:14px;">${escHtml(b.owner)}</div>
+                        <div style="font-weight:900;font-size:14px;">${escHtml(displayNick(allUsersCache[b.owner]) || b.owner)}</div>
                         <div style="font-size:11px;color:var(--primary);font-weight:700;">Владелец бизнеса</div>
                     </div>
                     <span style="color:var(--muted);font-size:16px;">›</span>
@@ -8774,12 +9064,20 @@ window.openBizDetail = async function(bizId){
             </div>
         </div>
         ${!isOwner ? `<div class="card">
+            <div class="card-title">📬 Жалоба / запрос владельцу</div>
+            <textarea id="bizComplaintText" placeholder="Опишите проблему или задайте вопрос владельцу бизнеса..." style="min-height:72px;"></textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <button class="btn btn-ghost btn-sm" onclick="sendBizComplaint('${jsEsc(bizId)}','request')">📩 Отправить запрос</button>
+                <button class="btn btn-red btn-sm" onclick="sendBizComplaint('${jsEsc(bizId)}','complaint')">⚠️ Пожаловаться</button>
+            </div>
+        </div>` : ''}
+        ${!isOwner ? `<div class="card">
             <div class="card-title">💼 Работа в бизнесе</div>
             ${myRole ? `<div class="biz-apply-pending">👤 Вы сотрудник: <b>${escHtml(myRole.roleName||'')}</b></div>
                 <button class="btn btn-red btn-sm" onclick="quitBiz('${jsEsc(bizId)}')">Уволиться</button>` :
             `<div id="bizJobApplyArea">${renderBizJobApplyHtml(roles, b)}</div>`}
         </div>` : ''}
-        ${isOwner ? `<div style="margin-bottom:14px;"><button class="btn btn-primary" onclick="navTo('bizOwnerPanel')">⚙️ Управление бизнесом</button></div>` : ''}
+        ${isOwner ? `<div style="margin-bottom:14px;"><button class="btn btn-primary" onclick="currentBizId='${jsEsc(bizId)}'; navTo('bizOwnerPanel');">⚙️ Управление бизнесом</button></div>` : ''}
         ${isAdmin ? `<div style="margin-bottom:14px;"><button class="btn btn-red" onclick="adminDeleteBiz('${jsEsc(bizId)}')">🗑 Удалить бизнес (мэрия)</button></div>` : ''}`;
 
     // Roles tab
@@ -8914,7 +9212,8 @@ window.applyToBiz = async function(bizId){
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
     const b = snap.val();
     if(b.employees && b.employees[currentNick]) return toast('✅ Вы уже сотрудник','gold');
-    // Check for existing app
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
+    if(!await canTakeAnotherJob(u, currentNick)) return toast(`⚠️ Лимит работ: ${getJobLimit(u)}. Увольтесь с одной работы.`,'gold');
     const allAppsSnap = await get(ref(db,`bizJobApps/${bizId}`));
     const allApps = allAppsSnap.val()||{};
     if(Object.values(allApps).find(a=>a.applicant===currentNick&&a.status==='pending')) return toast('⏳ Заявка уже отправлена','gold');
@@ -8923,15 +9222,19 @@ window.applyToBiz = async function(bizId){
         id: appId, bizId, applicant: currentNick, roleId,
         roleName: b.roles?.[roleId]?.name||'', text, status: 'pending', createdAt: Date.now()
     });
-    await pushNotification(b.owner, `📋 Новая заявка в «${b.name}» от ${currentNick} на роль ${b.roles?.[roleId]?.name||''}`, 'system');
+    await pushNotification(b.owner, `📋 Новая заявка в «${b.name}» от ${displayNick(u)} на роль ${b.roles?.[roleId]?.name||''}`, 'system');
     toast('📋 Заявка отправлена!','green');
     openBizDetail(bizId);
 };
-
 window.quitBiz = async function(bizId){
     if(!confirm('Уволиться из бизнеса?')) return;
     await update(bizItemRef(bizId), { [`employees/${currentNick}`]: null });
-    await update(userRef(currentNick), { employerBizId: null, job: 'Житель' });
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
+    const emps = collectEmploymentsFromData(u, currentNick).filter(e => e.id !== `biz_${bizId}`);
+    const patch = { employments: emps };
+    if(u.employerBizId === bizId) patch.employerBizId = null;
+    if(u.displayJob && !emps.find(e=>e.role===u.displayJob)) patch.displayJob = emps[0]?.role || null;
+    await update(userRef(currentNick), patch);
     toast('🚪 Вы уволились','gold');
     openBizDetail(bizId);
 };
@@ -9051,33 +9354,162 @@ window.buyBizProduct = window.addBizToCart;
 
 // ─── OWNER PANEL ─────────────────────────
 async function renderBizOwnerPanel(){
-    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
-    const bizIds = getBusinessIds(u);
-    const bizId = currentBizId || bizIds[0] || u.businessId;
-    if(!bizId) return;
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val() || {};
+
+    const bizIds = Array.from(new Set([
+        ...(Array.isArray(u.businessIds) ? u.businessIds : []),
+        u.businessId,
+        currentBizId
+    ].filter(Boolean)));
+
+    let bizId = currentBizId;
+
+if(!bizId){
+    bizId = u.businessId || bizIds[0];
+}
+
+    if(!bizId){
+        const switchEl = qs('bizOwnerSwitcher');
+        if(switchEl) switchEl.innerHTML = '';
+        const nameEl = qs('bizOwnerName'); if(nameEl) nameEl.textContent = '';
+        const balEl = qs('bizBalanceDisplay'); if(balEl) balEl.textContent = '0';
+        return;
+    }
+
     currentBizId = bizId;
-    const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
+
+    const switchEl = qs('bizOwnerSwitcher');
+    if(switchEl && bizIds.length > 1){
+        switchEl.innerHTML = `<label style="font-size:11px;color:var(--muted);font-weight:800;display:block;margin-bottom:4px;">Выберите бизнес</label>
+            <select onchange="currentBizId=this.value; renderBizOwnerPanel();" style="margin:0;">
+                ${bizIds.map(id => {
+                    const bb = allBusinessesCache[id] || {};
+                    return `<option value="${escHtml(id)}" ${id===bizId?'selected':''}>${escHtml(bb.name||id)}</option>`;
+                }).join('')}
+            </select>`;
+    } else if(switchEl) {
+        switchEl.innerHTML = '';
+    }
+
+    const snap = await get(bizItemRef(bizId));
+    if(!snap.exists()) return;
+
     const b = snap.val();
     await processBizAutoSalaries(bizId, b).catch(()=>{});
-    const refreshedSnap = await get(bizItemRef(bizId)); const bData = refreshedSnap.val() || b;
+    const refreshedSnap = await get(bizItemRef(bizId));
+    const bData = refreshedSnap.val() || b;
+
     allBusinessesCache[bizId] = bData;
-    const nameEl = qs('bizOwnerName'); if(nameEl) nameEl.textContent = bData.name;
-    const balEl = qs('bizBalanceDisplay'); if(balEl) balEl.textContent = (bData.balance||0).toLocaleString();
-    // Fill edit fields
-    const fn = (id, v) => { const el=qs(id); if(el) el.value=v||''; };
-    fn('bizEditName', bData.name); fn('bizEditDesc', bData.desc); fn('bizEditAddress', bData.address);
-    fn('bizEditServices', bData.services); fn('bizEditCategory', bData.category);
+
+    const nameEl = qs('bizOwnerName'); if(nameEl) nameEl.textContent = bData.name || '';
+    const balEl = qs('bizBalanceDisplay'); if(balEl) balEl.textContent = (bData.balance || 0).toLocaleString();
+
+    const fn = (id, v) => { const el = qs(id); if(el) el.value = v || ''; };
+    fn('bizEditName', bData.name);
+    fn('bizEditDesc', bData.desc);
+    fn('bizEditAddress', bData.address);
+    fn('bizEditServices', bData.services);
+    fn('bizEditCategory', bData.category);
+
     const dc = qs('bizDeliveryCheck'); if(dc) dc.checked = !!bData.delivery;
-    // Employees
+
+    renderBizComplaints(bizId);
+    renderBizLimitsPanel(bData);
+    renderBizBgShop(bData);
     renderOwnerEmployees(bData);
-    // Roles
     renderOwnerRoles(bData);
-    // Job apps
     renderOwnerJobApps(bizId);
-    // Products
     renderOwnerProducts(bData);
     renderBizOwnerOrders(bizId);
 }
+async function renderBizComplaints(bizId){
+    const el = qs('bizComplaintsList'); if(!el) return;
+    const snap = await get(ref(db, `bizComplaints/${bizId}`));
+    const list = Object.values(snap.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(!list.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Нет сообщений</div>'; return; }
+    el.innerHTML = list.map(c => `
+        <div class="submission-card" style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;gap:8px;">
+                <div style="font-weight:900;">${escHtml(c.fromName||c.from||'Клиент')}</div>
+                <div style="font-size:11px;color:var(--muted);">${new Date(c.createdAt||0).toLocaleString('ru')}</div>
+            </div>
+            <div style="font-size:11px;color:var(--primary);font-weight:800;margin:4px 0;">${c.type==='complaint'?'⚠️ Жалоба':'📩 Запрос'}</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.5;">${escHtml(c.text||'')}</div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="openUserProfile('${jsEsc(c.from)}')">👤 Профиль</button>
+        </div>`).join('');
+}
+function renderBizLimitsPanel(b){
+    const limits = getBizLimits(b);
+    const empCount = Object.keys(b.employees||{}).length;
+    const prodCount = Object.keys(b.products||{}).length;
+    const info = qs('bizLimitsInfo');
+    if(info) info.innerHTML = `Сотрудники: <b>${empCount}/${limits.employees}</b> · Товары: <b>${prodCount}/${limits.products}</b> · Макс. цена товара: <b>${limits.maxProductPrice.toLocaleString()} ₽</b><br><span style="font-size:11px;">Абонентская плата: ${ECONOMY_BUSINESS_WEEKLY_FEE} ₽/неделю</span>`;
+    const upEl = qs('bizLimitsUpgrades');
+    if(!upEl) return;
+    upEl.innerHTML = `
+        <button class="btn btn-gold btn-sm" onclick="upgradeBizLimit('employee')">+1 сотрудник (${BIZ_UPGRADE_PRICES.employee}₽)</button>
+        <button class="btn btn-gold btn-sm" onclick="upgradeBizLimit('product')">+1 товар (${BIZ_UPGRADE_PRICES.product}₽)</button>
+        <button class="btn btn-gold btn-sm" onclick="upgradeBizLimit('priceCap')">+500₽ лимит цены (${BIZ_UPGRADE_PRICES.priceCap}₽)</button>`;
+}
+function renderBizBgShop(b){
+    const el = qs('bizBgEffectsShop'); if(!el) return;
+    const current = b.bgEffect || '';
+    el.innerHTML = BIZ_BG_EFFECTS.map(e => `
+        <button class="btn ${current===e.id?'btn-primary':'btn-ghost'} btn-sm" style="text-align:left;" onclick="buyBizBgEffect('${jsEsc(e.id)}')">
+            ${e.name} — ${e.price}₽ ${current===e.id?'✓':''}
+        </button>`).join('') +
+        (current ? `<button class="btn btn-ghost btn-sm" style="color:var(--muted);" onclick="buyBizBgEffect('')">Убрать оформление</button>` : '');
+}
+window.upgradeBizLimit = async function(kind){
+    if(!currentBizId) return;
+    const price = BIZ_UPGRADE_PRICES[kind];
+    if(!price) return;
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
+    if((u.balance||0) < price) return toast(`❌ Нужно ${price}₽`,'red');
+    const field = kind === 'employee' ? 'employees' : kind === 'product' ? 'products' : 'priceCap';
+    const snap = await get(bizItemRef(currentBizId)); const b = snap.val()||{};
+    const bonus = b.limitBonus || {};
+    await update(userRef(currentNick), { balance: (u.balance||0)-price });
+    await update(bizItemRef(currentBizId), { limitBonus: { ...bonus, [field]: Number(bonus[field]||0)+1 } });
+    await logTx(currentNick, { type:'out', who:'Бизнес', amt:price, desc:`Расширение лимита бизнеса (+${kind})` });
+    toast('✅ Лимит увеличен','green');
+    renderBizOwnerPanel();
+};
+window.buyBizBgEffect = async function(effectId){
+    if(!currentBizId) return;
+    const snap = await get(bizItemRef(currentBizId)); const b = snap.val()||{};
+    if(!effectId){
+        await update(bizItemRef(currentBizId), { bgEffect: null });
+        toast('✅ Оформление убрано','green');
+        renderBizOwnerPanel();
+        return;
+    }
+    const eff = BIZ_BG_EFFECTS.find(x=>x.id===effectId);
+    if(!eff) return;
+    if(b.bgEffect === effectId) return toast('✅ Уже активно','gold');
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
+    if((u.balance||0) < eff.price) return toast(`❌ Нужно ${eff.price}₽`,'red');
+    await update(userRef(currentNick), { balance: (u.balance||0)-eff.price });
+    await update(bizItemRef(currentBizId), { bgEffect: effectId });
+    await logTx(currentNick, { type:'out', who:'Бизнес', amt:eff.price, desc:`Оформление бизнеса: ${eff.name}` });
+    toast('✅ Оформление применено','green');
+    renderBizOwnerPanel();
+};
+window.sendBizComplaint = async function(bizId, type){
+    const text = (qs('bizComplaintText')?.value||'').trim();
+    if(!text || text.length < 5) return toast('⚠️ Напишите сообщение (мин. 5 символов)','gold');
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
+    const bSnap = await get(bizItemRef(bizId)); if(!bSnap.exists()) return;
+    const b = bSnap.val();
+    const id = genId();
+    await set(ref(db, `bizComplaints/${bizId}/${id}`), {
+        id, bizId, from: currentNick, fromName: displayNick(u), text, type: type||'request', createdAt: Date.now()
+    });
+    await pushNotification(b.owner, `${type==='complaint'?'⚠️ Жалоба':'📩 Запрос'} в «${b.name}» от ${displayNick(u)}`, 'system');
+    if(qs('bizComplaintText')) qs('bizComplaintText').value='';
+    toast('✅ Сообщение отправлено владельцу','green');
+};
 function renderOwnerEmployees(b){
     const el = qs('bizEmployeesList'); if(!el) return;
     const emps = Object.entries(b.employees||{});
@@ -9172,12 +9604,11 @@ function getBizEmployeeRoleName(entry){
     return entry.roleName || entry.role || 'Сотрудник';
 }
 function getUserBusinessRoleLabel(u, nick = (u && u.nick) || currentNick){
+    if(u?.displayJob) return u.displayJob;
+    const emps = collectEmploymentsFromData(u, nick);
+    if(emps.length) return emps[0].role;
     const fallback = (u && u.job) || 'Житель';
     if(!u) return fallback;
-
-
-
-
     const scan = (allBusinessesCache && typeof allBusinessesCache === 'object') ? Object.values(allBusinessesCache) : [];
     for(const b of scan){
         const emp = b && b.employees && b.employees[nick];
@@ -9398,10 +9829,20 @@ window.deleteRole = async function(rid){
 window.approveJobApp = async function(bizId, appId, applicant, roleId, roleName){
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
     const b = snap.val();
+    const limits = getBizLimits(b);
+    const empCount = Object.keys(b.employees||{}).length;
+    if(empCount >= limits.employees) return toast(`❌ Лимит сотрудников (${limits.employees}). Расширьте в панели владельца.`,'red');
+    const uSnap = await get(userRef(applicant)); const u = uSnap.val()||{};
+    if(!await canTakeAnotherJob(u, applicant)) return toast(`❌ ${applicant}: лимит работ (${getJobLimit(u)})`,'red');
     await update(bizItemRef(bizId), { [`employees/${applicant}`]: { roleId, roleName, joinedAt: Date.now() } });
     await update(ref(db,`bizJobApps/${bizId}/${appId}`), { status: 'approved' });
-    // Give employee role reference
-    await update(userRef(applicant), { employerBizId: bizId, businessId: null, job: roleName || 'Сотрудник' });
+    const emps = collectEmploymentsFromData(u, applicant);
+    const newEmp = { id: `biz_${bizId}`, type: 'business', bizId, role: roleName || 'Сотрудник', bizName: b.name };
+    await update(userRef(applicant), {
+        employments: [...emps.filter(e=>e.id!==newEmp.id), newEmp],
+        employerBizId: bizId,
+        displayJob: u.displayJob || roleName || 'Сотрудник'
+    });
     await pushNotification(applicant, `✅ Вас приняли в «${b.name}» на роль ${roleName}!`, 'system');
     toast(`✅ ${applicant} принят`, 'green');
     renderBizOwnerPanel();
@@ -9418,7 +9859,12 @@ window.fireEmployee = async function(nick){
     if(!currentBizId) return;
     if(!confirm(`Уволить ${nick}?`)) return;
     await update(bizItemRef(currentBizId), { [`employees/${nick}`]: null });
-    await update(userRef(nick), { employerBizId: null, job: 'Житель' });
+    const uSnap = await get(userRef(nick)); const u = uSnap.val()||{};
+    const emps = collectEmploymentsFromData(u, nick).filter(e => e.id !== `biz_${currentBizId}`);
+    const patch = { employments: emps };
+    if(u.employerBizId === currentBizId) patch.employerBizId = null;
+    if(u.displayJob && !emps.find(e=>e.role===u.displayJob)) patch.displayJob = emps[0]?.role || null;
+    await update(userRef(nick), patch);
     const snap = await get(bizItemRef(currentBizId));
     await pushNotification(nick, `🚪 Вы уволены из бизнеса «${snap.val()?.name||''}»`, 'system');
     toast(`🚪 ${nick} уволен`,'gold');
@@ -9518,6 +9964,11 @@ window.addBizProduct = async function(){
     const desc = (qs('bizProdDesc')?.value||'').trim();
     const price = parseInt(qs('bizProdPrice')?.value||'0',10)||0;
     if(!name) return toast('⚠️ Укажите название','gold');
+    const bSnap = await get(bizItemRef(currentBizId)); const b = bSnap.val()||{};
+    const limits = getBizLimits(b);
+    const prodCount = Object.keys(b.products||{}).length;
+    if(prodCount >= limits.products) return toast(`❌ Лимит товаров (${limits.products}). Расширьте в панели.`,'red');
+    if(price > limits.maxProductPrice) return toast(`❌ Макс. цена товара: ${limits.maxProductPrice.toLocaleString()} ₽`,'red');
     const pid = genId();
     const prod = { name, desc, price, createdAt: Date.now() };
     if(_bizProdPhotoData){ prod.photo = _bizProdPhotoData; _bizProdPhotoData = null; }
@@ -11834,6 +12285,7 @@ window.completeCustomDelivery = async function(orderId) {
   }
 
 })();
+
 </script>
 </body>
 </html>
