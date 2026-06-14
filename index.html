@@ -323,11 +323,11 @@ select option{background:#1a2332;}
 .theme-gold .h-avatar{border-color:var(--gold)!important;}
 .theme-gold .chat-msg.me .chat-bubble{background:rgba(251,191,36,.1)!important;border-color:rgba(251,191,36,.3)!important;}
 /* Kapani Prime Interface Theme - shimmering animated colors */
-.theme-prime{--primary:#f0c419;--pri-dim:rgba(240,196,25,.14);animation:primeThemeShift 10s ease infinite;}
-.theme-prime .h-bal{background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419)!important;background-size:300% 300%!important;animation:primeGradientShift 6s ease infinite!important;color:#0c1117!important;}
-.theme-prime .btn-primary{background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419)!important;background-size:300% 300%!important;animation:primeGradientShift 6s ease infinite!important;color:#0c1117!important;}
+.theme-prime{--primary:#f0c419;--pri-dim:rgba(240,196,25,.14);}
+.theme-prime .h-bal{background:var(--gold)!important;color:#0c1117!important;}
+.theme-prime .btn-primary{background:var(--gold)!important;color:#0c1117!important;}
 .theme-prime .h-avatar{border-color:#f0c419!important;box-shadow:0 0 15px rgba(240,196,25,.5)!important;}
-.theme-prime .chat-msg.me .chat-bubble{background:linear-gradient(120deg,rgba(240,196,25,.15),rgba(255,110,196,.15),rgba(120,115,245,.15))!important;background-size:300% 300%!important;animation:primeGradientShift 6s ease infinite!important;border-color:rgba(240,196,25,.4)!important;}
+.theme-prime .chat-msg.me .chat-bubble{background:rgba(240,196,25,.15)!important;border-color:rgba(240,196,25,.4)!important;}
 @keyframes primeGradientShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 @keyframes primeThemeShift{0%,100%{filter:hue-rotate(0deg);}50%{filter:hue-rotate(15deg);}}
 
@@ -339,7 +339,7 @@ select option{background:#1a2332;}
 .sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#d97706);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
 .sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,#22d3a5,#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
 @keyframes pulseUltra{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
-.sub-badge-prime{display:inline-block;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;color:#0c1117;padding:4px 12px;border-radius:20px;font-weight:900;animation:primeGradientShift 4s ease infinite;}
+.sub-badge-prime{display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 12px;border-radius:20px;font-weight:900;}
 
 /* iPhone Fix - Enhanced Performance */
 body{-webkit-overflow-scrolling:touch;touch-action:pan-y pinch-zoom;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;}
@@ -869,11 +869,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <br>
     <div class="logo-card"><div class="logo-title">КАПАНИ</div><div class="logo-sub">Наш поселок · Наш сайт</div></div>
     <div class="card">
-        <div class="card-title">Вход / Регистрация</div>
-        <input id="lgNick" type="text" placeholder="Ваше имя в Капани" autocomplete="username" required minlength="2" maxlength="40">
-        <input id="lgPass" type="password" placeholder="Пароль" autocomplete="current-password" required minlength="4" maxlength="50">
-        <button class="btn btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px" aria-label="Войти в аккаунт или создать новый">Войти / Создать аккаунт</button>
-        <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Вход и переводы — по отображаемому имени.<br>Стартовый баланс: <b style="color:var(--primary)">0 ₽</b></div>
+        <div class="card-title">Вход по отображаемому имени</div>
+        <input id="lgNick" type="text" placeholder="Ваше отображаемое имя" autocomplete="name" required minlength="2" maxlength="40">
+        <button class="btn btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px" aria-label="Войти или создать аккаунт">Войти / Создать аккаунт</button>
+        <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Вход и переводы — только по отображаемому имени.<br>Отображаемое имя используется везде.</div>
     </div>
 </div>
 
@@ -892,6 +891,14 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" id="kveHomeCard" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub" id="kveHomeSub">Узнай о главном экзамене</div></div>
         <div class="quick-card" onclick="navTo('deputySession')" id="deputySessionQuickBtn" role="button" tabindex="0" aria-label="Заседание" style="display:none;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.06));border-color:rgba(251,191,36,.35);"><div class="qico">🏛</div><div class="qlbl">Заседание</div><div class="qsub">Предложения и запросы</div></div>
         <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.10));border-color:rgba(251,191,36,.3);"><div class="qico">🏁</div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🆘 Полезное</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <button class="btn btn-ghost" onclick="openEmergencyNumbers()">Номера экстренных служб</button>
+            <button class="btn btn-gold" onclick="openAtmRequestModal()">Банкомат</button>
+        </div>
     </div>
     <div id="homeOrders"></div>
     <div id="workerSection" style="display:none">
@@ -1142,7 +1149,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="bank" class="section">
     <div class="card">
         <div class="card-title">💸 Перевод денег</div>
-        <input type="text" id="bTo" placeholder="Имя получателя" autocomplete="off" required minlength="2" maxlength="40">
+        <input type="text" id="bTo" placeholder="Имя получателя (отображаемое имя)" autocomplete="off" required minlength="2" maxlength="40">
         <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
     </div>
@@ -1289,11 +1296,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
 
     <!-- Kapani Prime -->
-    <div class="card" style="border:2px solid #f0c419;background:linear-gradient(120deg,rgba(240,196,25,.18),rgba(255,110,196,.12),rgba(120,115,245,.12),rgba(74,222,128,.12));background-size:300% 300%;animation:primeGradientShift 6s ease infinite;">
+    <div class="card" style="border:2px solid rgba(251,191,36,.45);background:rgba(251,191,36,.06);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
             <div style="font-size:32px;">👑</div>
             <div>
-                <div style="font-size:20px;font-weight:900;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:primeGradientShift 4s ease infinite;">Kapani Prime</div>
+                <div style="font-size:20px;font-weight:900;color:var(--gold);">Kapani Prime</div>
                 <div style="font-size:14px;color:#f0c419;font-weight:700;">1499 ₽/неделя</div>
             </div>
         </div>
@@ -1311,7 +1318,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="margin-bottom:8px;">✅ Эксклюзивная кнопка <b>«ТОП!»</b> — продвижение бизнеса за 600₽</div>
             <div style="margin-bottom:8px;">✅ <b>Комиссия за перевод — всего 1%</b></div>
         </div>
-        <button class="btn btn-primary" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;" onclick="buySubscription('prime')" id="btnBuyPrime">Оформить Prime</button>
+        <button class="btn btn-primary" style="background:var(--gold-dim);color:var(--gold);" onclick="buySubscription('prime')" id="btnBuyPrime">Оформить Prime</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('prime')">
             <span>🎁</span> Подарить Prime (1499₽)
         </button>
@@ -1624,6 +1631,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card"><div class="card-title">🧹 Отчёты уборщиков (на проверке)</div><div id="janitorAdminList"><div style="color:var(--muted);font-size:13px;">Нет отчётов</div></div></div>
     <div class="card"><div class="card-title">🏪 Заявки на открытие бизнеса</div><div id="adminBizApps"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card"><div class="card-title">🗑 Заявки на закрытие бизнеса</div><div id="adminBizDeleteReqs"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
+    <div class="card"><div class="card-title">💵 Заявки банкомата</div><div id="adminAtmRequests"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card">
         <div class="card-title">💳 Управление балансом</div>
         <select id="adminTarget" style="margin-bottom:8px;"></select>
@@ -2624,14 +2632,14 @@ async function findUserByPublicName(name){
     if(allUsersCache && Object.keys(allUsersCache).length){
         for(const [nick, u] of Object.entries(allUsersCache)){
             const dn = normalizePublicName(displayNick(u));
-            if(dn === q || normalizePublicName(nick) === q) return { nick, ...u };
+            if(dn === q) return { nick, ...u };
         }
     }
     const snap = await get(ref(db, 'users'));
     const users = snap.val() || {};
     for(const [nick, u] of Object.entries(users)){
         const dn = normalizePublicName(displayNick(u));
-        if(dn === q || normalizePublicName(nick) === q) return { nick, ...u };
+        if(dn === q) return { nick, ...u };
     }
     return null;
 }
@@ -2920,19 +2928,27 @@ async function logTx(nick, entry){
 
 // ─── AUTH ─────────────────────────────────
 window.handleAuth = async function() {
-    const nameInput=qs('lgNick').value.trim(), pass=qs('lgPass').value;
-    if(!nameInput||!pass) return toast('⚠️ Заполните все поля','gold');
-    const btn=qs('authBtn'); btn.disabled=true; btn.textContent='Подключение...';
+    const nameInput = (qs('lgNick').value || '').trim();
+    if(!nameInput) return toast('⚠️ Введите отображаемое имя','gold');
+    const btn = qs('authBtn'); btn.disabled = true; btn.textContent = 'Подключение...';
     try {
         const existing = await findUserByPublicName(nameInput);
         if(!existing) {
             const baseNick = makeNickFromName(nameInput);
             const nick = await ensureUniqueNick(baseNick);
             const now = Date.now();
-            await set(userRef(nick),{
-                nick,pass,balance:0,job:'Житель',avatar:DEFAULT_AVATAR_URL,
-                joinDate:new Date().toLocaleDateString('ru'),vehicle:'',lastSeen:Date.now(),
-                displayName:nameInput,accountFrozen:false,rewardedAvatar:false,rewardedWall:false,
+            await set(userRef(nick), {
+                nick,
+                balance: 0,
+                job: 'Житель',
+                avatar: DEFAULT_AVATAR_URL,
+                joinDate: new Date().toLocaleDateString('ru'),
+                vehicle: '',
+                lastSeen: Date.now(),
+                displayName: nameInput,
+                accountFrozen: false,
+                rewardedAvatar: false,
+                rewardedWall: false,
                 createdAt: now,
                 economyLastProcessedAt: now,
                 savingsBalance: 0,
@@ -2943,13 +2959,24 @@ window.handleAuth = async function() {
             });
             await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
             toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
-            localStorage.setItem('kp_s',nick); sessionStorage.setItem('kp_s',nick); localStorage.setItem('kp_auth', JSON.stringify({nick, pass, name: nameInput})); currentNick=nick; startApp();
+            localStorage.setItem('kp_s', nick);
+            sessionStorage.setItem('kp_s', nick);
+            localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
+            currentNick = nick;
+            startApp();
         } else {
-            if(existing.pass!==pass){btn.disabled=false;btn.textContent='Войти / Создать аккаунт';return toast('❌ Неверный пароль','red');}
             toast('👋 С возвращением!','green');
-            localStorage.setItem('kp_s',existing.nick); sessionStorage.setItem('kp_s',existing.nick); localStorage.setItem('kp_auth', JSON.stringify({nick: existing.nick, pass, name: displayNick(existing)})); currentNick=existing.nick; startApp();
+            localStorage.setItem('kp_s', existing.nick);
+            sessionStorage.setItem('kp_s', existing.nick);
+            localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
+            currentNick = existing.nick;
+            startApp();
         }
-    } catch(e) { btn.disabled=false;btn.textContent='Войти / Создать аккаунт';toast('❌ Ошибка: '+e.message,'red'); }
+    } catch(e) {
+        btn.disabled = false;
+        btn.textContent = 'Войти / Создать аккаунт';
+        toast('❌ Ошибка: ' + e.message, 'red');
+    }
 };
 
 function startApp() {
@@ -2971,7 +2998,7 @@ function startApp() {
     // requestPushPermission() is called via the UI button instead
     // On iOS Safari, auto-requesting is silently ignored anyway
     buildEmojiPanels();
-    try { const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); if(auth && auth.nick && auth.pass && (!currentNick || currentNick!==auth.nick)) { localStorage.setItem('kp_s', auth.nick); sessionStorage.setItem('kp_s', auth.nick); currentNick = auth.nick; } } catch(e) {}
+    try { const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); if(auth && auth.nick && (!currentNick || currentNick!==auth.nick)) { localStorage.setItem('kp_s', auth.nick); sessionStorage.setItem('kp_s', auth.nick); currentNick = auth.nick; } } catch(e) {}
     hideLoadingSafe();
 }
 
@@ -4008,13 +4035,7 @@ window.openProfileCustomizer=async function(){
     
     // Interface theme options
     let themeOptions = '';
-    if(hasUltra){
-        themeOptions = `
-            <option value="default">🌙 Стандартная (тёмная)</option>
-            <option value="gold">⭐ Золотая (Plus)</option>
-            ${hasPrime ? '<option value="prime">👑 Kapani Prime (переливающаяся)</option>' : ''}
-        `;
-    } else if(hasPlus){
+    if(hasUltra || hasPlus){
         themeOptions = `
             <option value="default">🌙 Стандартная (тёмная)</option>
             <option value="gold">⭐ Золотая (Plus)</option>
@@ -4172,16 +4193,16 @@ window.previewChatBg=function(style){
 window.previewInterfaceTheme=function(theme){
     // Temporarily apply theme to body for preview
     document.body.classList.remove('theme-gold', 'theme-prime');
-    if(theme && theme !== 'default') {
-        document.body.classList.add('theme-' + theme);
+    if(theme === 'gold') {
+        document.body.classList.add('theme-gold');
     }
 };
 
 window.applyInterfaceTheme=function(theme){
     // Apply theme class to body
     document.body.classList.remove('theme-gold', 'theme-prime');
-    if(theme && theme !== 'default') {
-        document.body.classList.add('theme-' + theme);
+    if(theme === 'gold') {
+        document.body.classList.add('theme-gold');
     }
 };
 window.saveProfileCustomization=async function(){
@@ -4197,7 +4218,7 @@ window.saveProfileCustomization=async function(){
     if(bgSelect) updates.profileBgEffect = bgSelect.value || null;
     if(chatSelect) updates.chatBubbleStyle = chatSelect.value || null;
     if(themeSelect) {
-        updates.interfaceTheme = themeSelect.value || 'default';
+        updates.interfaceTheme = (themeSelect.value === 'gold') ? 'gold' : 'default';
         applyInterfaceTheme(updates.interfaceTheme);
     }
     await update(userRef(currentNick), updates);
@@ -4206,7 +4227,7 @@ window.saveProfileCustomization=async function(){
 };
 
 window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.balance=(u.balance||0)+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_CUSTOM_AVATAR,desc:'Бонус за установку своей аватарки'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
-window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Ваше имя в Капани (для входа и переводов):',cur);if(v===null)return;const t=v.trim().slice(0,40);if(!t)return toast('⚠️ Имя не может быть пустым','gold');const dup=await findUserByPublicName(t);if(dup&&dup.nick!==currentNick)return toast('❌ Это имя уже занято','red');await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
+window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Ваше отображаемое имя в Капани (для входа и переводов):',cur);if(v===null)return;const t=v.trim().slice(0,40);if(!t)return toast('⚠️ Имя не может быть пустым','gold');const dup=await findUserByPublicName(t);if(dup&&dup.nick!==currentNick)return toast('❌ Это имя уже занято','red');await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
 window.saveDisplayJob=async function(){
     const sel=qs('jobTitleSelect'); if(!sel) return;
     const role=sel.value;
@@ -4591,6 +4612,42 @@ async function renderRecentTransfers(){
         return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:20px;">${tx.type==='in'?'💰':'💸'}</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:12px;line-height:1.35;">${title}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${escHtml(tx.date||'')} · ${escHtml(tx.time||'')}</div></div><div style="font-weight:900;font-size:14px;white-space:nowrap;${tx.type==='in'?'color:var(--primary)':'color:var(--red)'};">${tx.type==='in'?'+':'−'}${tx.amt}₽</div></div>`;
     }).join('');
 }
+window.openEmergencyNumbers = function(){
+    const m = qs('emergencyModal');
+    if(m) m.style.display = 'flex';
+};
+window.closeEmergencyNumbers = function(){
+    const m = qs('emergencyModal');
+    if(m) m.style.display = 'none';
+};
+window.openAtmRequestModal = function(){
+    const m = qs('atmRequestModal');
+    if(m) m.style.display = 'flex';
+};
+window.closeAtmRequestModal = function(){
+    const m = qs('atmRequestModal');
+    if(m) m.style.display = 'none';
+};
+window.submitAtmRequest = async function(){
+    if(!currentNick) return;
+    const name = (qs('atmName')?.value || '').trim();
+    const action = (qs('atmAction')?.value || '').trim();
+    const amount = Number(qs('atmAmount')?.value || 0);
+    const address = (qs('atmAddress')?.value || '').trim();
+    if(!name) return toast('⚠️ Введите имя','gold');
+    if(!action) return toast('⚠️ Выберите действие','gold');
+    if(!Number.isFinite(amount) || amount <= 0) return toast('⚠️ Введите сумму','gold');
+    if(!address) return toast('⚠️ Укажите адрес обмена','gold');
+    const id = genId();
+    const req = { id, name, action, amount, address, client: currentNick, clientName: displayNick(allUsersCache[currentNick] || {nick: currentNick}), status: 'pending', createdAt: Date.now() };
+    await set(ref(db, `atmRequests/${id}`), req);
+    await pushNotification(ADMIN, `💵 Новая заявка банкомата от ${req.clientName}`, 'system');
+    toast('✅ Заявка отправлена в мэрию','green');
+    closeAtmRequestModal();
+    ['atmName','atmAction','atmAmount','atmAddress'].forEach(id => { const el = qs(id); if(el) el.value = ''; });
+};
+
+
 window.renderFinancialStats=async function(){
     const snap=await get(txLogRef(currentNick));
     const all=Object.values(snap.val()||{});
@@ -5198,7 +5255,19 @@ window.closeUserProfile=function(){
     viewingProfileNick=null;
 };
 window.goToDmFromProfile=function(){if(!viewingProfileNick)return;const nick=viewingProfileNick;closeUserProfile();navTo('messages');setTimeout(()=>{switchMsgTab(1);setTimeout(()=>openDmChat(nick),200);},200);};
-window.goToTransferFromProfile=function(){if(!viewingProfileNick)return;const nick=viewingProfileNick;closeUserProfile();navTo('bank');setTimeout(()=>{const el=qs('bTo');if(el)el.value=nick;},200);};
+window.goToTransferFromProfile=async function(){
+    if(!viewingProfileNick) return;
+    const nick=viewingProfileNick;
+    let publicName = nick;
+    try {
+        const snap = await get(userRef(nick));
+        const u = snap.val() || {};
+        publicName = displayNick(u) || nick;
+    } catch(e) {}
+    closeUserProfile();
+    navTo('bank');
+    setTimeout(()=>{const el=qs('bTo');if(el)el.value=publicName;},200);
+};
 async function renderVisitorProfilePage(nick){
     const snap=await get(userRef(nick));
     if(!snap.exists()){toast('❌ Пользователь не найден','red');navTo('home');return;}
@@ -5272,7 +5341,18 @@ window.openVisitorProfilePage=async function(){
 };
 window.closeVisitorProfile=function(){window._visitorProfileNick=null;navTo('home');};
 window.visitorProfileDm=function(){const n=window._visitorProfileNick;if(!n)return;navTo('messages');setTimeout(()=>{switchMsgTab(1);setTimeout(()=>openDmChat(n),200);},200);};
-window.visitorProfileTransfer=function(){const n=window._visitorProfileNick;if(!n)return;navTo('bank');setTimeout(()=>{const el=qs('bTo');if(el)el.value=n;},200);};
+window.visitorProfileTransfer=async function(){
+    const n=window._visitorProfileNick;
+    if(!n) return;
+    let publicName = n;
+    try {
+        const snap = await get(userRef(n));
+        const u = snap.val() || {};
+        publicName = displayNick(u) || n;
+    } catch(e) {}
+    navTo('bank');
+    setTimeout(()=>{const el=qs('bTo');if(el)el.value=publicName;},200);
+};
 
 // ─── TASKS ────────────────────────────────
 function taskRowHtml(task){
@@ -5475,7 +5555,7 @@ window.renderTasks = async function(){
             if(alreadyClaimed){
                 stateHtml = `<div class="task-state done">✅ Получено</div>`;
             } else if(conditionMet){
-                stateHtml = `<button class="btn btn-sm" style="font-size:11px;padding:7px 12px;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;border:none;font-weight:900;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
+                stateHtml = `<button class="btn btn-sm" style="font-size:11px;padding:7px 12px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);font-weight:900;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
             } else {
                 stateHtml = `<div class="task-state todo">В процессе</div>`;
             }
@@ -5511,7 +5591,7 @@ window.renderTasks = async function(){
         el.innerHTML = `
             ${hasPrimeTasks ? `
             <div class="task-group" style="margin-top:0;">
-                <div class="task-group-title" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:primeGradientShift 4s ease infinite;">👑 Kapani Prime — эксклюзивные задания</div>
+                <div class="task-group-title" style="color:var(--gold);">👑 Kapani Prime — эксклюзивные задания</div>
                 ${primeDailyRows.map(primeDailyRow).join('')}
             </div>` : ''}
             <div class="task-group">
@@ -5687,7 +5767,7 @@ function marketCard(l,isMine, isArchived=false){
     const workBadge=isWork&&l.workAcceptedBy?`<span class="market-status-pending" style="margin-left:8px;">✅ Подтверждено</span>`:'';
     const serviceBadge=isService?`<span class="market-status-service" style="margin-left:8px;">🤝 Услуга</span>`:'';
     const archivedBadge=isArchived?`<span class="market-status-sold" style="margin-left:8px;">🕓 Скрыто</span>`:'';
-    const pinnedBadge=isListingPinned(l)?(l.pinnedLabel==='ХИТ ПРОДАЖ!'?'<span class="market-status-pin" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;">🔥 ХИТ ПРОДАЖ!</span>':'<span class="market-status-pin">⭐ Лидер продаж!</span>'):'';
+    const pinnedBadge=isListingPinned(l)?(l.pinnedLabel==='ХИТ ПРОДАЖ!'?'<span class="market-status-pin" style="background:var(--gold-dim);color:var(--gold);">🔥 ХИТ ПРОДАЖ!</span>':'<span class="market-status-pin">⭐ Лидер продаж!</span>'):'';
     const statusBadge=l.status==='sold'&&!isService?'<span class="market-status-sold">Продано</span>':(l.status!=='active'&&!isWork&&!isService?'<span class="market-status-pending">Ожидание</span>':'');
     return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'" onclick="openImgViewer('${jsEsc(l.photo)}')">`:''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:6px;flex-wrap:wrap;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${pinnedBadge}${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div></div>
@@ -6248,6 +6328,7 @@ async function renderAdmin(){
     if(typeof populateRaceDayGroupSelect === 'function') populateRaceDayGroupSelect();
     if(typeof populateRaceDayUserSelect === 'function') populateRaceDayUserSelect();
     renderAdminDeputyProposals();
+    renderAdminAtmRequests();
 }
 
 async function renderAdminDeputyProposals() {
@@ -6293,7 +6374,55 @@ window.reviewDeputyProposal = async function(id, status) {
     }
     toast(status === 'approved' ? '✅ Одобрено' : '❌ Отклонено', status === 'approved' ? 'green' : 'red');
     renderAdminDeputyProposals();
+    renderAdminAtmRequests();
 };
+
+async function renderAdminAtmRequests() {
+    const el = qs('adminAtmRequests');
+    if(!el) return;
+    try {
+        const snap = await get(ref(db, 'atmRequests'));
+        const all = snap.val() || {};
+        const pending = Object.values(all).filter(r => r.status === 'pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        const done = Object.values(all).filter(r => r.status !== 'pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0, 8);
+        if(!pending.length && !done.length){
+            el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Нет заявок</div>';
+            return;
+        }
+        const renderReq = (r) => `
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+                <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px;">
+                    <div style="font-weight:900;">${escHtml(r.name || r.clientName || 'Житель')}</div>
+                    <div style="font-size:10px;color:var(--muted);">${new Date(r.createdAt || 0).toLocaleString('ru')}</div>
+                </div>
+                <div style="font-size:12px;color:var(--primary);font-weight:800;margin-bottom:6px;">${escHtml(r.action || '')} · ${Number(r.amount || 0).toLocaleString()} ₽</div>
+                <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:8px;">📍 ${escHtml(r.address || '')}</div>
+                ${r.status === 'pending' ? `
+                    <div style="display:flex;gap:6px;">
+                        <button class="btn btn-primary btn-sm" onclick="reviewAtmRequest('${r.id}','approved')">✅ Принять</button>
+                        <button class="btn btn-red btn-sm" onclick="reviewAtmRequest('${r.id}','rejected')">❌ Отклонить</button>
+                    </div>` : `<div style="font-size:11px;color:var(--muted);">Статус: ${r.status === 'approved' ? 'принято' : 'отклонено'}</div>`}
+            </div>`;
+        el.innerHTML = (pending.length ? '<div style="font-size:11px;font-weight:900;color:var(--gold);margin-bottom:6px;">ОЖИДАЮТ РАССМОТРЕНИЯ</div>' + pending.map(renderReq).join('') : '') +
+                       (done.length ? '<div style="font-size:11px;font-weight:900;color:var(--muted);margin:8px 0 4px;">РАССМОТРЕННЫЕ</div>' + done.map(renderReq).join('') : '');
+    } catch(e) {
+        el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>';
+    }
+}
+window.reviewAtmRequest = async function(id, status){
+    await update(ref(db, `atmRequests/${id}`), { status, reviewedAt: Date.now() });
+    const snap = await get(ref(db, `atmRequests/${id}`));
+    const r = snap.val();
+    if(r && r.client){
+        const msg = status === 'approved'
+            ? `✅ Ваша заявка банкомата принята мэрией.`
+            : `❌ Ваша заявка банкомата отклонена мэрией.`;
+        await pushNotification(r.client, msg, 'system');
+    }
+    toast(status === 'approved' ? '✅ Заявка принята' : '❌ Заявка отклонена', status === 'approved' ? 'green' : 'red');
+    renderAdminAtmRequests();
+};
+
 window.approveApp=async function(id,ok){
     const snap=await get(appRef(id));if(!snap.exists())return;
     const a=snap.val();
@@ -8975,7 +9104,7 @@ async function renderBusinesses(){
                                 <div style="font-size:12px;color:var(--primary);font-weight:700;">💰 ${(b.balance||0).toLocaleString()} ₽</div>
                             </div>
                             <button class="btn btn-primary btn-sm" onclick="openBizOwnerPanel('${jsEsc(b.id)}');">Управление →</button>
-                            ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;border:none;" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 ТОП! (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
+                            ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 ТОП! (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -8990,7 +9119,7 @@ async function renderBusinesses(){
     if(!bizneses.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Бизнесов пока нет</div>'; return; }
     el.innerHTML = `<div class="biz-grid">${bizneses.map(b => `
         <div class="biz-card" onclick="openBizDetail('${jsEsc(b.id)}')">
-            ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:linear-gradient(120deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419);background-size:300% 300%;animation:primeGradientShift 4s ease infinite;color:#0c1117;padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 ТОП!</span>` : ''}
+            ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 ТОП!</span>` : ''}
             ${b.banner ? `<img class="biz-card-img" src="${escHtml(b.banner)}" loading="lazy">` : '<div class="biz-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;">🏪</div>'}
             <div class="biz-card-body">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -9465,6 +9594,8 @@ window.upgradeBizLimit = async function(kind){
     if(!currentBizId) return;
     const price = BIZ_UPGRADE_PRICES[kind];
     if(!price) return;
+    const labels = { employee: 'дополнительного сотрудника', product: 'дополнительного товара', priceCap: 'увеличения лимита цены' };
+    if(!confirm(`Купить ${labels[kind] || 'улучшение бизнеса'} за ${price}₽?`)) return;
     const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
     if((u.balance||0) < price) return toast(`❌ Нужно ${price}₽`,'red');
     const field = kind === 'employee' ? 'employees' : kind === 'product' ? 'products' : 'priceCap';
@@ -9472,7 +9603,7 @@ window.upgradeBizLimit = async function(kind){
     const bonus = b.limitBonus || {};
     await update(userRef(currentNick), { balance: (u.balance||0)-price });
     await update(bizItemRef(currentBizId), { limitBonus: { ...bonus, [field]: Number(bonus[field]||0)+1 } });
-    await logTx(currentNick, { type:'out', who:'Бизнес', amt:price, desc:`Расширение лимита бизнеса (+${kind})` });
+    await logTx(currentNick, { type:'out', who:'Бизнес', amt:price, desc:`Улучшение бизнеса: ${labels[kind] || kind}` });
     toast('✅ Лимит увеличен','green');
     renderBizOwnerPanel();
 };
@@ -9481,6 +9612,8 @@ window.buyBizBgEffect = async function(effectId){
     const snap = await get(bizItemRef(currentBizId)); const b = snap.val()||{};
     if(!effectId){
         await update(bizItemRef(currentBizId), { bgEffect: null });
+        if(currentBizDetailData){ currentBizDetailData.bgEffect = null; }
+        const effectHost = qs('bizDetailBgEffect'); if(effectHost) applyBizBgEffect(effectHost, null);
         toast('✅ Оформление убрано','green');
         renderBizOwnerPanel();
         return;
@@ -9488,10 +9621,13 @@ window.buyBizBgEffect = async function(effectId){
     const eff = BIZ_BG_EFFECTS.find(x=>x.id===effectId);
     if(!eff) return;
     if(b.bgEffect === effectId) return toast('✅ Уже активно','gold');
+    if(!confirm(`Купить оформление бизнеса «${eff.name}» за ${eff.price}₽?`)) return;
     const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
     if((u.balance||0) < eff.price) return toast(`❌ Нужно ${eff.price}₽`,'red');
     await update(userRef(currentNick), { balance: (u.balance||0)-eff.price });
     await update(bizItemRef(currentBizId), { bgEffect: effectId });
+    if(currentBizDetailData) currentBizDetailData.bgEffect = effectId;
+    const effectHost = qs('bizDetailBgEffect'); if(effectHost) applyBizBgEffect(effectHost, effectId);
     await logTx(currentNick, { type:'out', who:'Бизнес', amt:eff.price, desc:`Оформление бизнеса: ${eff.name}` });
     toast('✅ Оформление применено','green');
     renderBizOwnerPanel();
@@ -11484,7 +11620,7 @@ window.openGiftSubscriptionModal = async function(type){
     Object.values(users).forEach(u => {
         if(u.nick && u.nick !== currentNick) {
             const displayName = u.displayName || u.nick;
-            userOptions += `<option value="${escHtml(u.nick)}">${escHtml(displayName)} (@${escHtml(u.nick)})</option>`;
+            userOptions += `<option value="${escHtml(u.nick)}">${escHtml(displayName)}</option>`;
         }
     });
     
@@ -11496,7 +11632,7 @@ window.openGiftSubscriptionModal = async function(type){
                     <span style="cursor:pointer;font-size:20px;" onclick="closeGiftSubscriptionModal()">✕</span>
                 </div>
                 
-                <div style="background:linear-gradient(135deg,${type==='plus'?'var(--gold-dim),rgba(251,191,36,.1)':type==='ultra'?'var(--pri-dim),rgba(34,211,165,.1)':'rgba(240,196,25,.15),rgba(255,110,196,.1)'});border:2px solid ${type==='plus'?'var(--gold)':type==='ultra'?'var(--primary)':'#f0c419'};border-radius:16px;padding:16px;margin-bottom:20px;${type==='prime'?'background-size:300% 300%;animation:primeGradientShift 6s ease infinite;':''}">
+                <div style="background: ${type==='plus' ? 'rgba(251,191,36,.08)' : type==='ultra' ? 'rgba(34,211,165,.08)' : 'rgba(240,196,25,.08)'};border:2px solid ${type==='plus'?'var(--gold)':type==='ultra'?'var(--primary)':'#f0c419'};border-radius:16px;padding:16px;margin-bottom:20px;">
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
                         <div style="font-size:28px;">${type==='plus'?'⭐':type==='ultra'?'💎':'👑'}</div>
                         <div>
@@ -12287,5 +12423,40 @@ window.completeCustomDelivery = async function(orderId) {
 })();
 
 </script>
+
+<!-- EMERGENCY NUMBERS MODAL -->
+<div id="emergencyModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeEmergencyNumbers()">
+    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-size:18px;font-weight:900;">Номера экстренных служб</div>
+            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeEmergencyNumbers()">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.55;">
+            <div style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);">Номер полиции и скорой помощи: <b style="color:var(--primary)">+79803510933</b></div>
+            <div style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);">Номер полиции (запасной): <b style="color:var(--gold)">+79191632209</b></div>
+        </div>
+    </div>
+</div>
+
+<!-- ATM REQUEST MODAL -->
+<div id="atmRequestModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeAtmRequestModal()">
+    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div style="font-size:18px;font-weight:900;">Банкомат — заявка</div>
+            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeAtmRequestModal()">✕</button>
+        </div>
+        <input type="text" id="atmName" placeholder="Имя" maxlength="60">
+        <select id="atmAction">
+            <option value="">Что вы хотите сделать?</option>
+            <option value="Перевести деньги в наличку">Перевести деньги в наличку</option>
+            <option value="Перевести наличку в деньги">Перевести наличку в деньги</option>
+        </select>
+        <input type="number" id="atmAmount" placeholder="Сумма" min="1" step="1">
+        <input type="text" id="atmAddress" placeholder="Адрес обмена" maxlength="120">
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;">Заявка придёт в мэрию.</div>
+        <button class="btn btn-gold" style="margin-top:10px;" onclick="submitAtmRequest()">📨 Отправить в мэрию</button>
+    </div>
+</div>
+
 </body>
 </html>
