@@ -235,10 +235,14 @@ select option{background:#1a2332;}
 @keyframes hologramGlitch{0%,90%,100%{transform:translateY(0);opacity:1;}91%{transform:translateY(-2px);opacity:0.8;}92%{transform:translateY(2px);opacity:0.6;}93%{transform:translateY(-1px);opacity:0.9;}94%{transform:translateY(1px);opacity:0.7;}}
 .avatar-frame-dragon{border:3px solid #ff6600!important;box-shadow:0 0 35px rgba(255,102,0,.8),inset 0 0 25px rgba(255,102,0,.4),0 0 0 3px #ff3300;animation:dragonBreath 3s ease-in-out infinite;position:relative;z-index:1;}
 @keyframes dragonBreath{0%,100%{box-shadow:0 0 35px rgba(255,102,0,.8),inset 0 0 25px rgba(255,102,0,.4),0 0 0 3px #ff3300;}50%{box-shadow:0 0 50px rgba(255,51,0,1),inset 0 0 35px rgba(255,51,0,.6),0 0 0 5px #ff0000;}}
-/* Kapani Prime Frame - shimmering rainbow/gold */
-.avatar-frame-prime{border:4px solid transparent!important;background:linear-gradient(90deg,#f0c419,#ff6ec4,#7873f5,#4ade80,#f0c419) border-box!important;animation:primeFrameShift 4s linear infinite,primeFramePulse 2.5s ease-in-out infinite;position:relative;z-index:1;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
-@keyframes primeFrameShift{0%{background-position:0% 50%;}100%{background-position:200% 50%;}}
-@keyframes primeFramePulse{0%,100%{box-shadow:0 0 20px rgba(240,196,25,.6),0 0 40px rgba(120,115,245,.4);}50%{box-shadow:0 0 35px rgba(255,110,196,.8),0 0 55px rgba(74,222,128,.5);}}
+/* Kapani Prime Frame - shimmering rainbow */
+.avatar-frame-prime{border:4px solid transparent!important;background:linear-gradient(90deg,#ff0000,#ff9100,#ffea00,#39ff14,#00e5ff,#3377ff,#b026ff,#ff00aa,#ff0000) border-box!important;background-size:300% 100%!important;animation:primeFrameShift 4s linear infinite,primeFramePulse 2.5s ease-in-out infinite;position:relative;z-index:1;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;}
+@keyframes primeFrameShift{0%{background-position:0% 50%;}100%{background-position:-300% 50%;}}
+@keyframes primeFramePulse{0%,100%{box-shadow:0 0 20px rgba(255,0,0,.6),0 0 40px rgba(51,119,255,.4);}50%{box-shadow:0 0 35px rgba(255,234,0,.8),0 0 55px rgba(176,38,255,.5);}}
+
+/* Kapani Prime rainbow animated text - for "Kapani Prime" labels and "ТОП!" badge */
+.text-rainbow-prime{background:linear-gradient(90deg,#ff0000,#ff9100,#ffea00,#39ff14,#00e5ff,#3377ff,#b026ff,#ff00aa,#ff0000);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:primeRainbowText 4s linear infinite;font-weight:900;}
+@keyframes primeRainbowText{0%{background-position:0% 50%;}100%{background-position:-300% 50%;}}
 
 /* Profile Background Effects - Enhanced */
 .profile-bg-shimmer{background:linear-gradient(90deg,var(--pri-dim) 0%,rgba(34,211,165,.2) 50%,var(--pri-dim) 100%);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;position:relative;isolation:isolate;}
@@ -340,6 +344,11 @@ select option{background:#1a2332;}
 .sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,#22d3a5,#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
 @keyframes pulseUltra{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
 .sub-badge-prime{display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 12px;border-radius:20px;font-weight:900;}
+
+/* Info modal rows */
+.info-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-tab-content ul{margin:0 0 10px 18px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.5;}
 
 /* iPhone Fix - Enhanced Performance */
 body{-webkit-overflow-scrolling:touch;touch-action:pan-y pinch-zoom;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;}
@@ -898,6 +907,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <button class="btn btn-ghost" onclick="openEmergencyNumbers()">Номера экстренных служб</button>
             <button class="btn btn-gold" onclick="openAtmRequestModal()">Банкомат</button>
+            <button class="btn btn-primary" style="grid-column:1/-1;" onclick="openInfoModal()">ℹ️ Информация</button>
         </div>
     </div>
     <div id="homeOrders"></div>
@@ -1300,7 +1310,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
             <div style="font-size:32px;">👑</div>
             <div>
-                <div style="font-size:20px;font-weight:900;color:var(--gold);">Kapani Prime</div>
+                <div style="font-size:20px;" class="text-rainbow-prime">Kapani Prime</div>
                 <div style="font-size:14px;color:#f0c419;font-weight:700;">1499 ₽/неделя</div>
             </div>
         </div>
@@ -3279,7 +3289,7 @@ function updateHeader(u) {
             subBadge.style.display = 'block';
             if(profileCust) profileCust.style.display = 'block';
         } else if(u.subscription === 'prime' && isActive){
-            subBadge.innerHTML = '<span class="sub-badge-prime">👑 Kapani Prime</span>';
+            subBadge.innerHTML = '<span class="sub-badge-prime">👑 <span class="text-rainbow-prime">Kapani Prime</span></span>';
             subBadge.style.display = 'block';
             if(profileCust) profileCust.style.display = 'block';
         } else {
@@ -4620,6 +4630,25 @@ window.closeEmergencyNumbers = function(){
     const m = qs('emergencyModal');
     if(m) m.style.display = 'none';
 };
+window.openInfoModal = function(){
+    const m = qs('infoModal');
+    if(m) m.style.display = 'flex';
+};
+window.closeInfoModal = function(){
+    const m = qs('infoModal');
+    if(m) m.style.display = 'none';
+};
+window.showInfoTab = function(tab){
+    ['pdd','reg','money'].forEach(t=>{
+        const c = qs('infoTab_'+t);
+        const b = qs('infoTabBtn_'+t);
+        if(c) c.style.display = (t===tab) ? 'block' : 'none';
+        if(b){
+            if(t===tab){ b.classList.add('btn-primary'); b.classList.remove('btn-ghost'); }
+            else { b.classList.add('btn-ghost'); b.classList.remove('btn-primary'); }
+        }
+    });
+};
 window.openAtmRequestModal = function(){
     const m = qs('atmRequestModal');
     if(m) m.style.display = 'flex';
@@ -5131,7 +5160,7 @@ window.openUserProfile=async function(nick){
     } else if(u.subscription === 'ultra' && isActive){
         subscriptionHtml = '<div style="margin-bottom:8px;text-align:center;"><span class="sub-badge-ultra">💎 Kapani Ultra</span></div>';
     } else if(u.subscription === 'prime' && isActive){
-        subscriptionHtml = '<div style="margin-bottom:8px;text-align:center;"><span class="sub-badge-prime">👑 Kapani Prime</span></div>';
+        subscriptionHtml = '<div style="margin-bottom:8px;text-align:center;"><span class="sub-badge-prime">👑 <span class="text-rainbow-prime">Kapani Prime</span></span></div>';
     }
     
     toggleAvatarMedia(qs('upmAv'), qs('upmAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
@@ -5151,8 +5180,8 @@ window.openUserProfile=async function(nick){
             vpfSubBadge.style.color = '#22d3a5';
             vpfSubBadge.style.display = 'block';
         } else if(u.subscription === 'prime' && isActive){
-            vpfSubBadge.textContent = '👑 Kapani Prime';
-            vpfSubBadge.style.color = '#f0c419';
+            vpfSubBadge.innerHTML = '👑 <span class="text-rainbow-prime">Kapani Prime</span>';
+            vpfSubBadge.style.color = '';
             vpfSubBadge.style.display = 'block';
         } else {
             vpfSubBadge.style.display = 'none';
@@ -9104,7 +9133,7 @@ async function renderBusinesses(){
                                 <div style="font-size:12px;color:var(--primary);font-weight:700;">💰 ${(b.balance||0).toLocaleString()} ₽</div>
                             </div>
                             <button class="btn btn-primary btn-sm" onclick="openBizOwnerPanel('${jsEsc(b.id)}');">Управление →</button>
-                            ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 ТОП! (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
+                            ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 <span class="text-rainbow-prime">ТОП!</span> (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -9119,7 +9148,7 @@ async function renderBusinesses(){
     if(!bizneses.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Бизнесов пока нет</div>'; return; }
     el.innerHTML = `<div class="biz-grid">${bizneses.map(b => `
         <div class="biz-card" onclick="openBizDetail('${jsEsc(b.id)}')">
-            ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 ТОП!</span>` : ''}
+            ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 <span class="text-rainbow-prime">ТОП!</span></span>` : ''}
             ${b.banner ? `<img class="biz-card-img" src="${escHtml(b.banner)}" loading="lazy">` : '<div class="biz-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;">🏪</div>'}
             <div class="biz-card-body">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -11497,8 +11526,8 @@ window.renderSubscription = async function(){
         if(btnUltra) { btnUltra.textContent = 'Продлить Ultra'; btnUltra.style.display = 'block'; }
         if(btnPrime) { btnPrime.textContent = 'Обновить до Prime'; btnPrime.style.display = 'block'; }
     } else if(subscription === 'prime'){
-        statusEl.textContent = '👑 Kapani Prime';
-        statusEl.style.color = '#f0c419';
+        statusEl.innerHTML = '👑 <span class="text-rainbow-prime">Kapani Prime</span>';
+        statusEl.style.color = '';
         expiryEl.textContent = 'Действует до: ' + new Date(subscriptionExpiry).toLocaleDateString('ru');
         if(manageEl) manageEl.style.display = 'block';
         if(manageNoneEl) manageNoneEl.style.display = 'none';
@@ -12455,6 +12484,70 @@ window.completeCustomDelivery = async function(orderId) {
         <input type="text" id="atmAddress" placeholder="Адрес обмена" maxlength="120">
         <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;">Заявка придёт в мэрию.</div>
         <button class="btn btn-gold" style="margin-top:10px;" onclick="submitAtmRequest()">📨 Отправить в мэрию</button>
+    </div>
+</div>
+
+<!-- INFO MODAL -->
+<div id="infoModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeInfoModal()">
+    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:85vh;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex:none;">
+            <div style="font-size:18px;font-weight:900;">ℹ️ Информация</div>
+            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeInfoModal()">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex:none;">
+            <button class="btn btn-primary btn-sm" id="infoTabBtn_pdd" style="flex:1;padding:10px 6px;" onclick="showInfoTab('pdd')">🚦 ПДД</button>
+            <button class="btn btn-ghost btn-sm" id="infoTabBtn_reg" style="flex:1;padding:10px 6px;" onclick="showInfoTab('reg')">📋 Регистрация</button>
+            <button class="btn btn-ghost btn-sm" id="infoTabBtn_money" style="flex:1;padding:10px 6px;" onclick="showInfoTab('money')">💰 Деньги</button>
+        </div>
+        <div style="overflow-y:auto;">
+            <!-- ПДД -->
+            <div id="infoTab_pdd" class="info-tab-content">
+                <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:var(--gold);">🚦 Ограничения скорости</div>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:2px 14px;margin-bottom:12px;">
+                    <div class="info-row"><span>Бродвей</span><b style="color:var(--primary);white-space:nowrap;">20 км/ч</b></div>
+                    <div class="info-row"><span>Главная улица</span><b style="color:var(--primary);white-space:nowrap;">25 км/ч</b></div>
+                    <div class="info-row"><span>Олимпийская площадь</span><b style="color:var(--primary);white-space:nowrap;">15 км/ч</b></div>
+                    <div class="info-row"><span>Стадион</span><b style="color:var(--primary);white-space:nowrap;">27 км/ч</b></div>
+                    <div class="info-row"><span>Национальный заповедник</span><b style="color:var(--primary);white-space:nowrap;">30 км/ч</b></div>
+                    <div class="info-row"><span>Атлантика</span><b style="color:var(--primary);white-space:nowrap;">10 км/ч</b></div>
+                    <div class="info-row"><span>Мост Бедарда</span><b style="color:var(--primary);white-space:nowrap;">5 км/ч</b></div>
+                    <div class="info-row"><span>Терминал</span><b style="color:var(--primary);white-space:nowrap;">35 км/ч</b></div>
+                    <div class="info-row"><span>14-ая и Вайн</span><b style="color:var(--primary);white-space:nowrap;">50 км/ч</b></div>
+                    <div class="info-row"><span>Остальные районы Телегино</span><b style="color:var(--primary);white-space:nowrap;">25 км/ч</b></div>
+                </div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">⚠️ Погрешность измерения скорости: <b style="color:var(--text)">5 км/ч</b></div>
+                <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:var(--red);">💸 Штрафы</div>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:2px 14px;">
+                    <div class="info-row"><span>Превышение скорости</span><b style="color:var(--red);white-space:nowrap;">500 ₽</b></div>
+                    <div class="info-row"><span>Езда без прав</span><b style="color:var(--red);white-space:nowrap;">2000 ₽</b></div>
+                    <div class="info-row"><span>Езда по встречке</span><b style="color:var(--red);white-space:nowrap;">1000 ₽</b></div>
+                </div>
+            </div>
+            <!-- РЕГИСТРАЦИЯ -->
+            <div id="infoTab_reg" class="info-tab-content" style="display:none;font-size:13px;line-height:1.7;color:var(--text);">
+                <p style="margin-bottom:10px;">Для <b>полной регистрации</b> вам необходимо получить <b style="color:var(--primary)">паспорт</b>, который будут проверять менты при остановке. Для этого обратитесь к <b style="color:var(--gold)">мэру</b>.</p>
+                <p style="margin-bottom:10px;">Для получения <b>водительских прав</b> (на велосипед или скутер) также стоит обратиться к мэру.</p>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:2px 14px;margin-bottom:10px;">
+                    <div class="info-row"><span>🚲 Права на велосипед</span><b style="color:var(--primary);white-space:nowrap;">100 ₽</b></div>
+                    <div class="info-row"><span>🛵 Права на скутер</span><b style="color:var(--primary);white-space:nowrap;">500 ₽</b></div>
+                </div>
+                <p>Максимум ошибок на экзамене — <b style="color:var(--red)">3</b>.</p>
+            </div>
+            <!-- О ДЕНЬГАХ -->
+            <div id="infoTab_money" class="info-tab-content" style="display:none;font-size:13px;line-height:1.7;color:var(--text);">
+                <p style="margin-bottom:10px;"><b style="color:var(--gold)">Капанёвские рубли</b> — достаточно сильная валюта. За неё можно:</p>
+                <ul>
+                    <li>заказывать такси</li>
+                    <li>кататься на скутере</li>
+                    <li>покупать что-то на маркетплейсе (я нередко выставляю туда всякие чипсы или тому подобное за капанёвские рубли)</li>
+                    <li>покупать подписки</li>
+                    <li>открывать бизнесы</li>
+                    <li>покупать товары в бизнесах и так далее</li>
+                </ul>
+                <p style="margin-bottom:10px;">Заработать можно на <b>заданиях</b> и на <b>работе</b> (все зарплаты написаны).</p>
+                <div style="background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:12px;font-size:12px;color:var(--text);">💡 Также советуем немного переводить в наличку — если не будет интернета, вся оплата будет именно наличкой (потом её можно перевести обратно в электронные деньги).</div>
+            </div>
+        </div>
     </div>
 </div>
 
