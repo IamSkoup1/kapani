@@ -878,10 +878,14 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <br>
     <div class="logo-card"><div class="logo-title">КАПАНИ</div><div class="logo-sub">Наш поселок · Наш сайт</div></div>
     <div class="card">
-        <div class="card-title">Вход по отображаемому имени</div>
-        <input id="lgNick" type="text" placeholder="Ваше отображаемое имя" autocomplete="name" required minlength="2" maxlength="40">
+        <div class="card-title">Вход / Регистрация</div>
+        <input id="lgNick" type="text" placeholder="Ваше отображаемое имя" autocomplete="username" required minlength="2" maxlength="40" onkeydown="if(event.key==='Enter'){event.preventDefault();qs('lgPass').focus();}">
+        <div style="position:relative;">
+            <input id="lgPass" type="password" placeholder="Пароль" autocomplete="current-password" required minlength="4" maxlength="60" style="padding-right:46px;" onkeydown="if(event.key==='Enter'){event.preventDefault();handleAuth();}">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="toggleAuthPasswordVisibility()" aria-label="Показать или скрыть пароль" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:auto;padding:6px 10px;font-size:13px;">👁</button>
+        </div>
         <button class="btn btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px" aria-label="Войти или создать аккаунт">Войти / Создать аккаунт</button>
-        <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Вход и переводы — только по отображаемому имени.<br>Отображаемое имя используется везде.</div>
+        <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Вход — по отображаемому имени и паролю.<br>Если такого имени ещё нет, аккаунт создастся автоматически с указанным паролем.<br>Переводы и поиск — по отображаемому имени.</div>
     </div>
 </div>
 
@@ -1368,6 +1372,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div id="subscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;display:none;"></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;position:relative;z-index:1;">
                 <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="changeDisplayName()">✏️ Имя в приложении</button>
+                <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="changePassword()">🔒 Сменить пароль</button>
                 <label class="btn btn-ghost btn-sm" style="font-size:11px;cursor:pointer;" for="avatarFileInput">📷 Из галереи</label>
                 <input type="file" id="avatarFileInput" accept="image/*" onchange="handleAvatarUpload(event)">
                 <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="changeAvatarUrl()">🔗 По URL</button>
@@ -2636,6 +2641,18 @@ function getBusinessLimitForUser(u){
 function todayKey(){ return new Date().toLocaleDateString('sv-SE'); }
 function displayNick(u){ if(!u) return ''; return (u.displayName && String(u.displayName).trim()) || u.nick || ''; }
 function normalizePublicName(s){ return String(s||'').trim().toLowerCase(); }
+async function sha256Hex(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function hashPassword(password, salt){
+    return sha256Hex(`kapani::${normalizePublicName(salt)}::${String(password||'')}`);
+}
+window.toggleAuthPasswordVisibility = function(){
+    const el = qs('lgPass');
+    if(!el) return;
+    el.type = el.type === 'password' ? 'text' : 'password';
+};
 async function findUserByPublicName(name){
     const q = normalizePublicName(name);
     if(!q) return null;
@@ -2939,14 +2956,18 @@ async function logTx(nick, entry){
 // ─── AUTH ─────────────────────────────────
 window.handleAuth = async function() {
     const nameInput = (qs('lgNick').value || '').trim();
+    const password = (qs('lgPass').value || '');
     if(!nameInput) return toast('⚠️ Введите отображаемое имя','gold');
+    if(password.length < 4) return toast('⚠️ Пароль должен быть не короче 4 символов','gold');
     const btn = qs('authBtn'); btn.disabled = true; btn.textContent = 'Подключение...';
+    const resetBtn = () => { btn.disabled = false; btn.textContent = 'Войти / Создать аккаунт'; };
     try {
         const existing = await findUserByPublicName(nameInput);
         if(!existing) {
             const baseNick = makeNickFromName(nameInput);
             const nick = await ensureUniqueNick(baseNick);
             const now = Date.now();
+            const passwordHash = await hashPassword(password, nick);
             await set(userRef(nick), {
                 nick,
                 balance: 0,
@@ -2965,7 +2986,8 @@ window.handleAuth = async function() {
                 savingsLastInterestAt: now,
                 employments: [],
                 totalEarned: 0,
-                accountVerified: false
+                accountVerified: false,
+                passwordHash
             });
             await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
             toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
@@ -2975,6 +2997,18 @@ window.handleAuth = async function() {
             currentNick = nick;
             startApp();
         } else {
+            const enteredHash = await hashPassword(password, existing.nick);
+            if(existing.passwordHash){
+                if(existing.passwordHash !== enteredHash){
+                    resetBtn();
+                    qs('lgPass').value = '';
+                    qs('lgPass').focus();
+                    return toast('❌ Неверный пароль','red');
+                }
+            } else {
+                // Старый аккаунт без пароля — устанавливаем введённый пароль как новый
+                await update(userRef(existing.nick), { passwordHash: enteredHash });
+            }
             toast('👋 С возвращением!','green');
             localStorage.setItem('kp_s', existing.nick);
             sessionStorage.setItem('kp_s', existing.nick);
@@ -2983,8 +3017,7 @@ window.handleAuth = async function() {
             startApp();
         }
     } catch(e) {
-        btn.disabled = false;
-        btn.textContent = 'Войти / Создать аккаунт';
+        resetBtn();
         toast('❌ Ошибка: ' + e.message, 'red');
     }
 };
@@ -4238,6 +4271,26 @@ window.saveProfileCustomization=async function(){
 
 window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.balance=(u.balance||0)+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_CUSTOM_AVATAR,desc:'Бонус за установку своей аватарки'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
 window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Ваше отображаемое имя в Капани (для входа и переводов):',cur);if(v===null)return;const t=v.trim().slice(0,40);if(!t)return toast('⚠️ Имя не может быть пустым','gold');const dup=await findUserByPublicName(t);if(dup&&dup.nick!==currentNick)return toast('❌ Это имя уже занято','red');await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
+window.changePassword=async function(){
+    const s = await get(userRef(currentNick));
+    if(!s.exists()) return;
+    const u = s.val() || {};
+    if(u.passwordHash){
+        const cur = prompt('Введите текущий пароль:');
+        if(cur===null) return;
+        const curHash = await hashPassword(cur, currentNick);
+        if(curHash !== u.passwordHash) return toast('❌ Текущий пароль введён неверно','red');
+    }
+    const next = prompt('Введите новый пароль (минимум 4 символа):');
+    if(next===null) return;
+    if(String(next).length < 4) return toast('⚠️ Пароль должен быть не короче 4 символов','gold');
+    const confirmNext = prompt('Повторите новый пароль:');
+    if(confirmNext===null) return;
+    if(next !== confirmNext) return toast('❌ Пароли не совпадают','red');
+    const newHash = await hashPassword(next, currentNick);
+    await update(userRef(currentNick), { passwordHash: newHash });
+    toast('✅ Пароль обновлён','green');
+};
 window.saveDisplayJob=async function(){
     const sel=qs('jobTitleSelect'); if(!sel) return;
     const role=sel.value;
