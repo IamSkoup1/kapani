@@ -1690,8 +1690,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card"><div class="card-title">📦 Активные заказы</div><div id="adminOrders"></div></div>
     <div class="card"><div class="card-title">🏛 Предложения депутатов</div><div id="adminDeputyProposals"><div style="color:var(--muted);font-size:13px;">Нет предложений</div></div></div>
     <div class="card" id="ksbFineSection" style="display:none;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);">
-        <div class="card-title" style="color:var(--red);">🛡 КСБ — Выписать штраф</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Как сотрудник КСБ вы можете штрафовать нарушителей.</div>
+        <div class="card-title" style="color:var(--red);">🛡 КСБ / 👮 Полиция — Выписать штраф</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Сотрудники КСБ и полицейские могут штрафовать нарушителей напрямую.</div>
         <button class="btn btn-red" onclick="ksbFineWorker()">💸 Выписать штраф</button>
     </div>
     <div class="card">
@@ -3404,7 +3404,7 @@ function updateHeader(u) {
     // Кнопка заседания — только для депутатов
     const depBtn=qs('deputySessionQuickBtn'); if(depBtn) depBtn.style.display=hasMunicipalJob(u,'Депутат')?'block':'none';
     // Блок КСБ-штрафов
-    const ksbFineSection=qs('ksbFineSection'); if(ksbFineSection) ksbFineSection.style.display=hasMunicipalJob(u,'КСБ')?'block':'none';
+    const ksbFineSection=qs('ksbFineSection'); if(ksbFineSection) ksbFineSection.style.display=(hasMunicipalJob(u,'КСБ')||hasMunicipalJob(u,'Полицейский'))?'block':'none';
 }
 function updateHeader_balance(u){if(!u)return;qs('hBal').textContent=(u.balance||0).toLocaleString();if(curPage==='bank')renderSavingsDisplay();}
 window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const u=snap.val();if(hasMunicipalJob(u,'Водитель'))navTo('driverPage');else if(hasMunicipalJob(u,'Доставщик'))navTo('deliveryPage');else if(hasMunicipalJob(u,JOB_JANITOR))navTo('janitorPage');});};
@@ -5549,8 +5549,10 @@ window.renderTasks = async function(){
     try{
         const today = todayKey();
         const claimedKey = `dailyClaimed_${today}`;
-        const [uSnap, ordersSnap, marketSnap, chatSnap, wallSnap, txSnap] = await Promise.all([
-            get(userRef(currentNick)), get(ordersRef()), get(marketRef()), get(chatRef()), get(wallRef(currentNick)), get(txLogRef(currentNick))
+        const [uSnap, ordersSnap, marketSnap, chatSnap, wallSnap, txSnap, passportSnap, licenseSnap] = await Promise.all([
+            get(userRef(currentNick)), get(ordersRef()), get(marketRef()), get(chatRef()), get(wallRef(currentNick)), get(txLogRef(currentNick)),
+            get(ref(db,`passports/${currentNick}`)).catch(()=>null),
+            get(ref(db,`licenses/${currentNick}`)).catch(()=>null)
         ]);
         const u = uSnap.val() || {};
         const claimed = u[claimedKey] || [];
@@ -5573,6 +5575,10 @@ window.renderTasks = async function(){
         // One-time tasks
         const hasListing = Object.values(marketVal).some(l=>l.seller===currentNick);
         const hasTaxi = Object.values(ordersVal).some(o=>o.client===currentNick&&o.type==='taxi');
+        const passportData = (passportSnap && passportSnap.exists && passportSnap.exists()) ? passportSnap.val() : (u.passport || null);
+        const hasPassport = !!(passportData && (passportData.firstName || passportData.lastName));
+        const licensesData = (licenseSnap && licenseSnap.exists && licenseSnap.exists()) ? licenseSnap.val() : (u.licenses || {});
+        const hasAllLicenses = !!(licensesData && licensesData.bike && licensesData.scooter);
         const oneTimeTasks = [
             { key:'rewardedAvatar',   title:'🖼 Своя аватарка',          desc:'Поставьте не стандартную аватарку профиля.',   reward:REWARD_CUSTOM_AVATAR, done:!!u.rewardedAvatar },
             { key:'rewardedWall',     title:'📰 Первый пост в ленте',     desc:'Опубликуйте первый пост в своей ленте.',       reward:REWARD_FIRST_WALL,    done:!!u.rewardedWall },
@@ -5580,6 +5586,8 @@ window.renderTasks = async function(){
             { key:'rewardedTaxi',     title:'🛵 Первый заказ такси',       desc:'Сделайте первый заказ такси.',                reward:80,                   done:!!u.rewardedTaxi||hasTaxi },
             { key:'rewardedJob',      title:'💼 Устроиться на работу',     desc:'Подайте заявку и получите должность.',        reward:100,                  done:!!u.rewardedJob||(u.job&&u.job!=='Житель') },
             { key:'rewardedMarket',   title:'🛒 Купить на маркетплейсе',   desc:'Купите что-нибудь на маркетплейсе.',          reward:90,                   done:!!u.rewardedMarket },
+            { key:'rewardedPassport', title:'📝 Создать паспорт',         desc:'Заполните данные паспорта в профиле.',         reward:80,                   done:!!u.rewardedPassport||hasPassport },
+            { key:'rewardedAllLicenses', title:'🪪 Сдать на все категории прав', desc:'Получите права на велосипед и скутер у мэра.', reward:90,             done:!!u.rewardedAllLicenses||hasAllLicenses },
         ];
 
         // Daily rotating tasks
@@ -10771,7 +10779,7 @@ window.addEventListener('load', ()=>{
     setTimeout(hideLoadingSafe, 300);
 }, {once:true});
 if(currentNick){
-    try { startApp(); } catch(e) { console.error(e); toast('⚠️ Ошибка запуска интерфейса','red'); hideLoadingSafe(); }
+    try { startApp(); } catch(e) { console.error('[startApp]', e); hideLoadingSafe(); }
     // Добавляем таймаут для Firebase запроса, чтобы сайт не висел бесконечно
     const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Firebase request timeout')), 10000)
@@ -11909,7 +11917,10 @@ window.ksbFineWorker = async function() {
     const snap = await get(userRef(currentNick));
     if (!snap.exists()) return;
     const u = snap.val();
-    if (u.job !== 'КСБ' && currentNick !== ADMIN) return toast('🚫 Только сотрудники КСБ могут выписывать штрафы', 'red');
+    const isKsb = hasMunicipalJob(u,'КСБ') || u.job === 'КСБ';
+    const isPolice = hasMunicipalJob(u,'Полицейский') || u.job === 'Полицейский';
+    if (!isKsb && !isPolice && currentNick !== ADMIN) return toast('🚫 Только сотрудники КСБ и полиции могут выписывать штрафы', 'red');
+    const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
     const target = prompt('Никнейм нарушителя:');
     if (!target || !target.trim()) return;
     const reason = prompt('Причина штрафа:');
@@ -11921,9 +11932,10 @@ window.ksbFineWorker = async function() {
     if (!tSnap.exists()) return toast('❌ Пользователь не найден', 'red');
     const tUser = tSnap.val();
     await update(userRef(target.trim()), { balance: (tUser.balance || 0) - amt });
-    await logTx(target.trim(), { type: 'out', who: `КСБ (${currentNick})`, amt, desc: `Штраф: ${reason}` });
-    await pushNotification(target.trim(), `🛡 КСБ выписало штраф ${amt}₽ — ${reason} (от ${currentNick})`, 'money');
-    await pushNotification(ADMIN, `🛡 КСБ ${currentNick} оштрафовал ${target.trim()} на ${amt}₽ — ${reason}`, 'system');
+    await logTx(target.trim(), { type: 'out', who: `${issuerRole} (${currentNick})`, amt, desc: `Штраф: ${reason}` });
+    const emoji = isPolice ? '👮' : '🛡';
+    await pushNotification(target.trim(), `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${currentNick})`, 'money');
+    await pushNotification(ADMIN, `${emoji} ${issuerRole} ${currentNick} оштрафовал ${target.trim()} на ${amt}₽ — ${reason}`, 'system');
     toast(`✅ Штраф ${amt}₽ выписан ${target.trim()}`, 'green');
 };
 
@@ -13228,6 +13240,154 @@ ready(function(){
     refreshPolicePanelVisibility();
     renderRentListingsOnMarket();
   }, 1500);
+
+  // ═══════════════════════════════════════════
+  // 5) КСБ / Полиция — прямой штраф (на странице работ)
+  // ═══════════════════════════════════════════
+  function injectFinePanel(){
+    const jobsSection = qs('jobs'); if(!jobsSection) return;
+    if(qs('directFinePanel')) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'directFinePanel';
+    card.style.cssText = 'border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);display:none;';
+    card.innerHTML = `
+      <div class="card-title" style="color:var(--red);">💸 Выписать штраф</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Доступно сотрудникам КСБ и полиции.</div>
+      <button class="btn btn-red" onclick="ksbFineWorker()">💸 Выписать штраф нарушителю</button>
+    `;
+    jobsSection.appendChild(card);
+  }
+  async function refreshFinePanelVisibility(){
+    const panel = qs('directFinePanel'); if(!panel) return;
+    const snap = await get(userRef(window.currentNick)); const u = snap.val()||{};
+    const isKsb = hasMunicipalJob(u,'КСБ') || u.job==='КСБ';
+    const isPolice = hasMunicipalJob(u,'Полицейский') || u.job==='Полицейский';
+    panel.style.display = (isKsb || isPolice) ? 'block' : 'none';
+  }
+
+  // ═══════════════════════════════════════════
+  // 6) FIX: гарантированный сброс должности и прав профессии
+  // ═══════════════════════════════════════════
+  function buildClearJobPatch(role, u){
+    const patch = {};
+    if(role === 'Водитель' || role === 'Доставщик') patch.vehicle = '';
+    if(role === JOB_JANITOR){
+      patch.janitorTaskDate=''; patch.janitorSubmissionId='';
+      patch.janitorSubmissionStatus=''; patch.janitorProof=''; patch.janitorComment='';
+    }
+    return patch;
+  }
+
+  window.quitJob = async function(){
+    const nick = window.currentNick;
+    if(!nick) return toast('⚠️ Сначала войдите','gold');
+    let snap;
+    try { snap = await get(userRef(nick)); } catch(e){ console.error('[quitJob get]', e); return toast('❌ Ошибка загрузки данных','red'); }
+    if(!snap || !snap.exists()) return toast('❌ Профиль не найден','red');
+    const u = snap.val();
+    const allEmps = collectEmploymentsFromData ? collectEmploymentsFromData(u, nick) : (Array.isArray(u.employments)?u.employments:[]);
+    if(!allEmps.length && (!u.job || u.job==='Житель')) return toast('⚠️ Вы не трудоустроены','gold');
+    let targetEmp;
+    if(allEmps.length > 1){
+      const list = allEmps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
+      const pick = prompt(`С какой работы уволиться?\n${list}\n\nВведите номер или название:`);
+      if(pick===null) return;
+      if(!pick.trim()) return toast('⚠️ Ничего не выбрано','gold');
+      const num = parseInt(pick,10);
+      if(num>=1 && num<=allEmps.length) targetEmp = allEmps[num-1];
+      else targetEmp = allEmps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase());
+      if(!targetEmp) return toast('⚠️ Работа не найдена','gold');
+    } else if(allEmps.length === 1) {
+      targetEmp = allEmps[0];
+    } else {
+      targetEmp = { id:`muni_${u.job}`, type:'municipal', role:u.job };
+    }
+    if(!confirm(`Уволиться с должности «${targetEmp.role}»?`)) return;
+    try {
+      if(targetEmp.type==='business' && targetEmp.bizId && typeof bizItemRef==='function'){
+        try { await update(bizItemRef(targetEmp.bizId), { [`employees/${nick}`]: null }); } catch(e){ console.warn('[quitJob biz]', e); }
+      }
+      const newEmps = allEmps.filter(e => e.id !== targetEmp.id);
+      const newMuniJob = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
+      const patch = Object.assign({
+        employments: newEmps,
+        displayJob: newEmps[0]?.role || null,
+        job: (u.job === targetEmp.role || targetEmp.type==='municipal') ? newMuniJob : (u.job || 'Житель'),
+      }, buildClearJobPatch(targetEmp.role, u));
+      await update(userRef(nick), patch);
+      toast('🚪 Вы уволились с «'+targetEmp.role+'»','green');
+      try { if(typeof window.renderProfile==='function') window.renderProfile(); } catch(e){}
+      try { refreshFinePanelVisibility(); } catch(e){}
+    } catch(e) {
+      console.error('[quitJob update]', e);
+      toast('❌ Не удалось уволиться: '+(e.message||e.code||''),'red');
+    }
+  };
+
+  window.adminFireWorker = async function(){
+    if(window.currentNick !== ADMIN) return toast('🚫 Только мэр','red');
+    const target = qs('adminTarget')?.value;
+    if(!target) return toast('⚠️ Выберите жителя','gold');
+    if(target === window.currentNick) return toast('⚠️ Нельзя уволить себя','gold');
+    const snap = await get(userRef(target));
+    if(!snap.exists()) return toast('❌ Житель не найден','red');
+    const u = snap.val();
+    const allEmps = collectEmploymentsFromData ? collectEmploymentsFromData(u, target) : (Array.isArray(u.employments)?u.employments:[]);
+    const muniEmps = allEmps.filter(e=>e.type==='municipal');
+    const legacyJob = (u.job && u.job !== 'Житель') ? u.job : null;
+    if(!muniEmps.length && !legacyJob) return toast('ℹ️ У жителя нет муниципальной работы','gold');
+    let targetRole;
+    if(muniEmps.length > 1){
+      const list = muniEmps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
+      const pick = prompt(`С какой работы уволить ${target}?\n${list}\n0 — уволить со ВСЕХ\n\nВведите номер или название:`);
+      if(pick===null || !pick.trim()) return;
+      if(pick.trim()==='0'){
+        if(!confirm(`Уволить ${target} со ВСЕХ муниципальных работ?`)) return;
+        const newEmps = allEmps.filter(e=>e.type!=='municipal');
+        let patch = { employments: newEmps, displayJob: newEmps[0]?.role || null, job: 'Житель' };
+        for(const e of muniEmps) Object.assign(patch, buildClearJobPatch(e.role, u));
+        try {
+          await update(userRef(target), patch);
+          await pushNotification(target, '🚪 Мэрия уволила вас со всех муниципальных работ','system');
+          toast(`🚪 ${target} уволен со всех работ`,'red');
+          if(typeof window.renderAdmin==='function') window.renderAdmin();
+        } catch(e){ console.error('[adminFire all]', e); toast('❌ Ошибка: '+(e.message||''),'red'); }
+        return;
+      }
+      const num = parseInt(pick,10);
+      targetRole = (num>=1 && num<=muniEmps.length) ? muniEmps[num-1].role
+        : muniEmps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role;
+      if(!targetRole) return toast('⚠️ Работа не найдена','gold');
+    } else {
+      targetRole = muniEmps[0]?.role || legacyJob;
+    }
+    if(!confirm(`Уволить ${target} с должности «${targetRole}»?`)) return;
+    try {
+      const newEmps = allEmps.filter(e => !(e.type==='municipal' && e.role===targetRole));
+      const newMuniHead = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
+      const patch = Object.assign({
+        employments: newEmps,
+        displayJob: newEmps[0]?.role || null,
+        job: newMuniHead,
+      }, buildClearJobPatch(targetRole, u));
+      await update(userRef(target), patch);
+      await pushNotification(target, `🚪 Мэрия уволила вас с должности «${targetRole}»`,'system');
+      toast(`🚪 ${target} уволен с «${targetRole}»`,'red');
+      if(typeof window.renderAdmin==='function') window.renderAdmin();
+    } catch(e){ console.error('[adminFire]', e); toast('❌ Ошибка: '+(e.message||''),'red'); }
+  };
+
+  // hook нашу панель штрафа в навигацию
+  const _origNavTo2 = window.navTo;
+  window.navTo = function(id){
+    const r = _origNavTo2 ? _origNavTo2.apply(this, arguments) : undefined;
+    try {
+      if(id==='jobs'){ injectFinePanel(); refreshFinePanelVisibility(); }
+    } catch(e){ console.error('[fine panel hook]', e); }
+    return r;
+  };
+  setTimeout(()=>{ try{ injectFinePanel(); refreshFinePanelVisibility(); }catch(e){} }, 1600);
 
   console.log('[Kapani Pack v2] installed');
 });
