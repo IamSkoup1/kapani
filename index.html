@@ -13279,6 +13279,28 @@ ready(function(){
     return patch;
   }
 
+  // Sanitize employment items to plain primitive objects (no refs/cycles)
+  function sanitizeEmp(e){
+    if(!e || typeof e !== 'object') return null;
+    const o = {
+      id: String(e.id||''),
+      type: String(e.type||''),
+      role: String(e.role||''),
+    };
+    if(e.bizId) o.bizId = String(e.bizId);
+    if(e.bizName) o.bizName = String(e.bizName);
+    return o.id ? o : null;
+  }
+  function sanitizeEmps(arr){
+    const out = [];
+    const seen = new Set();
+    (Array.isArray(arr)?arr:[]).forEach(e=>{
+      const s = sanitizeEmp(e);
+      if(s && !seen.has(s.id)){ seen.add(s.id); out.push(s); }
+    });
+    return out;
+  }
+
   window.quitJob = async function(){
     const nick = window.currentNick;
     if(!nick) return toast('⚠️ Сначала войдите','gold');
@@ -13286,7 +13308,13 @@ ready(function(){
     try { snap = await get(userRef(nick)); } catch(e){ console.error('[quitJob get]', e); return toast('❌ Ошибка загрузки данных','red'); }
     if(!snap || !snap.exists()) return toast('❌ Профиль не найден','red');
     const u = snap.val();
-    const allEmps = collectEmploymentsFromData ? collectEmploymentsFromData(u, nick) : (Array.isArray(u.employments)?u.employments:[]);
+    let rawEmps;
+    try {
+      rawEmps = (typeof collectEmploymentsFromData==='function')
+        ? collectEmploymentsFromData(u, nick)
+        : (Array.isArray(u.employments)?u.employments:[]);
+    } catch(e){ console.error('[quitJob collect]', e); rawEmps = Array.isArray(u.employments)?u.employments:[]; }
+    const allEmps = sanitizeEmps(rawEmps);
     if(!allEmps.length && (!u.job || u.job==='Житель')) return toast('⚠️ Вы не трудоустроены','gold');
     let targetEmp;
     if(allEmps.length > 1){
@@ -13321,8 +13349,40 @@ ready(function(){
       try { refreshFinePanelVisibility(); } catch(e){}
     } catch(e) {
       console.error('[quitJob update]', e);
-      toast('❌ Не удалось уволиться: '+(e.message||e.code||''),'red');
+      const msg = (e && (e.message||e.code)) || String(e) || 'неизвестная ошибка';
+      toast('❌ Не удалось уволиться: '+msg,'red');
     }
+  };
+
+  // Override ksbFineWorker — lookup target by DISPLAY NAME, not login
+  window.ksbFineWorker = async function(){
+    const meSnap = await get(userRef(window.currentNick));
+    if(!meSnap.exists()) return;
+    const me = meSnap.val();
+    const isKsb = hasMunicipalJob(me,'КСБ') || me.job==='КСБ';
+    const isPolice = hasMunicipalJob(me,'Полицейский') || me.job==='Полицейский';
+    if(!isKsb && !isPolice && window.currentNick !== ADMIN)
+      return toast('🚫 Только КСБ и полиция могут выписывать штрафы','red');
+    const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
+    const nameInput = prompt('Отображаемое имя нарушителя:');
+    if(!nameInput || !nameInput.trim()) return;
+    const target = await findUserByPublicName(nameInput.trim());
+    if(!target || !target.nick) return toast('❌ Житель с таким именем не найден','red');
+    const reason = prompt('Причина штрафа:');
+    if(!reason || !reason.trim()) return toast('⚠️ Укажите причину','gold');
+    const amt = parseInt(prompt('Размер штрафа (₽):'),10);
+    if(!amt || amt<=0) return toast('⚠️ Укажите корректную сумму','gold');
+    const tnick = target.nick;
+    const tSnap = await get(userRef(tnick));
+    if(!tSnap.exists()) return toast('❌ Пользователь не найден','red');
+    const tUser = tSnap.val();
+    await update(userRef(tnick), { balance: (tUser.balance||0) - amt });
+    await logTx(tnick, { type:'out', who:`${issuerRole} (${window.currentNick})`, amt, desc:`Штраф: ${reason}` });
+    const emoji = isPolice ? '👮' : '🛡';
+    const targetLabel = (target.displayName && target.displayName.trim()) || tnick;
+    await pushNotification(tnick, `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${window.currentNick})`, 'money');
+    await pushNotification(ADMIN, `${emoji} ${issuerRole} ${window.currentNick} оштрафовал ${targetLabel} на ${amt}₽ — ${reason}`, 'system');
+    toast(`✅ Штраф ${amt}₽ выписан ${targetLabel}`,'green');
   };
 
   window.adminFireWorker = async function(){
