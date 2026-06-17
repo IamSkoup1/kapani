@@ -350,16 +350,13 @@ select option{background:#1a2332;}
 .info-row:last-child{border-bottom:none;}
 .info-tab-content ul{margin:0 0 10px 18px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.5;}
 
-/* iPhone Fix - Enhanced Performance */
-body{-webkit-overflow-scrolling:touch;touch-action:pan-y pinch-zoom;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;-webkit-backface-visibility:hidden;backface-visibility:hidden;}
-.section{-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
-button,.btn{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
-input,textarea{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;border-radius:0;}
+/* iPhone Fix - Enhanced Performance (iOS-safe; aggressive GPU hacks removed — they break tap hit-testing on iOS 16+) */
+body{-webkit-overflow-scrolling:touch;touch-action:manipulation;-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;}
+.section{}
+button,.btn,a,[onclick],[role="button"]{-webkit-tap-highlight-color:transparent;touch-action:manipulation;cursor:pointer;}
+input,textarea,select{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;border-radius:0;font-size:16px;}
 input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16px;height:16px;margin:0;cursor:pointer;}
-.chat-bubble{-webkit-backface-visibility:hidden;backface-visibility:hidden;-webkit-transform:translateZ(0);transform:translateZ(0);}
-.chat-msg{-webkit-backface-visibility:hidden;backface-visibility:hidden;}
-.profile-header{-webkit-backface-visibility:hidden;backface-visibility:hidden;-webkit-transform:translateZ(0);transform:translateZ(0);}
-.avatar-frame{-webkit-backface-visibility:hidden;backface-visibility:hidden;-webkit-transform:translateZ(0);transform:translateZ(0);}
+.avatar-frame{pointer-events:none;}
 #userProfileModal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9985;display:none;align-items:flex-end;justify-content:center;-webkit-overflow-scrolling:touch;}
 #userProfileModal.open{display:flex;}
 .user-profile-sheet{-webkit-overflow-scrolling:touch;overflow-y:auto;max-height:90vh;overscroll-behavior:contain;}
@@ -384,8 +381,8 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 #shopMap.visible{display:block;}
 .toggle-map-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;color:var(--primary);cursor:pointer;width:100%;transition:.2s;text-align:center;}
 .toggle-map-btn:hover{background:var(--pri-dim);}
-.msg-actions{display:none;gap:6px;margin-top:5px;justify-content:flex-end;}
-.chat-msg.me:hover .msg-actions{display:flex;}
+.msg-actions{display:flex;gap:6px;margin-top:5px;justify-content:flex-end;opacity:.55;transition:opacity .2s;}
+.chat-msg.me:hover .msg-actions,.chat-msg.me:active .msg-actions,.chat-msg.me .msg-actions{opacity:1;}
 .msg-action-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;font-size:11px;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;font-weight:800;color:var(--text);}
 .msg-action-btn:hover{border-color:var(--primary);color:var(--primary);}
 .msg-edit-area{display:none;margin-top:6px;}
@@ -1468,6 +1465,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <option value="Журналист">📰 Журналист</option>
             <option value="КСБ">🛡 КСБ (служба безопасности)</option>
             <option value="Депутат">🏛 Депутат</option>
+            <option value="Полицейский">👮 Полицейский</option>
         </select>
         <textarea id="jAppText" placeholder="Расскажите о себе и почему должны принять именно вас на эту работу..." style="min-height:80px;margin-top:8px;"></textarea>
         <button class="btn btn-primary" onclick="sendApp()">Подать заявку</button>
@@ -1482,7 +1480,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 40.</b> Зарплата: <b style="color:var(--gold)">1500 рублей/неделю</b><br>
             <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. <b style="color:var(--primary)">Нужный балл КВЭ: 71.</b> Зарплата: <b style="color:var(--gold)">2800 рублей/неделю</b>. В случае выкладывания неподобающих объявлений — <b style="color:var(--red)">увольнение</b>.<br>
             <b style="color:var(--text)">🛡 КСБ (Капанёвская служба безопасности)</b> — обеспечивает порядок, имеет доступ к выписыванию штрафов жителям и приоритетный доступ к чату с Денисом. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">4000 рублей/неделю</b><br>
-            <b style="color:var(--text)">🏛 Депутат</b> — представляет интересы жителей, отправляет предложения и запросы в мэрию. Запросы рассматриваются, отклоняются или одобряются мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 95.</b> Зарплата: <b style="color:var(--gold)">5000 рублей/неделю</b>
+            <b style="color:var(--text)">🏛 Депутат</b> — представляет интересы жителей, отправляет предложения и запросы в мэрию. Запросы рассматриваются, отклоняются или одобряются мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 95.</b> Зарплата: <b style="color:var(--gold)">5000 рублей/неделю</b><br>
+            <b style="color:var(--text)">👮 Полицейский</b> — следит за порядком, может создавать запросы в мэрию на штраф нарушителя или удаление аккаунта. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">3400 рублей/неделю</b>
         </div>
     </div>
 </div>
@@ -7022,10 +7021,8 @@ window.navTo=function(id){
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
     for(let i=0;i<12;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
-    // Ensure body scroll is unlocked when navigating (in case a modal left it locked)
-    if(document.body.style.position === 'fixed'){
-        unlockBodyScroll();
-    }
+    // iOS safety: force-unlock body scroll on every navigation (otherwise a stuck modal kills all taps on iPhone)
+    unlockBodyScroll(true);
     window.scrollTo(0,0);
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
@@ -11258,30 +11255,37 @@ window.openJumpToDate = function(ctx){
     }
 };
 
-// ─── iOS MODAL BODY LOCK ──────────────────
+// ─── iOS MODAL BODY LOCK (reference-counted, iOS-safe) ──────────────────
 let _scrollY = 0;
+let _lockCount = 0;
 function lockBodyScroll(){
-    // iOS-safe scroll lock: capture scroll position before fixing body
+    _lockCount++;
+    if(_lockCount > 1) return; // already locked
     _scrollY = window.scrollY || window.pageYOffset || 0;
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.top = `-${_scrollY}px`;
     document.body.style.left = '0';
     document.body.style.right = '0';
-    document.body.style.bottom = '0';
+    document.body.style.width = '100%';
 }
-function unlockBodyScroll(){
+function unlockBodyScroll(force){
+    if(force){ _lockCount = 0; }
+    else { _lockCount = Math.max(0, _lockCount - 1); }
+    if(_lockCount > 0) return; // still locked by another modal
     const y = _scrollY || 0;
     document.body.style.overflow = '';
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.left = '';
     document.body.style.right = '';
+    document.body.style.width = '';
     document.body.style.bottom = '';
-    // Restore scroll position (iOS needs requestAnimationFrame to avoid flicker)
     requestAnimationFrame(() => window.scrollTo(0, y));
     _scrollY = 0;
 }
+// Safety: force-unlock on every page navigation
+window.addEventListener('pageshow', () => { _lockCount = 0; unlockBodyScroll(true); });
 
 // ─── VIDEO CIRCLE: NO MIRROR / SWITCH WHILE RECORDING / 60s ─────────────────
 let vcSecondsLeft = 60;
@@ -12604,5 +12608,532 @@ window.completeCustomDelivery = async function(orderId) {
     </div>
 </div>
 
+<!-- ═════════════════════════════════════════════════════════════════
+     KAPANI PACK v2 — passport, police, licenses, rentals, fire-fixes
+     Self-contained additive module. Uses globals defined above.
+     ═════════════════════════════════════════════════════════════════ -->
+<script type="module">
+import { getDatabase, ref, get, set, update, remove, push, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+// Wait until main app initializes
+function ready(cb){
+  if(window.db && window.currentNick !== undefined && typeof window.qs === 'function') return cb();
+  setTimeout(()=>ready(cb), 250);
+}
+
+ready(function(){
+  const db = window.db;
+  const ADMIN = window.ADMIN || 'Денис';
+  const qs = window.qs;
+  const toast = window.toast || ((m)=>alert(m));
+  const escHtml = window.escHtml || ((s)=>String(s==null?'':s));
+  const jsEsc = window.jsEsc || escHtml;
+  const userRef = window.userRef || ((n)=>ref(db,`users/${n}`));
+  const pushNotification = window.pushNotification || (async()=>{});
+  const collectEmploymentsFromData = window.collectEmploymentsFromData;
+  const hasMunicipalJob = window.hasMunicipalJob || (()=>false);
+  const renderProfile = window.renderProfile || (()=>{});
+  const JOB_JANITOR = window.JOB_JANITOR || 'Уборщик';
+
+  // ── KVE: Полицейский = 80
+  try {
+    if(window.KVE_JOB_REQUIREMENTS) window.KVE_JOB_REQUIREMENTS['Полицейский'] = 80;
+    if(window.KVE_REQUIREMENTS) window.KVE_REQUIREMENTS['Полицейский'] = 80;
+  } catch(e) {}
+
+  // ── Firebase paths for new features
+  const policeReqRef = (id) => ref(db, id ? `policeRequests/${id}` : 'policeRequests');
+  const marketRentRef = (id) => ref(db, id ? `marketRentals/${id}` : 'marketRentals');
+  const passportRef = (nick) => ref(db, `users/${nick}/passport`);
+  const licenseRef = (nick) => ref(db, `users/${nick}/licenses`);
+
+  // ═══════════════════════════════════════════
+  // 1) FIX: proper job dismissal (mayor + self)
+  // ═══════════════════════════════════════════
+  function clearJobSideEffects(role, u){
+    const patch = {};
+    if(role === 'Водитель' || role === 'Доставщик') patch.vehicle = '';
+    if(role === JOB_JANITOR){
+      patch.janitorTaskDate=''; patch.janitorSubmissionId='';
+      patch.janitorSubmissionStatus=''; patch.janitorProof=''; patch.janitorComment='';
+    }
+    return patch;
+  }
+
+  // Override quitJob — proper rank/displayJob reset + UI refresh
+  const _origQuitJob = window.quitJob;
+  window.quitJob = async function(){
+    const currentNick = window.currentNick;
+    if(!currentNick) return;
+    const snap = await get(userRef(currentNick)); if(!snap.exists()) return;
+    const u = snap.val();
+    const emps = (collectEmploymentsFromData ? collectEmploymentsFromData(u, currentNick) : (u.employments||[])).filter(e=>e.type==='municipal');
+    if(emps.length === 0) return toast('⚠️ У вас нет муниципальной работы','gold');
+    let targetRole;
+    if(emps.length > 1){
+      const list = emps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
+      const pick = prompt(`С какой работы уволиться?\n${list}\n\nНомер или название:`);
+      if(!pick) return;
+      const num = parseInt(pick,10);
+      targetRole = (num>=1 && num<=emps.length) ? emps[num-1].role : (emps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role);
+      if(!targetRole) return toast('⚠️ Работа не найдена','gold');
+    } else targetRole = emps[0].role;
+    if(!confirm(`Уволиться с должности «${targetRole}»?`)) return;
+    const allEmps = (collectEmploymentsFromData ? collectEmploymentsFromData(u, currentNick) : (u.employments||[]));
+    const newEmps = allEmps.filter(e => !(e.type==='municipal' && e.role===targetRole));
+    const patch = Object.assign({
+      employments: newEmps,
+      displayJob: newEmps[0]?.role || null,
+      job: newEmps.find(e=>e.type==='municipal')?.role || 'Житель',
+    }, clearJobSideEffects(targetRole, u));
+    await update(userRef(currentNick), patch);
+    toast('🚪 Вы уволились','green');
+    try { renderProfile(); } catch(e){}
+  };
+
+  // Override adminFireWorker — choose specific job (or all), proper cleanup
+  window.adminFireWorker = async function(){
+    if(window.currentNick !== ADMIN) return toast('🚫 Только мэр','red');
+    const target = qs('adminTarget')?.value;
+    if(!target) return toast('⚠️ Выберите жителя','gold');
+    if(target === window.currentNick) return toast('⚠️ Нельзя уволить себя','gold');
+    const snap = await get(userRef(target)); if(!snap.exists()) return toast('❌ Не найден','red');
+    const u = snap.val();
+    const emps = (collectEmploymentsFromData ? collectEmploymentsFromData(u, target) : (u.employments||[]));
+    const muniEmps = emps.filter(e=>e.type==='municipal');
+    if(muniEmps.length === 0 && (!u.job || u.job==='Житель')) return toast('ℹ️ У жителя нет работы','gold');
+    let targetRole = null;
+    if(muniEmps.length <= 1){
+      targetRole = muniEmps[0]?.role || u.job;
+      if(!confirm(`Уволить ${target} с должности «${targetRole}»?`)) return;
+    } else {
+      const list = muniEmps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
+      const pick = prompt(`С какой работы уволить ${target}?\n${list}\n0 — уволить со ВСЕХ\n\nНомер или название:`);
+      if(!pick) return;
+      if(pick.trim()==='0'){
+        if(!confirm(`Уволить ${target} со ВСЕХ работ?`)) return;
+        const newEmps = emps.filter(e=>e.type!=='municipal');
+        let patch = { employments: newEmps, displayJob: newEmps[0]?.role || null, job: 'Житель' };
+        for(const e of muniEmps) Object.assign(patch, clearJobSideEffects(e.role, u));
+        await update(userRef(target), patch);
+        await pushNotification(target, '🚪 Мэрия уволила вас со всех работ','system');
+        toast(`🚪 ${target} уволен со всех работ`,'red');
+        if(typeof window.renderAdmin==='function') window.renderAdmin();
+        return;
+      }
+      const num = parseInt(pick,10);
+      targetRole = (num>=1 && num<=muniEmps.length) ? muniEmps[num-1].role
+        : muniEmps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role;
+      if(!targetRole) return toast('⚠️ Работа не найдена','gold');
+      if(!confirm(`Уволить ${target} с «${targetRole}»?`)) return;
+    }
+    const newEmps = emps.filter(e => !(e.type==='municipal' && e.role===targetRole));
+    const newMuniHead = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
+    const patch = Object.assign({
+      employments: newEmps,
+      displayJob: newEmps[0]?.role || null,
+      job: u.job === targetRole ? newMuniHead : u.job,
+    }, clearJobSideEffects(targetRole, u));
+    await update(userRef(target), patch);
+    await pushNotification(target, `🚪 Мэрия уволила вас с должности «${targetRole}»`,'system');
+    toast(`🚪 ${target} уволен с «${targetRole}»`,'red');
+    if(typeof window.renderAdmin==='function') window.renderAdmin();
+  };
+
+  // ═══════════════════════════════════════════
+  // 2) ELECTRONIC PASSPORT (profile)
+  // ═══════════════════════════════════════════
+  function injectPassportUI(){
+    const profileSection = qs('profile'); if(!profileSection) return;
+    if(qs('passportCard')) return; // already injected
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'passportCard';
+    card.style.cssText = 'border-color:rgba(34,211,165,.25);';
+    card.innerHTML = `
+      <div class="card-title" style="color:var(--primary);">🪪 Электронный паспорт</div>
+      <div id="passportBody" style="font-size:13px;color:var(--muted);">Загрузка...</div>
+    `;
+    // Insert before logout button
+    const logoutBtn = profileSection.querySelector('button[onclick="logout()"]');
+    if(logoutBtn) profileSection.insertBefore(card, logoutBtn);
+    else profileSection.appendChild(card);
+    renderPassportCard();
+  }
+
+  async function renderPassportCard(){
+    const body = qs('passportBody'); if(!body) return;
+    const nick = window.currentNick; if(!nick) return;
+    const snap = await get(userRef(nick)); if(!snap.exists()){ body.innerHTML='—'; return; }
+    const u = snap.val();
+    const p = u.passport;
+    if(!p || !p.firstName || !p.lastName || !p.dob){
+      body.innerHTML = `
+        <div style="margin-bottom:10px;">Заполните паспортные данные, чтобы получить электронный паспорт.</div>
+        <input type="text" id="ppFirstName" placeholder="Имя" maxlength="40" value="${escHtml(p?.firstName||'')}">
+        <input type="text" id="ppLastName" placeholder="Фамилия" maxlength="40" value="${escHtml(p?.lastName||'')}">
+        <input type="date" id="ppDob" value="${escHtml(p?.dob||'')}">
+        <button class="btn btn-primary" onclick="savePassport()" style="margin-top:6px;">💾 Сохранить паспорт</button>
+      `;
+    } else {
+      body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="font-size:14px;color:var(--text);"><b>${escHtml(p.firstName)} ${escHtml(p.lastName)}</b><br><span style="color:var(--muted);font-size:12px;">${escHtml(p.dob)}</span></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-gold" onclick="openPassport()" style="flex:1;min-width:140px;">🪪 Открыть паспорт</button>
+          <button class="btn btn-ghost btn-sm" onclick="editPassport()">✏️ Изменить</button>
+        </div>
+      `;
+    }
+  }
+
+  window.savePassport = async function(){
+    const fn = qs('ppFirstName')?.value.trim();
+    const ln = qs('ppLastName')?.value.trim();
+    const dob = qs('ppDob')?.value.trim();
+    if(!fn || !ln || !dob) return toast('⚠️ Заполните все поля','gold');
+    await update(userRef(window.currentNick), { passport: { firstName: fn, lastName: ln, dob, issuedAt: Date.now() } });
+    toast('✅ Паспорт сохранён','green');
+    renderPassportCard();
+  };
+  window.editPassport = async function(){
+    const snap = await get(userRef(window.currentNick));
+    const p = snap.val()?.passport || {};
+    await update(userRef(window.currentNick), { passport: { ...p, firstName: '', lastName: '', dob: '' } });
+    renderPassportCard();
+  };
+  window.openPassport = async function(){
+    const nick = window.currentNick;
+    const snap = await get(userRef(nick)); if(!snap.exists()) return;
+    const u = snap.val();
+    const p = u.passport || {};
+    const emps = (collectEmploymentsFromData ? collectEmploymentsFromData(u, nick) : (u.employments||[]));
+    const jobsList = emps.length ? emps.map(e=>escHtml(e.role)).join(', ') : '—';
+    const lic = u.licenses || {};
+    const bike = lic.bike ? '✅ Есть' : '❌ Нет';
+    const scooter = lic.scooter ? '✅ Есть' : '❌ Нет';
+    const createdStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ru-RU') : '—';
+    const modal = document.createElement('div');
+    modal.id = 'passportModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9996;display:flex;align-items:center;justify-content:center;padding:16px;';
+    modal.onclick = (e)=>{ if(e.target===modal) modal.remove(); };
+    modal.innerHTML = `
+      <div style="width:100%;max-width:420px;background:linear-gradient(160deg,#16242a,#0e1620);border:1px solid rgba(34,211,165,.4);border-radius:24px;padding:22px;box-shadow:0 12px 60px rgba(0,0,0,.7);max-height:92vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;color:var(--primary);">🪪 Паспорт Капани</div>
+          <button class="btn btn-ghost btn-sm" style="width:auto;padding:6px 10px;" onclick="this.closest('#passportModal').remove()">✕</button>
+        </div>
+        <div style="background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.25);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5;">
+          <div><span style="color:var(--muted);">Имя:</span> <b style="color:var(--text);">${escHtml(p.firstName||'—')}</b></div>
+          <div><span style="color:var(--muted);">Фамилия:</span> <b style="color:var(--text);">${escHtml(p.lastName||'—')}</b></div>
+          <div><span style="color:var(--muted);">Ник:</span> <b style="color:var(--primary);">${escHtml(nick)}</b></div>
+          <div><span style="color:var(--muted);">Дата рождения:</span> <b style="color:var(--text);">${escHtml(p.dob||'—')}</b></div>
+          <div><span style="color:var(--muted);">Аккаунт создан:</span> <b style="color:var(--text);">${createdStr}</b></div>
+          <div><span style="color:var(--muted);">Текущие работы:</span> <b style="color:var(--text);">${jobsList}</b></div>
+          <div style="border-top:1px dashed rgba(255,255,255,.08);padding-top:10px;margin-top:4px;">
+            <div><span style="color:var(--muted);">🚲 В.У. на велосипед:</span> <b style="color:${lic.bike?'#22c55e':'var(--red)'};">${bike}</b></div>
+            <div style="margin-top:4px;"><span style="color:var(--muted);">🛵 В.У. на скутер:</span> <b style="color:${lic.scooter?'#22c55e':'var(--red)'};">${scooter}</b></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px;">Документ выдан мэрией Капани</div>
+      </div>`;
+    document.body.appendChild(modal);
+  };
+
+  // ═══════════════════════════════════════════
+  // 3) MAYOR: licenses + per-user job control
+  // ═══════════════════════════════════════════
+  function injectAdminUI(){
+    const adminPage = qs('adminPage'); if(!adminPage) return;
+    if(qs('adminLicensesCard')) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'adminLicensesCard';
+    card.style.cssText = 'border-color:rgba(34,211,165,.25);background:rgba(34,211,165,.04);';
+    card.innerHTML = `
+      <div class="card-title" style="color:var(--primary);">🪪 Водительские удостоверения</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Выдайте или изымите права у выбранного выше жителя (поле «Управление балансом»).</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="adminGrantLicense('bike')">🚲 Выдать на велосипед</button>
+        <button class="btn btn-red btn-sm" onclick="adminRevokeLicense('bike')">🚲 Изъять</button>
+        <button class="btn btn-primary btn-sm" onclick="adminGrantLicense('scooter')">🛵 Выдать на скутер</button>
+        <button class="btn btn-red btn-sm" onclick="adminRevokeLicense('scooter')">🛵 Изъять</button>
+      </div>
+      <div id="adminLicenseStatus" style="margin-top:10px;font-size:12px;color:var(--muted);"></div>
+    `;
+    // Insert after balance card (find by KVE card)
+    const kveCard = adminPage.querySelector('select#kveTarget')?.closest('.card');
+    if(kveCard && kveCard.parentNode) kveCard.parentNode.insertBefore(card, kveCard.nextSibling);
+    else adminPage.appendChild(card);
+
+    // Police requests card
+    if(!qs('adminPoliceReqs')){
+      const pcard = document.createElement('div');
+      pcard.className = 'card';
+      pcard.style.cssText = 'border-color:rgba(59,130,246,.25);';
+      pcard.innerHTML = `
+        <div class="card-title" style="color:#60a5fa;">👮 Запросы от полиции</div>
+        <div id="adminPoliceReqs"><div style="color:var(--muted);font-size:13px;">Нет запросов</div></div>
+      `;
+      adminPage.appendChild(pcard);
+      onValue(policeReqRef(), (snap)=>renderAdminPoliceReqs(snap.val()||{}));
+    }
+  }
+
+  async function showAdminLicenseStatus(target){
+    const el = qs('adminLicenseStatus'); if(!el) return;
+    const snap = await get(userRef(target)); const u = snap.val()||{};
+    const l = u.licenses||{};
+    el.innerHTML = `<b>${escHtml(target)}</b> · 🚲 ${l.bike?'✅':'❌'} · 🛵 ${l.scooter?'✅':'❌'}`;
+  }
+
+  window.adminGrantLicense = async function(kind){
+    if(window.currentNick !== ADMIN) return toast('🚫 Только мэр','red');
+    const target = qs('adminTarget')?.value; if(!target) return toast('⚠️ Выберите жителя','gold');
+    const cur = (await get(licenseRef(target))).val() || {};
+    cur[kind] = true; cur[kind+'IssuedAt'] = Date.now();
+    await set(licenseRef(target), cur);
+    await pushNotification(target, `✅ Мэрия выдала вам ${kind==='bike'?'права на велосипед 🚲':'права на скутер 🛵'}`,'system');
+    toast(`✅ ${target} получил права`,'green');
+    showAdminLicenseStatus(target);
+  };
+  window.adminRevokeLicense = async function(kind){
+    if(window.currentNick !== ADMIN) return toast('🚫 Только мэр','red');
+    const target = qs('adminTarget')?.value; if(!target) return toast('⚠️ Выберите жителя','gold');
+    const cur = (await get(licenseRef(target))).val() || {};
+    cur[kind] = false;
+    await set(licenseRef(target), cur);
+    await pushNotification(target, `❌ Мэрия изъяла ваши ${kind==='bike'?'права на велосипед 🚲':'права на скутер 🛵'}`,'system');
+    toast(`🚫 У ${target} изъяты права`,'gold');
+    showAdminLicenseStatus(target);
+  };
+
+  // React when admin changes target
+  const _bindAdminTarget = () => {
+    const sel = qs('adminTarget'); if(!sel || sel._licBound) return;
+    sel._licBound = true;
+    sel.addEventListener('change', ()=>{ if(sel.value) showAdminLicenseStatus(sel.value); });
+  };
+  setInterval(_bindAdminTarget, 1500);
+
+  // ═══════════════════════════════════════════
+  // 4) POLICE: requests to mayor
+  // ═══════════════════════════════════════════
+  function injectPoliceUI(){
+    const jobsSection = qs('jobs'); if(!jobsSection) return;
+    if(qs('policePanel')) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'policePanel';
+    card.style.cssText = 'border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.04);display:none;';
+    card.innerHTML = `
+      <div class="card-title" style="color:#60a5fa;">👮 Полицейский — запросы в мэрию</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Создайте запрос мэру: на штраф или удаление аккаунта.</div>
+      <input type="text" id="polTarget" placeholder="Ник нарушителя" maxlength="40">
+      <select id="polType">
+        <option value="fine">💸 Штраф</option>
+        <option value="delete">🗑 Удаление аккаунта</option>
+      </select>
+      <input type="number" id="polAmount" placeholder="Сумма штрафа (₽)" min="1" step="1">
+      <textarea id="polReason" placeholder="Причина (обязательно)" style="min-height:60px;"></textarea>
+      <button class="btn btn-primary" onclick="submitPoliceRequest()" style="margin-top:6px;">📤 Отправить в мэрию</button>
+      <div id="myPoliceReqs" style="margin-top:14px;"></div>
+    `;
+    jobsSection.appendChild(card);
+  }
+  async function refreshPolicePanelVisibility(){
+    const panel = qs('policePanel'); if(!panel) return;
+    const snap = await get(userRef(window.currentNick)); const u = snap.val()||{};
+    const isPolice = hasMunicipalJob(u,'Полицейский') || u.job==='Полицейский';
+    panel.style.display = isPolice ? 'block' : 'none';
+    if(isPolice) renderMyPoliceReqs();
+  }
+  async function renderMyPoliceReqs(){
+    const el = qs('myPoliceReqs'); if(!el) return;
+    const snap = await get(policeReqRef());
+    const all = Object.values(snap.val()||{}).filter(r=>r.officer===window.currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,10);
+    el.innerHTML = all.length ? all.map(r=>{
+      const st = r.status==='approved'?'✅ Одобрено':r.status==='rejected'?'❌ Отклонено':'⏳ Ожидает';
+      const col = r.status==='approved'?'#22c55e':r.status==='rejected'?'var(--red)':'var(--gold)';
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;margin-bottom:6px;font-size:12px;">
+        <b>${r.type==='fine'?'💸 Штраф':'🗑 Удаление'}</b> · ${escHtml(r.target)}${r.amount?' · '+r.amount+'₽':''}
+        <div style="color:var(--muted);margin-top:4px;">${escHtml(r.reason||'')}</div>
+        <div style="color:${col};font-weight:800;margin-top:4px;">${st}</div>
+      </div>`;
+    }).join('') : '<div style="color:var(--muted);font-size:12px;">Запросов пока нет</div>';
+  }
+
+  window.submitPoliceRequest = async function(){
+    const target = qs('polTarget')?.value.trim();
+    const type = qs('polType')?.value;
+    const amount = parseInt(qs('polAmount')?.value||'0',10)||0;
+    const reason = qs('polReason')?.value.trim();
+    if(!target || !reason) return toast('⚠️ Заполните ник и причину','gold');
+    if(type==='fine' && amount<=0) return toast('⚠️ Укажите сумму штрафа','gold');
+    const tsnap = await get(userRef(target)); if(!tsnap.exists()) return toast('❌ Жителя нет','red');
+    const id = 'pr_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    await set(policeReqRef(id), { id, officer: window.currentNick, target, type, amount, reason, status:'pending', createdAt: Date.now() });
+    await pushNotification(ADMIN, `👮 Новый запрос от полиции (${window.currentNick}) на ${target}`,'system');
+    toast('📤 Запрос отправлен в мэрию','green');
+    qs('polTarget').value=''; qs('polAmount').value=''; qs('polReason').value='';
+    renderMyPoliceReqs();
+  };
+
+  function renderAdminPoliceReqs(map){
+    const el = qs('adminPoliceReqs'); if(!el) return;
+    const pending = Object.values(map||{}).filter(r=>r.status==='pending').sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    if(!pending.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет запросов</div>'; return; }
+    el.innerHTML = pending.map(r=>`
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+        <div style="font-size:13px;"><b>${r.type==='fine'?'💸 Штраф':'🗑 Удаление'}</b> · от <b>${escHtml(r.officer)}</b> на <b>${escHtml(r.target)}</b>${r.amount?' · '+r.amount+'₽':''}</div>
+        <div style="font-size:12px;color:var(--muted);margin:6px 0;">${escHtml(r.reason||'')}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="approvePoliceRequest('${jsEsc(r.id)}')">✅ Одобрить</button>
+          <button class="btn btn-red btn-sm" onclick="rejectPoliceRequest('${jsEsc(r.id)}')">❌ Отклонить</button>
+        </div>
+      </div>`).join('');
+  }
+
+  window.approvePoliceRequest = async function(id){
+    if(window.currentNick !== ADMIN) return;
+    const snap = await get(policeReqRef(id)); if(!snap.exists()) return;
+    const r = snap.val();
+    if(r.type === 'fine'){
+      const tsnap = await get(userRef(r.target)); if(!tsnap.exists()) return toast('❌ Нет жителя','red');
+      const u = tsnap.val();
+      await update(userRef(r.target), { balance: (u.balance||0) - r.amount });
+      if(typeof window.logTx === 'function') await window.logTx(r.target, { type:'out', who:'Мэрия (полиция)', amt:r.amount, desc:'Штраф: '+(r.reason||'') });
+      await pushNotification(r.target, `💸 Штраф от мэрии: ${r.amount}₽ — ${r.reason||''}`,'money');
+    } else if(r.type === 'delete'){
+      if(!confirm(`Удалить аккаунт ${r.target}?`)) return;
+      await remove(userRef(r.target));
+    }
+    await update(policeReqRef(id), { status:'approved', reviewedAt: Date.now() });
+    await pushNotification(r.officer, `✅ Ваш запрос на ${r.target} одобрен`,'system');
+    toast('✅ Одобрено','green');
+  };
+  window.rejectPoliceRequest = async function(id){
+    if(window.currentNick !== ADMIN) return;
+    const snap = await get(policeReqRef(id)); if(!snap.exists()) return;
+    const r = snap.val();
+    await update(policeReqRef(id), { status:'rejected', reviewedAt: Date.now() });
+    await pushNotification(r.officer, `❌ Ваш запрос на ${r.target} отклонён`,'system');
+    toast('❌ Отклонено','gold');
+  };
+
+  // ═══════════════════════════════════════════
+  // 5) MARKETPLACE: building rentals
+  // ═══════════════════════════════════════════
+  function injectMarketRentUI(){
+    const marketSection = qs('market'); if(!marketSection) return;
+    if(qs('rentListingForm')) return;
+    // Find "create listing" panel (mktPanel2 area) and append a "rent building" sub-form
+    const createPanel = qs('mktPanel2') || marketSection;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'rentListingForm';
+    card.style.cssText = 'border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.04);margin-top:14px;';
+    card.innerHTML = `
+      <div class="card-title" style="color:var(--gold);">🏘️ Сдать здание в аренду</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Объявление появится в общем списке маркетплейса.</div>
+      <input type="text" id="rlTitle" placeholder="Название здания" maxlength="80">
+      <input type="number" id="rlPrice" placeholder="Цена аренды (₽/неделю)" min="1" step="1">
+      <input type="text" id="rlAddress" placeholder="Адрес / район" maxlength="120">
+      <textarea id="rlDesc" placeholder="Описание (комнаты, этаж, мебель...)" style="min-height:60px;" maxlength="500"></textarea>
+      <input type="url" id="rlPhoto" placeholder="Фото URL (необязательно)">
+      <button class="btn btn-gold" onclick="publishRentListing()" style="margin-top:6px;">🏘️ Выставить на аренду</button>
+      <div id="myRentListings" style="margin-top:14px;"></div>
+    `;
+    createPanel.appendChild(card);
+    onValue(marketRentRef(), ()=>renderRentListingsOnMarket());
+  }
+
+  window.publishRentListing = async function(){
+    const title = qs('rlTitle')?.value.trim();
+    const price = parseInt(qs('rlPrice')?.value||'0',10)||0;
+    const address = qs('rlAddress')?.value.trim();
+    const desc = qs('rlDesc')?.value.trim();
+    const photo = qs('rlPhoto')?.value.trim();
+    if(!title || !price || !desc) return toast('⚠️ Заполните название, цену, описание','gold');
+    const id = 'rl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    await set(marketRentRef(id), { id, owner: window.currentNick, title, price, address, desc, photo, status:'active', createdAt: Date.now() });
+    toast('✅ Объявление об аренде опубликовано','green');
+    qs('rlTitle').value=''; qs('rlPrice').value=''; qs('rlAddress').value=''; qs('rlDesc').value=''; qs('rlPhoto').value='';
+    renderRentListingsOnMarket();
+  };
+
+  async function renderRentListingsOnMarket(){
+    const snap = await get(marketRentRef());
+    const all = Object.values(snap.val()||{}).filter(r=>r.status==='active').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    // Inject above marketListings
+    const host = qs('marketListings'); if(!host) return;
+    let block = qs('marketRentBlock');
+    if(!block){
+      block = document.createElement('div');
+      block.id = 'marketRentBlock';
+      block.style.cssText = 'margin-bottom:14px;';
+      host.parentNode.insertBefore(block, host);
+    }
+    if(!all.length){ block.innerHTML=''; }
+    else block.innerHTML = `
+      <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:var(--gold);">🏘️ Здания в аренду</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${all.map(r=>`
+          <div style="background:var(--surface);border:1px solid rgba(251,191,36,.25);border-radius:var(--r-sm);padding:12px;">
+            ${r.photo?`<img src="${escHtml(r.photo)}" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:8px;" loading="lazy">`:''}
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+              <div style="min-width:0;flex:1;">
+                <div style="font-weight:900;font-size:14px;">${escHtml(r.title)}</div>
+                ${r.address?`<div style="font-size:12px;color:var(--muted);margin-top:2px;">📍 ${escHtml(r.address)}</div>`:''}
+                <div style="font-size:12px;color:var(--text);margin-top:6px;white-space:pre-wrap;">${escHtml(r.desc)}</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px;">Владелец: <b style="color:var(--primary);cursor:pointer;" onclick="openUserProfile('${jsEsc(r.owner)}')">${escHtml(r.owner)}</b></div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-weight:900;color:var(--gold);">${r.price.toLocaleString()}₽</div>
+                <div style="font-size:10px;color:var(--muted);">в неделю</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
+              <button class="btn btn-primary btn-sm" onclick="goToChat('${jsEsc(r.owner)}')" style="flex:1;min-width:120px;">💬 Написать</button>
+              ${r.owner===window.currentNick?`<button class="btn btn-red btn-sm" onclick="removeRentListing('${jsEsc(r.id)}')">🗑 Снять</button>`:''}
+            </div>
+          </div>`).join('')}
+      </div>
+    `;
+  }
+  window.removeRentListing = async function(id){
+    if(!confirm('Снять объявление?')) return;
+    await remove(marketRentRef(id));
+    renderRentListingsOnMarket();
+  };
+
+  // ═══════════════════════════════════════════
+  // INJECTION HOOKS — re-inject when sections show
+  // ═══════════════════════════════════════════
+  const _origNavTo = window.navTo;
+  window.navTo = function(id){
+    const r = _origNavTo ? _origNavTo.apply(this, arguments) : undefined;
+    try {
+      if(id==='profile'){ injectPassportUI(); setTimeout(renderPassportCard, 50); }
+      if(id==='adminPage'){ injectAdminUI(); }
+      if(id==='jobs'){ injectPoliceUI(); refreshPolicePanelVisibility(); }
+      if(id==='market'){ injectMarketRentUI(); renderRentListingsOnMarket(); }
+    } catch(e){ console.error('[KapaniPack v2 hook]', e); }
+    return r;
+  };
+
+  // Initial pass if user is already on one of these pages
+  setTimeout(()=>{
+    injectPassportUI(); injectAdminUI(); injectPoliceUI(); injectMarketRentUI();
+    refreshPolicePanelVisibility();
+    renderRentListingsOnMarket();
+  }, 1500);
+
+  console.log('[Kapani Pack v2] installed');
+});
+</script>
+
 </body>
 </html>
+
