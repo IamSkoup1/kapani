@@ -678,14 +678,18 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 /* Fix message actions appearing and buttons clickable */
 .msg-actions{
     pointer-events:auto;
-    display:none;
+    display:flex;
     gap:6px;
     flex-wrap:wrap;
     align-items:center;
     justify-content:flex-end;
     max-width:min(68%,100%);
     margin-top:2px;
+    opacity:0.6;
+    transition:opacity .15s;
 }
+.chat-msg.me .msg-actions{opacity:1;}
+.chat-msg.me:hover .msg-actions{opacity:1;}
 /* Chat date separator */
 .chat-date-separator{display:flex;align-items:center;justify-content:center;margin:10px 0;gap:8px;}
 .chat-date-separator span{font-size:11px;font-weight:800;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 12px;white-space:nowrap;}
@@ -12659,38 +12663,22 @@ try {
     });
   }
 
-  // ─── FIX iOS SAFARI MESSAGE ACTIONS ─────────────────────────────
-  // On iOS, use touchstart for long-press to show message actions
-  // instead of the always-visible hack (which causes touch interception)
-  if(iOS){
-    let _longPressTimer = null;
-    let _longPressEl = null;
-    document.addEventListener('touchstart', function(e){
-      const msgBody = e.target.closest('.chat-msg-body');
-      if(!msgBody) return;
-      const actions = msgBody.querySelector('.msg-actions');
+  // ─── MESSAGE ACTIONS: click on own bubble toggles action row ──
+  (function(){
+    let _actionTimer = null;
+    let _lastShown = null;
+    document.addEventListener('click', function(e){
+      const bubble = e.target.closest('.chat-bubble');
+      const msgEl = bubble && bubble.closest('.chat-msg.me');
+      if(!msgEl) return;
+      // Don't toggle if user clicked an action button itself
+      if(e.target.closest('.msg-action-btn,.edit-btns,.msg-edit-area')) return;
+      const actions = msgEl.querySelector('.msg-actions');
       if(!actions) return;
-      _longPressEl = actions;
-      _longPressTimer = setTimeout(() => {
-        if(_longPressEl){
-          _longPressEl.style.display = 'flex';
-          _longPressEl.style.opacity = '1';
-          _longPressEl.style.visibility = 'visible';
-          // Auto-hide after 4s
-          setTimeout(() => {
-            if(_longPressEl){ _longPressEl.style.display = ''; }
-            _longPressEl = null;
-          }, 4000);
-        }
-      }, 500);
-    }, { passive: true });
-    document.addEventListener('touchend', function(){
-      clearTimeout(_longPressTimer);
-    }, { passive: true });
-    document.addEventListener('touchmove', function(){
-      clearTimeout(_longPressTimer);
-    }, { passive: true });
-  }
+      // Already at full highlight — just leave it
+      e.stopPropagation();
+    }, { capture: false });
+  })();
 
   // ─── FORCE REPAINT AFTER TAPS (iOS stale-layer workaround) ──────
   if(iOS){
