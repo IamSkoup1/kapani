@@ -5327,14 +5327,18 @@ window.closeUserProfile=function(){
     const modal = qs('userProfileModal');
     modal.classList.remove('open');
     modal.style.pointerEvents = 'none';
-    // Delay hiding to allow close animation, then restore scroll
+    // Delay hiding to allow close animation, then restore scroll.
+    // IMPORTANT: unlockBodyScroll is called INSIDE the timeout so that on iOS
+    // the body position:fixed is removed only after the modal is display:none.
+    // Calling it earlier leaves a window where taps fall on the invisible modal
+    // layer instead of the tabs/nav below it.
     setTimeout(()=>{
         if(!modal.classList.contains('open')){
             modal.style.display='none';
             modal.style.pointerEvents = '';
         }
+        unlockBodyScroll();
     }, 350);
-    unlockBodyScroll();
     viewingProfileNick=null;
 };
 window.goToDmFromProfile=function(){if(!viewingProfileNick)return;const nick=viewingProfileNick;closeUserProfile();navTo('messages');setTimeout(()=>{switchMsgTab(1);setTimeout(()=>openDmChat(nick),200);},200);};
@@ -7034,6 +7038,10 @@ window.navTo=function(id){
     // iOS safety: force-unlock body scroll on every navigation (otherwise a stuck modal kills all taps on iPhone)
     unlockBodyScroll(true);
     window.scrollTo(0,0);
+    // iOS repaint fix: after toggling .active, force a layout flush so WebKit
+    // registers the new paint layer as interactive immediately. Without this,
+    // taps on the newly-shown section are swallowed (stale GPU layer).
+    if(el){ requestAnimationFrame(()=>{ void el.offsetHeight; el.style.pointerEvents=''; }); }
     if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
     if(id==='adminPage') renderAdmin();
     if(id==='kveExam') renderKveSection();
@@ -12440,6 +12448,34 @@ try {
     .ios-device #videoViewer.open {
       pointer-events: auto !important;
     }
+
+    /* ── Fix chat: isolation:isolate on #chatMessages/#dmMessages creates a
+         stacking context that confuses iOS WebKit hit-testing. Remove it on iOS
+         and ensure chat-input-row is always above the scroll container. ── */
+    .ios-device #chatMessages,
+    .ios-device #dmMessages,
+    .ios-device #newsDiscussionMessages {
+      isolation: auto !important;
+    }
+    .ios-device .chat-input-row {
+      position: relative !important;
+      z-index: 10 !important;
+      pointer-events: auto !important;
+    }
+    .ios-device .chat-input-row input,
+    .ios-device .chat-input-row button,
+    .ios-device .media-ico-btn {
+      pointer-events: auto !important;
+      touch-action: manipulation !important;
+      position: relative !important;
+      z-index: 10 !important;
+    }
+    /* ── Ensure the messages section itself never blocks taps ── */
+    .ios-device #messages.section.active,
+    .ios-device #messages.section.active .card,
+    .ios-device #messages.section.active .msg-panel.active {
+      pointer-events: auto !important;
+    }
   `;
   document.head.appendChild(style);
 
@@ -12452,10 +12488,14 @@ try {
         el.style.pointerEvents = 'none';
       }
     });
-    // Also ensure closed modals don't block
+    // Also ensure closed modals don't block.
+    // Check classList.contains('open') — NOT display style — because display:none
+    // is applied 350ms after 'open' class is removed (animation delay). Checking
+    // display would miss the 0–350ms window where modal is invisible but
+    // pointer-events:none hasn't been applied yet, blocking all taps below.
     ['userProfileModal','historyModal','imgViewer','videoViewer','vcModal'].forEach(id => {
       const el = document.getElementById(id);
-      if(el && !el.classList.contains('open') && el.style.display === 'none'){
+      if(el && !el.classList.contains('open')){
         el.style.pointerEvents = 'none';
       }
     });
