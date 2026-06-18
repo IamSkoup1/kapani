@@ -906,7 +906,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card">
         <div class="card-title">🆘 Полезное</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <button class="btn btn-ghost" onclick="openEmergencyNumbers()">Номера экстренных служб</button>
+            <button class="btn btn-red" onclick="openCallModal()">📞 Вызов</button>
             <button class="btn btn-gold" onclick="openAtmRequestModal()">Банкомат</button>
             <button class="btn btn-primary" style="grid-column:1/-1;" onclick="openInfoModal()">ℹ️ Информация</button>
         </div>
@@ -931,6 +931,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         </div>
     </div>
     <div id="adminQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-gold" onclick="navTo('adminPage')">👑 Открыть Мэрию</button></div>
+    <div id="dutyQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-red" onclick="navTo('dutyPage')">🛡 Панель КСБ / Полиции<span class="bn-badge" id="dutyCallsBadge" style="position:static;display:none;margin-left:8px;"></span></button></div>
     <div class="card" style="padding:12px;">
         <div class="card-title" style="margin-bottom:12px;">🗺 Карта поселка</div>
         <iframe class="map-frame" style="height:280px;" src="https://www.google.com/maps/d/embed?mid=1uYqkCigRmRXX6WOjTjIH01PsF9Na2xw&hl=ru&ll=52.629519493712436,38.41743147652263&z=17" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -1266,6 +1267,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
+            <div style="margin-bottom:8px;">✅ <b>Работа на 3 должностях</b> одновременно (включая бизнес)</div>
             <div style="margin-bottom:8px;">✅ <b>4 объявления</b> в неделю на маркетплейсе</div>
             <div style="margin-bottom:8px;">✅ <b>5% скидка</b> на такси и доставку</div>
             <div style="margin-bottom:8px;">✅ <b>3 бизнеса одновременно</b></div>
@@ -1289,6 +1291,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
+            <div style="margin-bottom:8px;">✅ <b>Работа на 4 должностях</b> одновременно (включая бизнес)</div>
             <div style="margin-bottom:8px;">✅ <b>8 объявлений</b> в неделю на маркетплейсе</div>
             <div style="margin-bottom:8px;">✅ <b>10% скидка</b> на такси, доставку и маркет</div>
             <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 20%</b> на аренду зданий</div>
@@ -1316,6 +1319,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
+            <div style="margin-bottom:8px;">✅ <b>Работа на 5 должностях</b> одновременно (включая бизнес)</div>
             <div style="margin-bottom:8px;">✅ <b>Неограниченные объявления</b></div>
             <div style="margin-bottom:8px;">✅ <b>20% скидка</b> на такси, доставку и маркет</div>
             <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 35%</b> на аренду зданий</div>
@@ -1636,7 +1640,28 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     </div>
 </div>
 
+<!-- DUTY PAGE (КСБ / ПОЛИЦИЯ) -->
+<div id="dutyPage" class="section">
+    <div class="card" style="border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);">
+        <div class="card-title" style="color:var(--red);">🛡 Панель КСБ / 👮 Полиции</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.55;">Здесь сотрудники КСБ и полиции выписывают штрафы и принимают вызовы жителей.</div>
+    </div>
+    <div class="card" style="border-color:rgba(248,113,113,.3);">
+        <div class="card-title" style="color:var(--red);">💸 Выписать штраф</div>
+        <input type="text" id="dutyFineNick" placeholder="Никнейм нарушителя" maxlength="40">
+        <input type="text" id="dutyFineReason" placeholder="Причина штрафа" maxlength="200" style="margin-top:8px;">
+        <input type="number" id="dutyFineAmt" placeholder="Размер штрафа (₽)" min="1" step="1" style="margin-top:8px;">
+        <button class="btn btn-red" style="margin-top:10px;" onclick="submitDutyFine()">💸 Выписать штраф</button>
+    </div>
+    <div class="card">
+        <div class="card-title">📞 Вызовы жителей</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Новые вызовы появляются сверху. После выезда нажмите «Закрыть вызов».</div>
+        <div id="dutyCalls"><div style="color:var(--muted);font-size:13px;">Нет активных вызовов</div></div>
+    </div>
+</div>
+
 <!-- ADMIN PAGE -->
+
 <div id="adminPage" class="section">
     <div class="card" style="border-color:rgba(251,191,36,.3);background:var(--gold-dim);">
         <div class="card-title" style="color:var(--gold);">👑 Мэрия</div>
@@ -3101,7 +3126,29 @@ function attachListeners() {
     onValue(aRef,aFn); listeners.apps={ref:aRef,fn:aFn};
 
     const cRef=chatRef();
-    const cFn=(snap)=>{lastChatMsgs=snap.val()||{};if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);};
+    const cFn=(snap)=>{
+        const data = snap.val()||{};
+        // Уведомления о новых сообщениях в общем чате
+        const viewingChat = (curPage==='messages' && document.querySelector('#msgPanel0.active'));
+        if(window._chatNotifInit){
+            Object.entries(data).forEach(([id, m])=>{
+                if(!m || window._chatSeenKeys[id]) return;
+                if(m.nick && m.nick !== currentNick){
+                    const preview = m.text ? m.text : (m.msgType==='image'?'📷 Фото':(m.msgType==='voice'?'🎤 Голосовое':(m.msgType?'📎 Вложение':'')));
+                    if(!viewingChat){
+                        toast(`💬 ${escHtml(m.nick)}: ${escHtml(String(preview).slice(0,40))}`, 'green');
+                        const b=qs('dmBadge'); // общий бейдж на вкладке Чаты
+                        if(b){ b.textContent='•'; b.style.display='block'; }
+                    }
+                }
+            });
+        }
+        window._chatSeenKeys = {}; Object.keys(data).forEach(k=>window._chatSeenKeys[k]=true);
+        window._chatNotifInit = true;
+        if(viewingChat){ const b=qs('dmBadge'); if(b) b.style.display='none'; }
+        lastChatMsgs = data;
+        if(viewingChat) renderChat(lastChatMsgs);
+    };
     onValue(cRef,cFn); listeners.chat={ref:cRef,fn:cFn};
     const chatTypingRef = ref(db, 'typing/chat');
     const chatTypingFn = (snap) => {
@@ -3405,8 +3452,67 @@ function updateHeader(u) {
     const depBtn=qs('deputySessionQuickBtn'); if(depBtn) depBtn.style.display=hasMunicipalJob(u,'Депутат')?'block':'none';
     // Блок КСБ-штрафов
     const ksbFineSection=qs('ksbFineSection'); if(ksbFineSection) ksbFineSection.style.display=(hasMunicipalJob(u,'КСБ')||hasMunicipalJob(u,'Полицейский'))?'block':'none';
+    // Кнопка панели КСБ/Полиции на главной
+    const isDuty = hasMunicipalJob(u,'КСБ')||hasMunicipalJob(u,'Полицейский')||u.job==='КСБ'||u.job==='Полицейский'||currentNick===ADMIN;
+    window._isDutyOfficer = isDuty;
+    const dutyBtn=qs('dutyQuickBtn'); if(dutyBtn) dutyBtn.style.display=isDuty?'block':'none';
+    if(isDuty) startCallsListener();
 }
+
+// ─── ВЫЗОВЫ (КСБ / Полиция) ───────────────
+let _callsListenerStarted = false;
+let _lastCalls = {};
+let _callsSeen = false;
+function startCallsListener(){
+    if(_callsListenerStarted) return;
+    _callsListenerStarted = true;
+    const cRef = ref(db,'calls');
+    onValue(cRef, (snap)=>{
+        const data = snap.val() || {};
+        // Найти новые активные вызовы (по сравнению с прошлым снимком)
+        if(_callsSeen){
+            Object.entries(data).forEach(([id, c])=>{
+                if(!c || c.status==='closed') return;
+                if(!_lastCalls[id] && c.from !== currentNick){
+                    toast(`📞 Новый вызов: ${escHtml(c.name||'?')} — ${escHtml((c.desc||'').slice(0,40))}`, 'red');
+                    try{ if(window._iosAudioCtx){} }catch(e){}
+                }
+            });
+        }
+        _lastCalls = data;
+        _callsSeen = true;
+        const active = Object.entries(data).filter(([,c])=>c && c.status!=='closed');
+        const badge = qs('dutyCallsBadge');
+        if(badge){ badge.textContent = active.length>0?active.length:''; badge.style.display = active.length>0?'inline-block':'none'; }
+        if(curPage==='dutyPage') renderDutyCalls(data);
+    });
+}
+function renderDutyCalls(data){
+    const host = qs('dutyCalls'); if(!host) return;
+    data = data || _lastCalls || {};
+    const active = Object.entries(data)
+        .filter(([,c])=>c && c.status!=='closed')
+        .sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+    if(!active.length){ host.innerHTML = '<div style="color:var(--muted);font-size:13px;">Нет активных вызовов</div>'; return; }
+    host.innerHTML = active.map(([id,c])=>`
+        <div style="border:1px solid rgba(248,113,113,.3);background:rgba(248,113,113,.06);border-radius:14px;padding:14px;margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <div style="font-weight:900;font-size:14px;color:var(--red);">📞 ${escHtml(c.name||'Без имени')}</div>
+                <div style="font-size:11px;color:var(--muted);">${escHtml(c.time||'')}</div>
+            </div>
+            <div style="font-size:13px;margin-bottom:4px;"><b>📍 Адрес:</b> ${escHtml(c.address||'—')}</div>
+            <div style="font-size:13px;margin-bottom:8px;white-space:pre-wrap;"><b>📝</b> ${escHtml(c.desc||'')}</div>
+            ${c.photo?`<img src="${escHtml(c.photo)}" onclick="openImgViewer('${jsEsc(c.photo)}')" style="width:100%;border-radius:12px;margin-bottom:8px;max-height:240px;object-fit:cover;cursor:pointer;">`:''}
+            <button class="btn btn-primary btn-sm" onclick="closeDutyCall('${jsEsc(id)}')">✅ Закрыть вызов</button>
+        </div>
+    `).join('');
+}
+window.closeDutyCall = async function(id){
+    try{ await update(ref(db,`calls/${id}`), { status:'closed', closedBy: currentNick, closedAt: Date.now() }); toast('✅ Вызов закрыт','green'); }
+    catch(e){ toast('❌ Ошибка','red'); }
+};
 function updateHeader_balance(u){if(!u)return;qs('hBal').textContent=(u.balance||0).toLocaleString();if(curPage==='bank')renderSavingsDisplay();}
+
 window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const u=snap.val();if(hasMunicipalJob(u,'Водитель'))navTo('driverPage');else if(hasMunicipalJob(u,'Доставщик'))navTo('deliveryPage');else if(hasMunicipalJob(u,JOB_JANITOR))navTo('janitorPage');});};
 function updateBadge(count){const badge=qs('notifyBadge');badge.textContent=count>0?(count>9?'9+':count):'';badge.style.display=count>0?'block':'none';}
 
@@ -3604,7 +3710,7 @@ window.openImgViewer=function(src){
     img.style.transform='scale(1) translate(0px,0px)';
     const pct=qs('imgZoomPct');if(pct)pct.textContent='100%';
     lockBodyScroll();
-    qs('imgViewer').classList.add('open');
+    const _iv=qs('imgViewer'); _iv.style.pointerEvents='auto'; _iv.classList.add('open');
     // Init pinch-to-zoom
     _initImgPinchZoom(img);
 };
@@ -3719,7 +3825,7 @@ window.openVideoViewer=function(src){
     v.muted = false;
     v.volume = 1;
     lockBodyScroll();
-    qs('videoViewer').classList.add('open');
+    const _vv=qs('videoViewer'); _vv.style.pointerEvents='auto'; _vv.classList.add('open');
     v.play().catch(()=>{});
 };
 window.closeVideoViewer=function(){
@@ -4676,14 +4782,54 @@ async function renderRecentTransfers(){
         return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:20px;">${tx.type==='in'?'💰':'💸'}</div><div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:12px;line-height:1.35;">${title}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${escHtml(tx.date||'')} · ${escHtml(tx.time||'')}</div></div><div style="font-weight:900;font-size:14px;white-space:nowrap;${tx.type==='in'?'color:var(--primary)':'color:var(--red)'};">${tx.type==='in'?'+':'−'}${tx.amt}₽</div></div>`;
     }).join('');
 }
-window.openEmergencyNumbers = function(){
-    const m = qs('emergencyModal');
-    if(m) m.style.display = 'flex';
+let _callPhotoData = null;
+window.openCallModal = function(){
+    const m = qs('callModal'); if(!m) return;
+    _callPhotoData = null;
+    const nameEl = qs('callName');
+    if(nameEl && !nameEl.value){
+        const u = allUsersCache[currentNick];
+        nameEl.value = (u && (u.displayName || u.name)) || currentNick || '';
+    }
+    const prev = qs('callPhotoPreview'); if(prev){ prev.style.display='none'; prev.src=''; }
+    m.style.display = 'flex';
 };
-window.closeEmergencyNumbers = function(){
-    const m = qs('emergencyModal');
-    if(m) m.style.display = 'none';
+window.closeCallModal = function(){
+    const m = qs('callModal'); if(m) m.style.display = 'none';
 };
+window.handleCallPhoto = async function(e){
+    const file = e.target.files[0]; if(!file) return;
+    toast('📷 Сжимаем фото...','gold');
+    try{
+        const dataUrl = await compressImage(file, 1000, 0.82);
+        _callPhotoData = dataUrl;
+        const prev = qs('callPhotoPreview');
+        if(prev){ prev.src = dataUrl; prev.style.display = 'block'; }
+    }catch(err){ toast('❌ Не удалось обработать фото','red'); }
+    e.target.value = '';
+};
+window.submitCall = async function(){
+    const name = (qs('callName')?.value||'').trim();
+    const address = (qs('callAddress')?.value||'').trim();
+    const desc = (qs('callDesc')?.value||'').trim();
+    if(!name) return toast('⚠️ Укажите ваше имя','gold');
+    if(!address) return toast('⚠️ Укажите адрес','gold');
+    if(!desc) return toast('⚠️ Опишите, что произошло','gold');
+    const call = { name, address, desc, from: currentNick||null, status:'new', time: nowTime(), createdAt: Date.now() };
+    if(_callPhotoData) call.photo = _callPhotoData;
+    try{
+        await push(ref(db,'calls'), call);
+        if(qs('callDesc')) qs('callDesc').value='';
+        if(qs('callAddress')) qs('callAddress').value='';
+        _callPhotoData = null;
+        const prev = qs('callPhotoPreview'); if(prev){ prev.style.display='none'; prev.src=''; }
+        closeCallModal();
+        toast('✅ Вызов отправлен! КСБ и полиция уведомлены.','green');
+    }catch(err){ console.error('call error', err); toast('❌ Не удалось отправить вызов','red'); }
+};
+// Совместимость со старыми вызовами
+window.openEmergencyNumbers = window.openCallModal;
+window.closeEmergencyNumbers = window.closeCallModal;
 window.openInfoModal = function(){
     const m = qs('infoModal');
     if(m) m.style.display = 'flex';
@@ -7073,6 +7219,7 @@ window.navTo=function(id){
     if(id==='bizOwnerPanel') renderBizOwnerPanel();
     if(id==='kveExam') {} // static content
     if(id==='deputySession') { renderDeputyProposals(); }
+    if(id==='dutyPage') { startCallsListener(); renderDutyCalls(_lastCalls); }
     if(id==='deliveryOrderPage') { renderMyDeliveryOrders(); if(typeof renderDeliveryOrderOptions==='function') renderDeliveryOrderOptions(true); else updateDeliverySourceHint(); }
     if(id==='events') renderEventsSection();
     if(id==='eventDetail') {} // handled by openEventDetail
@@ -11921,31 +12068,9 @@ async function renderDeputyProposals() {
 // ═══════════════════════════════════════════════════════
 // 🛡 КСБ — ВЫПИСЫВАНИЕ ШТРАФОВ
 // ═══════════════════════════════════════════════════════
-window.ksbFineWorker = async function() {
-    const snap = await get(userRef(currentNick));
-    if (!snap.exists()) return;
-    const u = snap.val();
-    const isKsb = hasMunicipalJob(u,'КСБ') || u.job === 'КСБ';
-    const isPolice = hasMunicipalJob(u,'Полицейский') || u.job === 'Полицейский';
-    if (!isKsb && !isPolice && currentNick !== ADMIN) return toast('🚫 Только сотрудники КСБ и полиции могут выписывать штрафы', 'red');
-    const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
-    const target = prompt('Никнейм нарушителя:');
-    if (!target || !target.trim()) return;
-    const reason = prompt('Причина штрафа:');
-    if (!reason || !reason.trim()) return toast('⚠️ Укажите причину', 'gold');
-    const amtStr = prompt('Размер штрафа (₽):');
-    const amt = parseInt(amtStr);
-    if (!amt || amt <= 0) return toast('⚠️ Укажите корректную сумму', 'gold');
-    const tSnap = await get(userRef(target.trim()));
-    if (!tSnap.exists()) return toast('❌ Пользователь не найден', 'red');
-    const tUser = tSnap.val();
-    await update(userRef(target.trim()), { balance: (tUser.balance || 0) - amt });
-    await logTx(target.trim(), { type: 'out', who: `${issuerRole} (${currentNick})`, amt, desc: `Штраф: ${reason}` });
-    const emoji = isPolice ? '👮' : '🛡';
-    await pushNotification(target.trim(), `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${currentNick})`, 'money');
-    await pushNotification(ADMIN, `${emoji} ${issuerRole} ${currentNick} оштрафовал ${target.trim()} на ${amt}₽ — ${reason}`, 'system');
-    toast(`✅ Штраф ${amt}₽ выписан ${target.trim()}`, 'green');
-};
+// Старая prompt-версия удалена — штраф выписывается формой на dutyPage
+// (см. submitDutyFine и window.ksbFineWorker = navTo('dutyPage') ниже).
+window.ksbFineWorker = function(){ if(typeof navTo==='function') navTo('dutyPage'); };
 
 // ═══════════════════════════════════════════════════════
 // 🚚 ДОСТАВКА ИЗ БИЗНЕСА / МАРКЕТПЛЕЙСА
@@ -12585,18 +12710,23 @@ try {
 </script>
 
 <!-- EMERGENCY NUMBERS MODAL -->
-<div id="emergencyModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeEmergencyNumbers()">
-    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);">
+<div id="callModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeCallModal()">
+    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <div style="font-size:18px;font-weight:900;">Номера экстренных служб</div>
-            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeEmergencyNumbers()">✕</button>
+            <div style="font-size:18px;font-weight:900;">📞 Вызов КСБ / Полиции</div>
+            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeCallModal()">✕</button>
         </div>
-        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.55;">
-            <div style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);">Номер полиции и скорой помощи: <b style="color:var(--primary)">+79803510933</b></div>
-            <div style="padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--surface2);">Номер полиции (запасной): <b style="color:var(--gold)">+79191632209</b></div>
-        </div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px;">Опишите, что случилось. Вызов получат сотрудники КСБ и полиции.</div>
+        <input type="text" id="callName" placeholder="Ваше имя" maxlength="60">
+        <input type="text" id="callAddress" placeholder="Адрес / где вы находитесь" maxlength="120" style="margin-top:8px;">
+        <textarea id="callDesc" placeholder="Что произошло?" maxlength="500" rows="3" style="margin-top:8px;width:100%;resize:vertical;"></textarea>
+        <label class="file-upload-btn" for="callPhotoFile" style="margin-top:8px;">📷 Прикрепить фото из галереи</label>
+        <input type="file" id="callPhotoFile" accept="image/*" style="display:none;" onchange="handleCallPhoto(event)">
+        <img id="callPhotoPreview" style="display:none;width:100%;border-radius:14px;margin-top:8px;max-height:220px;object-fit:cover;">
+        <button class="btn btn-red" style="margin-top:12px;" onclick="submitCall()">📞 Отправить вызов</button>
     </div>
 </div>
+
 
 <!-- ATM REQUEST MODAL -->
 <div id="atmRequestModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeAtmRequestModal()">
@@ -12947,13 +13077,14 @@ ready(function(){
     const bike = lic.bike ? '✅ Есть' : '❌ Нет';
     const scooter = lic.scooter ? '✅ Есть' : '❌ Нет';
     const createdStr = u.createdAt ? new Date(u.createdAt).toLocaleDateString('ru-RU') : '—';
+    const siteNick = (u && u.displayName && String(u.displayName).trim()) || (u && u.name && String(u.name).trim()) || '—';
     body.style.textAlign = 'left';
     body.style.color = 'var(--text)';
     body.innerHTML = `
       <div style="background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.25);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5;">
         <div><span style="color:var(--muted);">Имя:</span> <b>${escHtml(p.firstName)}</b></div>
         <div><span style="color:var(--muted);">Фамилия:</span> <b>${escHtml(p.lastName)}</b></div>
-        <div><span style="color:var(--muted);">Ник:</span> <b style="color:var(--primary);">${escHtml(nick)}</b></div>
+        <div><span style="color:var(--muted);">Никнейм на сайте:</span> <b style="color:var(--primary);">${escHtml(siteNick)}</b></div>
         <div><span style="color:var(--muted);">Дата рождения:</span> <b>${escHtml(p.dob)}</b></div>
         <div><span style="color:var(--muted);">Аккаунт создан:</span> <b>${createdStr}</b></div>
         <div><span style="color:var(--muted);">Текущие работы:</span> <b>${jobsList}</b></div>
@@ -13394,8 +13525,8 @@ ready(function(){
     }
   };
 
-  // Override ksbFineWorker — lookup target by DISPLAY NAME, not login
-  window.ksbFineWorker = async function(){
+  // Штраф через форму на странице (без prompt — надёжно на телефоне)
+  window.submitDutyFine = async function(){
     const meSnap = await get(userRef(window.currentNick));
     if(!meSnap.exists()) return;
     const me = meSnap.val();
@@ -13404,14 +13535,19 @@ ready(function(){
     if(!isKsb && !isPolice && window.currentNick !== ADMIN)
       return toast('🚫 Только КСБ и полиция могут выписывать штрафы','red');
     const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
-    const nameInput = prompt('Отображаемое имя нарушителя:');
-    if(!nameInput || !nameInput.trim()) return;
-    const target = await findUserByPublicName(nameInput.trim());
-    if(!target || !target.nick) return toast('❌ Житель с таким именем не найден','red');
-    const reason = prompt('Причина штрафа:');
-    if(!reason || !reason.trim()) return toast('⚠️ Укажите причину','gold');
-    const amt = parseInt(prompt('Размер штрафа (₽):'),10);
+    const nameInput = (qs('dutyFineNick')?.value||'').trim();
+    const reason = (qs('dutyFineReason')?.value||'').trim();
+    const amt = parseInt(qs('dutyFineAmt')?.value, 10);
+    if(!nameInput) return toast('⚠️ Укажите никнейм нарушителя','gold');
+    if(!reason) return toast('⚠️ Укажите причину штрафа','gold');
     if(!amt || amt<=0) return toast('⚠️ Укажите корректную сумму','gold');
+    // Поиск по отображаемому имени, затем по логину
+    let target = await findUserByPublicName(nameInput);
+    if(!target || !target.nick){
+      const directSnap = await get(userRef(nameInput));
+      if(directSnap.exists()) target = { nick: nameInput, ...directSnap.val() };
+    }
+    if(!target || !target.nick) return toast('❌ Житель с таким именем не найден','red');
     const tnick = target.nick;
     const tSnap = await get(userRef(tnick));
     if(!tSnap.exists()) return toast('❌ Пользователь не найден','red');
@@ -13422,8 +13558,13 @@ ready(function(){
     const targetLabel = (target.displayName && target.displayName.trim()) || tnick;
     await pushNotification(tnick, `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${window.currentNick})`, 'money');
     await pushNotification(ADMIN, `${emoji} ${issuerRole} ${window.currentNick} оштрафовал ${targetLabel} на ${amt}₽ — ${reason}`, 'system');
+    if(qs('dutyFineNick')) qs('dutyFineNick').value='';
+    if(qs('dutyFineReason')) qs('dutyFineReason').value='';
+    if(qs('dutyFineAmt')) qs('dutyFineAmt').value='';
     toast(`✅ Штраф ${amt}₽ выписан ${targetLabel}`,'green');
   };
+  // Старые кнопки «Выписать штраф» теперь ведут на панель с формой
+  window.ksbFineWorker = function(){ navTo('dutyPage'); };
 
   window.adminFireWorker = async function(){
     if(window.currentNick !== ADMIN) return toast('🚫 Только мэр','red');
