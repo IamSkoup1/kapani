@@ -116,7 +116,22 @@ select option{background:#1a2332;}
 .btn-red{background:linear-gradient(135deg,var(--red),#dc2626);color:#fff;}
 .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 .btn-sm{padding:10px 16px;font-size:12px;width:auto;}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
+/* ─── GLOBAL BUTTON IMPROVEMENTS ─────────────────────── */
+/* Prevent ghost-tap on iOS by using pointer-events none while disabled */
+.btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none;}
+/* Faster tap response on all buttons */
+.btn,.bn-item,.quick-card,.msg-tab,.market-tab,.biz-tab,.news-tab{
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    user-select:none;
+    -webkit-user-select:none;
+}
+/* Reduce animation jank on low-end devices */
+@media (prefers-reduced-motion: reduce) {
+    .section{animation:none;}
+    .quick-card:hover,.biz-card:hover{transform:none;}
+}
+
 .stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
 .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 12px;text-align:center;}
 .stat-box .sv{font-size:20px;font-weight:900;color:var(--primary);}
@@ -1694,7 +1709,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         <input type="text" id="dutyFineNick" placeholder="Никнейм нарушителя" maxlength="40">
         <input type="text" id="dutyFineReason" placeholder="Причина штрафа" maxlength="200" style="margin-top:8px;">
         <input type="number" id="dutyFineAmt" placeholder="Размер штрафа (₽)" min="1" step="1" style="margin-top:8px;">
-        <button class="btn btn-red" style="margin-top:10px;" onclick="submitDutyFine()">💸 Выписать штраф</button>
+        <button class="btn btn-red" id="dutyFineSubmitBtn" style="margin-top:10px;" onclick="submitDutyFine()">💸 Выписать штраф</button>
     </div>
     <div class="card">
         <div class="card-title">📞 Вызовы жителей</div>
@@ -4582,7 +4597,13 @@ window.geocodeTo=async function(){const q=qs('tTo').value.trim();if(!q)return;co
 async function geocodeAddress(query){try{const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&accept-language=ru`);const d=await res.json();if(d.length)return{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)};}catch(e){}return null;}
 
 // ─── TAXI ORDER ───────────────────────────
+let _orderTaxiBusy = false;
 window.orderTaxi=async function(){
+    if(_orderTaxiBusy) return toast('⏳ Такси уже вызывается…','gold');
+    _orderTaxiBusy = true;
+    const taxiBtn = qs('btnCallTaxi');
+    if(taxiBtn){ taxiBtn.disabled = true; taxiBtn.textContent = '⏳ Оформляем…'; }
+    try {
     if(!await requireSpendable())return;
     const from=qs('tFrom').value.trim(),to=qs('tTo').value.trim(),basePrice=parseInt(qs('tPrice').textContent)||0,dist=parseFloat(qs('tDist').textContent)||0;
     if(!from||!to)return toast('⚠️ Укажите маршрут','gold');if(basePrice<=0)return toast('⚠️ Выберите точки','gold');
@@ -4635,6 +4656,10 @@ window.orderTaxi=async function(){
         console.error('Ошибка заказа такси:', error);
         const message = error.message || 'Ошибка при вызове такси';
         toast(`❌ ${message}`,'red');
+    }
+    } finally {
+        _orderTaxiBusy = false;
+        if(taxiBtn && taxiBtn.isConnected){ taxiBtn.disabled = false; taxiBtn.textContent = '🛵 Вызвать такси'; }
     }
 };
 
@@ -4716,7 +4741,11 @@ async function initClientTrackingMap(orderId){
     onValue(oRef,fn);clientTrackListener={ref:oRef,fn};
 }
 
+let _payOrderBusy = false;
 window.payOrder=async function(id){
+    if(_payOrderBusy) return toast('⏳ Оплата уже выполняется…','gold');
+    _payOrderBusy = true;
+    try {
     const snap=await get(orderRef(id));if(!snap.exists())return toast('❌ Заказ не найден','red');const o=snap.val();
     if(!o.worker)return toast('⚠️ Нет исполнителя','gold');
     
@@ -4732,6 +4761,9 @@ window.payOrder=async function(id){
         console.error('Ошибка оплаты заказа:', error);
         const message = error.message || 'Ошибка при оплате заказа';
         toast(`❌ ${message}`,'red');
+    }
+    } finally {
+        _payOrderBusy = false;
     }
 };
 window.cancelOrder=async function(id){
@@ -6748,7 +6780,11 @@ window.approveApp=async function(id,ok){
     }
     await update(appRef(id),{status:'done'});
 };
+let _adminMoneyBusy = false;
 window.adminMoney=async function(){
+    if(_adminMoneyBusy) return toast('⏳ Операция уже выполняется…','gold');
+    _adminMoneyBusy = true;
+    try {
     const target=qs('adminTarget').value,amt=parseInt(qs('adminAmt').value)||0;
     if(!target)return toast('⚠️ Выберите жителя','gold');if(amt===0)return toast('⚠️ Сумма','gold');
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
@@ -6783,6 +6819,9 @@ window.adminMoney=async function(){
         console.error('Ошибка админской операции:', error);
         const message = error.message || 'Ошибка при выполнении операции';
         toast(`❌ ${message}`,'red');
+    }
+    } finally {
+        _adminMoneyBusy = false;
     }
 };
 window.adminFineWorker=async function(){
@@ -6987,7 +7026,11 @@ window.handleNewsVideo = async function(e){
     }
     e.target.value = '';
 };
+let _publishNewsBusy = false;
 window.publishNews = async function(){
+    if(_publishNewsBusy) return toast('⏳ Публикация уже выполняется…','gold');
+    _publishNewsBusy = true;
+    try {
     const scope = qs('newsScope') ? qs('newsScope').value : currentNewsTab;
     if(!canPublishNews(scope)) return toast(scope === 'lands' ? '❌ Только Денис может публиковать новости Капанёвских земель' : '❌ Только Денис и Журналисты могут публиковать новости', 'red');
     const title = qs('newsTitle').value.trim();
@@ -7024,6 +7067,9 @@ window.publishNews = async function(){
     const nvv = qs('newsVideoVid'); if(nvv){ nvv.pause(); nvv.removeAttribute('src'); nvv.load(); }
     const nvf = qs('newsVideoFile'); if(nvf) nvf.value = '';
     renderNews();
+    } finally {
+        _publishNewsBusy = false;
+    }
 };
 window.deleteNews = async function(id){
     if(!confirm('Удалить эту новость?')) return;
@@ -9195,7 +9241,11 @@ window.openBizApplyModal = async function(){
     qs('bizApplyModal').style.display = 'block';
 };
 window.closeBizApplyModal = function(){ qs('bizApplyModal').style.display='none'; };
+let _submitBizApplyBusy = false;
 window.submitBizApply = async function(){
+    if(_submitBizApplyBusy) return toast('⏳ Заявка уже отправляется…','gold');
+    _submitBizApplyBusy = true;
+    try {
     const name = (qs('bapName')?.value||'').trim();
     const desc = (qs('bapDesc')?.value||'').trim();
     const address = (qs('bapAddress')?.value||'').trim();
@@ -9227,6 +9277,9 @@ window.submitBizApply = async function(){
     closeBizApplyModal();
     toast('📋 Заявка отправлена в мэрию!', 'green');
     if(curPage==='bizOwnerPanel') renderBizOwnerPanel();
+    } finally {
+        _submitBizApplyBusy = false;
+    }
 };
 
 // ─── BIZ DELETE REQUEST ───────────────────────
@@ -9516,11 +9569,10 @@ window.openBizDetail = async function(bizId){
     // Roles tab
     renderBizDetailRoles(roles, employees);
 
-    // Orders tab
-    renderBizDetailOrders();
-
     // Products tab
     renderBizDetailProducts(b.products||{}, b, isOwner);
+
+    // Orders tab (load once)
     renderBizDetailOrders();
 
     // Orders tab: staff see all orders, clients see their own
@@ -9699,7 +9751,11 @@ window.clearBizCart = function(bizId){
     bizCarts[bizId] = {};
     if(currentBizDetailData && currentBizId === bizId) renderBizDetailProducts(currentBizDetailData.products||{}, currentBizDetailData, currentBizDetailData.owner===currentNick);
 };
+let _checkoutBizCartBusy = false;
 window.checkoutBizCart = async function(bizId){
+    if(_checkoutBizCartBusy) return toast('⏳ Оплата уже выполняется…','gold');
+    _checkoutBizCartBusy = true;
+    try {
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
     const b = snap.val();
     const cart = getBizCart(bizId);
@@ -9749,6 +9805,9 @@ window.checkoutBizCart = async function(bizId){
             switchBizDetailTab(3);
             renderBizDetailOrders();
         }
+    }
+    } finally {
+        _checkoutBizCartBusy = false;
     }
 };
 window.confirmBizOrderReceipt = async function(bizId, orderId, side){
@@ -10964,8 +11023,14 @@ window.closeTerminal = function(){
     qs('terminalOverlay').classList.remove('open');
     _terminalBizId = null; _terminalAmt = 0; _terminalDesc = '';
 };
+let _terminalPayBusy = false;
 window.terminalPay = async function(){
+    if(_terminalPayBusy) return toast('⏳ Оплата уже выполняется…','gold');
     if(!_terminalBizId || !_terminalAmt) return;
+    _terminalPayBusy = true;
+    const payBtn = document.querySelector('#terminalOverlay .btn-primary');
+    if(payBtn){ payBtn.disabled = true; payBtn.textContent = '⏳ Оплата…'; }
+    try {
     if(!await requireSpendable()) return;
     const uSnap = await get(userRef(currentNick)); const u = uSnap.val();
     if((u.balance||0) < _terminalAmt) return toast('❌ Недостаточно средств','red');
@@ -10985,10 +11050,14 @@ window.terminalPay = async function(){
     _terminalBizId = null; _terminalAmt = 0; _terminalDesc = '';
     if(qs('terminalAmtInput')) qs('terminalAmtInput').value='';
     if(qs('terminalDescInput')) qs('terminalDescInput').value='';
+    } finally {
+        _terminalPayBusy = false;
+        if(payBtn && payBtn.isConnected){ payBtn.disabled = false; payBtn.textContent = '✅ Оплатить'; }
+    }
 };
 
 
-const _loadingTimeout=setTimeout(()=>hideLoading(),2500);
+const _loadingTimeout=setTimeout(()=>hideLoading(),1500);
 function hideLoadingSafe(){clearTimeout(_loadingTimeout);hideLoading();}
 window.addEventListener('load', ()=>{
     setTimeout(hideLoadingSafe, 300);
@@ -12266,7 +12335,13 @@ window.renderDeliveryOrderOptions = async function(forceFetch = false) {
     updateDeliverySummary();
 };
 
+let _placeDeliveryOrderBusy = false;
 window.placeDeliveryOrder = async function() {
+    if (_placeDeliveryOrderBusy) return toast('⏳ Заказ уже размещается…','gold');
+    _placeDeliveryOrderBusy = true;
+    const placeBtn = document.querySelector('button[onclick*="placeDeliveryOrder"]');
+    if(placeBtn){ placeBtn.disabled = true; placeBtn.textContent = '⏳ Размещение…'; }
+    try {
     if (!await requireSpendable()) return;
     const source = qs('deliveryOrderSource')?.value || 'business';
     const addr = (qs('deliveryOrderAddr')?.value || '').trim();
@@ -12355,6 +12430,10 @@ window.placeDeliveryOrder = async function() {
 
     toast(`✅ Заказ на доставку размещён! ${summaryText}`, 'green');
     renderMyDeliveryOrders();
+    } finally {
+        _placeDeliveryOrderBusy = false;
+        if(placeBtn && placeBtn.isConnected){ placeBtn.disabled = false; placeBtn.textContent = '📤 Разместить заказ на доставку'; }
+    }
 };
 
 async function renderMyDeliveryOrders() {
@@ -13559,7 +13638,12 @@ ready(function(){
   };
 
   // Штраф через форму на странице (без prompt — надёжно на телефоне)
+  let _submitDutyFineBusy = false;
   window.submitDutyFine = async function(){
+    if(_submitDutyFineBusy) return toast('⏳ Штраф уже отправляется…','gold');
+    _submitDutyFineBusy = true;
+    const fineBtn = qs('dutyFineSubmitBtn');
+    if(fineBtn){ fineBtn.disabled = true; }
     try {
       const meSnap = await get(userRef(window.currentNick));
       if(!meSnap.exists()) return toast('❌ Профиль не найден','red');
@@ -13600,6 +13684,9 @@ ready(function(){
     } catch(e){
       console.error('[submitDutyFine]', e);
       toast('❌ Не удалось выписать штраф: '+((e&&e.message)||'ошибка'),'red');
+    } finally {
+      _submitDutyFineBusy = false;
+      if(fineBtn && fineBtn.isConnected){ fineBtn.disabled = false; }
     }
   };
   // Старые кнопки «Выписать штраф» теперь ведут на панель с формой
@@ -13669,7 +13756,7 @@ ready(function(){
   };
   setTimeout(()=>{ try{ injectFinePanel(); refreshFinePanelVisibility(); }catch(e){} }, 1600);
 
-  console.log('[Kapani Pack v2] installed');
+  // Konec Kapani Pack v2
 });
 </script>
 
