@@ -52,7 +52,10 @@
 })();
 </script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://unpkg.com">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root {
@@ -2293,7 +2296,6 @@ function clearIntervalByName(name) {
 function stopAllActivity() {
     activeIntervals.forEach((intervalId, name) => {
         clearInterval(intervalId);
-        console.log(`Очищен интервал: ${name}`);
     });
     activeIntervals.clear();
 }
@@ -4310,7 +4312,6 @@ window.closeProfileCustomizer=async function(){
 
 window.previewNicknameEmoji=function(emoji){
     // Preview function - could update a preview element if needed
-    console.log('Preview emoji:', emoji);
 };
 
 window.previewAvatarFrame=function(frame){
@@ -4756,7 +4757,13 @@ window.cancelOrder=async function(id){
 };
 
 // ─── BANK ─────────────────────────────────
+let _doTransferBusy = false;
 window.doTransfer=async function(){
+    if(_doTransferBusy) return toast('⏳ Перевод уже выполняется…','gold');
+    _doTransferBusy = true;
+    const btn = document.querySelector('#bankPage .btn-primary[onclick*="doTransfer"]') || document.querySelector('button[onclick*="doTransfer"]');
+    if(btn){ btn.disabled = true; btn.textContent = '⏳ Отправка…'; }
+    try {
     if(!await requireNotMigrant('переводы недоступны')) return;
     if(!await requireSpendable())return;
     const toName=qs('bTo').value.trim(),amt=parseInt(qs('bAmt').value)||0;
@@ -4826,6 +4833,10 @@ window.doTransfer=async function(){
         console.error('Ошибка перевода:', error);
         const message = error.message || 'Ошибка при выполнении перевода';
         toast(`❌ ${message}`,'red');
+    }
+    } finally {
+        _doTransferBusy = false;
+        if(btn){ btn.disabled = false; btn.textContent = 'Отправить'; }
     }
 };
 async function renderRecentTransfers(){
@@ -5587,13 +5598,6 @@ async function renderVisitorProfilePage(nick){
     
     // Apply profile background effect if user has subscription
     const profileBgEffect = qs('vpfProfileBgEffect');
-    console.log('Profile BG Debug:', { 
-        hasElement: !!profileBgEffect, 
-        isActive, 
-        subscription: u.subscription, 
-        expiry: u.subscriptionExpiry,
-        profileBgEffect: u.profileBgEffect 
-    });
     if(profileBgEffect && isActive && u.profileBgEffect){
         // Remove existing background classes
         profileBgEffect.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
@@ -11388,7 +11392,6 @@ window.saveEditDm = async function(msgId){
 
 // ─── JUMP TO DATE IN CHAT ─────────────────
 window.openJumpToDate = function(ctx){
-    console.log('openJumpToDate called with ctx:', ctx);
     
     try {
         // Создаем простой input для выбора даты
