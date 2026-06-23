@@ -20,35 +20,42 @@
   var queued = [];
   function makeStub(name){
     return function(){
-      var args = arguments;
+      var args = Array.prototype.slice.call(arguments);
       var ctx = this;
+      // Check if real handler is already installed under __real_ prefix
       var realFn = window['__real_' + name];
       if(typeof realFn === 'function') return realFn.apply(ctx, args);
       queued.push({name: name, ctx: ctx, args: args});
       try { (window.toast || function(){})('⏳ Загрузка… попробуйте ещё раз через секунду','gold'); } catch(e){}
     };
   }
+  // Install stubs only if not yet defined
   ['submitDutyFine','ksbFineWorker'].forEach(function(n){
     if(typeof window[n] !== 'function') window[n] = makeStub(n);
   });
-  // Watch for real handlers being assigned later (the late module sets
-  // window.submitDutyFine = function(){...}). Wrap so stub keeps working.
-  var origDefine = function(name){
-    var current = window[name];
-    Object.defineProperty(window, name, {
-      configurable: true,
-      get: function(){ return current; },
-      set: function(v){
-        current = v;
-        window['__real_' + name] = v;
-        // Replay any queued calls
+
+  // Safe watcher: poll for real implementations instead of defineProperty
+  // (defineProperty get/set caused "Maximum call stack size exceeded" if
+  //  the real function internally referenced window[name] itself)
+  var checkInterval = setInterval(function(){
+    ['submitDutyFine','ksbFineWorker'].forEach(function(name){
+      var cur = window[name];
+      // If a real (non-stub) function is now assigned and we haven't stored it yet
+      if(typeof cur === 'function' && !cur._isStub && !window['__real_' + name]){
+        window['__real_' + name] = cur;
+        // Replay queued calls
         var pending = queued.filter(function(q){ return q.name === name; });
         queued = queued.filter(function(q){ return q.name !== name; });
-        pending.forEach(function(q){ try { v.apply(q.ctx, q.args); } catch(e){ console.error(e); } });
+        pending.forEach(function(q){ try { cur.apply(q.ctx, q.args); } catch(e){ console.error(e); } });
       }
     });
-  };
-  try { origDefine('submitDutyFine'); origDefine('ksbFineWorker'); } catch(e){ console.warn(e); }
+    // Stop polling once both are resolved
+    if(window['__real_submitDutyFine'] && window['__real_ksbFineWorker']) clearInterval(checkInterval);
+  }, 300);
+  // Mark stubs so we can detect them
+  ['submitDutyFine','ksbFineWorker'].forEach(function(n){
+    if(window[n]) window[n]._isStub = true;
+  });
 })();
 </script>
 
@@ -422,7 +429,48 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 .upm-online.is-online{color:#22c55e;}
 .upm-online.is-offline{color:var(--muted);}
 .upm-dot{width:8px;height:8px;border-radius:50%;background:currentColor;}
-#loadingOverlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+#loadingOverlay{
+    position:fixed;inset:0;
+    background:var(--bg);
+    z-index:9999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:0;
+    transition:opacity .4s ease, visibility .4s ease;
+}
+#loadingOverlay.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+#loadingOverlay .lo-logo{
+    width:88px;height:88px;border-radius:28px;
+    background:linear-gradient(135deg,var(--primary),#1ab8cc);
+    display:flex;align-items:center;justify-content:center;
+    font-size:44px;
+    box-shadow:0 8px 40px rgba(34,211,165,.35);
+    margin-bottom:28px;
+    animation:loPulse 2s ease-in-out infinite;
+}
+@keyframes loPulse{0%,100%{box-shadow:0 8px 40px rgba(34,211,165,.35);}50%{box-shadow:0 8px 60px rgba(34,211,165,.65);}}
+#loadingOverlay .lo-title{
+    font-family:'Unbounded',sans-serif;font-size:26px;font-weight:900;
+    color:var(--text);letter-spacing:-.5px;margin-bottom:4px;
+}
+#loadingOverlay .lo-sub{
+    font-size:13px;color:var(--muted);font-weight:600;
+    margin-bottom:36px;
+}
+#loadingOverlay .lo-bar-wrap{
+    width:200px;height:4px;background:var(--border);border-radius:4px;overflow:hidden;
+    margin-bottom:20px;
+}
+#loadingOverlay .lo-bar{
+    height:100%;width:0%;border-radius:4px;
+    background:linear-gradient(90deg,var(--primary),#1ab8cc);
+    animation:loBar 1.4s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes loBar{0%{width:0%}60%{width:75%}90%{width:92%}100%{width:92%}}
+#loadingOverlay .lo-status{
+    font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.3px;
+    animation:loFade 1.4s ease-in-out infinite alternate;
+}
+@keyframes loFade{from{opacity:.5}to{opacity:1}}
 .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 #toasts{position:fixed;top:84px;right:12px;bottom:auto;width:340px;max-width:calc(100% - 24px);z-index:9999;padding-right:0;pointer-events:none;}
@@ -822,7 +870,13 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <body>
 
 <div id="frozenOverlay"><div style="font-size:48px;margin-bottom:12px;">🧊</div><div style="font-weight:900;font-size:18px;margin-bottom:8px;">Аккаунт заморожен</div><div style="color:var(--muted);font-size:14px;max-width:320px;line-height:1.5;">Баланс ниже допустимого лимита. Попросите перевод или отработайте, чтобы мэрия пополнила счёт.</div></div>
-<div id="loadingOverlay"><div class="spinner"></div><div style="color:var(--muted);font-size:14px;font-weight:700;">Подключение к серверу...</div></div>
+<div id="loadingOverlay">
+    <div class="lo-logo">🏙️</div>
+    <div class="lo-title">Капани</div>
+    <div class="lo-sub">Официальный сайт города</div>
+    <div class="lo-bar-wrap"><div class="lo-bar" id="loBar"></div></div>
+    <div class="lo-status" id="loStatus">Подключение к серверу…</div>
+</div>
 <div id="toasts"></div>
 <div id="notifPopup"><div class="np-icon">🔔</div><div class="np-body"><div class="np-text" id="npText"></div><div class="np-time" id="npTime"></div></div><div class="np-close" onclick="closeNotifPopup()">✕</div></div>
 
@@ -2631,7 +2685,30 @@ function toast(text, type='green') {
     const c=qs('toasts');const t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=`<span>${text}</span>`;c.appendChild(t);
     setTimeout(()=>{t.style.cssText='opacity:0;transform:translateX(40px);transition:.3s';setTimeout(()=>t.remove(),300);},3000);
 }
-function hideLoading() { const ov=qs('loadingOverlay'); if(ov) ov.style.display='none'; }
+function hideLoading() {
+    const ov = qs('loadingOverlay');
+    if(!ov) return;
+    // Complete the progress bar
+    const bar = qs('loBar');
+    const status = qs('loStatus');
+    if(bar) bar.style.cssText = 'width:100%;transition:width .3s ease;';
+    if(status) status.textContent = 'Готово!';
+    setTimeout(() => {
+        ov.classList.add('hidden');
+        setTimeout(() => { ov.style.display = 'none'; }, 420);
+    }, 280);
+}
+
+// Loading status messages cycle
+(function(){
+    const msgs = ['Подключение к серверу…','Загружаем данные…','Авторизация…','Почти готово…'];
+    let i = 0;
+    const iv = setInterval(() => {
+        const el = qs('loStatus');
+        if(!el || !qs('loadingOverlay') || qs('loadingOverlay').style.display === 'none'){ clearInterval(iv); return; }
+        el.textContent = msgs[i++ % msgs.length];
+    }, 900);
+})();
 
 // ─── ONLINE PRESENCE ──────────────────────
 async function updateOnlineStatus() {
@@ -4789,8 +4866,170 @@ window.cancelOrder=async function(id){
 };
 
 // ─── BANK ─────────────────────────────────
+let _quitJobBusy = false;
+window.quitJob = async function(){
+    if(_quitJobBusy) return toast('⏳ Увольнение уже обрабатывается…','gold');
+    _quitJobBusy = true;
+    try {
+        const nick = window.currentNick;
+        if(!nick) return toast('⚠️ Сначала войдите','gold');
+
+        let snap;
+        try { snap = await get(userRef(nick)); } catch(e){ return toast('❌ Ошибка загрузки данных','red'); }
+        if(!snap || !snap.exists()) return toast('❌ Профиль не найден','red');
+        const u = snap.val();
+
+        // ── Собираем полный список должностей без рекурсии ──────────────
+        const seen = new Set();
+        const allEmps = [];
+        const addEmp = (item) => {
+            if(!item || !item.id || seen.has(item.id)) return;
+            seen.add(item.id);
+            allEmps.push({
+                id: String(item.id),
+                type: String(item.type || 'municipal'),
+                role: String(item.role || ''),
+                bizId: item.bizId ? String(item.bizId) : undefined,
+                bizName: item.bizName ? String(item.bizName) : undefined,
+            });
+        };
+
+        // Из массива employments
+        if(Array.isArray(u.employments)) u.employments.forEach(addEmp);
+
+        // Legacy u.job (мун. должность)
+        if(u.job && u.job !== 'Житель'){
+            addEmp({ id: `muni_${u.job}`, type: 'municipal', role: u.job });
+        }
+
+        // Из allBusinessesCache (бизнесы, где числимся сотрудником)
+        try {
+            const bizSnap = Object.values(window.allBusinessesCache || {});
+            bizSnap.forEach(b => {
+                if(!b || b.status !== 'active') return;
+                const emp = b.employees?.[nick];
+                if(emp) addEmp({
+                    id: `biz_${b.id}`,
+                    type: 'business',
+                    bizId: b.id,
+                    role: (typeof window.getBizEmployeeRoleName === 'function'
+                        ? window.getBizEmployeeRoleName(emp)
+                        : (emp.role || 'Сотрудник')),
+                    bizName: b.name || 'Бизнес',
+                });
+            });
+        } catch(e){ /* allBusinessesCache might not be ready */ }
+
+        if(!allEmps.length) return toast('⚠️ Вы не трудоустроены','gold');
+
+        // ── Выбор должности если несколько ────────────────────────────
+        let targetEmp;
+        if(allEmps.length > 1){
+            const list = allEmps.map((e,i)=>`${i+1}. ${e.role} (${e.type==='business'?'бизнес':'мэрия'})`).join('\n');
+            const pick = prompt(`С какой работы уволиться?\n${list}\n\nВведите номер:`);
+            if(pick === null) return;
+            const num = parseInt(pick, 10);
+            if(num >= 1 && num <= allEmps.length) targetEmp = allEmps[num - 1];
+            else targetEmp = allEmps.find(e => e.role.toLowerCase() === pick.trim().toLowerCase());
+            if(!targetEmp) return toast('⚠️ Работа не найдена. Введите номер из списка.','gold');
+        } else {
+            targetEmp = allEmps[0];
+        }
+
+        if(!confirm(`Уволиться с должности «${targetEmp.role}»?`)) return;
+
+        // ── Применяем изменения ────────────────────────────────────────
+        try {
+            // 1) Удаляем из бизнеса если нужно
+            if(targetEmp.type === 'business' && targetEmp.bizId){
+                try {
+                    await update(bizItemRef(targetEmp.bizId), { [`employees/${nick}`]: null });
+                } catch(e){ console.warn('[quitJob biz remove]', e); }
+            }
+
+            // 2) Новый список employments без уволенной записи
+            const newEmps = allEmps.filter(e => e.id !== targetEmp.id);
+
+            // 3) Вычисляем новую основную мун. должность
+            const remainingMuni = newEmps.filter(e => e.type === 'municipal');
+            const newMuniJob = remainingMuni.length > 0 ? remainingMuni[0].role : 'Житель';
+
+            // 4) Формируем patch
+            // ВАЖНО: всегда обновляем job при уходе с муниципальной
+            const patch = {
+                employments: newEmps.length > 0 ? newEmps : [],
+                displayJob: newEmps.length > 0 ? newEmps[0].role : null,
+            };
+
+            if(targetEmp.type === 'municipal'){
+                // Сбрасываем job и все права связанные с ней
+                patch.job = newMuniJob;
+                // Сбрасываем должностные права если нет других мун. должностей
+                if(remainingMuni.length === 0){
+                    patch.jobApplicationStatus = null;
+                    patch.appliedJob = null;
+                }
+            }
+
+            // 5) Доп. сброс по роли
+            if(targetEmp.role === 'Водитель' || targetEmp.role === 'Доставщик'){
+                patch.vehicle = '';
+            }
+            if(targetEmp.role === (window.JOB_JANITOR || 'Уборщик')){
+                patch.janitorTaskDate = '';
+                patch.janitorSubmissionId = '';
+                patch.janitorSubmissionStatus = '';
+                patch.janitorProof = '';
+                patch.janitorComment = '';
+            }
+            // Сбрасываем полицейские/КСБ права если это была такая роль
+            const securityRoles = ['Полицейский','КСБ','Охранник'];
+            if(securityRoles.includes(targetEmp.role) && remainingMuni.every(e => !securityRoles.includes(e.role))){
+                patch.securityBadge = null;
+            }
+
+            // 6) Атомарное обновление Firebase
+            await update(userRef(nick), patch);
+
+            toast(`🚪 Вы уволились с «${targetEmp.role}»`, 'green');
+
+            // 7) Обновляем UI — безопасно, без вызова renderProfile (избегаем рекурсии)
+            try {
+                // Перерисовываем кнопку "Уволиться" сразу
+                const quitBtn = document.getElementById('quitJobBtn');
+                if(quitBtn) quitBtn.style.display = newEmps.length > 0 ? 'block' : 'none';
+                // Обновляем должность в шапке профиля
+                const jobEl = document.getElementById('profileJobLabel') || document.querySelector('.profile-job');
+                if(jobEl) jobEl.textContent = patch.displayJob || patch.job || 'Житель';
+            } catch(uiErr){ /* ignore */ }
+
+            // 8) Обновляем видимость панели штрафов
+            try {
+                if(typeof window.refreshFinePanelVisibility === 'function') window.refreshFinePanelVisibility();
+            } catch(e){}
+
+            // 9) Если мы на странице профиля — перезагружаем её через navTo (не рекурсия)
+            try {
+                if(typeof window.curPage !== 'undefined' && window.curPage === 'profile'){
+                    if(typeof window.navTo === 'function') window.navTo('profile');
+                }
+            } catch(e){}
+
+        } catch(e){
+            console.error('[quitJob update]', e);
+            toast('❌ Не удалось уволиться: ' + ((e && (e.message || e.code)) || 'ошибка Firebase'), 'red');
+        }
+    } catch(outer){
+        console.error('[quitJob outer]', outer);
+        toast('❌ Не удалось уволиться: ' + ((outer && outer.message) || 'неизвестная ошибка'), 'red');
+    } finally {
+        _quitJobBusy = false;
+    }
+};
+
+// ─── BANK TRANSFER ─────────────────────────
 let _doTransferBusy = false;
-window.doTransfer=async function(){
+window.doTransfer = async function(){
     if(_doTransferBusy) return toast('⏳ Перевод уже выполняется…','gold');
     _doTransferBusy = true;
     const btn = document.querySelector('#bankPage .btn-primary[onclick*="doTransfer"]') || document.querySelector('button[onclick*="doTransfer"]');
@@ -6426,39 +6665,8 @@ window.renderJobAppStatus=async function(){
 // ─── PROFILE ──────────────────────────────
 window.changeVehicle=async function(){const v=prompt('Транспорт:');if(v!==null){await update(userRef(currentNick),{vehicle:v});toast('🛵 Обновлено','green');}};
 window.saveVehicle=async function(){const v=qs('vehicleInput').value.trim();await update(userRef(currentNick),{vehicle:v});toast('🛵 Сохранено','green');};
-window.quitJob=async function(){
-    const snap=await get(userRef(currentNick));if(!snap.exists())return;
-    const u=snap.val();
-    const emps=collectEmploymentsFromData(u, currentNick);
-    if(!emps.length) return toast('⚠️ Вы не трудоустроены','gold');
-    let targetRole = u.job && u.job !== 'Житель' ? u.job : null;
-    if(emps.length > 1){
-        const list = emps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
-        const pick = prompt(`С какой работы уволиться?\n${list}\n\nВведите номер или название:`);
-        if(!pick) return;
-        const num = parseInt(pick,10);
-        if(num>=1 && num<=emps.length) targetRole = emps[num-1].role;
-        else targetRole = emps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role || pick.trim();
-    } else {
-        targetRole = emps[0].role;
-    }
-    const emp = emps.find(e=>e.role===targetRole);
-    if(!emp) return toast('⚠️ Работа не найдена','gold');
-    if(!confirm(`Уволиться с должности «${emp.role}»?`)) return;
-    if(emp.type==='business' && emp.bizId){
-        await update(bizItemRef(emp.bizId), { [`employees/${currentNick}`]: null });
-    }
-    const newEmps = emps.filter(e=>e.id!==emp.id);
-    const patch = { employments: newEmps, displayJob: newEmps[0]?.role || null };
-    if(emp.type==='municipal' && u.job===emp.role) {
-        patch.job = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
-        if(emp.role===JOB_JANITOR || patch.job!==JOB_JANITOR) Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''});
-        if(emp.role==='Водитель' || emp.role==='Доставщик') patch.vehicle='';
-    }
-    if(!patch.displayJob) patch.displayJob = newEmps[0]?.role || null;
-    await update(userRef(currentNick), patch);
-    toast('🚪 Вы уволились','green');
-};
+// ─── QUIT JOB (master implementation — all overrides removed below) ───
+// quitJob — master implementation above (line ~4800)
 
 function renderJanitorTaskCard(u){
     const el=qs('janitorTaskCard');if(!el||!u)return;
@@ -6889,15 +7097,72 @@ window.adminSetMigrant = async function(on){
 };
 window.adminDeleteOrder=async function(id){await remove(orderRef(id));toast('🗑 Удалено','gold');};
 window.adminFireWorker=async function(){
-    const target=qs('adminTarget').value;
+    if(currentNick !== ADMIN) return toast('🚫 Только мэр','red');
+    const target=qs('adminTarget')?.value;
     if(!target)return toast('⚠️ Выберите жителя','gold');
     if(target===currentNick)return toast('⚠️ Нельзя уволить себя','gold');
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
     const u=snap.val();
-    if(!confirm(`Уволить ${target} с должности ${getUserBusinessRoleLabel(u, u.nick || '')}?`))return;
-    await update(userRef(target),{job:'Житель',vehicle:'',janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''});
-    await pushNotification(target,'🚪 Мэрия уволила вас с работы','system');
-    toast(`🚪 ${target} уволен`,'red');
+
+    // Собираем список должностей из employments + legacy job (без рекурсии через allBusinessesCache)
+    const rawArr = Array.isArray(u.employments) ? u.employments : [];
+    const seenIds = new Set(rawArr.map(e=>e&&e.id).filter(Boolean));
+    const allEmps = rawArr.filter(e=>e&&e.id&&e.role).map(e=>({
+        id:String(e.id), type:String(e.type||'municipal'), role:String(e.role),
+        bizId: e.bizId ? String(e.bizId) : undefined
+    }));
+    if(u.job && u.job !== 'Житель' && !seenIds.has(`muni_${u.job}`)){
+        allEmps.push({ id:`muni_${u.job}`, type:'municipal', role:u.job });
+    }
+    const muniEmps = allEmps.filter(e=>e.type==='municipal');
+
+    if(!muniEmps.length && (!u.job || u.job==='Житель')) return toast('ℹ️ У жителя нет работы','gold');
+
+    let targetRole = null;
+    if(muniEmps.length <= 1){
+        targetRole = muniEmps[0]?.role || u.job;
+        if(!confirm(`Уволить ${target} с должности «${targetRole}»?`)) return;
+    } else {
+        const list = muniEmps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
+        const pick = prompt(`С какой работы уволить ${target}?\n${list}\n0 — уволить со ВСЕХ\n\nВведите номер:`);
+        if(pick===null || !pick.trim()) return;
+        if(pick.trim()==='0'){
+            if(!confirm(`Уволить ${target} со ВСЕХ муниципальных работ?`)) return;
+            const newEmps = allEmps.filter(e=>e.type!=='municipal');
+            const patch = { employments: newEmps, displayJob: newEmps[0]?.role || null, job:'Житель', vehicle:'' };
+            for(const e of muniEmps){
+                if(e.role===JOB_JANITOR){ Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''}); }
+            }
+            try {
+                await update(userRef(target), patch);
+                await pushNotification(target,'🚪 Мэрия уволила вас со всех работ','system');
+                toast(`🚪 ${target} уволен со всех работ`,'red');
+                if(typeof window.renderAdmin==='function') window.renderAdmin();
+            } catch(e){ console.error('[adminFire all]',e); toast('❌ Ошибка: '+(e.message||''),'red'); }
+            return;
+        }
+        const num = parseInt(pick,10);
+        targetRole = (num>=1&&num<=muniEmps.length) ? muniEmps[num-1].role
+            : muniEmps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role;
+        if(!targetRole) return toast('⚠️ Работа не найдена','gold');
+        if(!confirm(`Уволить ${target} с «${targetRole}»?`)) return;
+    }
+
+    try {
+        const newEmps = allEmps.filter(e => !(e.type==='municipal' && e.role===targetRole));
+        const newMuniHead = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
+        const patch = {
+            employments: newEmps,
+            displayJob: newEmps.length > 0 ? newEmps[0].role : null,
+            job: (u.job === targetRole || targetRole) ? newMuniHead : u.job,
+        };
+        if(targetRole==='Водитель'||targetRole==='Доставщик') patch.vehicle='';
+        if(targetRole===JOB_JANITOR){ Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''}); }
+        await update(userRef(target), patch);
+        await pushNotification(target,`🚪 Мэрия уволила вас с должности «${targetRole}»`,'system');
+        toast(`🚪 ${target} уволен с «${targetRole}»`,'red');
+        if(typeof window.renderAdmin==='function') window.renderAdmin();
+    } catch(e){ console.error('[adminFire]',e); toast('❌ Ошибка: '+(e.message||''),'red'); }
 };
 window.adminVerifyAccount=async function(nick){
     if(!confirm(`Подтвердить аккаунт ${nick}?`))return;
@@ -12976,85 +13241,10 @@ ready(function(){
     return patch;
   }
 
-  // Override quitJob — proper rank/displayJob reset + UI refresh
-  const _origQuitJob = window.quitJob;
-  window.quitJob = async function(){
-    const currentNick = window.currentNick;
-    if(!currentNick) return;
-    const snap = await get(userRef(currentNick)); if(!snap.exists()) return;
-    const u = snap.val();
-    const emps = (collectEmploymentsFromData ? collectEmploymentsFromData(u, currentNick) : (u.employments||[])).filter(e=>e.type==='municipal');
-    if(emps.length === 0) return toast('⚠️ У вас нет муниципальной работы','gold');
-    let targetRole;
-    if(emps.length > 1){
-      const list = emps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
-      const pick = prompt(`С какой работы уволиться?\n${list}\n\nНомер или название:`);
-      if(!pick) return;
-      const num = parseInt(pick,10);
-      targetRole = (num>=1 && num<=emps.length) ? emps[num-1].role : (emps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role);
-      if(!targetRole) return toast('⚠️ Работа не найдена','gold');
-    } else targetRole = emps[0].role;
-    if(!confirm(`Уволиться с должности «${targetRole}»?`)) return;
-    const allEmps = (collectEmploymentsFromData ? collectEmploymentsFromData(u, currentNick) : (u.employments||[]));
-    const newEmps = allEmps.filter(e => !(e.type==='municipal' && e.role===targetRole));
-    const patch = Object.assign({
-      employments: newEmps,
-      displayJob: newEmps[0]?.role || null,
-      job: newEmps.find(e=>e.type==='municipal')?.role || 'Житель',
-    }, clearJobSideEffects(targetRole, u));
-    await update(userRef(currentNick), patch);
-    toast('🚪 Вы уволились','green');
-    try { renderProfile(); } catch(e){}
-  };
+  // quitJob: master implementation is defined in the main app block above — no override needed here
+  const _origQuitJob = null; // kept for reference only
 
-  // Override adminFireWorker — choose specific job (or all), proper cleanup
-  window.adminFireWorker = async function(){
-    if(window.currentNick !== ADMIN) return toast('🚫 Только мэр','red');
-    const target = qs('adminTarget')?.value;
-    if(!target) return toast('⚠️ Выберите жителя','gold');
-    if(target === window.currentNick) return toast('⚠️ Нельзя уволить себя','gold');
-    const snap = await get(userRef(target)); if(!snap.exists()) return toast('❌ Не найден','red');
-    const u = snap.val();
-    const emps = (collectEmploymentsFromData ? collectEmploymentsFromData(u, target) : (u.employments||[]));
-    const muniEmps = emps.filter(e=>e.type==='municipal');
-    if(muniEmps.length === 0 && (!u.job || u.job==='Житель')) return toast('ℹ️ У жителя нет работы','gold');
-    let targetRole = null;
-    if(muniEmps.length <= 1){
-      targetRole = muniEmps[0]?.role || u.job;
-      if(!confirm(`Уволить ${target} с должности «${targetRole}»?`)) return;
-    } else {
-      const list = muniEmps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
-      const pick = prompt(`С какой работы уволить ${target}?\n${list}\n0 — уволить со ВСЕХ\n\nНомер или название:`);
-      if(!pick) return;
-      if(pick.trim()==='0'){
-        if(!confirm(`Уволить ${target} со ВСЕХ работ?`)) return;
-        const newEmps = emps.filter(e=>e.type!=='municipal');
-        let patch = { employments: newEmps, displayJob: newEmps[0]?.role || null, job: 'Житель' };
-        for(const e of muniEmps) Object.assign(patch, clearJobSideEffects(e.role, u));
-        await update(userRef(target), patch);
-        await pushNotification(target, '🚪 Мэрия уволила вас со всех работ','system');
-        toast(`🚪 ${target} уволен со всех работ`,'red');
-        if(typeof window.renderAdmin==='function') window.renderAdmin();
-        return;
-      }
-      const num = parseInt(pick,10);
-      targetRole = (num>=1 && num<=muniEmps.length) ? muniEmps[num-1].role
-        : muniEmps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role;
-      if(!targetRole) return toast('⚠️ Работа не найдена','gold');
-      if(!confirm(`Уволить ${target} с «${targetRole}»?`)) return;
-    }
-    const newEmps = emps.filter(e => !(e.type==='municipal' && e.role===targetRole));
-    const newMuniHead = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
-    const patch = Object.assign({
-      employments: newEmps,
-      displayJob: newEmps[0]?.role || null,
-      job: u.job === targetRole ? newMuniHead : u.job,
-    }, clearJobSideEffects(targetRole, u));
-    await update(userRef(target), patch);
-    await pushNotification(target, `🚪 Мэрия уволила вас с должности «${targetRole}»`,'system');
-    toast(`🚪 ${target} уволен с «${targetRole}»`,'red');
-    if(typeof window.renderAdmin==='function') window.renderAdmin();
-  };
+  // adminFireWorker: master implementation is in the main app block — no override needed
 
   // ═══════════════════════════════════════════
   // 2) ELECTRONIC PASSPORT (profile)
@@ -13584,58 +13774,7 @@ ready(function(){
     return out;
   }
 
-  window.quitJob = async function(){
-    const nick = window.currentNick;
-    if(!nick) return toast('⚠️ Сначала войдите','gold');
-    let snap;
-    try { snap = await get(userRef(nick)); } catch(e){ console.error('[quitJob get]', e); return toast('❌ Ошибка загрузки данных','red'); }
-    if(!snap || !snap.exists()) return toast('❌ Профиль не найден','red');
-    const u = snap.val();
-    let rawEmps;
-    try {
-      rawEmps = (typeof collectEmploymentsFromData==='function')
-        ? collectEmploymentsFromData(u, nick)
-        : (Array.isArray(u.employments)?u.employments:[]);
-    } catch(e){ console.error('[quitJob collect]', e); rawEmps = Array.isArray(u.employments)?u.employments:[]; }
-    const allEmps = sanitizeEmps(rawEmps);
-    if(!allEmps.length && (!u.job || u.job==='Житель')) return toast('⚠️ Вы не трудоустроены','gold');
-    let targetEmp;
-    if(allEmps.length > 1){
-      const list = allEmps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
-      const pick = prompt(`С какой работы уволиться?\n${list}\n\nВведите номер или название:`);
-      if(pick===null) return;
-      if(!pick.trim()) return toast('⚠️ Ничего не выбрано','gold');
-      const num = parseInt(pick,10);
-      if(num>=1 && num<=allEmps.length) targetEmp = allEmps[num-1];
-      else targetEmp = allEmps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase());
-      if(!targetEmp) return toast('⚠️ Работа не найдена','gold');
-    } else if(allEmps.length === 1) {
-      targetEmp = allEmps[0];
-    } else {
-      targetEmp = { id:`muni_${u.job}`, type:'municipal', role:u.job };
-    }
-    if(!confirm(`Уволиться с должности «${targetEmp.role}»?`)) return;
-    try {
-      if(targetEmp.type==='business' && targetEmp.bizId && typeof bizItemRef==='function'){
-        try { await update(bizItemRef(targetEmp.bizId), { [`employees/${nick}`]: null }); } catch(e){ console.warn('[quitJob biz]', e); }
-      }
-      const newEmps = allEmps.filter(e => e.id !== targetEmp.id);
-      const newMuniJob = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
-      const patch = Object.assign({
-        employments: newEmps,
-        displayJob: newEmps[0]?.role || null,
-        job: (u.job === targetEmp.role || targetEmp.type==='municipal') ? newMuniJob : (u.job || 'Житель'),
-      }, buildClearJobPatch(targetEmp.role, u));
-      await update(userRef(nick), patch);
-      toast('🚪 Вы уволились с «'+targetEmp.role+'»','green');
-      try { if(typeof window.renderProfile==='function') window.renderProfile(); } catch(e){}
-      try { refreshFinePanelVisibility(); } catch(e){}
-    } catch(e) {
-      console.error('[quitJob update]', e);
-      const msg = (e && (e.message||e.code)) || String(e) || 'неизвестная ошибка';
-      toast('❌ Не удалось уволиться: '+msg,'red');
-    }
-  };
+  // quitJob: единственная мастер-реализация определена в основном блоке выше — дубликат убран
 
   // Штраф через форму на странице (без prompt — надёжно на телефоне)
   let _submitDutyFineBusy = false;
@@ -13692,58 +13831,7 @@ ready(function(){
   // Старые кнопки «Выписать штраф» теперь ведут на панель с формой
   window.ksbFineWorker = function(){ navTo('dutyPage'); };
 
-  window.adminFireWorker = async function(){
-    if(window.currentNick !== ADMIN) return toast('🚫 Только мэр','red');
-    const target = qs('adminTarget')?.value;
-    if(!target) return toast('⚠️ Выберите жителя','gold');
-    if(target === window.currentNick) return toast('⚠️ Нельзя уволить себя','gold');
-    const snap = await get(userRef(target));
-    if(!snap.exists()) return toast('❌ Житель не найден','red');
-    const u = snap.val();
-    const allEmps = collectEmploymentsFromData ? collectEmploymentsFromData(u, target) : (Array.isArray(u.employments)?u.employments:[]);
-    const muniEmps = allEmps.filter(e=>e.type==='municipal');
-    const legacyJob = (u.job && u.job !== 'Житель') ? u.job : null;
-    if(!muniEmps.length && !legacyJob) return toast('ℹ️ У жителя нет муниципальной работы','gold');
-    let targetRole;
-    if(muniEmps.length > 1){
-      const list = muniEmps.map((e,i)=>`${i+1}. ${e.role}`).join('\n');
-      const pick = prompt(`С какой работы уволить ${target}?\n${list}\n0 — уволить со ВСЕХ\n\nВведите номер или название:`);
-      if(pick===null || !pick.trim()) return;
-      if(pick.trim()==='0'){
-        if(!confirm(`Уволить ${target} со ВСЕХ муниципальных работ?`)) return;
-        const newEmps = allEmps.filter(e=>e.type!=='municipal');
-        let patch = { employments: newEmps, displayJob: newEmps[0]?.role || null, job: 'Житель' };
-        for(const e of muniEmps) Object.assign(patch, buildClearJobPatch(e.role, u));
-        try {
-          await update(userRef(target), patch);
-          await pushNotification(target, '🚪 Мэрия уволила вас со всех муниципальных работ','system');
-          toast(`🚪 ${target} уволен со всех работ`,'red');
-          if(typeof window.renderAdmin==='function') window.renderAdmin();
-        } catch(e){ console.error('[adminFire all]', e); toast('❌ Ошибка: '+(e.message||''),'red'); }
-        return;
-      }
-      const num = parseInt(pick,10);
-      targetRole = (num>=1 && num<=muniEmps.length) ? muniEmps[num-1].role
-        : muniEmps.find(e=>e.role.toLowerCase()===pick.trim().toLowerCase())?.role;
-      if(!targetRole) return toast('⚠️ Работа не найдена','gold');
-    } else {
-      targetRole = muniEmps[0]?.role || legacyJob;
-    }
-    if(!confirm(`Уволить ${target} с должности «${targetRole}»?`)) return;
-    try {
-      const newEmps = allEmps.filter(e => !(e.type==='municipal' && e.role===targetRole));
-      const newMuniHead = newEmps.find(e=>e.type==='municipal')?.role || 'Житель';
-      const patch = Object.assign({
-        employments: newEmps,
-        displayJob: newEmps[0]?.role || null,
-        job: newMuniHead,
-      }, buildClearJobPatch(targetRole, u));
-      await update(userRef(target), patch);
-      await pushNotification(target, `🚪 Мэрия уволила вас с должности «${targetRole}»`,'system');
-      toast(`🚪 ${target} уволен с «${targetRole}»`,'red');
-      if(typeof window.renderAdmin==='function') window.renderAdmin();
-    } catch(e){ console.error('[adminFire]', e); toast('❌ Ошибка: '+(e.message||''),'red'); }
-  };
+  // adminFireWorker: master implementation is in the main app block — no override needed
 
   // hook нашу панель штрафа в навигацию
   const _origNavTo2 = window.navTo;
