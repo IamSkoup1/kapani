@@ -2295,6 +2295,7 @@ const KAPANI_LNG = CONFIG.location.kapani.lng;
 const ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
 
 let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
+window.currentNick = currentNick; // keep window.currentNick in sync (read by the Kapani Pack v2 module)
 let appStarted = false;
 let rememberedAuth = null;
 try { rememberedAuth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); } catch(e) { rememberedAuth = null; }
@@ -3203,6 +3204,7 @@ function startApp() {
     requestPersistentStorage();
     buildEmojiPanels();
     try { const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); if(auth && auth.nick && (!currentNick || currentNick!==auth.nick)) { localStorage.setItem('kp_s', auth.nick); sessionStorage.setItem('kp_s', auth.nick); currentNick = auth.nick; } } catch(e) {}
+    window.currentNick = currentNick; // keep window.currentNick in sync (read by the Kapani Pack v2 module)
 
     // ── Ждём реальных данных перед показом UI и скрытием экрана загрузки ─
     const loStatus = document.getElementById('loStatus');
@@ -3226,6 +3228,7 @@ function startApp() {
     const allUsersLoad = get(ref(db,'users')).then(snap => {
         if(snap.exists()){
             allUsersCache = snap.val();
+            window.allUsersCache = allUsersCache;
             renderHomeStats_users(allUsersCache);
             if(currentNick === ADMIN) renderAdminUserSelect(allUsersCache);
             updateHeader_balance(allUsersCache[currentNick]);
@@ -3357,7 +3360,7 @@ function attachListeners() {
 
     const allRef=ref(db,'users');
     const allFn=(snap)=>{
-        const users=snap.val()||{}; allUsersCache=users;
+        const users=snap.val()||{}; allUsersCache=users; window.allUsersCache=users;
         renderHomeStats_users(users);
         if(curPage==='ratings') renderLeaderboard(users);
         if(curPage==='adminPage'){renderAdminUsers(users);renderAdminUserSelect(users);renderUnverifiedAccounts();}
@@ -5367,6 +5370,7 @@ function monthTitleRu(dstr){
 window.openHistoryModal=async function(){
     lockBodyScroll();
     const modal = qs('historyModal');
+    modal.style.pointerEvents = 'auto';
     modal.classList.add('open');
     qs('historyList').innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div>';
 
@@ -5412,6 +5416,7 @@ window.openHistoryModal=async function(){
 window.closeHistoryModal=function(){
     const modal = qs('historyModal');
     modal.classList.remove('open');
+    modal.style.pointerEvents = 'none';
     unlockBodyScroll();
     // Clean up listeners
     if(modal._escHandler){ document.removeEventListener('keydown', modal._escHandler); modal._escHandler = null; }
@@ -11735,6 +11740,9 @@ window.renderChat = async function(msgs){
     requestAnimationFrame(async () => {
         const scroll = preserveScrollState(el);
         const entries = Object.entries(lastChatMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-60);
+        const sig = entries.map(([id,m])=>`${id}:${m.createdAt||0}:${m.text||''}:${m.msgType||''}:${m.mediaData?1:0}:${m.edited?1:0}`).join('|') + '|r:' + JSON.stringify(chatReadStates||{});
+        if(el.dataset.sig === sig){ _chatRenderPending = false; return; }
+        el.dataset.sig = sig;
         
         // Get current user's chat bubble style
         let myBubbleStyle = '';
@@ -13484,7 +13492,7 @@ import { getDatabase, ref, get, set, update, remove, push, onValue, off } from "
 
 // Wait until main app initializes
 function ready(cb){
-  if(window.db && window.currentNick !== undefined && typeof window.qs === 'function') return cb();
+  if(window.db && typeof window.qs === 'function' && typeof window._getCurrentNick === 'function') return cb();
   setTimeout(()=>ready(cb), 250);
 }
 
@@ -13608,9 +13616,11 @@ ready(function(){
   };
 
 
-  window.openPassport = async function(){
-    const nick = window.currentNick;
+  window.openPassport = async function(targetNick){
+    const viewerNick = window.currentNick;
+    const nick = targetNick || viewerNick;
     if(!nick) return toast('⚠️ Сначала войдите','gold');
+    const isOwn = nick === viewerNick;
     // Показываем модалку сразу со скелетом — без бесконечной загрузки
     const old = document.getElementById('passportModal'); if(old) old.remove();
     const modal = document.createElement('div');
@@ -13620,7 +13630,7 @@ ready(function(){
     modal.innerHTML = `
       <div style="width:100%;max-width:420px;background:linear-gradient(160deg,#16242a,#0e1620);border:1px solid rgba(34,211,165,.4);border-radius:24px;padding:22px;box-shadow:0 12px 60px rgba(0,0,0,.7);max-height:92vh;overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;color:var(--primary);">🪪 Паспорт Капани</div>
+          <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;color:var(--primary);">🪪 Паспорт Капани${isOwn?'':' — '+escHtml(nick)}</div>
           <button class="btn btn-ghost btn-sm" style="width:auto;padding:6px 10px;" onclick="this.closest('#passportModal').remove()">✕</button>
         </div>
         <div id="passportModalBody" style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0;">Загрузка…</div>
@@ -13646,7 +13656,7 @@ ready(function(){
     } catch(e){
       console.error('[openPassport]', e);
       const body = document.getElementById('passportModalBody');
-      if(body) body.innerHTML = `<div style="color:var(--red);">Ошибка загрузки: ${escHtml(e.message||'нет связи')}</div><button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="openPassport()">🔄 Повторить</button>`;
+      if(body) body.innerHTML = `<div style="color:var(--red);">Ошибка загрузки: ${escHtml(e.message||'нет связи')}</div><button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="openPassport('${jsEsc(nick)}')">🔄 Повторить</button>`;
       return;
     }
 
@@ -13658,9 +13668,11 @@ ready(function(){
 
     if(!p.firstName || !p.lastName || !p.dob){
       body.style.textAlign = 'left';
-      body.innerHTML = `
+      body.innerHTML = isOwn ? `
         <div style="color:var(--text);margin-bottom:12px;">Паспорт ещё не оформлен. Заполните данные:</div>
         <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('passportModal').remove();fillPassportForm();">📝 Заполнить паспорт</button>
+      ` : `
+        <div style="color:var(--text);">У этого жителя паспорт ещё не оформлен.</div>
       `;
       return;
     }
@@ -13688,7 +13700,7 @@ ready(function(){
         </div>
       </div>
       <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px;">Документ выдан мэрией Капани</div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;" onclick="document.getElementById('passportModal').remove();fillPassportForm();">✏️ Изменить данные</button>
+      ${isOwn ? `<button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;" onclick="document.getElementById('passportModal').remove();fillPassportForm();">✏️ Изменить данные</button>` : ''}
     `;
   };
 
@@ -13792,6 +13804,100 @@ ready(function(){
     sel.addEventListener('change', ()=>{ if(sel.value) showAdminLicenseStatus(sel.value); });
   };
   setInterval(_bindAdminTarget, 1500);
+
+  // ═══════════════════════════════════════════
+  // 3b) КСБ / ПОЛИЦИЯ: просмотр паспорта и выдача прав любому жителю
+  // ═══════════════════════════════════════════
+  async function ksbCheckAccess(){
+    const myNick = window.currentNick;
+    if(!myNick) { toast('❌ Не авторизован','red'); return null; }
+    const meSnap = await get(userRef(myNick));
+    if(!meSnap.exists()) { toast('❌ Профиль не найден','red'); return null; }
+    const me = meSnap.val();
+    const isKsb = hasMunicipalJob(me,'КСБ') || me.job==='КСБ';
+    const isPolice = hasMunicipalJob(me,'Полицейский') || me.job==='Полицейский';
+    const isAdmin = myNick === ADMIN;
+    if(!isKsb && !isPolice && !isAdmin) { toast('🚫 Доступно только КСБ и полиции','red'); return null; }
+    return myNick;
+  }
+  async function ksbFindResident(nameInput){
+    const q = (nameInput||'').toLowerCase().trim();
+    if(!q) return null;
+    if(window.allUsersCache && Object.keys(window.allUsersCache).length){
+      for(const [nick, u] of Object.entries(window.allUsersCache)){
+        const dn = ((u.displayName||'').trim() || nick).toLowerCase();
+        if(dn === q || nick.toLowerCase() === q) return { nick, ...u };
+      }
+    }
+    const allSnap = await get(ref(db,'users'));
+    const allU = allSnap.val() || {};
+    for(const [nick, u] of Object.entries(allU)){
+      const dn = ((u.displayName||'').trim() || nick).toLowerCase();
+      if(dn === q || nick.toLowerCase() === q) return { nick, ...u };
+    }
+    return null;
+  }
+
+  window.ksbViewPassport = async function(){
+    if(!(await ksbCheckAccess())) return;
+    const nameInput = (qs('dutyPassportNick')?.value||'').trim();
+    if(!nameInput) return toast('⚠️ Укажите никнейм или имя жителя','gold');
+    const target = await ksbFindResident(nameInput);
+    if(!target) return toast('❌ Житель с таким именем не найден','red');
+    openPassport(target.nick);
+  };
+
+  window.ksbGrantLicense = async function(kind){
+    if(!(await ksbCheckAccess())) return;
+    const nameInput = (qs('dutyLicenseNick')?.value||'').trim();
+    if(!nameInput) return toast('⚠️ Укажите никнейм или имя жителя','gold');
+    const target = await ksbFindResident(nameInput);
+    if(!target) return toast('❌ Житель с таким именем не найден','red');
+    try {
+      await writeLicense(target.nick, { [kind]: true, [kind+'IssuedAt']: Date.now() });
+      await pushNotification(target.nick, `✅ КСБ/Полиция выдали вам ${kind==='bike'?'права на велосипед 🚲':'права на скутер 🛵'}`,'system');
+      toast(`✅ ${target.nick} получил права`,'green');
+    } catch(e){ toast('❌ ' + (e.message||e.code||'Ошибка'),'red'); }
+  };
+  window.ksbRevokeLicense = async function(kind){
+    if(!(await ksbCheckAccess())) return;
+    const nameInput = (qs('dutyLicenseNick')?.value||'').trim();
+    if(!nameInput) return toast('⚠️ Укажите никнейм или имя жителя','gold');
+    const target = await ksbFindResident(nameInput);
+    if(!target) return toast('❌ Житель с таким именем не найден','red');
+    try {
+      await writeLicense(target.nick, { [kind]: false });
+      await pushNotification(target.nick, `❌ КСБ/Полиция изъяли ваши ${kind==='bike'?'права на велосипед 🚲':'права на скутер 🛵'}`,'system');
+      toast(`🚫 У ${target.nick} изъяты права`,'gold');
+    } catch(e){ toast('❌ ' + (e.message||e.code||'Ошибка'),'red'); }
+  };
+
+  // Inject the КСБ/Полиция passport+license card directly into the static dutyPage
+  function injectDutyPassportLicenseUI(){
+    const dutyPage = qs('dutyPage'); if(!dutyPage) return;
+    if(qs('dutyPassportLicenseCard')) return;
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'dutyPassportLicenseCard';
+    card.style.cssText = 'border-color:rgba(34,211,165,.25);background:rgba(34,211,165,.04);';
+    card.innerHTML = `
+      <div class="card-title" style="color:var(--primary);">🪪 Паспорт и права жителя</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Посмотрите паспорт любого жителя или выдайте/изымите права на велосипед и скутер.</div>
+      <input type="text" id="dutyPassportNick" placeholder="Никнейм или имя жителя" maxlength="40">
+      <button class="btn btn-ghost" style="margin-top:8px;" onclick="ksbViewPassport()">🪪 Показать паспорт</button>
+      <div style="border-top:1px dashed rgba(255,255,255,.1);margin:14px 0;"></div>
+      <input type="text" id="dutyLicenseNick" placeholder="Никнейм или имя жителя" maxlength="40">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary btn-sm" onclick="ksbGrantLicense('bike')">🚲 Выдать на велосипед</button>
+        <button class="btn btn-red btn-sm" onclick="ksbRevokeLicense('bike')">🚲 Изъять</button>
+        <button class="btn btn-primary btn-sm" onclick="ksbGrantLicense('scooter')">🛵 Выдать на скутер</button>
+        <button class="btn btn-red btn-sm" onclick="ksbRevokeLicense('scooter')">🛵 Изъять</button>
+      </div>
+    `;
+    const firstCard = dutyPage.querySelector('.card');
+    if(firstCard && firstCard.nextSibling) firstCard.parentNode.insertBefore(card, firstCard.nextSibling);
+    else dutyPage.appendChild(card);
+  }
 
   // ═══════════════════════════════════════════
   // 4) POLICE: requests to mayor
@@ -13995,6 +14101,7 @@ ready(function(){
       if(id==='adminPage'){ injectAdminUI(); }
       if(id==='jobs'){ injectPoliceUI(); refreshPolicePanelVisibility(); }
       if(id==='market'){ injectMarketRentUI(); renderRentListingsOnMarket(); }
+      if(id==='dutyPage'){ injectDutyPassportLicenseUI(); }
     } catch(e){ console.error('[KapaniPack v2 hook]', e); }
     return r;
   };
@@ -14004,6 +14111,7 @@ ready(function(){
     injectPassportUI(); injectAdminUI(); injectPoliceUI(); injectMarketRentUI();
     refreshPolicePanelVisibility();
     renderRentListingsOnMarket();
+    injectDutyPassportLicenseUI();
   }, 1500);
 
   // ═══════════════════════════════════════════
