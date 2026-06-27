@@ -495,8 +495,9 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 .msg-edit-area .edit-btns{display:flex;gap:6px;}
 #historyModal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9980;display:none;align-items:flex-end;justify-content:center;}
 #historyModal.open{display:flex;}
-.history-sheet{background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:min(52vh,520px);height:min(52vh,520px);display:flex;flex-direction:column;overflow:hidden;padding:24px 18px max(28px,env(safe-area-inset-bottom));animation:sheetUp .3s ease-out;box-sizing:border-box;}
-.history-sheet-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+.history-sheet{background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;height:min(72vh,640px);max-height:min(72vh,640px);display:flex;flex-direction:column;overflow:hidden;padding:24px 18px max(28px,env(safe-area-inset-bottom));animation:sheetUp .3s ease-out;box-sizing:border-box;position:relative;}
+.history-sheet-scroll{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:2px;}
+.history-close{position:absolute;top:18px;right:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--surface2);color:var(--text);font-size:16px;cursor:pointer;z-index:10;border:none;line-height:1;flex-shrink:0;}
 .delivery-order-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
 .delivery-choice-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
 .delivery-choice-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-bottom:6px;}
@@ -725,7 +726,9 @@ body.modal-open{/* position:fixed applied via JS */}
 .g-header,.bottom-nav{-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);}
 /* Ensure modals render on top layer on iOS */
 #userProfileModal,#historyModal,#imgViewer,#videoViewer{isolation:isolate;}
-.user-profile-sheet{-webkit-overflow-scrolling:touch;overflow-y:auto;}.history-sheet{-webkit-overflow-scrolling:touch;overflow:hidden;}.history-sheet-scroll{-webkit-overflow-scrolling:touch;overflow-y:auto !important;flex:1 1 auto;min-height:0;}
+    .ios-device .user-profile-sheet{-webkit-overflow-scrolling:touch;overflow-y:auto;}
+    .ios-device .history-sheet{-webkit-overflow-scrolling:touch;overflow:hidden;}
+    .ios-device .history-sheet-scroll{-webkit-overflow-scrolling:touch;overflow-y:scroll !important;flex:1 1 0;min-height:0;}
 /* Fix touch events passing through on iOS */
 #userProfileModal.open,.section.active{pointer-events:auto;}
 /* Prevent double-tap zoom on buttons */
@@ -1309,13 +1312,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <!-- BANK HISTORY MODAL -->
 <div id="historyModal" onclick="if(event.target===this)closeHistoryModal()">
     <div class="history-sheet" onclick="event.stopPropagation()">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-shrink:0;">
-            <div style="font-weight:900;font-size:18px;">📊 История операций</div>
-            <span class="history-close" onclick="closeHistoryModal()">✕</span>
-        </div>
+        <button class="history-close" onclick="closeHistoryModal()" aria-label="Закрыть">✕</button>
+        <div style="font-weight:900;font-size:18px;margin-bottom:14px;padding-right:40px;">📊 История операций</div>
+        <div class="history-summary" id="historySummary" style="flex-shrink:0;"></div>
         <div class="history-sheet-scroll">
-        <div class="history-summary" id="historySummary"></div>
-        <div id="historyList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div>
+            <div id="historyList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div>
         </div>
     </div>
 </div>
@@ -2390,7 +2391,8 @@ let renderChat;
 let renderDmMessages;
 let chatReadStates = {};
 
-Object.defineProperty(window, "currentDmNick", { get: () => currentDmNick });
+// currentDmNick is accessed directly — no defineProperty needed (it caused call stack overflow)
+window._getDmNick = () => currentDmNick;
 
 // ─── GLOBAL ERROR HANDLER ───────────────────
 window.addEventListener('error', (event) => {
@@ -3185,24 +3187,84 @@ window.handleAuth = async function() {
 function startApp() {
     if(appStarted) return;
     appStarted = true;
+
+    // Keep main app HIDDEN until data is loaded — prevents flash of empty UI
     qs('authSection').style.display='none';
-    qs('gHeader').style.display='flex';
-    qs('bottomNav').style.display='flex';
-    qs('mainApp').style.display='block';
+    qs('gHeader').style.display='none';
+    qs('bottomNav').style.display='none';
+    qs('mainApp').style.display='none';
+
     const hw=qs('headerAvatarWrap'); if(hw) hw.classList.add('online');
     startOnlineHeartbeat();
     attachListeners();
     ensureEconomyFresh({notify:true}).catch(()=>{});
     window._economyTimer && clearInterval(window._economyTimer);
     window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(()=>{}), 5 * 60 * 1000);
-    navTo('home');
     requestPersistentStorage();
-    // NOTE: Push permission must only be requested from a user gesture (browser security requirement)
-    // requestPushPermission() is called via the UI button instead
-    // On iOS Safari, auto-requesting is silently ignored anyway
     buildEmojiPanels();
     try { const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); if(auth && auth.nick && (!currentNick || currentNick!==auth.nick)) { localStorage.setItem('kp_s', auth.nick); sessionStorage.setItem('kp_s', auth.nick); currentNick = auth.nick; } } catch(e) {}
-    hideLoadingSafe();
+
+    // ── Ждём реальных данных перед показом UI и скрытием экрана загрузки ─
+    const loStatus = document.getElementById('loStatus');
+    const loBar    = document.getElementById('loBar');
+
+    if(loStatus) loStatus.textContent = 'Загружаем ваши данные…';
+    if(loBar) loBar.style.cssText = 'width:30%;transition:width .5s ease;';
+
+    // Шаг 1: данные текущего пользователя (ник, баланс, аватар)
+    const userLoad = get(userRef(currentNick)).then(snap => {
+        if(snap.exists()){
+            const u = snap.val();
+            updateHeader(u);
+            updateFrozenOverlay(u);
+            if(loStatus) loStatus.textContent = 'Загружаем жителей…';
+            if(loBar) loBar.style.cssText = 'width:55%;transition:width .4s ease;';
+        }
+    }).catch(()=>{});
+
+    // Шаг 2: список всех пользователей (ники, аватарки)
+    const allUsersLoad = get(ref(db,'users')).then(snap => {
+        if(snap.exists()){
+            allUsersCache = snap.val();
+            renderHomeStats_users(allUsersCache);
+            if(currentNick === ADMIN) renderAdminUserSelect(allUsersCache);
+            updateHeader_balance(allUsersCache[currentNick]);
+            if(loStatus) loStatus.textContent = 'Загружаем бизнесы…';
+            if(loBar) loBar.style.cssText = 'width:78%;transition:width .3s ease;';
+        }
+    }).catch(()=>{});
+
+    // Шаг 3: список бизнесов
+    const bizLoad = get(ref(db,'businesses')).then(snap => {
+        if(snap.exists()){
+            window.allBusinessesCache = snap.val();
+            if(loStatus) loStatus.textContent = 'Почти готово…';
+            if(loBar) loBar.style.cssText = 'width:92%;transition:width .3s ease;';
+        }
+    }).catch(()=>{});
+
+    // Показываем UI и скрываем загрузчик только когда данные готовы
+    const safetyTimer = setTimeout(() => {
+        revealApp();
+        hideLoadingSafe();
+    }, 4000);
+
+    Promise.all([userLoad, allUsersLoad, bizLoad]).then(() => {
+        clearTimeout(safetyTimer);
+        if(loBar) loBar.style.cssText = 'width:100%;transition:width .25s ease;';
+        setTimeout(() => { revealApp(); hideLoadingSafe(); }, 300);
+    }).catch(() => {
+        clearTimeout(safetyTimer);
+        revealApp();
+        hideLoadingSafe();
+    });
+}
+
+function revealApp(){
+    qs('gHeader').style.display='flex';
+    qs('bottomNav').style.display='flex';
+    qs('mainApp').style.display='block';
+    navTo('home');
 }
 
 window.logout = function() {
@@ -4866,6 +4928,40 @@ window.cancelOrder=async function(id){
 };
 
 // ─── BANK ─────────────────────────────────
+// Helper: strip undefined/null from an object so Firebase doesn't reject it
+// Also converts arrays to objects if they contain objects (Firebase arrays issue)
+function stripUndefined(obj) {
+    if(Array.isArray(obj)){
+        // Firebase dislikes sparse arrays — convert to plain objects first, then array
+        const cleaned = obj
+            .filter(item => item !== undefined && item !== null)
+            .map(item => stripUndefined(item));
+        return cleaned;
+    }
+    if(obj && typeof obj === 'object'){
+        const out = {};
+        for(const k of Object.keys(obj)){
+            const v = obj[k];
+            if(v !== undefined && v !== null) out[k] = stripUndefined(v);
+        }
+        return out;
+    }
+    return obj;
+}
+
+// Helper: make a Firebase-safe employment entry — no undefined anywhere
+function makeEmpEntry(item){
+    const entry = {
+        id:   String(item.id   || ''),
+        type: String(item.type || 'municipal'),
+        role: String(item.role || ''),
+    };
+    // Only include bizId/bizName if they are real truthy strings
+    if(item.bizId   && typeof item.bizId   === 'string') entry.bizId   = item.bizId;
+    if(item.bizName && typeof item.bizName === 'string') entry.bizName = item.bizName;
+    return entry;
+}
+
 let _quitJobBusy = false;
 window.quitJob = async function(){
     if(_quitJobBusy) return toast('⏳ Увольнение уже обрабатывается…','gold');
@@ -4885,17 +4981,15 @@ window.quitJob = async function(){
         const addEmp = (item) => {
             if(!item || !item.id || seen.has(item.id)) return;
             seen.add(item.id);
-            allEmps.push({
-                id: String(item.id),
-                type: String(item.type || 'municipal'),
-                role: String(item.role || ''),
-                bizId: item.bizId ? String(item.bizId) : undefined,
-                bizName: item.bizName ? String(item.bizName) : undefined,
-            });
+            allEmps.push(makeEmpEntry(item));
         };
 
-        // Из массива employments
-        if(Array.isArray(u.employments)) u.employments.forEach(addEmp);
+        // Из массива employments (Firebase может вернуть его как объект или массив)
+        const rawEmps = u.employments;
+        if(rawEmps){
+            const empArr = Array.isArray(rawEmps) ? rawEmps : Object.values(rawEmps);
+            empArr.forEach(e => e && addEmp(e));
+        }
 
         // Legacy u.job (мун. должность)
         if(u.job && u.job !== 'Житель'){
@@ -4904,18 +4998,17 @@ window.quitJob = async function(){
 
         // Из allBusinessesCache (бизнесы, где числимся сотрудником)
         try {
-            const bizSnap = Object.values(window.allBusinessesCache || {});
-            bizSnap.forEach(b => {
+            Object.values(window.allBusinessesCache || {}).forEach(b => {
                 if(!b || b.status !== 'active') return;
                 const emp = b.employees?.[nick];
                 if(emp) addEmp({
-                    id: `biz_${b.id}`,
-                    type: 'business',
-                    bizId: b.id,
-                    role: (typeof window.getBizEmployeeRoleName === 'function'
-                        ? window.getBizEmployeeRoleName(emp)
-                        : (emp.role || 'Сотрудник')),
-                    bizName: b.name || 'Бизнес',
+                    id:      `biz_${b.id}`,
+                    type:    'business',
+                    bizId:   String(b.id || ''),
+                    role:    String(typeof window.getBizEmployeeRoleName === 'function'
+                                ? window.getBizEmployeeRoleName(emp)
+                                : (emp.role || 'Сотрудник')),
+                    bizName: String(b.name || 'Бизнес'),
                 });
             });
         } catch(e){ /* allBusinessesCache might not be ready */ }
@@ -4948,23 +5041,23 @@ window.quitJob = async function(){
             }
 
             // 2) Новый список employments без уволенной записи
-            const newEmps = allEmps.filter(e => e.id !== targetEmp.id);
+            // Каждый элемент пересоздаём через makeEmpEntry — гарантия отсутствия undefined
+            const newEmps = allEmps
+                .filter(e => e.id !== targetEmp.id)
+                .map(e => makeEmpEntry(e));
 
             // 3) Вычисляем новую основную мун. должность
             const remainingMuni = newEmps.filter(e => e.type === 'municipal');
             const newMuniJob = remainingMuni.length > 0 ? remainingMuni[0].role : 'Житель';
 
-            // 4) Формируем patch
-            // ВАЖНО: всегда обновляем job при уходе с муниципальной
+            // 4) Формируем patch — все значения явно определены, без undefined
             const patch = {
-                employments: newEmps.length > 0 ? newEmps : [],
-                displayJob: newEmps.length > 0 ? newEmps[0].role : null,
+                employments: newEmps,
+                displayJob:  newEmps.length > 0 ? newEmps[0].role : null,
             };
 
             if(targetEmp.type === 'municipal'){
-                // Сбрасываем job и все права связанные с ней
                 patch.job = newMuniJob;
-                // Сбрасываем должностные права если нет других мун. должностей
                 if(remainingMuni.length === 0){
                     patch.jobApplicationStatus = null;
                     patch.appliedJob = null;
@@ -4982,33 +5075,31 @@ window.quitJob = async function(){
                 patch.janitorProof = '';
                 patch.janitorComment = '';
             }
-            // Сбрасываем полицейские/КСБ права если это была такая роль
             const securityRoles = ['Полицейский','КСБ','Охранник'];
             if(securityRoles.includes(targetEmp.role) && remainingMuni.every(e => !securityRoles.includes(e.role))){
                 patch.securityBadge = null;
             }
 
-            // 6) Атомарное обновление Firebase
-            await update(userRef(nick), patch);
+            // 6) Финальная очистка patch от undefined перед отправкой
+            const safePatch = stripUndefined(patch);
+
+            // 7) Атомарное обновление Firebase
+            await update(userRef(nick), safePatch);
 
             toast(`🚪 Вы уволились с «${targetEmp.role}»`, 'green');
 
-            // 7) Обновляем UI — безопасно, без вызова renderProfile (избегаем рекурсии)
+            // 8) Обновляем UI — без вызова renderProfile (избегаем рекурсии)
             try {
-                // Перерисовываем кнопку "Уволиться" сразу
                 const quitBtn = document.getElementById('quitJobBtn');
                 if(quitBtn) quitBtn.style.display = newEmps.length > 0 ? 'block' : 'none';
-                // Обновляем должность в шапке профиля
                 const jobEl = document.getElementById('profileJobLabel') || document.querySelector('.profile-job');
                 if(jobEl) jobEl.textContent = patch.displayJob || patch.job || 'Житель';
             } catch(uiErr){ /* ignore */ }
 
-            // 8) Обновляем видимость панели штрафов
             try {
                 if(typeof window.refreshFinePanelVisibility === 'function') window.refreshFinePanelVisibility();
             } catch(e){}
 
-            // 9) Если мы на странице профиля — перезагружаем её через navTo (не рекурсия)
             try {
                 if(typeof window.curPage !== 'undefined' && window.curPage === 'profile'){
                     if(typeof window.navTo === 'function') window.navTo('profile');
@@ -5275,7 +5366,27 @@ function monthTitleRu(dstr){
 }
 window.openHistoryModal=async function(){
     lockBodyScroll();
-    qs('historyModal').classList.add('open');qs('historyList').innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div>';
+    const modal = qs('historyModal');
+    modal.classList.add('open');
+    qs('historyList').innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div>';
+
+    // Escape key closes the modal
+    const onEsc = (e) => { if(e.key==='Escape'){ closeHistoryModal(); document.removeEventListener('keydown', onEsc); } };
+    document.addEventListener('keydown', onEsc);
+    modal._escHandler = onEsc;
+
+    // Swipe down to close (touch devices)
+    const sheet = modal.querySelector('.history-sheet');
+    let touchStartY = 0;
+    const onTouchStart = (e) => { touchStartY = e.touches[0].clientY; };
+    const onTouchEnd = (e) => {
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if(dy > 80) closeHistoryModal();
+    };
+    sheet.addEventListener('touchstart', onTouchStart, {passive:true});
+    sheet.addEventListener('touchend', onTouchEnd, {passive:true});
+    modal._swipeCleanup = () => { sheet.removeEventListener('touchstart', onTouchStart); sheet.removeEventListener('touchend', onTouchEnd); };
+
     const snap=await get(txLogRef(currentNick));const all=Object.values(snap.val()||{}).sort((a,b)=>(b.ts||'').localeCompare(a.ts||''));
     const income=all.filter(t=>t.type==='in').reduce((s,t)=>s+(t.amt||0),0);const expense=all.filter(t=>t.type==='out').reduce((s,t)=>s+(t.amt||0),0);
     qs('historySummary').innerHTML=`<div class="history-sum-box income"><div class="history-sum-val" style="color:var(--primary);">+${income.toLocaleString()}₽</div><div class="history-sum-lbl">Получено</div></div><div class="history-sum-box expense"><div class="history-sum-val" style="color:var(--red);">−${expense.toLocaleString()}₽</div><div class="history-sum-lbl">Списано</div></div>`;
@@ -5298,7 +5409,14 @@ window.openHistoryModal=async function(){
         }).join('')}`;
     }).join('');
 };
-window.closeHistoryModal=function(){qs('historyModal').classList.remove('open');unlockBodyScroll();};
+window.closeHistoryModal=function(){
+    const modal = qs('historyModal');
+    modal.classList.remove('open');
+    unlockBodyScroll();
+    // Clean up listeners
+    if(modal._escHandler){ document.removeEventListener('keydown', modal._escHandler); modal._escHandler = null; }
+    if(modal._swipeCleanup){ modal._swipeCleanup(); modal._swipeCleanup = null; }
+};
 
 // ─── GENERAL CHAT ─────────────────────────
 function getPendingPhotos(ctx){return pendingPhotoQueues[ctx] || (pendingPhotoQueues[ctx]=[]);}
@@ -6807,29 +6925,90 @@ document.addEventListener('input',function(e){
 function renderAdminApps(apps){const pending=Object.values(apps||{}).filter(a=>a.status==='new');qs('appList').innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':pending.map(a=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:8px;"><b>${escHtml(a.from)}</b> → ${escHtml(a.target)}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary btn-sm" onclick="approveApp('${a.id}',true)">✅</button><button class="btn btn-red btn-sm" onclick="approveApp('${a.id}',false)">❌</button></div></div>`).join('');}
 function renderAdminUsers(users){
     const el=qs('allUsersList');if(!el)return;
-    el.innerHTML=Object.values(users).map(u=>{const online=isUserOnline(u);const canDelete=u.nick!==ADMIN;return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;"><div class="av-wrap-sm ${online?'online':''}" style="cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><img src="${escHtml(u.avatar||'')}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div></div><div style="flex:1;cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')"><div style="font-weight:800;font-size:13px;">${escHtml(u.nick)}${u.nick===ADMIN?' 👑':''}</div><div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(getUserBusinessRoleLabel(u, u.nick || ''))} · ${(u.balance||0).toLocaleString()}₽</div></div>${canDelete?`<button class="btn btn-red btn-sm" style="margin-left:8px;padding:6px 10px;font-size:11px;" onclick="event.stopPropagation();adminDeleteAccount('${escHtml(u.nick)}')">🗑</button>`:''}</div>`;}).join('');
+    el.innerHTML=Object.values(users).map(u=>{
+        const online=isUserOnline(u);
+        const canDelete=u.nick!==ADMIN;
+        const label = (u.displayName&&u.displayName.trim()) ? escHtml(u.displayName.trim()) : escHtml(u.nick||'');
+        const loginHint = (u.displayName&&u.displayName.trim()&&u.displayName.trim()!==u.nick) ? `<span style="font-size:10px;color:var(--muted);margin-left:4px;">(@${escHtml(u.nick)})</span>` : '';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;">
+            <div class="av-wrap-sm ${online?'online':''}" style="cursor:pointer;" onclick="openUserProfile('${escHtml(u.nick)}')">
+                <img src="${escHtml(u.avatar||DEFAULT_AVATAR_URL)}" style="width:36px;height:36px;border-radius:10px;object-fit:cover;" loading="lazy"><div class="online-dot"></div>
+            </div>
+            <div style="flex:1;cursor:pointer;min-width:0;" onclick="openUserProfile('${escHtml(u.nick)}')">
+                <div style="font-weight:800;font-size:13px;">${label}${u.nick===ADMIN?' 👑':''}${loginHint}</div>
+                <div style="font-size:11px;color:${online?'#22c55e':'var(--primary)'};">${online?'🟢 В сети · ':''}${escHtml(getUserBusinessRoleLabel(u, u.nick||''))} · ${(u.balance||0).toLocaleString()}₽</div>
+            </div>
+            ${canDelete?`<button class="btn btn-red btn-sm" style="margin-left:8px;padding:6px 10px;font-size:11px;" onclick="event.stopPropagation();adminDeleteAccount('${escHtml(u.nick)}')">🗑</button>`:''}
+        </div>`;
+    }).join('');
     const total=Object.values(users).reduce((s,u)=>s+(u.balance||0),0);
     const aStats=qs('adminStats');if(aStats)aStats.innerHTML=`<div class="stat-box"><div class="sv" style="color:var(--gold)">${Object.keys(users).length}</div><div class="sl">Жителей</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)" id="adminOrderCount">—</div><div class="sl">Заказов</div></div><div class="stat-box"><div class="sv" style="color:var(--gold)">${Math.round(total/1000)}к</div><div class="sl">₽ оборот</div></div>`;
 }
-function renderAdminOrders(orders){const el=qs('adminOrders');if(!el)return;const arr=Object.entries(orders||{}).map(([id,o])=>({...o,id}));const cnt=qs('adminOrderCount');if(cnt)cnt.textContent=arr.length;el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':arr.map(o=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;font-size:13px;"><b>${o.type==='taxi'?'🛵 Такси':'📦 Доставка'}</b> · ${escHtml(o.info)}<br>Клиент: ${escHtml(o.client)} · ${o.price}₽${o.worker?` · Курьер: ${escHtml(o.worker)}`:'·  <span style="color:var(--muted)">Ожидает</span>'}<button class="btn btn-red btn-sm" style="margin-top:8px;" onclick="adminDeleteOrder('${o.id}')">Удалить</button></div>`).join('');}
+function renderAdminOrders(orders){
+    const el=qs('adminOrders');if(!el)return;
+    const arr=Object.entries(orders||{}).map(([id,o])=>({...o,id}));
+    const cnt=qs('adminOrderCount');if(cnt)cnt.textContent=arr.length;
+    const uCache = window.allUsersCache || {};
+    const dName = (nick) => {
+        if(!nick) return '';
+        const u = uCache[nick];
+        return (u && u.displayName && u.displayName.trim()) ? u.displayName.trim() : nick;
+    };
+    el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет</div>':arr.map(o=>`
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;font-size:13px;">
+            <b>${o.type==='taxi'?'🛵 Такси':'📦 Доставка'}</b> · ${escHtml(o.info)}<br>
+            Клиент: ${escHtml(dName(o.client))} · ${o.price}₽
+            ${o.worker?` · Исполнитель: ${escHtml(dName(o.worker))}`:'· <span style="color:var(--muted)">Ожидает</span>'}
+            <br><button class="btn btn-red btn-sm" style="margin-top:8px;" onclick="adminDeleteOrder('${o.id}')">Удалить</button>
+        </div>`).join('');
+}
 function renderAdminUserSelect(users){
     const sel=qs('adminTarget');
     if(!sel)return;
     const cur=sel.value;
-    sel.innerHTML=Object.keys(users).map(n=>`<option value="${n}">${n}</option>`).join('');
+    sel.innerHTML=Object.entries(users).map(([n,u])=>{
+        const label = (u.displayName&&u.displayName.trim()) ? `${u.displayName.trim()} (@${n})` : n;
+        return `<option value="${n}">${label}</option>`;
+    }).join('');
     if(cur)sel.value=cur;
     // Also populate kveTarget select
     const kveSel=qs('kveTarget');
     if(kveSel){
         const kveVal=kveSel.value;
-        kveSel.innerHTML='<option value="">— Выберите жителя —</option>'+Object.entries(users).map(([n,u])=>`<option value="${n}">${n}${u.kveScore!==undefined&&u.kveScore!==null?' ('+u.kveScore+'б.)':' (нет балла)'}</option>`).join('');
+        kveSel.innerHTML='<option value="">— Выберите жителя —</option>'+Object.entries(users).map(([n,u])=>{
+            const label = (u.displayName&&u.displayName.trim()) ? `${u.displayName.trim()} (@${n})` : n;
+            const score = u.kveScore!==undefined&&u.kveScore!==null ? ` (${u.kveScore}б.)` : ' (нет балла)';
+            return `<option value="${n}">${label}${score}</option>`;
+        }).join('');
         if(kveVal)kveSel.value=kveVal;
     }
 }
 function renderAdminJanitorSubmissions(subs){
     const el=qs('janitorAdminList');if(!el)return;
     const pending=Object.values(subs||{}).filter(s=>s.status==='pending').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    el.innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет отчётов</div>':pending.map(s=>`<div class="submission-card"><div class="submission-top" onclick="openUserProfile('${jsEsc(s.worker)}')"><img src="${escHtml(s.workerAvatar||DEFAULT_AVATAR_URL)}" style="width:46px;height:46px;border-radius:13px;object-fit:cover;border:2px solid var(--primary);" loading="lazy"><div style="flex:1;min-width:0;"><div style="font-weight:900;font-size:14px;">${escHtml(s.worker)}${s.worker===ADMIN?' 👑':''}</div><div style="font-size:11px;color:var(--muted);">${escHtml(s.workerJob||JOB_JANITOR)} · ${escHtml(s.date||todayKey())}</div></div><div style="font-size:11px;font-weight:900;color:var(--gold);">⏳ На проверке</div></div>${s.photo?`<img class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}${s.comment?`<div style="font-size:13px;color:var(--text);white-space:pre-wrap;">${escHtml(s.comment)}</div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(s.worker)}')">💬 Чат</button><button class="btn btn-primary btn-sm" onclick="payoutJanitorSubmission('${jsEsc(s.id)}')">💵 Выплатить</button><button class="btn btn-red btn-sm" onclick="rejectJanitorSubmission('${jsEsc(s.id)}')">❌ Отказать</button></div></div>`).join('');
+    const uCache = window.allUsersCache || {};
+    const dName = (nick) => {
+        const u = uCache[nick];
+        return (u && u.displayName && u.displayName.trim()) ? u.displayName.trim() : (nick||'');
+    };
+    el.innerHTML=pending.length===0?'<div style="color:var(--muted);font-size:13px;">Нет отчётов</div>':pending.map(s=>`
+        <div class="submission-card">
+            <div class="submission-top" onclick="openUserProfile('${jsEsc(s.worker)}')">
+                <img src="${escHtml(s.workerAvatar||DEFAULT_AVATAR_URL)}" style="width:46px;height:46px;border-radius:13px;object-fit:cover;border:2px solid var(--primary);" loading="lazy">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:900;font-size:14px;">${escHtml(dName(s.worker))}${s.worker===ADMIN?' 👑':''}</div>
+                    <div style="font-size:11px;color:var(--muted);">${escHtml(s.workerJob||JOB_JANITOR)} · ${escHtml(s.date||todayKey())}</div>
+                </div>
+                <div style="font-size:11px;font-weight:900;color:var(--gold);">⏳ На проверке</div>
+            </div>
+            ${s.photo?`<img class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}
+            ${s.comment?`<div style="font-size:13px;color:var(--text);white-space:pre-wrap;">${escHtml(s.comment)}</div>`:''}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(s.worker)}')">💬 Чат</button>
+                <button class="btn btn-primary btn-sm" onclick="payoutJanitorSubmission('${jsEsc(s.id)}')">💵 Выплатить</button>
+                <button class="btn btn-red btn-sm" onclick="rejectJanitorSubmission('${jsEsc(s.id)}')">❌ Отказать</button>
+            </div>
+        </div>`).join('');
 }
 window.payoutJanitorSubmission=async function(id){
     if(currentNick!==ADMIN)return;
@@ -10756,17 +10935,57 @@ window.deleteBizProduct = async function(pid){
 function renderAdminRentBuildings(buildings){
     const el = qs('adminRentBuildings'); if(!el) return;
     const list = Object.entries(buildings||{}).map(([id,b])=>({...b,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    el.innerHTML = list.length ? list.map(b=>`
-        <div class="rent-row" style="align-items:flex-start;">
-            ${b.photo ? `<img src="${escHtml(b.photo)}" onclick="openImgViewer('${jsEsc(b.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏘️</div>'}
-            <div class="rent-meta">
+    el.innerHTML = list.length ? list.map(b=>{
+        // Show display name if available, otherwise nick
+        const renterNick = b.renter || '';
+        const renterDisplay = (b.renterName && b.renterName.trim()) || renterNick;
+        const expMs = (b.rentExpiry && b.rentExpiry > Date.now()) ? b.rentExpiry - Date.now() : 0;
+        const expLabel = renterNick
+            ? (expMs > 0
+                ? `<span style="font-size:11px;color:var(--primary);">⏳ ${Math.ceil(expMs/86400000)} д.</span>`
+                : `<span style="font-size:11px;color:var(--red);">⚠️ Истекло</span>`)
+            : '';
+        return `
+        <div class="rent-row" style="align-items:flex-start;gap:10px;">
+            ${b.photo ? `<img src="${escHtml(b.photo)}" onclick="openImgViewer('${jsEsc(b.photo)}')" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;">` : '<div style="width:48px;height:48px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏘️</div>'}
+            <div class="rent-meta" style="flex:1;min-width:0;">
                 <div class="rent-title">${escHtml(b.name||'')}</div>
-                <div class="rent-sub">${(b.weekPrice||0).toLocaleString()} ₽ / неделя</div>
-                ${b.renter ? `<div class="rent-owned">Арендует: <b style="color:var(--text);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.renter)}')">${escHtml(b.renter)}</b></div>` : '<div class="rent-sub">Свободно</div>'}
+                <div class="rent-sub">${(b.weekPrice||0).toLocaleString()} ₽ / нед.</div>
+                ${renterNick
+                    ? `<div class="rent-sub" style="color:var(--gold);">Арендует: <b style="cursor:pointer;" onclick="openUserProfile('${jsEsc(renterNick)}')">${escHtml(renterDisplay)}</b> ${expLabel}</div>`
+                    : '<div class="rent-sub" style="color:var(--primary);">✅ Свободно</div>'}
             </div>
-            <button class="btn btn-red btn-sm" onclick="deleteRentBuilding('${jsEsc(b.id)}')">✕</button>
-        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">Пока нет зданий</div>';
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                ${renterNick ? `<button class="btn btn-gold btn-sm" onclick="adminRevokeRent('${jsEsc(b.id)}','${jsEsc(renterNick)}','${jsEsc(b.name||'')}')">🔓 Отобрать</button>` : ''}
+                <button class="btn btn-red btn-sm" onclick="deleteRentBuilding('${jsEsc(b.id)}')">✕ Удалить</button>
+            </div>
+        </div>`;
+    }).join('') : '<div style="color:var(--muted);font-size:13px;">Пока нет зданий</div>';
 }
+
+window.adminRevokeRent = async function(buildingId, renterNick, buildingName){
+    const displayRenter = (window.allUsersCache && window.allUsersCache[renterNick])
+        ? ((window.allUsersCache[renterNick].displayName||'').trim() || renterNick)
+        : renterNick;
+    if(!confirm(`Отобрать здание «${buildingName}» у ${displayRenter}? Деньги НЕ возвращаются.`)) return;
+    try {
+        await update(rentBuildingRef(buildingId), {
+            renter:     null,
+            renterName: null,
+            rentedAt:   null,
+            rentExpiry: null,
+        });
+        if(typeof pushNotification === 'function'){
+            await pushNotification(renterNick, `🏘 Мэрия изъяла у вас аренду здания «${buildingName}».`, 'system');
+        }
+        toast(`✅ Аренда здания «${buildingName}» отобрана у ${displayRenter}`, 'green');
+        const fresh = await get(rentBuildingsRef());
+        renderAdminRentBuildings(fresh.val() || {});
+    } catch(e){
+        console.error('[adminRevokeRent]', e);
+        toast('❌ Ошибка: ' + (e.message || 'не удалось отобрать аренду'), 'red');
+    }
+};
 window.handleRentBuildingPhoto = async function(e){
     const f = e.target.files[0]; if(!f) return;
     _rentBuildingPhotoData = await compressImage(f, 900, 0.85);
@@ -10811,48 +11030,124 @@ window.rentBuilding = async function(id){
     const discountNote = discountPct > 0 ? ` (скидка ${hasPrime ? 'Prime -35%' : 'Ultra -20%'}, было ${basePrice}₽)` : '';
     if((u.balance||0) < finalPrice) return toast('❌ Недостаточно средств','red');
     if(!confirm(`Арендовать «${b.name}» за ${finalPrice.toLocaleString()}₽ в неделю?${discountNote}`)) return;
+    const now = Date.now();
+    const rentExpiry = now + 7 * 24 * 60 * 60 * 1000; // ровно 7 суток
     await update(userRef(currentNick), { balance: (u.balance||0) - finalPrice });
-    await update(rentBuildingRef(id), { renter: currentNick, renterName: displayNick(u) || currentNick, rentedAt: Date.now() });
+    await update(rentBuildingRef(id), {
+        renter: currentNick,
+        renterName: displayNick(u) || currentNick,
+        rentedAt: now,
+        rentExpiry,
+    });
     await logTx(currentNick, {type:'out', who:b.name, amt:finalPrice, desc:`Аренда здания «${b.name}»${discountNote}`});
     toast(`🏘 Здание арендовано${discountPct > 0 ? `! Скидка ${hasPrime ? 'Prime 35%' : 'Ultra 20%'}` : ''}`, 'green');
     renderRentBuildings();
 };
+
+// ─── RENT EXPIRY CHECK ────────────────────
+// Called on render — clears expired rentals automatically
+async function checkAndClearExpiredRentals(list) {
+    const now = Date.now();
+    const expired = list.filter(b =>
+        b.renter &&
+        b.rentExpiry &&
+        now > b.rentExpiry
+    );
+    if(!expired.length) return;
+    await Promise.all(expired.map(async b => {
+        try {
+            // Use null to delete fields in Firebase Realtime DB
+            await update(rentBuildingRef(b.id), {
+                renter:     null,
+                renterName: null,
+                rentedAt:   null,
+                rentExpiry: null,
+            });
+            await pushNotification(b.renter, `🏘 Аренда здания «${b.name}» истекла и сброшена.`, 'system');
+        } catch(e){ console.warn('[rentExpiry]', e); }
+    }));
+}
+
+// Background rental expiry checker — runs every 10 min regardless of page
+(function startRentExpiryWatcher(){
+    async function runCheck(){
+        try {
+            const snap = await get(rentBuildingsRef());
+            const list = Object.values(snap.val() || {});
+            await checkAndClearExpiredRentals(list);
+        } catch(e){ /* ignore — network may be down */ }
+    }
+    // Run once 5s after load, then every 10 minutes
+    setTimeout(runCheck, 5000);
+    setInterval(runCheck, 10 * 60 * 1000);
+})();
+
 window.renderRentBuildings = async function(){
     const el = qs('rentBuildingsList'); if(!el) return;
     const snap = await get(rentBuildingsRef());
-    const list = Object.values(snap.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    let list = Object.values(snap.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+
+    // Auto-clear expired rentals first (handles both null and legacy 0/'')
+    await checkAndClearExpiredRentals(list);
+    // Re-fetch if any expired
+    const hasExpired = list.some(b => {
+        if(!b.renter) return false;
+        const expiry = b.rentExpiry;
+        return expiry && Date.now() > expiry;
+    });
+    if(hasExpired){
+        const fresh = await get(rentBuildingsRef());
+        list = Object.values(fresh.val()||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    }
+
+    const now = Date.now();
     const myCard = qs('myRentedBuildingCard');
     const my = list.filter(b => b.renter === currentNick);
     if(myCard){
         if(my.length){
             myCard.style.display='block';
-            myCard.innerHTML = `<div class="card-title">🏠 Ваши арендованные здания</div>` + my.map(b=>`
+            myCard.innerHTML = `<div class="card-title">🏠 Ваши арендованные здания</div>` + my.map(b=>{
+                const expMs = b.rentExpiry ? b.rentExpiry - now : 0;
+                const expDays = expMs > 0 ? Math.ceil(expMs / 86400000) : 0;
+                const expLabel = expDays > 0
+                    ? `<div style="font-size:11px;color:${expDays<=1?'var(--red)':'var(--primary)'};">⏳ Осталось: ${expDays} д.</div>`
+                    : `<div style="font-size:11px;color:var(--red);">⚠️ Истекает сегодня</div>`;
+                return `
                 <div class="rent-row" style="align-items:flex-start;">
                     ${b.photo ? `<img src="${escHtml(b.photo)}" onclick="openImgViewer('${jsEsc(b.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏘️</div>'}
                     <div class="rent-meta">
                         <div class="rent-title">${escHtml(b.name||'')}</div>
                         <div class="rent-sub">${(b.weekPrice||0).toLocaleString()} ₽ / неделя</div>
+                        ${expLabel}
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         } else {
             myCard.style.display='none';
             myCard.innerHTML = '';
         }
     }
-    el.innerHTML = list.length ? list.map(b=>`
+    el.innerHTML = list.length ? list.map(b=>{
+        const expMs = b.renter && b.rentExpiry ? b.rentExpiry - now : 0;
+        const expDays = expMs > 0 ? Math.ceil(expMs / 86400000) : 0;
+        const expiryNote = b.renter && b.rentExpiry
+            ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">⏳ ${expDays > 0 ? `ещё ${expDays} д.` : 'истекает сегодня'}</div>`
+            : '';
+        return `
         <div class="rent-card ${b.renter ? 'rented' : ''}">
             <div class="rent-row" style="align-items:flex-start;">
                 ${b.photo ? `<img src="${escHtml(b.photo)}" onclick="openImgViewer('${jsEsc(b.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏘️</div>'}
                 <div class="rent-meta">
                     <div class="rent-title">${escHtml(b.name||'')}</div>
                     <div class="rent-sub">${(b.weekPrice||0).toLocaleString()} ₽ / неделя</div>
-                    ${b.renter ? `<div class="rent-owned">Арендует: <b style="color:var(--text);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.renter)}')">${escHtml(b.renterName || b.renter)}</b></div>` : '<div class="rent-sub">Свободно</div>'}
+                    ${b.renter ? `<div class="rent-owned">Арендует: <b style="color:var(--text);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.renter)}')">${escHtml(b.renterName || b.renter)}</b></div>${expiryNote}` : '<div class="rent-sub">Свободно</div>'}
                 </div>
             </div>
             <div class="rent-actions" style="margin-top:10px;">
-                ${b.renter ? `<button class="btn btn-ghost btn-sm rent-disabled" disabled>Арендовать</button>` : `<button class="btn btn-gold btn-sm" onclick="rentBuilding('${jsEsc(b.id)}')">Арендовать</button>`}
+                ${b.renter ? `<button class="btn btn-ghost btn-sm rent-disabled" disabled>Арендовано</button>` : `<button class="btn btn-gold btn-sm" onclick="rentBuilding('${jsEsc(b.id)}')">Арендовать</button>`}
             </div>
-        </div>`).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет зданий</div>';
+        </div>`;
+    }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет зданий</div>';
 };
 window.refreshRentBuildingsIfNeeded = renderRentBuildings;
 
@@ -11322,29 +11617,26 @@ window.terminalPay = async function(){
 };
 
 
-const _loadingTimeout=setTimeout(()=>hideLoading(),1500);
-function hideLoadingSafe(){clearTimeout(_loadingTimeout);hideLoading();}
-window.addEventListener('load', ()=>{
-    setTimeout(hideLoadingSafe, 300);
-}, {once:true});
+// ─── LOADING SCREEN CONTROL ───────────────
+// The overlay is ONLY hidden inside startApp() after data loads,
+// or after safety timeout. Never hide it prematurely on 'load' event.
+const _loadingTimeout = setTimeout(()=>{ if(!appStarted) hideLoading(); }, 5000);
+function hideLoadingSafe(){ clearTimeout(_loadingTimeout); hideLoading(); }
+
+// Warn if running from file:// — Firebase won't connect
+if(location.protocol === 'file:'){
+    const loStatus = document.getElementById('loStatus');
+    if(loStatus) loStatus.textContent = '⚠️ Откройте сайт через веб-сервер, не через file://';
+    console.warn('[Kapani] file:// detected — use a local server, e.g. npx serve .');
+}
+
+// DO NOT hide on window.load — wait for Firebase data
 if(currentNick){
     try { startApp(); } catch(e) { console.error('[startApp]', e); hideLoadingSafe(); }
-    // Добавляем таймаут для Firebase запроса, чтобы сайт не висел бесконечно
-    const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Firebase request timeout')), 10000)
-    );
-    Promise.race([get(userRef(currentNick)), timeoutPromise]).then(snap=>{
-        if(!snap.exists()){
-            sessionStorage.removeItem('kp_s');
-            localStorage.removeItem('kp_s');
-            localStorage.removeItem('kp_auth');
-            currentNick=null;
-            location.reload();
-            return;
-        }
-        hideLoadingSafe();
-    }).catch(e=>{console.error(e); hideLoadingSafe();});
-} else {hideLoadingSafe();}
+} else {
+    // Not logged in → show auth form, hide overlay after short delay
+    setTimeout(hideLoadingSafe, 600);
+}
 if(curPage==='tasks') renderTasks();
 
 // ─── SAFER STRING HELPERS ─────────────────
@@ -12814,10 +13106,10 @@ try {
   window.JANITOR_TASK_TEXT = JANITOR_TASK_TEXT;
   if (typeof renderAdmin === 'function') window.renderAdmin = renderAdmin;
   if (typeof renderJanitorPage === 'function') window.renderJanitorPage = renderJanitorPage;
-  // currentNick is reassigned by login/logout — bind via getter so window stays live
-  try {
-    Object.defineProperty(window, 'currentNick', { configurable: true, get: ()=>currentNick, set: (v)=>{ currentNick = v; } });
-  } catch(e) { window.currentNick = currentNick; }
+  // currentNick: direct reference is sufficient — defineProperty caused call stack overflow
+  // when any code accessed window.currentNick inside the getter chain.
+  // The main app module sets currentNick as a let variable; Kapani Pack reads it via closure.
+  window._getCurrentNick = () => currentNick;
 } catch(e) { console.error('[Kapani exports]', e); }
 
 </script>
@@ -13784,38 +14076,65 @@ ready(function(){
     const fineBtn = qs('dutyFineSubmitBtn');
     if(fineBtn){ fineBtn.disabled = true; }
     try {
-      const meSnap = await get(userRef(window.currentNick));
+      // Get currentNick safely — avoid window.currentNick (defineProperty recursion risk)
+      const myNick = (typeof currentNick !== 'undefined' ? currentNick : null)
+                  || localStorage.getItem('kp_s')
+                  || sessionStorage.getItem('kp_s');
+      if(!myNick) return toast('❌ Не авторизован','red');
+
+      const meSnap = await get(ref(db, `users/${myNick}`));
       if(!meSnap.exists()) return toast('❌ Профиль не найден','red');
       const me = meSnap.val();
       const isKsb = hasMunicipalJob(me,'КСБ') || me.job==='КСБ';
       const isPolice = hasMunicipalJob(me,'Полицейский') || me.job==='Полицейский';
-      if(!isKsb && !isPolice && window.currentNick !== ADMIN)
+      const isAdmin = myNick === ADMIN;
+      if(!isKsb && !isPolice && !isAdmin)
         return toast('🚫 Только КСБ и полиция могут выписывать штрафы','red');
       const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
       const nameInput = (qs('dutyFineNick')?.value||'').trim();
       const reason = (qs('dutyFineReason')?.value||'').trim();
       const amt = parseInt(qs('dutyFineAmt')?.value, 10);
-      if(!nameInput) return toast('⚠️ Укажите никнейм нарушителя','gold');
+      if(!nameInput) return toast('⚠️ Укажите имя нарушителя','gold');
       if(!reason) return toast('⚠️ Укажите причину штрафа','gold');
       if(!amt || amt<=0 || isNaN(amt)) return toast('⚠️ Укажите корректную сумму','gold');
-      // Поиск по отображаемому имени, затем по логину
-      let target = await findUserByPublicName(nameInput);
-      if(!target || !target.nick){
-        const directSnap = await get(userRef(nameInput));
-        if(directSnap.exists()) target = { nick: nameInput, ...directSnap.val() };
+
+      // Search by display name, then by login
+      let target = null;
+      // First search in cache
+      if(window.allUsersCache && Object.keys(window.allUsersCache).length){
+        const q = nameInput.toLowerCase().trim();
+        for(const [nick, u] of Object.entries(window.allUsersCache)){
+          const dn = ((u.displayName||'').trim() || nick).toLowerCase();
+          if(dn === q || nick.toLowerCase() === q){ target = { nick, ...u }; break; }
+        }
       }
-      if(!target || !target.nick) return toast('❌ Житель с таким именем не найден','red');
+      // Fallback: Firebase search
+      if(!target){
+        const allSnap = await get(ref(db,'users'));
+        const allU = allSnap.val() || {};
+        const q = nameInput.toLowerCase().trim();
+        for(const [nick, u] of Object.entries(allU)){
+          const dn = ((u.displayName||'').trim() || nick).toLowerCase();
+          if(dn === q || nick.toLowerCase() === q){ target = { nick, ...u }; break; }
+        }
+      }
+      if(!target) return toast('❌ Житель с таким именем не найден','red');
       const tnick = target.nick;
-      if(tnick === window.currentNick) return toast('⚠️ Нельзя оштрафовать самого себя','gold');
-      const tSnap = await get(userRef(tnick));
+      if(tnick === myNick) return toast('⚠️ Нельзя оштрафовать самого себя','gold');
+
+      const tSnap = await get(ref(db, `users/${tnick}`));
       if(!tSnap.exists()) return toast('❌ Пользователь не найден','red');
       const tUser = tSnap.val();
-      await update(userRef(tnick), { balance: (tUser.balance||0) - amt });
-      await logTx(tnick, { type:'out', who:`${issuerRole} (${window.currentNick})`, amt, desc:`Штраф: ${reason}` });
+      const targetLabel = (tUser.displayName && tUser.displayName.trim()) || tUser.nick || tnick;
+      const myLabel    = (me.displayName && me.displayName.trim()) || myNick;
+
+      await update(ref(db, `users/${tnick}`), { balance: (tUser.balance||0) - amt });
+      await push(ref(db, `txLog/${tnick}`), { type:'out', who:`${issuerRole} (${myLabel})`, amt, desc:`Штраф: ${reason}`, ...fullDateTimeStr() });
       const emoji = isPolice ? '👮' : '🛡';
-      const targetLabel = (target.displayName && target.displayName.trim()) || tnick;
-      await pushNotification(tnick, `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${window.currentNick})`, 'money');
-      await pushNotification(ADMIN, `${emoji} ${issuerRole} ${window.currentNick} оштрафовал ${targetLabel} на ${amt}₽ — ${reason}`, 'system');
+      if(typeof pushNotification === 'function'){
+        await pushNotification(tnick, `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${myLabel})`, 'money');
+        await pushNotification(ADMIN, `${emoji} ${issuerRole} ${myLabel} оштрафовал ${targetLabel} на ${amt}₽ — ${reason}`, 'system');
+      }
       if(qs('dutyFineNick')) qs('dutyFineNick').value='';
       if(qs('dutyFineReason')) qs('dutyFineReason').value='';
       if(qs('dutyFineAmt')) qs('dutyFineAmt').value='';
