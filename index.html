@@ -72,45 +72,89 @@
 
     </div>
 
-    <!-- Application Script Engine -->
+    <!-- Firebase Connection Engine -->
     <script type="module">
-        import { initAuth, loginUser } from "./js/auth.js";
-        import { initNotifications } from "./js/notifications.js";
-        import { initLauncher } from "./js/launcher.js";
-        import { processWeeklyEconomy } from "./js/economy.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, set, get, update, push, remove, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
-        import { initPortalService } from "./js/services/portal.js";
-        import { initBankService } from "./js/services/bank.js";
-        import { initMessengerService } from "./js/services/messenger.js";
-        import { initBusinessesService } from "./js/services/businesses.js";
-        import { initMarketService } from "./js/services/market.js";
-        import { initAvitoService } from "./js/services/avito.js";
-        import { initJobsService } from "./js/services/jobs.js";
-        import { initTaxiService } from "./js/services/taxi.js";
-        import { initKsbService } from "./js/services/ksb.js";
-        import { initNewsService } from "./js/services/news.js";
-        import { initRealEstateService } from "./js/services/realestate.js";
-        import { initMayorService } from "./js/services/mayor.js";
+        const app = initializeApp(window.KP_CONFIG.firebase);
+        const db = getDatabase(app);
+        const storage = getStorage(app);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initAuth((user) => {
+        window.KP_DB = {
+            db, storage,
+            dbGet: async (path) => {
+                const snap = await get(ref(db, path));
+                return snap.exists() ? snap.val() : null;
+            },
+            dbSet: async (path, val) => set(ref(db, path), val),
+            dbUpdate: async (path, val) => update(ref(db, path), val),
+            dbPush: async (path, val) => push(ref(db, path), val),
+            dbRemove: async (path) => remove(ref(db, path)),
+            dbOnValue: (path, cb) => {
+                const r = ref(db, path);
+                onValue(r, (snap) => cb(snap.exists() ? snap.val() : null));
+                return () => off(r);
+            },
+            uploadFile: async (path, file) => {
+                try {
+                    const fileRef = sRef(storage, path);
+                    const snapshot = await uploadBytes(fileRef, file);
+                    return await getDownloadURL(snapshot.ref);
+                } catch (e) {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(file);
+                    });
+                }
+            }
+        };
+
+        window.dispatchEvent(new Event('kp_firebase_ready'));
+    </script>
+
+    <!-- Core App Scripts (Compatible with file:// and http://) -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/economy.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/launcher.js"></script>
+
+    <script src="js/services/portal.js"></script>
+    <script src="js/services/bank.js"></script>
+    <script src="js/services/messenger.js"></script>
+    <script src="js/services/businesses.js"></script>
+    <script src="js/services/market.js"></script>
+    <script src="js/services/avito.js"></script>
+    <script src="js/services/jobs.js"></script>
+    <script src="js/services/taxi.js"></script>
+    <script src="js/services/ksb.js"></script>
+    <script src="js/services/news.js"></script>
+    <script src="js/services/realestate.js"></script>
+    <script src="js/services/mayor.js"></script>
+
+    <script>
+        function startAppEngine() {
+            window.KP.initAuth((user) => {
                 if (user) {
-                    initNotifications();
-                    initLauncher();
-                    processWeeklyEconomy();
+                    window.KP.initNotifications();
+                    window.KP.initLauncher();
+                    window.KP.processWeeklyEconomy();
 
-                    initPortalService();
-                    initBankService();
-                    initMessengerService();
-                    initBusinessesService();
-                    initMarketService();
-                    initAvitoService();
-                    initJobsService();
-                    initTaxiService();
-                    initKsbService();
-                    initNewsService();
-                    initRealEstateService();
-                    initMayorService();
+                    if (window.initPortalService) window.initPortalService();
+                    if (window.initBankService) window.initBankService();
+                    if (window.initMessengerService) window.initMessengerService();
+                    if (window.initBusinessesService) window.initBusinessesService();
+                    if (window.initMarketService) window.initMarketService();
+                    if (window.initAvitoService) window.initAvitoService();
+                    if (window.initJobsService) window.initJobsService();
+                    if (window.initTaxiService) window.initTaxiService();
+                    if (window.initKsbService) window.initKsbService();
+                    if (window.initNewsService) window.initNewsService();
+                    if (window.initRealEstateService) window.initRealEstateService();
+                    if (window.initMayorService) window.initMayorService();
                 } else {
                     document.getElementById('authSection').style.display = 'block';
                     document.getElementById('mainApp').style.display = 'none';
@@ -119,17 +163,23 @@
                 }
             });
 
-            document.getElementById('loginSubmitBtn').addEventListener('click', async () => {
+            document.getElementById('loginSubmitBtn').onclick = async () => {
                 const name = document.getElementById('loginNameInput').value;
                 const pass = document.getElementById('loginPasswordInput').value;
 
                 try {
-                    await loginUser(name, pass);
+                    await window.KP.loginUser(name, pass);
                 } catch (e) {
                     alert("Ошибка входа: " + e.message);
                 }
-            });
-        });
+            };
+        }
+
+        if (window.KP_DB) {
+            startAppEngine();
+        } else {
+            window.addEventListener('kp_firebase_ready', startAppEngine);
+        }
     </script>
 </body>
 </html>

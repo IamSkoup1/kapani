@@ -1,5 +1,4 @@
-// Конфигурация экосистемы «Капани»
-export const CONFIG = {
+window.KP_CONFIG = {
     firebase: {
         apiKey: "AIzaSyCDfMUZ-6-GWrw8yCWOoU07g6aappDtwxA",
         authDomain: "kapanisite.firebaseapp.com",
