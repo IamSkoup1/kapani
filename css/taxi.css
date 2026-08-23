@@ -1,0 +1,15 @@
+.taxi-hero {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(34, 211, 165, 0.15));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.taxi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 12px;
+}

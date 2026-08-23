@@ -1,0 +1,98 @@
+.portal-hero {
+    background: linear-gradient(135deg, rgba(34, 211, 165, 0.15), rgba(59, 130, 246, 0.15));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 24px 20px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.portal-hero::after {
+    content: '🏛';
+    position: absolute;
+    right: -10px;
+    bottom: -20px;
+    font-size: 110px;
+    opacity: 0.12;
+    pointer-events: none;
+}
+
+.portal-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 6px;
+}
+
+.portal-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.portal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.portal-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.portal-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 30px rgba(34, 211, 165, 0.15);
+}
+
+.portal-card-icon {
+    font-size: 32px;
+}
+
+.portal-card-name {
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--text);
+}
+
+.portal-card-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.portal-card-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--pri-dim);
+    color: var(--primary);
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+}
+
+.portal-section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

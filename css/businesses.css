@@ -1,0 +1,37 @@
+.biz-hero {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(59, 130, 246, 0.15));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.biz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+}
+
+.biz-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--purple);
+}
+
+.biz-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid var(--border);
+}
+
+.biz-mini-site {
+    background: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 20px;
+}

@@ -1,0 +1,15 @@
+.job-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.job-my-panel {
+    background: linear-gradient(135deg, rgba(34, 211, 165, 0.1), rgba(59, 130, 246, 0.1));
+    border: 1px solid var(--primary);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+}

@@ -1,0 +1,32 @@
+.avito-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 14px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+    display: flex;
+    gap: 12px;
+}
+
+.avito-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--blue);
+}
+
+.avito-card-img {
+    width: 90px;
+    height: 90px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #1e293b;
+}
+
+.avito-price {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--primary);
+    margin: 4px 0;
+}

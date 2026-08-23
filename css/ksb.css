@@ -1,0 +1,16 @@
+.ksb-panel {
+    background: linear-gradient(135deg, #0f172a, #1e1b4b);
+    border: 1px solid var(--blue);
+    border-radius: 20px;
+    padding: 20px;
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.ksb-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+}

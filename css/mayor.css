@@ -1,0 +1,17 @@
+.mayor-panel {
+    background: linear-gradient(135deg, #1e1b4b, #311b92, #0c1117);
+    border: 1px solid var(--gold);
+    border-radius: 24px;
+    padding: 24px;
+    color: #fff;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(251, 191, 36, 0.2);
+}
+
+.mayor-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
