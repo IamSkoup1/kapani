@@ -5,6 +5,19 @@
     let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
     let userListeners = [];
 
+    function normalizePublicName(s) {
+        return String(s || '').trim().toLowerCase();
+    }
+
+    async function sha256Hex(str) {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function hashPassword(password, salt) {
+        return sha256Hex(`kapani::${normalizePublicName(salt)}::${String(password || '')}`);
+    }
+
     function getCurrentNick() {
         return currentNick;
     }
@@ -16,53 +29,56 @@
     function displayNick(user) {
         if (!user) return 'Гражданин';
         if (typeof user === 'string') return user;
-        return user.displayName || user.name || 'Гражданин';
+        return user.displayName || user.name || user.nick || 'Гражданин';
     }
 
     function isMayor(user = currentUser) {
         if (!user) return false;
         const name = displayNick(user);
-        return name === window.KP_CONFIG.admin.displayName || name === 'Кайон';
+        return name === window.KP_CONFIG.admin.displayName || name === 'Кайон' || name === 'Денис';
     }
 
-    async function hashPassword(password, salt) {
-        const enc = new TextEncoder();
-        const data = enc.encode(password + 'kp_salt_2025_' + salt);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    async function findUserByName(nameInput) {
+        const q = normalizePublicName(nameInput);
+        if (!q) return null;
+
+        const allUsers = await window.KP_DB.dbGet('users') || {};
+        for (const nick in allUsers) {
+            const u = allUsers[nick];
+            if (!u) continue;
+            const dn = normalizePublicName(u.displayName || u.name || nick);
+            const nk = normalizePublicName(nick);
+            if (dn === q || nk === q) {
+                return { nick, ...u };
+            }
+        }
+        return null;
+    }
+
+    function makeNickFromName(nameInput) {
+        let base = String(nameInput || '').trim().replace(/[\.\#\$\[\]\s]/g, '_');
+        if (!base) base = 'citizen_' + Date.now().toString(36);
+        return base;
     }
 
     async function loginUser(nameOrLogin, password) {
-        const trimmedName = nameOrLogin.trim();
+        const trimmedName = String(nameOrLogin || '').trim();
         if (!trimmedName || !password) {
-            throw new Error("Заполните все поля");
+            throw new Error("Заполните имя пользователя и пароль");
         }
 
-        const nickKey = trimmedName.replace(/[\.\#\$\[\]]/g, "_");
-        let existing = await window.KP_DB.dbGet(`users/${nickKey}`);
+        const existing = await findUserByName(trimmedName);
 
         if (!existing) {
-            const allUsers = await window.KP_DB.dbGet('users') || {};
-            for (const key in allUsers) {
-                const u = allUsers[key];
-                if (u && (u.displayName === trimmedName || u.name === trimmedName || key === nickKey)) {
-                    existing = u;
-                    existing._key = key;
-                    break;
-                }
-            }
-        } else {
-            existing._key = nickKey;
-        }
+            // New User Registration
+            const nick = makeNickFromName(trimmedName);
+            const passwordHash = await hashPassword(password, nick);
+            const now = Date.now();
 
-        const targetKey = existing ? existing._key : nickKey;
-
-        if (!existing) {
-            const passHash = await hashPassword(password, targetKey);
             const newUser = {
-                nick: targetKey,
+                nick,
                 displayName: trimmedName,
+                name: trimmedName,
                 balance: 1000,
                 examScore: 0,
                 driversLicense: false,
@@ -71,26 +87,29 @@
                 avatar: window.KP_CONFIG.ui.defaultAvatarUrl,
                 accountVerified: true,
                 accountFrozen: false,
-                createdAt: Date.now(),
+                createdAt: now,
+                economyLastProcessedAt: now,
                 totalEarned: 0,
-                passwordHash: passHash
+                passwordHash
             };
 
-            await window.KP_DB.dbSet(`users/${targetKey}`, newUser);
+            await window.KP_DB.dbSet(`users/${nick}`, newUser);
             currentUser = newUser;
-            currentNick = targetKey;
+            currentNick = nick;
         } else {
+            // Existing User Login
+            const enteredHash = await hashPassword(password, existing.nick);
             if (existing.passwordHash) {
-                const enteredHash = await hashPassword(password, targetKey);
                 if (existing.passwordHash !== enteredHash) {
                     throw new Error("Неверный пароль");
                 }
             } else {
-                const enteredHash = await hashPassword(password, targetKey);
-                await window.KP_DB.dbUpdate(`users/${targetKey}`, { passwordHash: enteredHash });
+                // First login for legacy account without password hash
+                await window.KP_DB.dbUpdate(`users/${existing.nick}`, { passwordHash: enteredHash });
+                existing.passwordHash = enteredHash;
             }
             currentUser = existing;
-            currentNick = targetKey;
+            currentNick = existing.nick;
         }
 
         localStorage.setItem('kp_s', currentNick);
@@ -149,4 +168,5 @@
     window.KP.logoutUser = logoutUser;
     window.KP.subscribeAuth = subscribeAuth;
     window.KP.initAuth = initAuth;
+    window.KP.hashPassword = hashPassword;
 })();
