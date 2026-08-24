@@ -1,258 +1,148 @@
-import { getCurrentUser, getCurrentNick, displayNick } from "../auth.js";
-import { dbGet, dbSet, dbPush, dbUpdate, dbRemove, dbOnValue, uploadFile } from "../firebase.js";
-import { pushNotification } from "../notifications.js";
+(function() {
+    window.initMessengerService = function() {
+        const container = document.getElementById('service_messenger');
+        if (!container) return;
 
-let activeChatType = 'global';
-let activeChatId = 'global';
-let activeChatPartner = null;
-let currentUnsub = null;
+        renderMessengerView(container);
 
-export function initMessengerService() {
-    const container = document.getElementById('service_messenger');
-    if (!container) return;
-
-    renderMessengerView(container);
-
-    window.addEventListener('serviceMounted', (e) => {
-        if (e.detail?.serviceId === 'messenger') {
-            renderMessengerView(container);
-        }
-    });
-}
-
-function getDmKey(nick1, nick2) {
-    return [nick1, nick2].sort().join('_');
-}
-
-async function renderMessengerView(container) {
-    const user = getCurrentUser();
-    const userNick = getCurrentNick();
-    if (!user || !userNick) return;
-
-    container.innerHTML = `
-        <div style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="font-family:'Unbounded',sans-serif;font-size:20px;">💬 Капанёвский Мессенджер</h2>
-            <div style="display:flex;gap:6px;">
-                <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;" onclick="openCreateGroupModal()">➕ Группа</button>
-                <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;" onclick="openNewDmModal()">💬 Написать</button>
-            </div>
-        </div>
-
-        <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;" id="chatTabsHeader">
-            <button class="btn ${activeChatType === 'global' ? 'btn-primary' : 'btn-ghost'}" onclick="switchMessengerChat('global', 'global')">🌐 Общий чат</button>
-            <div id="dynamicChatTabs" style="display:flex;gap:8px;"></div>
-        </div>
-
-        <div class="msg-container">
-            <div class="msg-header">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="font-size:18px;">${activeChatType === 'global' ? '🌐' : '💬'}</span>
-                    <div>
-                        <div style="font-weight:800;font-size:14px;" id="msgHeaderTitle">Общий чат Капаней</div>
-                        <div style="font-size:10px;color:var(--muted);" id="msgHeaderSubtitle">Все жители онлайн</div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="msgPinnedArea"></div>
-
-            <div class="msg-body" id="msgBodyList">
-                <div style="text-align:center;color:var(--muted);padding:20px;">Загрузка сообщений…</div>
-            </div>
-
-            <div class="msg-input-bar">
-                <input type="file" id="msgMediaFileInput" style="display:none;" onchange="handleMsgFileUpload(this)">
-                <button class="btn btn-ghost" style="padding:8px;font-size:16px;" onclick="document.getElementById('msgMediaFileInput').click()">📎</button>
-                <input type="text" id="msgTextInput" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') sendChatMessage()">
-                <button class="btn btn-primary" style="padding:8px 16px;" onclick="sendChatMessage()">🚀</button>
-            </div>
-        </div>
-    `;
-
-    loadUserChats();
-    attachMessageStream();
-}
-
-async function loadUserChats() {
-    const userNick = getCurrentNick();
-    const dmsObj = await dbGet('dms') || {};
-    const groupsObj = await dbGet('groups') || {};
-
-    const tabsDiv = document.getElementById('dynamicChatTabs');
-    if (!tabsDiv) return;
-
-    let html = '';
-
-    Object.keys(dmsObj).forEach(key => {
-        if (key.includes(userNick)) {
-            const partnerNick = key.split('_').find(n => n !== userNick) || userNick;
-            html += `<button class="btn ${activeChatId === key ? 'btn-primary' : 'btn-ghost'}" onclick="switchMessengerChat('dm', '${key}', '${partnerNick}')">👤 ${partnerNick}</button>`;
-        }
-    });
-
-    Object.keys(groupsObj).forEach(gId => {
-        const group = groupsObj[gId];
-        if (group && (group.owner === userNick || (group.members && group.members.includes(userNick)))) {
-            html += `<button class="btn ${activeChatId === gId ? 'btn-primary' : 'btn-ghost'}" onclick="switchMessengerChat('group', '${gId}')">👥 ${group.name}</button>`;
-        }
-    });
-
-    tabsDiv.innerHTML = html;
-}
-
-window.switchMessengerChat = function(type, id, partnerNick = null) {
-    activeChatType = type;
-    activeChatId = id;
-    activeChatPartner = partnerNick;
-
-    const titleEl = document.getElementById('msgHeaderTitle');
-    const subEl = document.getElementById('msgHeaderSubtitle');
-
-    if (type === 'global') {
-        if (titleEl) titleEl.textContent = 'Общий чат Капаней';
-        if (subEl) subEl.textContent = 'Все жители онлайн';
-    } else if (type === 'dm') {
-        if (titleEl) titleEl.textContent = `Чат с ${partnerNick}`;
-        if (subEl) subEl.textContent = 'Личная переписка';
-    } else if (type === 'group') {
-        if (titleEl) titleEl.textContent = `Группа: ${id}`;
-        if (subEl) subEl.textContent = 'Групповой чат';
-    }
-
-    attachMessageStream();
-};
-
-function attachMessageStream() {
-    if (currentUnsub) currentUnsub();
-
-    let path = 'chat';
-    if (activeChatType === 'dm') {
-        path = `dms/${activeChatId}/messages`;
-    } else if (activeChatType === 'group') {
-        path = `groups/${activeChatId}/messages`;
-    }
-
-    currentUnsub = dbOnValue(path, (data) => {
-        const listEl = document.getElementById('msgBodyList');
-        if (!listEl) return;
-
-        if (!data) {
-            listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">Сообщений пока нет. Напишите первым!</div>';
-            return;
-        }
-
-        const userNick = getCurrentNick();
-        const msgs = Object.keys(data).map(k => ({ ...data[k], id: k })).sort((a, b) => (a.ts || 0) - (b.ts || 0));
-
-        listEl.innerHTML = msgs.map(m => {
-            const isMine = (m.sender === userNick || m.nick === userNick);
-            const senderName = m.displayName || m.nick || m.sender || 'Гражданин';
-            return `
-                <div class="msg-bubble ${isMine ? 'mine' : 'other'}">
-                    ${!isMine ? `<div class="msg-bubble-author">${senderName}</div>` : ''}
-                    ${m.mediaUrl ? `<img src="${m.mediaUrl}" style="max-width:100%;border-radius:8px;margin-bottom:4px;">` : ''}
-                    <div>${m.text || ''}</div>
-                    <div class="msg-bubble-time">${m.time || ''}</div>
-                </div>
-            `;
-        }).join('');
-
-        listEl.scrollTop = listEl.scrollHeight;
-    });
-}
-
-window.sendChatMessage = async function() {
-    const input = document.getElementById('msgTextInput');
-    if (!input || !input.value.trim()) return;
-
-    const user = getCurrentUser();
-    const userNick = getCurrentNick();
-    const text = input.value.trim();
-    input.value = '';
-
-    const dateStr = new Date().toLocaleDateString('ru');
-    const timeStr = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
-
-    const msgObj = {
-        sender: userNick,
-        nick: userNick,
-        displayName: displayNick(user),
-        text,
-        date: dateStr,
-        time: timeStr,
-        ts: Date.now()
+        window.addEventListener('serviceMounted', (e) => {
+            if (e.detail?.serviceId === 'messenger') {
+                renderMessengerView(container);
+            }
+        });
     };
 
-    let path = 'chat';
-    if (activeChatType === 'dm') {
-        path = `dms/${activeChatId}/messages`;
-        if (activeChatPartner) {
-            await pushNotification(activeChatPartner, `💬 Новое сообщение от ${displayNick(user)}: ${text}`, 'chat', '#messenger');
+    let activeChatId = null;
+    let activeChatType = 'direct';
+
+    async function renderMessengerView(container) {
+        const user = window.KP.getCurrentUser();
+        const userNick = window.KP.getCurrentNick();
+
+        if (!user || !userNick) return;
+
+        const allUsers = await window.KP_DB.dbGet('users') || {};
+        const chatsList = Object.keys(allUsers)
+            .filter(k => k !== userNick)
+            .map(k => ({ nick: k, name: window.KP.displayNick(allUsers[k]), avatar: allUsers[k].avatar }));
+
+        container.innerHTML = `
+            <div style="display:flex;height:calc(100vh - 120px);background:var(--surface);border-radius:16px;border:1px solid var(--border);overflow:hidden;">
+
+                <!-- Dialogs Sidebar -->
+                <div style="width:280px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface2);">
+                    <div style="padding:12px;border-bottom:1px solid var(--border);font-family:'Unbounded',sans-serif;font-weight:700;font-size:14px;color:var(--accent);">
+                        💬 Мессенджер
+                    </div>
+                    <div style="flex:1;overflow-y:auto;" id="dialogsContainer">
+                        ${chatsList.map(c => `
+                            <div class="msg-dialog-item ${activeChatId === c.nick ? 'active' : ''}" onclick="selectMessengerChat('${c.nick}')">
+                                <div class="msg-avatar">${c.avatar ? `<img src="${c.avatar}" style="width:100%;height:100%;border-radius:50%;">` : c.name.charAt(0)}</div>
+                                <div>
+                                    <div style="font-weight:700;font-size:13px;color:var(--text);">${c.name}</div>
+                                    <div style="font-size:11px;color:var(--muted);">Нажмите, чтобы открыть чат</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Active Chat Container -->
+                <div style="flex:1;display:flex;flex-direction:column;" id="chatArea">
+                    ${activeChatId ? renderChatBox(activeChatId, allUsers[activeChatId]) : `
+                        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;">
+                            Выберите диалог из списка слева
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+
+        if (activeChatId) {
+            setupMessageListener(activeChatId);
         }
-    } else if (activeChatType === 'group') {
-        path = `groups/${activeChatId}/messages`;
     }
 
-    await dbPush(path, msgObj);
-};
+    window.selectMessengerChat = function(partnerNick) {
+        activeChatId = partnerNick;
+        renderMessengerView(document.getElementById('service_messenger'));
+    };
 
-window.handleMsgFileUpload = async function(input) {
-    if (!input.files || !input.files[0]) return;
-    const file = input.files[0];
-    const user = getCurrentUser();
-    const userNick = getCurrentNick();
+    function renderChatBox(partnerNick, partnerUser) {
+        const partnerName = partnerUser ? window.KP.displayNick(partnerUser) : partnerNick;
 
-    try {
-        const url = await uploadFile(`chat_files/${Date.now()}_${file.name}`, file);
-        const dateStr = new Date().toLocaleDateString('ru');
-        const timeStr = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+        return `
+            <div style="padding:12px;border-bottom:1px solid var(--border);background:var(--surface);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;">
+                <span>👤 ${partnerName}</span>
+            </div>
+
+            <div style="flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;" id="msgListContainer">
+                <div style="text-align:center;color:var(--muted);font-size:11px;">Загрузка сообщений...</div>
+            </div>
+
+            <div style="padding:12px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;">
+                <input type="text" id="msgInputText" placeholder="Напишите сообщение..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+                <button class="btn btn-primary" onclick="sendChatMessage()" style="padding:0 16px;">Отправить</button>
+            </div>
+        `;
+    }
+
+    let currentUnsub = null;
+
+    function setupMessageListener(partnerNick) {
+        if (currentUnsub) currentUnsub();
+
+        const myNick = window.KP.getCurrentNick();
+        const chatId = [myNick, partnerNick].sort().join('_');
+
+        currentUnsub = window.KP_DB.dbOnValue(`chats/${chatId}/messages`, (messagesObj) => {
+            const listDiv = document.getElementById('msgListContainer');
+            if (!listDiv) return;
+
+            if (!messagesObj) {
+                listDiv.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:11px;">История сообщений пуста</div>';
+                return;
+            }
+
+            const messages = Object.keys(messagesObj).map(k => messagesObj[k]).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+            listDiv.innerHTML = messages.map(m => {
+                const isMe = m.sender === myNick;
+                return `
+                    <div style="align-self:${isMe ? 'flex-end' : 'flex-start'};max-width:70%;">
+                        <div class="msg-bubble ${isMe ? 'msg-sent' : 'msg-recv'}">
+                            ${m.text}
+                        </div>
+                        <div style="font-size:9px;color:var(--muted);margin-top:2px;text-align:${isMe ? 'right' : 'left'};">
+                            ${new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            listDiv.scrollTop = listDiv.scrollHeight;
+        });
+    }
+
+    window.sendChatMessage = async function() {
+        const input = document.getElementById('msgInputText');
+        if (!input || !input.value.trim() || !activeChatId) return;
+
+        const text = input.value.trim();
+        input.value = '';
+
+        const myNick = window.KP.getCurrentNick();
+        const myUser = window.KP.getCurrentUser();
+        const chatId = [myNick, activeChatId].sort().join('_');
 
         const msgObj = {
-            sender: userNick,
-            nick: userNick,
-            displayName: displayNick(user),
-            text: file.name,
-            mediaUrl: url,
-            date: dateStr,
-            time: timeStr,
-            ts: Date.now()
+            sender: myNick,
+            senderName: window.KP.displayNick(myUser),
+            text: text,
+            createdAt: Date.now()
         };
 
-        let path = 'chat';
-        if (activeChatType === 'dm') path = `dms/${activeChatId}/messages`;
-        else if (activeChatType === 'group') path = `groups/${activeChatId}/messages`;
-
-        await dbPush(path, msgObj);
-    } catch (e) {
-        alert("Ошибка загрузки файла: " + e.message);
-    }
-};
-
-window.openNewDmModal = async function() {
-    const allUsers = await dbGet('users') || {};
-    const myNick = getCurrentNick();
-
-    const target = prompt("Выберите или введите ник собеседника:");
-    if (target) {
-        const key = getDmKey(myNick, target);
-        switchMessengerChat('dm', key, target);
-        loadUserChats();
-    }
-};
-
-window.openCreateGroupModal = async function() {
-    const name = prompt("Введите название новой группы:");
-    if (name) {
-        const userNick = getCurrentNick();
-        const groupKey = 'group_' + Date.now();
-        await dbSet(`groups/${groupKey}`, {
-            id: groupKey,
-            name,
-            owner: userNick,
-            members: [userNick],
-            createdAt: Date.now()
-        });
-        switchMessengerChat('group', groupKey);
-        loadUserChats();
-    }
-};
+        await window.KP_DB.dbPush(`chats/${chatId}/messages`, msgObj);
+        await window.KP.pushNotification(activeChatId, 'Новое сообщение', `${window.KP.displayNick(myUser)}: ${text}`);
+    };
+})();

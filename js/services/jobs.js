@@ -1,167 +1,190 @@
-import { getCurrentUser, getCurrentNick, displayNick } from "../auth.js";
-import { dbGet, dbSet, dbPush, dbUpdate } from "../firebase.js";
-import { pushNotification } from "../notifications.js";
+(function() {
+    window.initJobsService = function() {
+        const container = document.getElementById('service_jobs');
+        if (!container) return;
 
-const JOBS = [
-    { id: 'janitor', title: 'Уборщик 🧹', salary: '1 500 ₽ / неделя', examMin: 40, desc: 'Отправка отчётов об уборке улиц в Мэрию' },
-    { id: 'courier', title: 'Курьер 📦', salary: 'Зависит от заказов', examMin: 53, desc: 'Доставка товаров из К-Маркета и К-Авито' },
-    { id: 'driver', title: 'Водитель Такси 🛵', salary: 'Зависит от заказов', examMin: 60, needLicense: true, desc: 'Перевозка пассажиров по Капаням' },
-    { id: 'journalist', title: 'Журналист 📰', salary: '2 800 ₽ / неделя', examMin: 71, desc: 'Написание статей и новостей для К-Новостей' },
-    { id: 'police', title: 'Полицейский 👮', salary: '3 400 ₽ / неделя', examMin: 80, desc: 'Охрана порядка, штрафы и проверка документов' },
-    { id: 'ksb', title: 'Сотрудник КСБ 🛡', salary: '4 000 ₽ / неделя', examMin: 90, desc: 'Служба безопасности Капаней' },
-    { id: 'deputy', title: 'Депутат 🏛', salary: '5 000 ₽ / неделя', examMin: 95, desc: 'Законодательные инициативы и предложения' }
-];
+        renderJobsView(container);
 
-export function initJobsService() {
-    const container = document.getElementById('service_jobs');
-    if (!container) return;
+        window.addEventListener('serviceMounted', (e) => {
+            if (e.detail?.serviceId === 'jobs') {
+                renderJobsView(container);
+            }
+        });
+    };
 
-    renderJobsView(container);
+    async function renderJobsView(container) {
+        const user = window.KP.getCurrentUser();
+        const userNick = window.KP.getCurrentNick();
 
-    window.addEventListener('serviceMounted', (e) => {
-        if (e.detail?.serviceId === 'jobs') {
-            renderJobsView(container);
-        }
-    });
-}
+        if (!user || !userNick) return;
 
-async function renderJobsView(container) {
-    const user = getCurrentUser();
-    const userNick = getCurrentNick();
-    if (!user || !userNick) return;
+        const currentJob = user.job || null;
+        const examPoints = Number(user.examPoints || user.kve || 0);
 
-    const currentJob = user.job && user.job !== 'Безработный' ? user.job : null;
-
-    container.innerHTML = `
-        <div style="margin-bottom:16px;">
-            <h2 style="font-family:'Unbounded',sans-serif;font-size:20px;">💼 К-Работа</h2>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px;">Трудоустройство и карьеры Капаней</div>
-        </div>
-
-        ${currentJob ? `
-            <div class="job-my-panel">
-                <div style="font-size:11px;color:var(--primary);font-weight:800;text-transform:uppercase;">Моя текущая профессия</div>
-                <div style="font-size:20px;font-weight:900;margin:4px 0;">${currentJob}</div>
-                <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Вы трудоустроены. Оплата начисляется каждую неделю автоматически.</div>
-
-                ${renderJobActionPanel(currentJob)}
-
-                <button class="btn btn-red" style="margin-top:16px;width:100%;font-size:12px;" onclick="quitJobFlow()">🚪 Уволиться с работы</button>
+        container.innerHTML = `
+            <div style="margin-bottom:16px;">
+                <h2 style="font-family:'Unbounded',sans-serif;font-size:20px;">💼 К-Работа</h2>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                    Ваши баллы экзамена / КВЭ: <b style="color:var(--accent);">${examPoints}</b>
+                </div>
             </div>
-        ` : `
-            <div style="font-weight:800;font-size:15px;margin-bottom:12px;">Доступные Вакансии</div>
-            <div>
-                ${JOBS.map(j => {
-                    const hasScore = (user.examScore || 0) >= j.examMin;
-                    const hasLicense = !j.needLicense || user.driversLicense;
-                    const canApply = hasScore && hasLicense;
 
+            ${currentJob ? renderMyJobPanel(currentJob, user) : renderVacancyList(examPoints)}
+        `;
+    }
+
+    function renderMyJobPanel(job, user) {
+        let jobTitle = 'Работа не указана';
+        let salaryInfo = '—';
+        let customControls = '';
+
+        if (job === 'taxi') {
+            jobTitle = '🛵 Водитель Такси';
+            salaryInfo = 'Сдельная (зависит от количества принятых заказов)';
+            customControls = '<button class="btn btn-primary" onclick="window.location.hash=\'#taxi\'">Перейти в Такси Панель</button>';
+        } else if (job === 'courier') {
+            jobTitle = '📦 Курьер / Доставщик';
+            salaryInfo = 'Сдельная (зависит от заказов Авито и Маркета)';
+            customControls = '<button class="btn btn-primary" onclick="alert(\'Доступные заказы смотрите в сервисе К-Маркет\')">Смотреть заказы</button>';
+        } else if (job === 'janitor') {
+            jobTitle = '🧹 Уборщик';
+            salaryInfo = '1 500 ₽ / неделю (автоматически на карту)';
+            customControls = `
+                <div style="margin-top:12px;">
+                    <textarea id="janitorReportInput" placeholder="Отчёт о выполненной уборке..."></textarea>
+                    <button class="btn btn-primary" onclick="submitJanitorReport()" style="width:100%;margin-top:6px;">Отправить отчёт в Мэрию</button>
+                </div>
+            `;
+        } else if (job === 'journalist') {
+            jobTitle = '📰 Журналист';
+            salaryInfo = '2 800 ₽ / неделю';
+            customControls = '<button class="btn btn-primary" onclick="window.location.hash=\'#news\'">Открыть Редактор Новостей</button>';
+        } else if (job === 'police') {
+            jobTitle = '👮 Полицейский';
+            salaryInfo = '3 400 ₽ / неделю';
+            customControls = '<button class="btn btn-primary" onclick="window.location.hash=\'#ksb\'">Открыть Спецпанель КСБ/Полиции</button>';
+        } else if (job === 'ksb') {
+            jobTitle = '🛡 Сотрудник КСБ';
+            salaryInfo = '4 000 ₽ / неделю';
+            customControls = '<button class="btn btn-primary" onclick="window.location.hash=\'#ksb\'">Открыть Спецпанель КСБ/Полиции</button>';
+        } else if (job === 'deputy') {
+            jobTitle = '🏛 Депутат';
+            salaryInfo = '5 000 ₽ / неделю';
+            customControls = `
+                <div style="margin-top:12px;">
+                    <textarea id="deputyProposalInput" placeholder="Текст законодательной инициативы или предложения..."></textarea>
+                    <button class="btn btn-primary" onclick="submitDeputyProposal()" style="width:100%;margin-top:6px;">Внести инициативу в Мэрию</button>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="card">
+                <div style="font-size:11px;color:var(--muted);text-transform:uppercase;">Текущая Профессия</div>
+                <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;color:var(--accent);margin:6px 0;">${jobTitle}</div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Оплата: ${salaryInfo}</div>
+
+                ${customControls}
+
+                <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:12px;">
+                    <button class="btn btn-red" style="width:100%;" onclick="quitJobFlow()">Уволиться по собственному желанию</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderVacancyList(examPoints) {
+        const vacancies = [
+            { id: 'janitor', title: '🧹 Уборщик', req: 40, salary: '1 500 ₽/нед' },
+            { id: 'courier', title: '📦 Курьер / Доставщик', req: 53, salary: 'Сдельная' },
+            { id: 'taxi', title: '🛵 Водитель Такси', req: 60, reqExt: 'Права на скутер', salary: 'Сдельная' },
+            { id: 'journalist', title: '📰 Журналист', req: 71, salary: '2 800 ₽/нед' },
+            { id: 'police', title: '👮 Полицейский', req: 80, salary: '3 400 ₽/нед' },
+            { id: 'ksb', title: '🛡 Сотрудник КСБ', req: 90, salary: '4 000 ₽/нед' },
+            { id: 'deputy', title: '🏛 Депутат', req: 95, salary: '5 000 ₽/нед' }
+        ];
+
+        return `
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                ${vacancies.map(v => {
+                    const passes = examPoints >= v.req;
                     return `
-                        <div class="job-card">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <div style="font-weight:800;font-size:16px;">${j.title}</div>
-                                <div style="font-weight:900;color:var(--primary);">${j.salary}</div>
+                        <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                            <div>
+                                <div style="font-weight:800;font-size:15px;color:var(--text);">${v.title}</div>
+                                <div style="font-size:12px;color:var(--accent);font-weight:700;margin:2px 0;">💰 ${v.salary}</div>
+                                <div style="font-size:11px;color:var(--muted);">Требуется баллов: <b>${v.req}</b> ${v.reqExt ? `(${v.reqExt})` : ''}</div>
                             </div>
-                            <div style="font-size:12px;color:var(--muted);margin:6px 0;">${j.desc}</div>
-                            <div style="font-size:11px;color:${canApply ? 'var(--primary)' : 'var(--red)'};font-weight:700;">
-                                📋 Требования: КВЭ ≥ ${j.examMin} баллов ${j.needLicense ? '+ Права на скутер' : ''}
-                            </div>
-                            <button class="btn ${canApply ? 'btn-primary' : 'btn-ghost'}" style="width:100%;margin-top:10px;" ${canApply ? `onclick="applyForJob('${j.title}')"` : 'disabled'}>
-                                ${canApply ? 'Устроиться на работу' : 'Требования не выполнены'}
+                            <button class="btn ${passes ? 'btn-primary' : 'btn-secondary'}"
+                                ${!passes ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}
+                                onclick="applyForJob('${v.id}')">
+                                ${passes ? 'Устроиться' : 'Недоступно'}
                             </button>
                         </div>
                     `;
                 }).join('')}
             </div>
-        `}
-    `;
-}
-
-function renderJobActionPanel(jobTitle) {
-    if (jobTitle.includes('Уборщик')) {
-        return `
-            <div style="background:var(--surface2);padding:12px;border-radius:12px;">
-                <div style="font-weight:800;font-size:13px;margin-bottom:6px;">🧹 Отчёт об уборке</div>
-                <textarea id="janitorReportInput" placeholder="Опишите выполненную уборку территории..."></textarea>
-                <button class="btn btn-primary" style="width:100%;margin-top:6px;" onclick="submitJanitorReport()">Отправить отчёт в Мэрию</button>
-            </div>
-        `;
-    } else if (jobTitle.includes('Депутат')) {
-        return `
-            <div style="background:var(--surface2);padding:12px;border-radius:12px;">
-                <div style="font-weight:800;font-size:13px;margin-bottom:6px;">🏛 Законодательная инициатива</div>
-                <textarea id="deputyProposalInput" placeholder="Ваше предложение для развития Капаней..."></textarea>
-                <button class="btn btn-gold" style="width:100%;margin-top:6px;" onclick="submitDeputyProposal()">Отправить инициативу Мэру</button>
-            </div>
-        `;
-    } else if (jobTitle.includes('Журналист')) {
-        return `
-            <button class="btn btn-primary" style="width:100%;" onclick="window.location.hash='#news'">📰 Перейти в панель журналиста</button>
-        `;
-    } else if (jobTitle.includes('Такси')) {
-        return `
-            <button class="btn btn-primary" style="width:100%;" onclick="window.location.hash='#taxi'">🚕 Панель водителя такси</button>
-        `;
-    } else if (jobTitle.includes('Полицейский') || jobTitle.includes('КСБ')) {
-        return `
-            <button class="btn btn-primary" style="width:100%;" onclick="window.location.hash='#ksb'">🛡 Панель сотрудника КСБ</button>
         `;
     }
-    return '';
-}
 
-window.applyForJob = async function(title) {
-    const userNick = getCurrentNick();
-    if (!userNick) return;
+    window.applyForJob = async function(jobId) {
+        const user = window.KP.getCurrentUser();
+        const userNick = window.KP.getCurrentNick();
 
-    await dbUpdate(`users/${userNick}`, { job: title });
-    alert(`🎉 Вы устроились на работу «${title}»!`);
-    renderJobsView(document.getElementById('service_jobs'));
-};
+        if (jobId === 'taxi') {
+            const licenses = user.licenses || {};
+            if (!licenses.scooter) {
+                return alert("Для работы водителем такси необходимы права на скутер!");
+            }
+        }
 
-window.quitJobFlow = async function() {
-    const userNick = getCurrentNick();
-    if (!userNick) return;
-
-    if (confirm("Вы уверены, что хотите уволиться?")) {
-        await dbUpdate(`users/${userNick}`, { job: 'Безработный' });
+        await window.KP_DB.dbUpdate(`users/${userNick}`, { job: jobId });
+        alert("🎉 Поздравляем с трудоустройством!");
         renderJobsView(document.getElementById('service_jobs'));
-    }
-};
+    };
 
-window.submitJanitorReport = async function() {
-    const text = document.getElementById('janitorReportInput').value;
-    if (!text) return alert("Введите текст отчёта");
+    window.quitJobFlow = async function() {
+        if (confirm("Вы точно хотите уволиться?")) {
+            const userNick = window.KP.getCurrentNick();
+            await window.KP_DB.dbUpdate(`users/${userNick}`, { job: null });
+            renderJobsView(document.getElementById('service_jobs'));
+        }
+    };
 
-    const user = getCurrentUser();
-    const userNick = getCurrentNick();
+    window.submitJanitorReport = async function() {
+        const text = document.getElementById('janitorReportInput').value;
+        if (!text) return alert("Введите отчёт");
 
-    await dbPush('janitor_submissions', {
-        worker: userNick,
-        workerName: displayNick(user),
-        text,
-        createdAt: Date.now()
-    });
+        const user = window.KP.getCurrentUser();
+        const userNick = window.KP.getCurrentNick();
 
-    alert("Отчёт об уборке отправлен в Мэрию!");
-    document.getElementById('janitorReportInput').value = '';
-};
+        await window.KP_DB.dbPush('janitor_reports', {
+            worker: userNick,
+            workerName: window.KP.displayNick(user),
+            reportText: text,
+            createdAt: Date.now()
+        });
 
-window.submitDeputyProposal = async function() {
-    const text = document.getElementById('deputyProposalInput').value;
-    if (!text) return alert("Введите текст инициативы");
+        alert("Отчёт уборщика отправлен в Мэрию!");
+        document.getElementById('janitorReportInput').value = '';
+    };
 
-    const user = getCurrentUser();
-    const userNick = getCurrentNick();
+    window.submitDeputyProposal = async function() {
+        const text = document.getElementById('deputyProposalInput').value;
+        if (!text) return alert("Введите текст инициативы");
 
-    await dbPush('deputy_proposals', {
-        deputy: userNick,
-        deputyName: displayNick(user),
-        text,
-        status: 'pending',
-        createdAt: Date.now()
-    });
+        const user = window.KP.getCurrentUser();
+        const userNick = window.KP.getCurrentNick();
 
-    alert("Законодательная инициатива отправлена Мэру!");
-    document.getElementById('deputyProposalInput').value = '';
-};
+        await window.KP_DB.dbPush('deputy_proposals', {
+            author: userNick,
+            authorName: window.KP.displayNick(user),
+            text: text,
+            status: 'submitted',
+            createdAt: Date.now()
+        });
+
+        alert("Законодательная инициатива направлена Мэру!");
+        document.getElementById('deputyProposalInput').value = '';
+    };
+})();

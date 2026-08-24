@@ -4,6 +4,7 @@
     let currentUser = null;
     let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
     let userListeners = [];
+    let currentDbUnsub = null;
 
     function normalizePublicName(s) {
         return String(s || '').trim().toLowerCase();
@@ -59,6 +60,21 @@
         let base = String(nameInput || '').trim().replace(/[\.\#\$\[\]\s]/g, '_');
         if (!base) base = 'citizen_' + Date.now().toString(36);
         return base;
+    }
+
+    function attachUserListener(nick) {
+        if (currentDbUnsub) currentDbUnsub();
+        if (!nick) return;
+
+        currentDbUnsub = window.KP_DB.dbOnValue(`users/${nick}`, (val) => {
+            if (val) {
+                val.nick = nick;
+                currentUser = val;
+            } else {
+                currentUser = null;
+            }
+            notifyAuthSubscribers();
+        });
     }
 
     async function loginUser(nameOrLogin, password) {
@@ -119,11 +135,13 @@
             displayName: displayNick(currentUser)
         }));
 
+        attachUserListener(currentNick);
         notifyAuthSubscribers();
         return currentUser;
     }
 
     function logoutUser() {
+        if (currentDbUnsub) currentDbUnsub();
         localStorage.removeItem('kp_s');
         sessionStorage.removeItem('kp_s');
         localStorage.removeItem('kp_auth');
@@ -135,7 +153,7 @@
 
     function subscribeAuth(callback) {
         userListeners.push(callback);
-        if (currentUser) callback(currentUser);
+        callback(currentUser);
     }
 
     function notifyAuthSubscribers() {
@@ -143,21 +161,12 @@
     }
 
     function initAuth(onUserLoaded) {
-        if (!currentNick) {
-            onUserLoaded(null);
-            return;
+        subscribeAuth(onUserLoaded);
+        if (currentNick) {
+            attachUserListener(currentNick);
+        } else {
+            notifyAuthSubscribers();
         }
-
-        window.KP_DB.dbOnValue(`users/${currentNick}`, (val) => {
-            if (val) {
-                val.nick = currentNick;
-                currentUser = val;
-                notifyAuthSubscribers();
-                onUserLoaded(currentUser);
-            } else {
-                onUserLoaded(null);
-            }
-        });
     }
 
     window.KP.getCurrentNick = getCurrentNick;

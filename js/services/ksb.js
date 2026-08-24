@@ -1,175 +1,183 @@
-import { getCurrentUser, getCurrentNick, displayNick } from "../auth.js";
-import { dbGet, dbSet, dbPush, dbUpdate } from "../firebase.js";
-import { pushNotification } from "../notifications.js";
+(function() {
+    window.initKsbService = function() {
+        const container = document.getElementById('service_ksb');
+        if (!container) return;
 
-export function initKsbService() {
-    const container = document.getElementById('service_ksb');
-    if (!container) return;
+        renderKsbView(container);
 
-    renderKsbView(container);
+        window.addEventListener('serviceMounted', (e) => {
+            if (e.detail?.serviceId === 'ksb') {
+                renderKsbView(container);
+            }
+        });
+    };
 
-    window.addEventListener('serviceMounted', (e) => {
-        if (e.detail?.serviceId === 'ksb') {
-            renderKsbView(container);
+    async function renderKsbView(container) {
+        const user = window.KP.getCurrentUser();
+        const userNick = window.KP.getCurrentNick();
+
+        if (!user || !userNick) return;
+
+        const isOfficer = user.job === 'police' || user.job === 'ksb' || window.KP.isMayor(user);
+
+        container.innerHTML = `
+            <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+                <h2 style="font-family:'Unbounded',sans-serif;font-size:20px;color:var(--red);">🛡 Капанёвская Служба Безопасности</h2>
+                <button class="btn btn-red" style="padding:6px 12px;font-size:12px;" onclick="openEmergencyCallModal()">🚨 Вызов Полиии/КСБ</button>
+            </div>
+
+            ${isOfficer ? renderOfficerPanel() : `
+                <div class="card" style="text-align:center;padding:30px 16px;">
+                    <div style="font-size:40px;margin-bottom:12px;">🛡</div>
+                    <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:800;margin-bottom:6px;">Служба Правопорядка Капаней</div>
+                    <div style="font-size:12px;color:var(--muted);max-width:320px;margin:0 auto 16px;">
+                        В случае экстренной ситуации или правонарушения нажмите кнопку «Вызов Полиии/КСБ» для отправки сигнала правоохранителям.
+                    </div>
+                </div>
+            `}
+        `;
+
+        if (isOfficer) {
+            initOfficerTabLogic();
         }
-    });
-}
-
-async function renderKsbView(container) {
-    const user = getCurrentUser();
-    const userNick = getCurrentNick();
-    if (!user || !userNick) return;
-
-    const examScore = user.examScore || 0;
-    const isPolice = examScore >= 80 || user.job === 'Полицейский';
-    const isKsb = examScore >= 90 || user.job === 'КСБ';
-    const hasOfficerAccess = isPolice || isKsb;
-
-    container.innerHTML = `
-        <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="font-family:'Unbounded',sans-serif;font-size:20px;">🛡 КСБ и Полиция</h2>
-        </div>
-
-        <div class="ksb-panel">
-            <div style="font-size:11px;color:var(--blue);font-weight:800;text-transform:uppercase;">Капанёвская Служба Безопасности</div>
-            <div style="font-size:18px;font-weight:900;margin:4px 0;">Правопорядок Капаней</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Каждый гражданин может оперативно вызвать полицию при происшествии.</div>
-
-            <button class="btn btn-red" style="width:100%;" onclick="openPoliceCallModal()">🚨 Вызвать полицию</button>
-        </div>
-
-        ${hasOfficerAccess ? `
-            <div style="font-family:'Unbounded',sans-serif;font-size:16px;margin-bottom:12px;color:var(--blue);">🔒 Защищённая Панель Сотрудника (${isKsb ? 'КСБ' : 'Полиция'})</div>
-
-            <div class="ksb-card">
-                <div style="font-weight:800;font-size:14px;margin-bottom:8px;">🔍 Поиск Гражданина в Реестре</div>
-                <input type="text" id="ksbCitizenSearchInput" placeholder="Введите имя или ник..." oninput="searchKsbCitizen(this.value)">
-                <div id="ksbSearchResultArea" style="margin-top:10px;"></div>
-            </div>
-
-            <div class="ksb-card">
-                <div style="font-weight:800;font-size:14px;margin-bottom:8px;">📢 Активные вызовы полиции</div>
-                <div id="ksbPoliceCallsArea">Загрузка вызовов…</div>
-            </div>
-        ` : ''}
-    `;
-
-    if (hasOfficerAccess) {
-        loadPoliceCalls();
     }
-}
 
-window.openPoliceCallModal = function() {
-    const address = prompt("Укажите место происшествия / адрес:");
-    const reason = prompt("Опишите причину вызова:");
-    if (address && reason) {
-        const user = getCurrentUser();
-        const userNick = getCurrentNick();
+    function renderOfficerPanel() {
+        return `
+            <div style="margin-bottom:16px;background:var(--surface2);padding:4px;border-radius:12px;display:flex;gap:4px;">
+                <button class="btn btn-primary" style="flex:1;padding:6px;font-size:11px;" onclick="switchKsbTab('search')">🔍 База Граждан</button>
+                <button class="btn btn-secondary" style="flex:1;padding:6px;font-size:11px;" onclick="switchKsbTab('calls')">🚨 Поступившие Вызовы</button>
+            </div>
 
-        dbPush('police_calls', {
+            <div id="ksbOfficerContent">
+                <div class="card">
+                    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Поиск жителя (Имя/Ник)</label>
+                    <input type="text" id="ksbUserSearchInput" placeholder="Введите имя жителя...">
+                    <button class="btn btn-primary" onclick="searchCitizenKsb()" style="width:100%;margin-top:6px;">Найти в базе</button>
+                </div>
+                <div id="ksbSearchResult" style="margin-top:12px;"></div>
+            </div>
+        `;
+    }
+
+    window.switchKsbTab = async function(tab) {
+        const content = document.getElementById('ksbOfficerContent');
+        if (!content) return;
+
+        if (tab === 'search') {
+            content.innerHTML = `
+                <div class="card">
+                    <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Поиск жителя (Имя/Ник)</label>
+                    <input type="text" id="ksbUserSearchInput" placeholder="Введите имя жителя...">
+                    <button class="btn btn-primary" onclick="searchCitizenKsb()" style="width:100%;margin-top:6px;">Найти в базе</button>
+                </div>
+                <div id="ksbSearchResult" style="margin-top:12px;"></div>
+            `;
+        } else if (tab === 'calls') {
+            const rawCalls = await window.KP_DB.dbGet('emergency_calls') || {};
+            const calls = Object.keys(rawCalls).map(k => ({ ...rawCalls[k], id: k })).filter(c => c.status === 'active');
+
+            if (calls.length === 0) {
+                content.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;">Активных вызовов нет</div>';
+                return;
+            }
+
+            content.innerHTML = calls.map(c => `
+                <div class="card" style="margin-bottom:12px;">
+                    <div style="font-weight:800;color:var(--red);">🚨 Вызов от: ${c.callerName || c.caller}</div>
+                    <div style="font-size:13px;color:var(--text);margin:6px 0;background:var(--surface2);padding:8px;border-radius:8px;">${c.reason}</div>
+                    <button class="btn btn-green" style="width:100%;padding:6px;font-size:12px;" onclick="closeKsbCall('${c.id}')">✅ Закрыть вызов / Выехать</button>
+                </div>
+            `).join('');
+        }
+    };
+
+    window.searchCitizenKsb = async function() {
+        const query = document.getElementById('ksbUserSearchInput').value.trim().toLowerCase();
+        if (!query) return;
+
+        const allUsers = await window.KP_DB.dbGet('users') || {};
+        const foundKey = Object.keys(allUsers).find(k => k.toLowerCase().includes(query) || (allUsers[k].name && allUsers[k].name.toLowerCase().includes(query)));
+
+        const resDiv = document.getElementById('ksbSearchResult');
+        if (!foundKey) {
+            resDiv.innerHTML = '<div style="text-align:center;color:var(--muted);padding:12px;">Гражданин не найден</div>';
+            return;
+        }
+
+        const citizen = allUsers[foundKey];
+        const licenses = citizen.licenses || {};
+
+        resDiv.innerHTML = `
+            <div class="card">
+                <div style="font-weight:800;font-size:16px;">👤 ${window.KP.displayNick(citizen)} (${foundKey})</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px;">Баллы экзамена: ${citizen.examPoints || citizen.kve || 0} | Работа: ${citizen.job || 'Нет'}</div>
+
+                <div style="margin:12px 0;background:var(--surface2);padding:10px;border-radius:10px;font-size:12px;">
+                    <div><b>Права:</b></div>
+                    <div>🛵 Скутер: ${licenses.scooter ? '✅ Есть' : '❌ Отсутствуют'}</div>
+                    <div>🚗 Автомобиль: ${licenses.car ? '✅ Есть' : '❌ Отсутствуют'}</div>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                    <button class="btn btn-green" style="flex:1;font-size:11px;padding:6px;" onclick="grantLicenseKsb('${foundKey}', 'scooter')">Выдать права на скутер</button>
+                    <button class="btn btn-red" style="flex:1;font-size:11px;padding:6px;" onclick="revokeLicenseKsb('${foundKey}', 'scooter')">Изъять права</button>
+                </div>
+
+                <button class="btn btn-red" style="width:100%;font-size:12px;" onclick="issueFineKsb('${foundKey}')">⚠️ Выписать штраф</button>
+            </div>
+        `;
+    };
+
+    window.grantLicenseKsb = async function(nick, type) {
+        await window.KP_DB.dbUpdate(`users/${nick}/licenses`, { [type]: true });
+        await window.KP.pushNotification(nick, 'КСБ / Полиция', `Вам выданы права на ${type}!`);
+        alert("Права успешно выданы!");
+        searchCitizenKsb();
+    };
+
+    window.revokeLicenseKsb = async function(nick, type) {
+        await window.KP_DB.dbUpdate(`users/${nick}/licenses`, { [type]: false });
+        await window.KP.pushNotification(nick, 'КСБ / Полиция', `Ваши права на ${type} были изъяты.`);
+        alert("Права изъяты.");
+        searchCitizenKsb();
+    };
+
+    window.issueFineKsb = async function(nick) {
+        const sumStr = prompt("Сумма штрафа (₽):");
+        if (!sumStr) return;
+        const sum = Number(sumStr);
+        const reason = prompt("Причина штрафа:") || "Нарушение порядка";
+
+        const citizen = await window.KP_DB.dbGet(`users/${nick}`);
+        if (citizen) {
+            await window.KP_DB.dbUpdate(`users/${nick}`, { balance: (citizen.balance || 0) - sum });
+            await window.KP.pushNotification(nick, 'Штраф от КСБ/Полиции', `Вам выписан штраф ${sum} ₽. Причина: ${reason}`);
+            alert(`Штраф ${sum} ₽ выписан пользователю!`);
+        }
+    };
+
+    window.openEmergencyCallModal = function() {
+        const reason = prompt("Опишите причину вызова полиции/КСБ:");
+        if (!reason) return;
+
+        const user = window.KP.getCurrentUser();
+        const userNick = window.KP.getCurrentNick();
+
+        window.KP_DB.dbPush('emergency_calls', {
             caller: userNick,
-            callerName: displayNick(user),
-            address,
+            callerName: window.KP.displayNick(user),
             reason,
             status: 'active',
             createdAt: Date.now()
-        }).then(() => alert("🚨 Вызов полиции отправлен! Патруль оповещён."));
-    }
-};
+        });
 
-async function loadPoliceCalls() {
-    const callsArea = document.getElementById('ksbPoliceCallsArea');
-    if (!callsArea) return;
+        alert("🚨 Сигнал бедствия передан на пульт дежурного КСБ!");
+    };
 
-    const callsObj = await dbGet('police_calls') || {};
-    const calls = Object.keys(callsObj)
-        .map(k => ({ ...callsObj[k], id: k }))
-        .filter(c => c.status === 'active');
-
-    if (calls.length === 0) {
-        callsArea.innerHTML = '<div style="font-size:12px;color:var(--muted);">Активных вызовов нет</div>';
-        return;
-    }
-
-    callsArea.innerHTML = calls.map(c => `
-        <div style="background:var(--surface2);padding:10px;border-radius:12px;margin-bottom:8px;">
-            <div style="font-weight:800;font-size:13px;color:var(--red);">📍 ${c.address}</div>
-            <div style="font-size:12px;margin:2px 0;">Причина: ${c.reason}</div>
-            <div style="font-size:10px;color:var(--muted);">Заявитель: ${c.callerName}</div>
-            <button class="btn btn-primary" style="padding:4px 10px;font-size:11px;margin-top:6px;" onclick="closePoliceCall('${c.id}')">Завершить вызов</button>
-        </div>
-    `).join('');
-}
-
-window.closePoliceCall = async function(callId) {
-    await dbUpdate(`police_calls/${callId}`, { status: 'closed' });
-    alert("Вызов закрыт!");
-    loadPoliceCalls();
-};
-
-window.searchKsbCitizen = async function(query) {
-    const resArea = document.getElementById('ksbSearchResultArea');
-    if (!resArea || !query.trim()) {
-        if (resArea) resArea.innerHTML = '';
-        return;
-    }
-
-    const allUsers = await dbGet('users') || {};
-    const q = query.toLowerCase();
-
-    const matches = Object.keys(allUsers).filter(key => {
-        const u = allUsers[key];
-        return key.toLowerCase().includes(q) || (u.displayName && u.displayName.toLowerCase().includes(q));
-    });
-
-    if (matches.length === 0) {
-        resArea.innerHTML = '<div style="font-size:12px;color:var(--muted);">Гражданин не найден</div>';
-        return;
-    }
-
-    resArea.innerHTML = matches.map(key => {
-        const u = allUsers[key];
-        return `
-            <div style="background:var(--surface2);padding:10px;border-radius:12px;margin-bottom:8px;">
-                <div style="font-weight:800;font-size:14px;">${displayNick(u)} (${key})</div>
-                <div style="font-size:11px;color:var(--muted);margin:4px 0;">
-                    Профессия: <b>${u.job || 'Гражданин'}</b> | Права: <b>${u.driversLicense ? 'Есть ✅' : 'Нет ❌'}</b> | Штрафы: <b>${u.fine || 0} ₽</b>
-                </div>
-                <div style="display:flex;gap:6px;margin-top:8px;">
-                    <button class="btn btn-ghost" style="padding:4px 8px;font-size:11px;" onclick="toggleKsbDriversLicense('${key}', ${!u.driversLicense})">
-                        ${u.driversLicense ? '🚫 Изъять права' : '📜 Выдать права'}
-                    </button>
-                    <button class="btn btn-red" style="padding:4px 8px;font-size:11px;" onclick="issueKsbFineModal('${key}')">⚠️ Выписать штраф</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-};
-
-window.toggleKsbDriversLicense = async function(userNick, newState) {
-    await dbUpdate(`users/${userNick}`, { driversLicense: newState });
-    alert(`Статус прав гражданина обновлён: ${newState ? 'Выданы ✅' : 'Изъяты ❌'}`);
-    searchKsbCitizen(document.getElementById('ksbCitizenSearchInput').value);
-};
-
-window.issueKsbFineModal = async function(userNick) {
-    const amount = prompt("Введите сумму штрафа (₽):");
-    const reason = prompt("Укажите причину штрафа:");
-    if (amount && reason) {
-        const targetUser = await dbGet(`users/${userNick}`);
-        if (targetUser) {
-            const numAmt = Number(amount);
-            const newFine = (targetUser.fine || 0) + numAmt;
-            const newBal = (targetUser.balance || 0) - numAmt;
-
-            await dbUpdate(`users/${userNick}`, {
-                fine: newFine,
-                balance: newBal
-            });
-
-            await pushNotification(userNick, `⚠️ Вам выписан штраф ${numAmt} ₽: ${reason}`, 'police', '#bank');
-            alert("Штраф выписан и зафиксирован!");
-            searchKsbCitizen(document.getElementById('ksbCitizenSearchInput').value);
-        }
-    }
-};
+    window.closeKsbCall = async function(id) {
+        await window.KP_DB.dbUpdate(`emergency_calls/${id}`, { status: 'closed' });
+        alert("Вызов принят и закрыт.");
+        switchKsbTab('calls');
+    };
+})();
