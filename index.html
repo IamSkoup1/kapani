@@ -868,6 +868,40 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .biz-apply-pending{background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;font-size:13px;}
 .biz-employee-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;}
 
+
+/* ─── Kapani dark redesign ───────────────────────────────────────── */
+:root{
+    --bg:#06090d;
+    --surface:rgba(255,255,255,.028);
+    --surface2:rgba(255,255,255,.055);
+    --border:rgba(255,255,255,.075);
+    --primary:#22d3a5;
+    --pri-dim:rgba(34,211,165,.105);
+    --gold:#fbbf24;
+    --gold-dim:rgba(251,191,36,.10);
+    --text:#f1f5f9;
+    --muted:#64748b;
+    --shadow:0 10px 34px rgba(0,0,0,.62);
+}
+body{background:var(--bg);}
+body::before{
+    background:
+      radial-gradient(ellipse 65% 55% at 10% 15%,rgba(34,211,165,.035) 0%,transparent 72%),
+      radial-gradient(ellipse 55% 50% at 90% 85%,rgba(251,191,36,.025) 0%,transparent 74%);
+}
+.g-header{background:rgba(6,9,13,.94);border-bottom-color:rgba(255,255,255,.065);}
+.bottom-nav{background:rgba(6,9,13,.97);border-top-color:rgba(255,255,255,.065);}
+.card,.quick-card,.market-card,.cart-card,.order-card,.rent-card,.work-order,.lb-row,.notif-item{
+    background:rgba(255,255,255,.026);
+    border-color:rgba(255,255,255,.07);
+    box-shadow:0 7px 28px rgba(0,0,0,.28);
+}
+.card:hover,.quick-card:hover,.market-card:hover,.dm-user-row:hover{border-color:rgba(255,255,255,.13);}
+input,textarea,select{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.075);}
+input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
+.logo-card{background:linear-gradient(145deg,rgba(34,211,165,.04),rgba(251,191,36,.025));}
+.profile-header{background:linear-gradient(145deg,rgba(34,211,165,.075),transparent);}
+.help-call-btn{width:min(220px,72%);}
 </style>
 </head>
 <body>
@@ -1021,8 +1055,9 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     <div class="card">
         <div class="card-title">🆘 Полезное</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <button class="btn btn-red" onclick="openCallModal()">📞 Вызов</button>
-            <button class="btn btn-gold" onclick="openAtmRequestModal()">Банкомат</button>
+            <div style="grid-column:1/-1;display:flex;justify-content:center;">
+                <button class="btn btn-red help-call-btn" onclick="openCallModal()">📞 Вызов</button>
+            </div>
             <button class="btn btn-primary" style="grid-column:1/-1;" onclick="openInfoModal()">ℹ️ Информация</button>
         </div>
     </div>
@@ -1229,10 +1264,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="shop" class="section">
     <div class="card">
         <div class="card-title">🛍 Заказ ресурсов</div>
-        <div class="item-row"><span>🌲 Небольшое бревно <b style="color:var(--primary)">85₽</b></span><input type="number" id="sB" value="0" min="0" oninput="recalcShop()"></div>
-        <div class="item-row"><span><span style="font-size:1.15em;line-height:1;" title="Палка">🥢</span> Палка <b style="color:var(--primary)">22₽</b></span><input type="number" id="sP" value="0" min="0" oninput="recalcShop()"></div>
-        <div class="item-row"><span>🍃 Листья <b style="color:var(--primary)">2₽</b></span><input type="number" id="sL" value="0" min="0" oninput="recalcShop()"></div>
-        <div class="item-row"><span><span style="font-size:1.15em;line-height:1;" title="Камень">🗿</span> Камень <b style="color:var(--primary)">50₽</b></span><input type="number" id="sK" value="0" min="0" oninput="recalcShop()"></div>
+        <div class="item-row"><span>🌲 Небольшое бревно <b style="color:var(--primary)">250₽</b></span><input type="number" id="sB" value="0" min="0" oninput="recalcShop()"></div>
+        <div class="item-row"><span><span style="font-size:1.15em;line-height:1;" title="Палка">🥢</span> Палка <b style="color:var(--primary)">30₽</b></span><input type="number" id="sP" value="0" min="0" oninput="recalcShop()"></div>
+        <div class="item-row"><span>🍃 Листья <b style="color:var(--primary)">3₽</b></span><input type="number" id="sL" value="0" min="0" oninput="recalcShop()"></div>
+        <div class="item-row"><span><span style="font-size:1.15em;line-height:1;" title="Камень">🗿</span> Камень <b style="color:var(--primary)">100₽</b></span><input type="number" id="sK" value="0" min="0" oninput="recalcShop()"></div>
         <input type="text" id="sAddr" placeholder="📍 Адрес доставки" style="margin-top:10px;">
         <div style="display:flex;gap:8px;margin-bottom:4px;">
             <button class="toggle-map-btn" style="flex:1;" id="shopMapToggleBtn" onclick="toggleShopMap()">🗺 Выбрать на карте</button>
@@ -1376,21 +1411,21 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-size:32px;">⭐</div>
             <div>
                 <div style="font-size:20px;font-weight:900;color:var(--gold);">Kapani Plus</div>
-                <div style="font-size:14px;color:var(--gold);font-weight:700;">199 ₽/неделя</div>
+                <div style="font-size:14px;color:var(--gold);font-weight:700;">399 ₽/неделя</div>
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
             <div style="margin-bottom:8px;">✅ <b>Работа на 3 должностях</b> одновременно (включая бизнес)</div>
             <div style="margin-bottom:8px;">✅ <b>4 объявления</b> в неделю на маркетплейсе</div>
             <div style="margin-bottom:8px;">✅ <b>5% скидка</b> на такси и доставку</div>
-            <div style="margin-bottom:8px;">✅ <b>3 бизнеса одновременно</b></div>
+            <div style="margin-bottom:8px;">✅ <b>3 бизнеса одновременно</b><br>✅ <b>Открытие бизнеса — 2500₽</b></div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона</b> сообщений в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Рамки для аватара</b> (Золотая, Пульсирующая)</div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона профиля</b> (Мерцание, Частицы)</div>
         </div>
         <button class="btn btn-gold" onclick="buySubscription('plus')" id="btnBuyPlus">Оформить Plus</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('plus')">
-            <span>🎁</span> Подарить Plus (199₽)
+            <span>🎁</span> Подарить Plus (399₽)
         </button>
     </div>
 
@@ -1400,7 +1435,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-size:32px;">💎</div>
             <div>
                 <div style="font-size:20px;font-weight:900;color:var(--primary);">Kapani Ultra</div>
-                <div style="font-size:14px;color:var(--primary);font-weight:700;">499 ₽/неделя</div>
+                <div style="font-size:14px;color:var(--primary);font-weight:700;">1199 ₽/неделя</div>
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
@@ -1408,7 +1443,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="margin-bottom:8px;">✅ <b>8 объявлений</b> в неделю на маркетплейсе</div>
             <div style="margin-bottom:8px;">✅ <b>10% скидка</b> на такси, доставку и маркет</div>
             <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 20%</b> на аренду зданий</div>
-            <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>250₽</b> вместо 500₽</div>
+            <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>2000₽</b> вместо 2500₽</div>
             <div style="margin-bottom:8px;">✅ <b>5 бизнеса одновременно</b></div>
             <div style="margin-bottom:8px;">✅ <b>Цвет фона сообщений</b> в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Переливающиеся цвета</b> и спецэффекты в чатах</div>
@@ -1418,7 +1453,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         </div>
         <button class="btn btn-primary" onclick="buySubscription('ultra')" id="btnBuyUltra">Оформить Ultra</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('ultra')">
-            <span>🎁</span> Подарить Ultra (499₽)
+            <span>🎁</span> Подарить Ultra (1199₽)
         </button>
     </div>
 
@@ -1428,7 +1463,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-size:32px;">👑</div>
             <div>
                 <div style="font-size:20px;" class="text-rainbow-prime">Kapani Prime</div>
-                <div style="font-size:14px;color:#f0c419;font-weight:700;">1499 ₽/неделя</div>
+                <div style="font-size:14px;color:#f0c419;font-weight:700;">1999 ₽/неделя</div>
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
@@ -1436,8 +1471,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="margin-bottom:8px;">✅ <b>Неограниченные объявления</b></div>
             <div style="margin-bottom:8px;">✅ <b>20% скидка</b> на такси, доставку и маркет</div>
             <div style="margin-bottom:8px;">✅ <b>🏘️ Скидка 35%</b> на аренду зданий</div>
-            <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>200₽</b> вместо 500₽</div>
-            <div style="margin-bottom:8px;">✅ <b>8 бизнесов одновременно</b></div>
+            <div style="margin-bottom:8px;">✅ <b>🏛 Госпошлина</b> за создание бизнеса — <b>1250₽</b> вместо 2500₽</div>
+            <div style="margin-bottom:8px;">✅ <b>8 бизнесов одновременно</b><br>✅ <b>Открытие бизнеса — 1250₽ вместо 2500₽</b></div>
             <div style="margin-bottom:8px;">✅ <b>Уникальные переливающиеся фоны</b> сообщений в чатах</div>
             <div style="margin-bottom:8px;">✅ <b>Эксклюзивные фоны профиля</b> и крутые переливающиеся рамки аватара</div>
             <div style="margin-bottom:8px;">✅ <b>Переливающаяся тема интерфейса Prime</b></div>
@@ -1448,7 +1483,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
         </div>
         <button class="btn btn-primary" style="background:var(--gold-dim);color:var(--gold);" onclick="buySubscription('prime')" id="btnBuyPrime">Оформить Prime</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('prime')">
-            <span>🎁</span> Подарить Prime (1499₽)
+            <span>🎁</span> Подарить Prime (1999₽)
         </button>
     </div>
     
@@ -1554,7 +1589,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             </div>
             <div class="p-name" id="vpfName" style="text-align:center;"></div>
             <div class="p-job" id="vpfJob" style="text-align:center;"></div>
-            <div id="profileDescription" style="margin-top:8px;font-size:13px;color:var(--text);line-height:1.4;text-align:center;display:none;"></div>
+            <div id="vpfDescription" style="margin-top:8px;font-size:13px;color:var(--text);line-height:1.4;text-align:center;display:none;"></div>
             <div id="vpfSubscriptionBadge" style="margin-top:8px;font-size:12px;font-weight:800;text-align:center;display:none;"></div>
             <div class="upm-online" id="vpfOnline" style="justify-content:center;margin-top:8px;"><div class="upm-dot"></div><span></span></div>
             <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
@@ -1598,7 +1633,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <b style="color:var(--text)">📦 Курьер / Доставщик</b> — доставляет ресурсы, товары из бизнесов и маркетплейса, зарабатывает комиссию. <b style="color:var(--primary)">Нужный балл КВЭ: 53.</b> Зарплата: <b style="color:var(--gold)">в зависимости от заказов</b><br>
             <b style="color:var(--text)">🧹 Уборщик</b> — убирает площадку каждый день и получает выплату после проверки мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 40.</b> Зарплата: <b style="color:var(--gold)">1500 рублей/неделю</b><br>
             <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. <b style="color:var(--primary)">Нужный балл КВЭ: 71.</b> Зарплата: <b style="color:var(--gold)">2800 рублей/неделю</b>. В случае выкладывания неподобающих объявлений — <b style="color:var(--red)">увольнение</b>.<br>
-            <b style="color:var(--text)">🛡 КСБ (Капанёвская служба безопасности)</b> — обеспечивает порядок, имеет доступ к выписыванию штрафов жителям и приоритетный доступ к чату с Денисом. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">4000 рублей/неделю</b><br>
+            <b style="color:var(--text)">🛡 КСБ (Капанёвская служба безопасности)</b> — обеспечивает порядок, имеет доступ к выписыванию штрафов жителям и приоритетный доступ к чату с Кайоном. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">4000 рублей/неделю</b><br>
             <b style="color:var(--text)">🏛 Депутат</b> — представляет интересы жителей, отправляет предложения и запросы в мэрию. Запросы рассматриваются, отклоняются или одобряются мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 95.</b> Зарплата: <b style="color:var(--gold)">5000 рублей/неделю</b><br>
             <b style="color:var(--text)">👮 Полицейский</b> — следит за порядком, может создавать запросы в мэрию на штраф нарушителя или удаление аккаунта. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">3400 рублей/неделю</b>
         </div>
@@ -1619,7 +1654,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 <div id="news" class="section">
     <div class="card" id="newsEditorPanel" style="display:none;">
         <div class="card-title">📰 Создать новость</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Новости посёлка могут публиковать Денис и Журналисты. Новости Капанёвских земель — только Денис.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Новости посёлка могут публиковать Кайон и Журналисты. Новости Капанёвских земель — только Кайон.</div>
         <select id="newsScope" style="margin-bottom:8px;">
             <option value="village">🏘️ Новости посёлка</option>
             <option value="lands">🌲 Новости Капанёвских земель</option>
@@ -2181,7 +2216,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
             <div style="font-weight:900;font-size:18px;">🏪 Открыть бизнес</div>
             <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeBizApplyModal()">✕</span>
         </div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — <span id="bizFeeDisplay">500 ₽</span>. С подпиской Ultra — 250 ₽, с Kapani Prime — 200 ₽.</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — <span id="bizFeeDisplay">2500 ₽</span>. С подпиской Ultra — 2000 ₽, с Kapani Prime — 1250 ₽.</div>
         <input type="text" id="bapName" placeholder="Название бизнеса" maxlength="60">
         <textarea id="bapDesc" placeholder="Описание бизнеса" style="min-height:72px;"></textarea>
         <input type="text" id="bapAddress" placeholder="Адрес (где находится)" maxlength="120">
@@ -2212,30 +2247,14 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     window.openBizOwnerPanel = function(bizId){ currentBizId = bizId; try{sessionStorage.setItem('kapani:lastBizId',bizId);}catch(e){} navTo('bizOwnerPanel'); };
     </script>
 
-<script>
-// Конфигурация приложения (встроена для работы через file:// протокол)
-const CONFIG = {
-    firebase: {
-        apiKey: "AIzaSyCDfMUZ-6-GWrw8yCWOoU07g6aappDtwxA",
-        authDomain: "kapanisite.firebaseapp.com",
-        databaseURL: "https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "kapanisite",
-        storageBucket: "kapanisite.firebasestorage.app",
-        messagingSenderId: "250125043268",
-        appId: "1:250125043268:web:fd82172b96e326b2001e11"
-    },
-    fcmVapidKey: "",
-    admin: { username: "Денис" },
-    jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
-    finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
-    location: { kapani: { lat: 52.628825753234985, lng: 38.416863347119566 } },
-    rewards: { customAvatar: 40, firstWall: 60 },
-    subscriptions: { plus: { price: 199, name: "Kapani Plus" }, ultra: { price: 499, name: "Kapani Ultra" }, prime: { price: 1499, name: "Kapani Prime" } },
-    limits: { chatMessages: 60, dmMessages: 80, videoCircleMaxDuration: 30, debounceTimeout: 50 },
-    ui: { defaultAvatarUrl: "https://cdn-icons-png.flaticon.com/512/149/149071.png" }
-};
-</script>
+<script src="./config.js"></script>
 <script type="module">
+    const CONFIG = globalThis.KAPANI_CONFIG;
+    if (!CONFIG) throw new Error("Kapani config.js не загружен");
+    const CURRENT_SUBSCRIPTION_PRICES = { plus: 399, ultra: 1199, prime: 1999 };
+    function getSubscriptionPrice(type){
+        return CURRENT_SUBSCRIPTION_PRICES[type] ?? Number(CONFIG.subscriptions?.[type]?.price || 0);
+    }
     window.openBizOwnerPanel = function(bizId){
     currentBizId = bizId;
     try { sessionStorage.setItem('kapani:lastBizId', bizId); } catch(e) {}
@@ -2254,7 +2273,7 @@ const db  = getDatabase(app);
 const functions = getFunctions(app, 'europe-west1');
 const storage = getStorage(app);
 
-const ADMIN = CONFIG.admin.username;
+const ADMIN = 'Кайон';
 const JOB_JANITOR = CONFIG.jobs.janitor;
 const JOB_JOURNALIST = "Журналист";
 const JANITOR_TASK_TEXT = CONFIG.jobs.janitorTaskText;
@@ -2267,7 +2286,7 @@ const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
 const ECONOMY_MARKET_COMMISSION = 0.02;
-const ECONOMY_BUSINESS_CREATION_FEE = 500;
+const ECONOMY_BUSINESS_CREATION_FEE = 2500;
 const ECONOMY_MARKET_PIN_PRICE = 160;
 const ECONOMY_MARKET_PIN_DURATION_MS = ECONOMY_WEEK_MS;
 const ECONOMY_BUSINESS_PROMOTE_PRICE = 600;
@@ -2295,7 +2314,8 @@ const KAPANI_LNG = CONFIG.location.kapani.lng;
 const ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
 
 let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
-window.currentNick = currentNick; // keep window.currentNick in sync (read by the Kapani Pack v2 module)
+function syncCurrentNick(){ window.currentNick = currentNick; return currentNick; }
+syncCurrentNick();
 let appStarted = false;
 let rememberedAuth = null;
 try { rememberedAuth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); } catch(e) { rememberedAuth = null; }
@@ -2948,10 +2968,10 @@ function getDebtHelpHtml(){
         <div class="card-title" style="margin-bottom:10px;">⚠️ Долг по аккаунту</div>
         <div style="font-size:13px;line-height:1.55;color:var(--text);margin-bottom:12px;">
             Баланс отрицательный, поэтому такси и маркетплейс заблокированы.
-            Напишите мэру <b style="color:var(--gold);">Денису</b> за заданиями для погашения долга.
+            Напишите мэру <b style="color:var(--gold);">Кайону</b> за заданиями для погашения долга.
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-primary btn-sm" onclick="openUserProfile('Денис')">👤 Профиль Дениса</button>
+            <button class="btn btn-primary btn-sm" onclick="openUserProfile('Кайон')">👤 Профиль Кайона</button>
             <button class="btn btn-ghost btn-sm" onclick="navTo('tasks')">🗂 Задания</button>
         </div>
     </div>`;
@@ -3067,7 +3087,7 @@ async function requireMarketTaxiAccess(){
     if((u.balance || 0) < 0){
         renderDebtNotice('marketDebtNotice', u);
         renderDebtNotice('taxiDebtNotice', u);
-        toast('🚫 Такси и маркетплейс заблокированы при отрицательном балансе. Напишите мэру Денису за заданиями.', 'red');
+        toast('🚫 Такси и маркетплейс заблокированы при отрицательном балансе. Напишите мэру Кайону за заданиями.', 'red');
         return false;
     }
     return true;
@@ -3150,7 +3170,8 @@ window.handleAuth = async function() {
                 employments: [],
                 totalEarned: 0,
                 accountVerified: false,
-                passwordHash
+                passwordHash,
+                passwordHashSalt: nick
             });
             await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
             toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
@@ -3158,9 +3179,10 @@ window.handleAuth = async function() {
             sessionStorage.setItem('kp_s', nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
             currentNick = nick;
+            syncCurrentNick();
             startApp();
         } else {
-            const enteredHash = await hashPassword(password, existing.nick);
+            const enteredHash = await hashPassword(password, existing.passwordHashSalt || existing.nick);
             if(existing.passwordHash){
                 if(existing.passwordHash !== enteredHash){
                     resetBtn();
@@ -3177,6 +3199,7 @@ window.handleAuth = async function() {
             sessionStorage.setItem('kp_s', existing.nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
             currentNick = existing.nick;
+            syncCurrentNick();
             startApp();
         }
     } catch(e) {
@@ -3186,88 +3209,94 @@ window.handleAuth = async function() {
 };
 
 function startApp() {
-    if(appStarted) return;
+    // Prevent duplicate initialization, but never leave a newly authenticated user
+    // with a hidden shell. The UI shell is independent from slow/failed Firebase reads.
+    if(appStarted){
+        revealApp();
+        hideLoadingSafe();
+        return;
+    }
     appStarted = true;
 
-    // Keep main app HIDDEN until data is loaded — prevents flash of empty UI
-    qs('authSection').style.display='none';
-    qs('gHeader').style.display='none';
-    qs('bottomNav').style.display='none';
-    qs('mainApp').style.display='none';
+    const authSection = qs('authSection');
+    const header = qs('gHeader');
+    const bottom = qs('bottomNav');
+    const main = qs('mainApp');
+    if(authSection) authSection.style.display='none';
+    if(header) header.style.display='none';
+    if(bottom) bottom.style.display='none';
+    if(main) main.style.display='none';
 
+    // Keep the loading screen visible until the profile and main service data are ready.
     const hw=qs('headerAvatarWrap'); if(hw) hw.classList.add('online');
-    startOnlineHeartbeat();
-    attachListeners();
-    ensureEconomyFresh({notify:true}).catch(()=>{});
-    window._economyTimer && clearInterval(window._economyTimer);
-    window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(()=>{}), 5 * 60 * 1000);
-    requestPersistentStorage();
-    buildEmojiPanels();
-    try { const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); if(auth && auth.nick && (!currentNick || currentNick!==auth.nick)) { localStorage.setItem('kp_s', auth.nick); sessionStorage.setItem('kp_s', auth.nick); currentNick = auth.nick; } } catch(e) {}
-    window.currentNick = currentNick; // keep window.currentNick in sync (read by the Kapani Pack v2 module)
 
-    // ── Ждём реальных данных перед показом UI и скрытием экрана загрузки ─
+    // Non-critical startup services must not be able to abort the whole app.
+    try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:', e); }
+    try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:', e); }
+    try { ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)); } catch(e) {}
+    try {
+        window._economyTimer && clearInterval(window._economyTimer);
+        window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)), 5 * 60 * 1000);
+    } catch(e) {}
+    try { requestPersistentStorage(); } catch(e) {}
+    try { buildEmojiPanels(); } catch(e) { console.warn('[Kapani] emoji panels:',e); }
+
+    try {
+        const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null');
+        if(auth && auth.nick && (!currentNick || currentNick!==auth.nick)) {
+            localStorage.setItem('kp_s', auth.nick);
+            sessionStorage.setItem('kp_s', auth.nick);
+            currentNick = auth.nick;
+        }
+    } catch(e) {}
+    syncCurrentNick();
+
     const loStatus = document.getElementById('loStatus');
     const loBar    = document.getElementById('loBar');
-
     if(loStatus) loStatus.textContent = 'Загружаем ваши данные…';
     if(loBar) loBar.style.cssText = 'width:30%;transition:width .5s ease;';
 
-    // Шаг 1: данные текущего пользователя (ник, баланс, аватар)
-    const userLoad = get(userRef(currentNick)).then(snap => {
-        if(snap.exists()){
-            const u = snap.val();
-            updateHeader(u);
-            updateFrozenOverlay(u);
-            if(loStatus) loStatus.textContent = 'Загружаем жителей…';
-            if(loBar) loBar.style.cssText = 'width:55%;transition:width .4s ease;';
-        }
-    }).catch(()=>{});
-
-    // Шаг 2: список всех пользователей (ники, аватарки)
-    const allUsersLoad = get(ref(db,'users')).then(snap => {
-        if(snap.exists()){
-            allUsersCache = snap.val();
-            window.allUsersCache = allUsersCache;
-            renderHomeStats_users(allUsersCache);
-            if(currentNick === ADMIN) renderAdminUserSelect(allUsersCache);
-            updateHeader_balance(allUsersCache[currentNick]);
-            if(loStatus) loStatus.textContent = 'Загружаем бизнесы…';
-            if(loBar) loBar.style.cssText = 'width:78%;transition:width .3s ease;';
-        }
-    }).catch(()=>{});
-
-    // Шаг 3: список бизнесов
-    const bizLoad = get(ref(db,'businesses')).then(snap => {
-        if(snap.exists()){
-            window.allBusinessesCache = snap.val();
-            if(loStatus) loStatus.textContent = 'Почти готово…';
-            if(loBar) loBar.style.cssText = 'width:92%;transition:width .3s ease;';
-        }
-    }).catch(()=>{});
-
-    // Показываем UI и скрываем загрузчик только когда данные готовы
-    const safetyTimer = setTimeout(() => {
-        revealApp();
-        hideLoadingSafe();
-    }, 4000);
-
-    Promise.all([userLoad, allUsersLoad, bizLoad]).then(() => {
-        clearTimeout(safetyTimer);
-        if(loBar) loBar.style.cssText = 'width:100%;transition:width .25s ease;';
-        setTimeout(() => { revealApp(); hideLoadingSafe(); }, 300);
-    }).catch(() => {
-        clearTimeout(safetyTimer);
-        revealApp();
-        hideLoadingSafe();
+    const essentialLoads = [
+        ['profile', get(userRef(currentNick)).then(snap => {
+            if(snap.exists()){ const u=snap.val(); updateHeader(u); updateFrozenOverlay(u); }
+            if(loStatus) loStatus.textContent='Загружаем профиль…';
+            if(loBar) loBar.style.cssText='width:35%;transition:width .35s ease;';
+        })],
+        ['users', get(ref(db,'users')).then(snap => {
+            if(snap.exists()){ allUsersCache=snap.val()||{}; window.allUsersCache=allUsersCache; renderHomeStats_users(allUsersCache); if(currentNick===ADMIN) renderAdminUserSelect(allUsersCache); updateHeader_balance(allUsersCache[currentNick]); }
+            if(loStatus) loStatus.textContent='Загружаем жителей…';
+            if(loBar) loBar.style.cssText='width:52%;transition:width .35s ease;';
+        })],
+        ['businesses', get(ref(db,'businesses')).then(snap => {
+            window.allBusinessesCache = snap.exists() ? (snap.val()||{}) : (window.allBusinessesCache||{});
+            if(loStatus) loStatus.textContent='Загружаем бизнесы…';
+            if(loBar) loBar.style.cssText='width:68%;transition:width .35s ease;';
+        })],
+        ['market', get(marketRef()).catch(()=>null)],
+        ['news', get(newsRef()).catch(()=>null)],
+        ['orders', get(ordersRef()).catch(()=>null)],
+        ['rentBuildings', get(rentBuildingsRef()).catch(()=>null)],
+        ['notifications', get(notifRef(currentNick)).catch(()=>null)],
+        ['wall', get(wallRef(currentNick)).catch(()=>null)],
+        ['applications', get(appsRef()).catch(()=>null)],
+        ['businessApplications', get(bizAppsRef()).catch(()=>null)]
+    ];
+    Promise.all(essentialLoads.map(([name,p])=>Promise.resolve(p).catch(e=>{ console.warn(`[Kapani] preload ${name} failed:`,e); return null; }))).then(()=>{
+        if(loStatus) loStatus.textContent='Запускаем сервисы…';
+        if(loBar) loBar.style.cssText='width:86%;transition:width .35s ease;';
+        try{ revealApp(); }catch(e){ console.error('[Kapani] Failed to reveal app shell:',e); if(header) header.style.display='flex'; if(bottom) bottom.style.display='flex'; if(main) main.style.display='block'; }
+        if(loStatus) loStatus.textContent='Готово!';
+        if(loBar) loBar.style.cssText='width:100%;transition:width .25s ease;';
+        setTimeout(()=>hideLoadingSafe(),220);
     });
 }
 
 function revealApp(){
-    qs('gHeader').style.display='flex';
-    qs('bottomNav').style.display='flex';
-    qs('mainApp').style.display='block';
-    navTo('home');
+    const h=qs('gHeader'); const b=qs('bottomNav'); const m=qs('mainApp');
+    if(h) h.style.display='flex';
+    if(b) b.style.display='flex';
+    if(m) m.style.display='block';
+    try { navTo('home'); } catch(e) { console.error('[Kapani] home navigation:',e); }
 }
 
 window.logout = function() {
@@ -3276,7 +3305,7 @@ window.logout = function() {
     if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);}
     if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
     listeners={};dmListeners={};
-    localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); location.reload();
+    localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; syncCurrentNick(); location.reload();
 };
 
 // ─── REAL-TIME LISTENERS ──────────────────
@@ -4575,7 +4604,105 @@ window.saveProfileCustomization=async function(){
 };
 
 window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.balance=(u.balance||0)+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_CUSTOM_AVATAR,desc:'Бонус за установку своей аватарки'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
-window.changeDisplayName=async function(){const s=await get(userRef(currentNick));if(!s.exists())return;const cur=displayNick(s.val())||'';const v=prompt('Ваше отображаемое имя в Капани (для входа и переводов):',cur);if(v===null)return;const t=v.trim().slice(0,40);if(!t)return toast('⚠️ Имя не может быть пустым','gold');const dup=await findUserByPublicName(t);if(dup&&dup.nick!==currentNick)return toast('❌ Это имя уже занято','red');await update(userRef(currentNick),{displayName:t});toast('✅ Имя обновлено','green');};
+window.changeDisplayName=async function(){
+    const oldNick = currentNick;
+    const snap = await get(userRef(oldNick));
+    if(!snap.exists()) return;
+    const u = snap.val() || {};
+    const cur = displayNick(u) || oldNick;
+    const v = prompt('Ваше отображаемое имя в Капани (для входа и переводов):',cur);
+    if(v===null) return;
+    const t = v.trim().slice(0,40);
+    if(!t) return toast('⚠️ Имя не может быть пустым','gold');
+
+    const dup = await findUserByPublicName(t);
+    if(dup && dup.nick !== oldNick) return toast('❌ Это имя уже занято','red');
+
+    const newNick = makeNickFromName(t);
+    // Keep the storage key stable when the generated nickname would collide or
+    // differ only by unsupported characters. Otherwise migrate users/<nick>.
+    let targetNick = newNick || oldNick;
+    if(targetNick !== oldNick){
+        const existingTarget = await get(userRef(targetNick));
+        if(existingTarget.exists()) return toast('❌ Такой ник уже занят','red');
+    } else {
+        targetNick = oldNick;
+    }
+
+    const patch = {
+        displayName: t,
+        nick: targetNick,
+        passwordHashSalt: u.passwordHashSalt || oldNick
+    };
+
+    if(targetNick === oldNick){
+        await update(userRef(oldNick), patch);
+    } else {
+        // Rename the complete users/<oldNick> record so Firebase's visible
+        // users/ key and the user's `nick` field stay in sync.
+        const migrated = { ...u, ...patch };
+        await set(userRef(targetNick), migrated);
+        await remove(userRef(oldNick));
+
+        // Migrate the most important nick-keyed/user-owned branches.
+        const branchTasks = [
+            ['walls', false],
+            ['txLog', false]
+        ];
+        for(const [branch] of branchTasks){
+            try{
+                const oldRef = ref(db, `${branch}/${oldNick}`);
+                const oldBranch = await get(oldRef);
+                if(oldBranch.exists()){
+                    await set(ref(db, `${branch}/${targetNick}`), oldBranch.val());
+                    await remove(oldRef);
+                }
+            }catch(e){ console.warn(`[Kapani] ${branch} nick migration:`,e); }
+        }
+
+        try {
+            const bizSnap = await get(ref(db,'businesses'));
+            const businesses = bizSnap.val() || {};
+            for(const [bid,biz] of Object.entries(businesses)){
+                if(!biz || !biz.employees || !Object.prototype.hasOwnProperty.call(biz.employees, oldNick)) continue;
+                const emp = biz.employees[oldNick];
+                const nextBiz = {...biz, employees:{...biz.employees}};
+                delete nextBiz.employees[oldNick];
+                nextBiz.employees[targetNick] = emp;
+                await update(ref(db,`businesses/${bid}`), { employees: nextBiz.employees });
+            }
+        } catch(e){ console.warn('[Kapani] business nick migration:',e); }
+    }
+
+    // Update local identity immediately so the SPA does not require reload.
+    currentNick = targetNick;
+    syncCurrentNick();
+    localStorage.setItem('kp_s', targetNick);
+    sessionStorage.setItem('kp_s', targetNick);
+    try{
+        const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null') || {};
+        localStorage.setItem('kp_auth', JSON.stringify({...auth, nick:targetNick, name:t, displayName:t}));
+    }catch(e){}
+
+    // Rebind realtime listeners from users/<oldNick> to users/<newNick>.
+    try{
+        if(targetNick !== oldNick){
+            Object.values(listeners || {}).forEach(({ref:r,fn})=>{ try{ off(r,'value',fn); }catch(e){} });
+            listeners = {};
+            if(dmListeners.current){ try{ off(dmListeners.current.ref,'value',dmListeners.current.fn); }catch(e){} }
+            if(dmListeners.read){ try{ off(dmListeners.read.ref,'value',dmListeners.read.fn); }catch(e){} }
+            dmListeners = {};
+            attachListeners();
+        }
+    }catch(e){ console.warn('[Kapani] listener rebind after nick change:',e); }
+
+    const fresh = {...u, ...patch};
+    allUsersCache[targetNick] = fresh;
+    if(oldNick !== targetNick) delete allUsersCache[oldNick];
+    window.allUsersCache = allUsersCache;
+    updateHeader(fresh);
+    toast('✅ Имя, nick и запись users/ обновлены','green');
+};
 window.changePassword=async function(){
     const s = await get(userRef(currentNick));
     if(!s.exists()) return;
@@ -4660,7 +4787,7 @@ window.detectShopLocation=function(){if(!navigator.geolocation)return toast('❌
 
 // ─── SHOP ─────────────────────────────────
 window.recalcShop=function(){
-    const itemsTotal=(parseInt(qs('sB').value)||0)*85+(parseInt(qs('sP').value)||0)*22+(parseInt(qs('sL').value)||0)*2+(parseInt(qs('sK').value)||0)*50;
+    const itemsTotal=(parseInt(qs('sB').value)||0)*250+(parseInt(qs('sP').value)||0)*30+(parseInt(qs('sL').value)||0)*3+(parseInt(qs('sK').value)||0)*100;
     const hasItems = itemsTotal > 0;
     const deliveryFee = hasItems ? 30 : 0;
     const total = itemsTotal + deliveryFee;
@@ -4677,7 +4804,7 @@ window.buyShop=async function(){
     const addr=qs('sAddr').value.trim();
     if(!addr)return toast('⚠️ Укажите адрес','gold');
     // Цены соответствуют отображаемым в магазине + 30₽ за доставку
-    const itemsTotal=b*85+p*22+l*2+k*50;
+    const itemsTotal=b*250+p*30+l*3+k*100;
     const DELIVERY_FEE = 30;
     const total = itemsTotal + DELIVERY_FEE;
     
@@ -5808,6 +5935,8 @@ window.openUserProfile=async function(nick){
     // Prevent rapid double-open
     if(viewingProfileNick === nick && qs('userProfileModal').classList.contains('open')) return;
     viewingProfileNick=nick;
+    const profileModal = qs('userProfileModal');
+    const switchingWithinOpenProfile = !!(profileModal && profileModal.classList.contains('open'));
     const snap=await get(userRef(nick));if(!snap.exists())return toast('❌ Не найден','red');const u=snap.val();const online=isUserOnline(u);
     
     // Check subscription status
@@ -5919,8 +6048,11 @@ window.openUserProfile=async function(nick){
     let sheet=document.getElementById('upmWallHost');
     if(!sheet){sheet=document.createElement('div');sheet.id='upmWallHost';document.querySelector('.user-profile-sheet').appendChild(sheet);}
     sheet.innerHTML=wallHtml;
-    lockBodyScroll();
     const modal = qs('userProfileModal');
+    if(!switchingWithinOpenProfile){
+        lockBodyScroll();
+        modal.dataset.bodyLockHeld = '1';
+    }
     modal.style.display = 'flex';
     modal.style.pointerEvents = 'auto';
     // rAF ensures display:flex is applied before class triggers animation
@@ -5944,7 +6076,12 @@ window.closeUserProfile=function(){
             modal.style.display='none';
             modal.style.pointerEvents = '';
         }
-        unlockBodyScroll();
+        if(modal.dataset.bodyLockHeld === '1'){
+            modal.dataset.bodyLockHeld = '0';
+            unlockBodyScroll();
+        } else {
+            unlockBodyScroll(true);
+        }
     }, 350);
     viewingProfileNick=null;
 };
@@ -5978,7 +6115,7 @@ async function renderVisitorProfilePage(nick){
     qs('vpfJob').textContent=getUserBusinessRoleLabel(u, u.nick || currentNick);
     
     // Profile description
-    const descEl = qs('vpfProfileBgEffect').parentElement.querySelector('#profileDescription');
+    const descEl = qs('vpfDescription');
     if(descEl) {
         if(u.profileDescription && u.profileDescription.trim()) {
             descEl.textContent = u.profileDescription.trim();
@@ -6795,7 +6932,7 @@ function renderJanitorTaskCard(u){
     const el=qs('janitorTaskCard');if(!el||!u)return;
     const status=u.janitorSubmissionStatus||'ready';
     const statusText=status==='approved'?'✅ Отчёт оплачен':status==='pending'?'⏳ Отправлено в мэрию':status==='rejected'?'❌ Отклонено':'🟢 Можно отправить отчёт';
-    el.innerHTML=`<div class="status-card green"><div class="status-badge badge-active"><span class="pulse"></span>Уборщик</div><div style="font-weight:900;font-size:18px;margin-bottom:8px;">🧹 ${JANITOR_TASK_TEXT}</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">Дата: <b style="color:var(--text)">${todayKey()}</b><br>${statusText}</div><div style="margin-top:12px;font-size:12px;color:var(--muted);">Фотоотчёт раз в сутки → проверка Денисом → выплата.</div></div>`;
+    el.innerHTML=`<div class="status-card green"><div class="status-badge badge-active"><span class="pulse"></span>Уборщик</div><div style="font-weight:900;font-size:18px;margin-bottom:8px;">🧹 ${JANITOR_TASK_TEXT}</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">Дата: <b style="color:var(--text)">${todayKey()}</b><br>${statusText}</div><div style="margin-top:12px;font-size:12px;color:var(--muted);">Фотоотчёт раз в сутки → проверка Кайоном → выплата.</div></div>`;
     const btn=qs('janitorDoneBtn');if(btn)btn.disabled=(status==='pending'||status==='approved');
 }
 async function renderJanitorPage(){
@@ -7027,7 +7164,7 @@ window.payoutJanitorSubmission=async function(id){
     const unfrozen=newBal>MIN_BALANCE_ALLOWED?{accountFrozen:false}:{};
     await update(userRef(s.worker),{balance:newBal,janitorSubmissionStatus:'approved',janitorSubmissionId:id,...unfrozen});
     await update(janitorSubRef(id),{status:'approved',reviewedBy:ADMIN,reviewedAt:Date.now(),reward:amt});
-    await logTx(s.worker,{type:'in',who:'Мэрия',amt,desc:'Выплата за уборку (одобрено Денисом)'});
+    await logTx(s.worker,{type:'in',who:'Мэрия',amt,desc:'Выплата за уборку (одобрено Кайоном)'});
     await pushNotification(s.worker,`✅ Уборка одобрена. +${amt}₽`,'money');
     toast(`✅ ${s.worker} +${amt}₽`,'green');
     renderAdmin();
@@ -7481,7 +7618,7 @@ window.publishNews = async function(){
     _publishNewsBusy = true;
     try {
     const scope = qs('newsScope') ? qs('newsScope').value : currentNewsTab;
-    if(!canPublishNews(scope)) return toast(scope === 'lands' ? '❌ Только Денис может публиковать новости Капанёвских земель' : '❌ Только Денис и Журналисты могут публиковать новости', 'red');
+    if(!canPublishNews(scope)) return toast(scope === 'lands' ? '❌ Только Кайон может публиковать новости Капанёвских земель' : '❌ Только Кайон и Журналисты могут публиковать новости', 'red');
     const title = qs('newsTitle').value.trim();
     const content = qs('newsContent').value.trim();
     const category = qs('newsCategory').value;
@@ -7527,7 +7664,7 @@ window.deleteNews = async function(id){
     const item = snap.val();
     // Only author or admin can delete
     if(item.author !== currentNick && currentNick !== ADMIN) {
-        return toast('❌ Только автор или Денис может удалить новость', 'red');
+        return toast('❌ Только автор или Кайон может удалить новость', 'red');
     }
     await remove(newsItemRef(id));
     toast('🗑 Новость удалена', 'gold');
@@ -9310,11 +9447,11 @@ function renderReactionGame(state,time){
   const area=document.getElementById('reactionGameArea'); if(!area) return;
   const bestHtml=reactionBest?`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Твой рекорд: <span style="color:var(--gold);font-weight:900;">${reactionBest}мс</span></div>`:'';
   if(state==='idle'){
-    area.innerHTML=`${bestHtml}<div id="reactionBtn" onclick="reactionStart()" style="width:200px;height:200px;border-radius:50%;background:var(--surface2);border:3px solid var(--border);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:800;color:var(--muted);text-align:center;user-select:none;touch-action:manipulation;">Нажми, чтобы начать</div>`;
+    area.innerHTML=`${bestHtml}<div class="reaction-btn-state" onclick="reactionStart()" style="width:200px;height:200px;border-radius:50%;background:var(--surface2);border:3px solid var(--border);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:800;color:var(--muted);text-align:center;user-select:none;touch-action:manipulation;">Нажми, чтобы начать</div>`;
   } else if(state==='waiting'){
-    area.innerHTML=`${bestHtml}<div id="reactionBtn" style="width:200px;height:200px;border-radius:50%;background:var(--red-dim);border:3px solid var(--red);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--red);text-align:center;user-select:none;">⏳ Жди...</div>`;
+    area.innerHTML=`${bestHtml}<div class="reaction-btn-state" style="width:200px;height:200px;border-radius:50%;background:var(--red-dim);border:3px solid var(--red);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--red);text-align:center;user-select:none;">⏳ Жди...</div>`;
   } else if(state==='go'){
-    area.innerHTML=`${bestHtml}<div id="reactionBtn" onclick="reactionClick()" style="width:200px;height:200px;border-radius:50%;background:rgba(34,211,165,.25);border:3px solid var(--primary);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-weight:900;color:var(--primary);text-align:center;user-select:none;touch-action:manipulation;animation:pulse 0.4s infinite;">ЖМЯЯЯЙ!</div>`;
+    area.innerHTML=`${bestHtml}<div class="reaction-btn-state" onclick="reactionClick()" style="width:200px;height:200px;border-radius:50%;background:rgba(34,211,165,.25);border:3px solid var(--primary);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-weight:900;color:var(--primary);text-align:center;user-select:none;touch-action:manipulation;animation:pulse 0.4s infinite;">ЖМЯЯЯЙ!</div>`;
   } else if(state==='result'){
     const isRecord=!reactionBest||time<reactionBest;
     area.innerHTML=`<div style="text-align:center;margin-bottom:12px;">
@@ -9686,7 +9823,7 @@ window.openBizApplyModal = async function(){
     ['bapName','bapDesc','bapAddress','bapCategory','bapServices'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
     const hasUltraBizModal = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasPrimeBizModal = (u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    const feeEl = qs('bizFeeDisplay'); if(feeEl) feeEl.textContent = hasPrimeBizModal ? '200 ₽' : (hasUltraBizModal ? '250 ₽' : '500 ₽');
+    const feeEl = qs('bizFeeDisplay'); if(feeEl) feeEl.textContent = hasPrimeBizModal ? '1250 ₽' : (hasUltraBizModal ? '2000 ₽' : '2500 ₽');
     qs('bizApplyModal').style.display = 'block';
 };
 window.closeBizApplyModal = function(){ qs('bizApplyModal').style.display='none'; };
@@ -9712,10 +9849,10 @@ window.submitBizApply = async function(){
     }
     const hasUltraForBiz = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasPrimeForBiz = (u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-    const actualFee = hasPrimeForBiz ? 200 : (hasUltraForBiz ? 250 : ECONOMY_BUSINESS_CREATION_FEE);
+    const actualFee = hasPrimeForBiz ? 1250 : (hasUltraForBiz ? 2000 : ECONOMY_BUSINESS_CREATION_FEE);
     if((u.balance || 0) < actualFee) return toast(`❌ Для создания бизнеса нужно ${actualFee}₽ госпошлины`,'red');
     await update(userRef(currentNick), { balance: (u.balance || 0) - actualFee });
-    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -60%)' : (hasUltraForBiz ? ' (Ultra -50%)' : '')}` });
+    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -50%)' : (hasUltraForBiz ? ' (Ultra -20%)' : '')}` });
     await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasPrimeForBiz ? ' (скидка Prime)' : (hasUltraForBiz ? ' (скидка Ultra)' : '')}`, 'money');
     const id = genId();
     await set(bizAppRef(id), {
@@ -10666,41 +10803,6 @@ async function renderBizOrdersForBiz(bizId, b, mode='detail'){
         </div>`;
     }).join('');
 }
-function renderBizCartUI(bizId, b){
-    const wrap = qs('bizCartWrap');
-    if(!wrap || !b) return;
-    const cart = getBizCart(bizId);
-    const entries = Object.entries(cart);
-    const total = bizCartTotal(cart);
-    const userName = qs('bizOrderNameInput')?.value || '';
-    wrap.innerHTML = entries.length ? `
-        <div class="cart-card">
-            <div class="card-title">🧺 Корзина</div>
-            <div class="cart-list">
-                ${entries.map(([pid, item])=>`
-                    <div class="cart-item">
-                        ${item.photo ? `<img src="${escHtml(item.photo)}" onclick="openImgViewer('${jsEsc(item.photo)}')">` : '<div style="width:54px;height:54px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🛍</div>'}
-                        <div class="cart-meta">
-                            <div class="cart-title">${escHtml(item.name||'')}</div>
-                            <div class="cart-sub">${(Number(item.price)||0).toLocaleString()} ₽ за шт.</div>
-                        </div>
-                        <div class="cart-qty">
-                            <button class="btn btn-ghost btn-sm" style="width:34px;padding:8px 0;" onclick="changeBizCartQty('${jsEsc(bizId)}','${jsEsc(pid)}',-1)">−</button>
-                            <input type="number" min="1" step="1" value="${Number(item.qty)||1}" onchange="setBizCartQty('${jsEsc(bizId)}','${jsEsc(pid)}', this.value)">
-                            <button class="btn btn-ghost btn-sm" style="width:34px;padding:8px 0;" onclick="changeBizCartQty('${jsEsc(bizId)}','${jsEsc(pid)}',1)">+</button>
-                        </div>
-                    </div>`).join('')}
-            </div>
-            <div class="total-row"><span>Итого</span><span class="total-val">${total.toLocaleString()} ₽</span></div>
-            <input type="text" id="bizOrderNameInput" placeholder="Имя для заказа" value="${escHtml(userName)}" maxlength="60">
-            <button class="btn btn-primary" onclick="checkoutBizCart('${jsEsc(bizId)}')">💳 Оплатить корзину</button>
-            <button class="btn btn-ghost" style="margin-top:8px;color:var(--red);border-color:var(--red-dim);" onclick="clearBizCart('${jsEsc(bizId)}')">🗑 Очистить корзину</button>
-        </div>` : `
-        <div class="cart-card">
-            <div class="card-title">🧺 Корзина</div>
-            <div style="color:var(--muted);font-size:13px;">Пока пусто. Добавьте товары выше.</div>
-        </div>`;
-}
 window.renderBizDetailOrders = async function(){
     if(!currentBizId) return;
     // Always re-fetch fresh biz data so employee list is current
@@ -11625,7 +11727,7 @@ window.terminalPay = async function(){
 // ─── LOADING SCREEN CONTROL ───────────────
 // The overlay is ONLY hidden inside startApp() after data loads,
 // or after safety timeout. Never hide it prematurely on 'load' event.
-const _loadingTimeout = setTimeout(()=>{ if(!appStarted) hideLoading(); }, 5000);
+const _loadingTimeout = setTimeout(()=>{ if(!appStarted) hideLoading(); }, 15000);
 function hideLoadingSafe(){ clearTimeout(_loadingTimeout); hideLoading(); }
 
 // Warn if running from file:// — Firebase won't connect
@@ -12474,7 +12576,7 @@ window.buySubscription = async function(type){
     const u = snap.val() || {};
     const currentBal = u.balance || 0;
     
-    const price = CONFIG.subscriptions[type].price;
+    const price = getSubscriptionPrice(type);
     const name = CONFIG.subscriptions[type].name;
     
     if(currentBal < price){
@@ -12552,7 +12654,7 @@ let giftSubscriptionType = '';
 
 window.openGiftSubscriptionModal = async function(type){
     giftSubscriptionType = type;
-    const price = CONFIG.subscriptions[type].price;
+    const price = getSubscriptionPrice(type);
     const name = CONFIG.subscriptions[type].name;
     
     // Get all users for selection
@@ -12624,7 +12726,7 @@ window.sendGiftSubscription = async function(){
     if(!recipient) return toast('⚠️ Выберите получателя', 'gold');
     if(!giftSubscriptionType) return;
     
-    const price = CONFIG.subscriptions[giftSubscriptionType].price;
+    const price = getSubscriptionPrice(giftSubscriptionType);
     const name = CONFIG.subscriptions[giftSubscriptionType].name;
     
     // Check giver's balance
@@ -13094,6 +13196,12 @@ window.completeCustomDelivery = async function(orderId) {
     renderDeliveryCustomOrders();
 };
 
+// Inline HTML handlers execute in the window scope, while this file is an ES module.
+// Expose the few function declarations that are referenced directly by inline attributes.
+window.renderOnlineDuelLobby = renderOnlineDuelLobby;
+window.snakeStartNew = snakeStartNew;
+window.renderBizOwnerPanel = renderBizOwnerPanel;
+
 // ─── KAPANI PACK v2: expose module-scoped symbols to window for the additive pack ───
 try {
   window.db = db;
@@ -13492,13 +13600,25 @@ import { getDatabase, ref, get, set, update, remove, push, onValue, off } from "
 
 // Wait until main app initializes
 function ready(cb){
-  if(window.db && typeof window.qs === 'function' && typeof window._getCurrentNick === 'function') return cb();
-  setTimeout(()=>ready(cb), 250);
+  const startedAt = Date.now();
+  const timeoutMs = 15000;
+  function attempt(){
+    if(window.db && typeof window.qs === 'function' && typeof window._getCurrentNick === 'function'){
+      cb();
+      return;
+    }
+    if(Date.now() - startedAt >= timeoutMs){
+      console.error('[Kapani Pack] Основной клиентский модуль не предоставил API за 15 секунд');
+      return;
+    }
+    setTimeout(attempt, 250);
+  }
+  attempt();
 }
 
 ready(function(){
   const db = window.db;
-  const ADMIN = window.ADMIN || 'Денис';
+  const ADMIN = window.ADMIN || 'Кайон';
   const qs = window.qs;
   const toast = window.toast || ((m)=>alert(m));
   const escHtml = window.escHtml || ((s)=>String(s==null?'':s));
@@ -14091,18 +14211,37 @@ ready(function(){
   };
 
   // ═══════════════════════════════════════════
-  // INJECTION HOOKS — re-inject when sections show
+  // INJECTION HOOKS — единая обёртка навигации
   // ═══════════════════════════════════════════
-  const _origNavTo = window.navTo;
+  const _kapaniBaseNavTo = window.navTo;
   window.navTo = function(id){
-    const r = _origNavTo ? _origNavTo.apply(this, arguments) : undefined;
+    const r = typeof _kapaniBaseNavTo === 'function'
+      ? _kapaniBaseNavTo.apply(this, arguments)
+      : undefined;
     try {
-      if(id==='profile'){ injectPassportUI(); setTimeout(renderPassportCard, 50); }
-      if(id==='adminPage'){ injectAdminUI(); }
-      if(id==='jobs'){ injectPoliceUI(); refreshPolicePanelVisibility(); }
-      if(id==='market'){ injectMarketRentUI(); renderRentListingsOnMarket(); }
-      if(id==='dutyPage'){ injectDutyPassportLicenseUI(); }
-    } catch(e){ console.error('[KapaniPack v2 hook]', e); }
+      if(id==='profile'){
+        injectPassportUI();
+        setTimeout(renderPassportCard, 50);
+      }
+      if(id==='adminPage'){
+        injectAdminUI();
+      }
+      if(id==='jobs'){
+        injectPoliceUI();
+        injectFinePanel();
+        refreshPolicePanelVisibility();
+        refreshFinePanelVisibility();
+      }
+      if(id==='market'){
+        injectMarketRentUI();
+        renderRentListingsOnMarket();
+      }
+      if(id==='dutyPage'){
+        injectDutyPassportLicenseUI();
+      }
+    } catch(e) {
+      console.error('[Kapani navigation hook]', e);
+    }
     return r;
   };
 
@@ -14180,69 +14319,93 @@ ready(function(){
   let _submitDutyFineBusy = false;
   window.submitDutyFine = async function(){
     if(_submitDutyFineBusy) return toast('⏳ Штраф уже отправляется…','gold');
-    _submitDutyFineBusy = true;
-    const fineBtn = qs('dutyFineSubmitBtn');
-    if(fineBtn){ fineBtn.disabled = true; }
-    try {
-      // Get currentNick safely — avoid window.currentNick (defineProperty recursion risk)
-      const myNick = (typeof currentNick !== 'undefined' ? currentNick : null)
-                  || localStorage.getItem('kp_s')
-                  || sessionStorage.getItem('kp_s');
-      if(!myNick) return toast('❌ Не авторизован','red');
 
-      const meSnap = await get(ref(db, `users/${myNick}`));
-      if(!meSnap.exists()) return toast('❌ Профиль не найден','red');
-      const me = meSnap.val();
+    const fineBtn = qs('dutyFineSubmitBtn');
+    const myNick = (typeof currentNick !== 'undefined' ? currentNick : null)
+                || localStorage.getItem('kp_s')
+                || sessionStorage.getItem('kp_s');
+    if(!myNick) return toast('❌ Не авторизован','red');
+
+    // Validate before locking the button.
+    const nameInput = (qs('dutyFineNick')?.value||'').trim();
+    const reason = (qs('dutyFineReason')?.value||'').trim();
+    const amt = parseInt(qs('dutyFineAmt')?.value, 10);
+    if(!nameInput) return toast('⚠️ Укажите имя нарушителя','gold');
+    if(!reason) return toast('⚠️ Укажите причину штрафа','gold');
+    if(!amt || amt<=0 || isNaN(amt)) return toast('⚠️ Укажите корректную сумму','gold');
+
+    _submitDutyFineBusy = true;
+    if(fineBtn){ fineBtn.disabled = true; fineBtn.textContent='⏳ Выписываем…'; }
+
+    try {
+      const meSnap = await get(userRef(myNick));
+      if(!meSnap.exists()) throw new Error('Профиль сотрудника не найден');
+      const me = meSnap.val() || {};
       const isKsb = hasMunicipalJob(me,'КСБ') || me.job==='КСБ';
       const isPolice = hasMunicipalJob(me,'Полицейский') || me.job==='Полицейский';
       const isAdmin = myNick === ADMIN;
-      if(!isKsb && !isPolice && !isAdmin)
-        return toast('🚫 Только КСБ и полиция могут выписывать штрафы','red');
-      const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
-      const nameInput = (qs('dutyFineNick')?.value||'').trim();
-      const reason = (qs('dutyFineReason')?.value||'').trim();
-      const amt = parseInt(qs('dutyFineAmt')?.value, 10);
-      if(!nameInput) return toast('⚠️ Укажите имя нарушителя','gold');
-      if(!reason) return toast('⚠️ Укажите причину штрафа','gold');
-      if(!amt || amt<=0 || isNaN(amt)) return toast('⚠️ Укажите корректную сумму','gold');
+      if(!isKsb && !isPolice && !isAdmin) throw new Error('Только КСБ и полиция могут выписывать штрафы');
 
-      // Search by display name, then by login
+      const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
       let target = null;
-      // First search in cache
-      if(window.allUsersCache && Object.keys(window.allUsersCache).length){
-        const q = nameInput.toLowerCase().trim();
-        for(const [nick, u] of Object.entries(window.allUsersCache)){
-          const dn = ((u.displayName||'').trim() || nick).toLowerCase();
-          if(dn === q || nick.toLowerCase() === q){ target = { nick, ...u }; break; }
-        }
+      const cache = (window.allUsersCache && Object.keys(window.allUsersCache).length)
+          ? window.allUsersCache : allUsersCache;
+      const q = nameInput.toLowerCase();
+
+      for(const [nick, u] of Object.entries(cache || {})){
+        const dn = String((u && u.displayName) || (u && u.nick) || nick).trim().toLowerCase();
+        if(dn === q || String(nick).toLowerCase() === q){ target={nick,...u}; break; }
       }
-      // Fallback: Firebase search
+
       if(!target){
         const allSnap = await get(ref(db,'users'));
         const allU = allSnap.val() || {};
-        const q = nameInput.toLowerCase().trim();
         for(const [nick, u] of Object.entries(allU)){
-          const dn = ((u.displayName||'').trim() || nick).toLowerCase();
-          if(dn === q || nick.toLowerCase() === q){ target = { nick, ...u }; break; }
+          const dn = String((u && u.displayName) || (u && u.nick) || nick).trim().toLowerCase();
+          if(dn === q || String(nick).toLowerCase() === q){ target={nick,...u}; break; }
         }
       }
-      if(!target) return toast('❌ Житель с таким именем не найден','red');
+
+      if(!target) throw new Error('Житель с таким именем не найден');
       const tnick = target.nick;
-      if(tnick === myNick) return toast('⚠️ Нельзя оштрафовать самого себя','gold');
+      if(tnick === myNick) throw new Error('Нельзя оштрафовать самого себя');
 
-      const tSnap = await get(ref(db, `users/${tnick}`));
-      if(!tSnap.exists()) return toast('❌ Пользователь не найден','red');
-      const tUser = tSnap.val();
-      const targetLabel = (tUser.displayName && tUser.displayName.trim()) || tUser.nick || tnick;
-      const myLabel    = (me.displayName && me.displayName.trim()) || myNick;
+      const tSnap = await get(userRef(tnick));
+      if(!tSnap.exists()) throw new Error('Пользователь не найден');
 
-      await update(ref(db, `users/${tnick}`), { balance: (tUser.balance||0) - amt });
-      await push(ref(db, `txLog/${tnick}`), { type:'out', who:`${issuerRole} (${myLabel})`, amt, desc:`Штраф: ${reason}`, ...fullDateTimeStr() });
+      const tUser = tSnap.val() || {};
+      const fineDisplayNick = (u, fallback) => {
+        const dn = u && u.displayName != null ? String(u.displayName).trim() : '';
+        const nk = u && u.nick != null ? String(u.nick).trim() : '';
+        return dn || nk || fallback || '';
+      };
+      const targetLabel = fineDisplayNick(tUser, tnick);
+      const myLabel = fineDisplayNick(me, myNick);
+      const newBalance = Number(tUser.balance || 0) - amt;
+
+      // Critical operations: complete them before any notification attempt.
+      await update(userRef(tnick), { balance: newBalance });
+      await push(txLogRef(tnick), {
+          type:'out',
+          who:`${issuerRole} (${myLabel})`,
+          amt,
+          desc:`Штраф: ${reason}`,
+          ...fullDateTimeStr()
+      });
+
+      // Notifications are best-effort. A broken/slow notification write must
+      // never make the fine itself look like it is still processing.
       const emoji = isPolice ? '👮' : '🛡';
-      if(typeof pushNotification === 'function'){
-        await pushNotification(tnick, `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${myLabel})`, 'money');
-        await pushNotification(ADMIN, `${emoji} ${issuerRole} ${myLabel} оштрафовал ${targetLabel} на ${amt}₽ — ${reason}`, 'system');
-      }
+      const notificationJobs = [
+        typeof pushNotification === 'function'
+          ? Promise.resolve().then(()=>pushNotification(tnick, `${emoji} ${issuerRole} выписало штраф ${amt}₽ — ${reason} (от ${myLabel})`, 'money'))
+          : Promise.resolve(),
+        typeof pushNotification === 'function'
+          ? Promise.resolve().then(()=>pushNotification(ADMIN, `${emoji} ${issuerRole} ${myLabel} оштрафовал ${targetLabel} на ${amt}₽ — ${reason}`, 'system'))
+          : Promise.resolve()
+      ];
+      await Promise.allSettled(notificationJobs);
+
       if(qs('dutyFineNick')) qs('dutyFineNick').value='';
       if(qs('dutyFineReason')) qs('dutyFineReason').value='';
       if(qs('dutyFineAmt')) qs('dutyFineAmt').value='';
@@ -14252,24 +14415,20 @@ ready(function(){
       toast('❌ Не удалось выписать штраф: '+((e&&e.message)||'ошибка'),'red');
     } finally {
       _submitDutyFineBusy = false;
-      if(fineBtn && fineBtn.isConnected){ fineBtn.disabled = false; }
+      if(fineBtn && fineBtn.isConnected){
+        fineBtn.disabled = false;
+        fineBtn.textContent='💸 Выписать штраф';
+      }
     }
   };
+
   // Старые кнопки «Выписать штраф» теперь ведут на панель с формой
   window.ksbFineWorker = function(){ navTo('dutyPage'); };
 
   // adminFireWorker: master implementation is in the main app block — no override needed
 
-  // hook нашу панель штрафа в навигацию
-  const _origNavTo2 = window.navTo;
-  window.navTo = function(id){
-    const r = _origNavTo2 ? _origNavTo2.apply(this, arguments) : undefined;
-    try {
-      if(id==='jobs'){ injectFinePanel(); refreshFinePanelVisibility(); }
-    } catch(e){ console.error('[fine panel hook]', e); }
-    return r;
-  };
-  setTimeout(()=>{ try{ injectFinePanel(); refreshFinePanelVisibility(); }catch(e){} }, 1600);
+  // Панель штрафов подключается общей обёрткой navTo выше.
+  setTimeout(()=>{ try{ injectFinePanel(); refreshFinePanelVisibility(); }catch(e){ console.error('[fine panel init]', e); } }, 1600);
 
   // Konec Kapani Pack v2
 });

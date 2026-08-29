@@ -1,4 +1,4 @@
-﻿/* Firebase Messaging SW — UTF-8. Лежит рядом с index.html */
+/* Firebase Messaging SW — UTF-8. Лежит рядом с index.html */
 try {
     importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
     importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
@@ -7,17 +7,13 @@ try {
 }
 
 try {
-    firebase.initializeApp({
-      apiKey: "AIzaSyCDfMUZ-6-GWrw8yCWOoU07g6aappDtwxA",
-      authDomain: "kapanisite.firebaseapp.com",
-      databaseURL: "https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "kapanisite",
-      storageBucket: "kapanisite.firebasestorage.app",
-      messagingSenderId: "250125043268",
-      appId: "1:250125043268:web:fd82172b96e326b2001e11"
-    });
+    // Shared client configuration; works in a classic Service Worker.
+    importScripts("./config.js");
+    if (!self.KAPANI_CONFIG || !self.KAPANI_CONFIG.firebase) {
+        throw new Error("Kapani config.js не загрузил Firebase-конфигурацию");
+    }
+    firebase.initializeApp(self.KAPANI_CONFIG.firebase);
 
-    const messaging = firebase.messaging();
     messaging.onBackgroundMessage((payload) => {
       try {
         const title = (payload.notification && payload.notification.title) || "Капани";
