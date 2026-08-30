@@ -2504,12 +2504,10 @@ const ECONOMY_SAVINGS_RATE_TIERS = [
     { max: Infinity, rate: 0.25, label: '25%' }
 ];
 function getSavingsDailyRate(balance){
-    const amount = Math.max(0, Number(balance) || 0);
-    return (ECONOMY_SAVINGS_RATE_TIERS.find(t => amount <= t.max) || ECONOMY_SAVINGS_RATE_TIERS[3]).rate;
+    return 0.005; // 0.5% в день
 }
 function getSavingsRateLabel(balance){
-    const amount = Math.max(0, Number(balance) || 0);
-    return (ECONOMY_SAVINGS_RATE_TIERS.find(t => amount <= t.max) || ECONOMY_SAVINGS_RATE_TIERS[3]).label;
+    return '0.5%';
 }
 function getWealthTaxRate(taxBase){
     const amount = Math.max(0, Number(taxBase) || 0);
