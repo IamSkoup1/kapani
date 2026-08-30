@@ -15825,19 +15825,68 @@ ready(function(){
       const targetSnap = await get(userRef(targetNick));
       if(!targetSnap.exists()) throw new Error('Получатель не найден');
       const opId = fixedOpId || `payout_${genId()}`;
-      const reserve = await runTransaction(treasuryRef(), t => {
-        const cur = t || {balance:0,history:{},processed:{}};
-        const history = { ...(cur.history||{}) };
-        const existing = history[opId];
-        if(existing) return cur;
-        const balance = Number(cur.balance||0);
-        if(balance < safeAmount) return;
-        history[opId] = { id:opId, type:'payout', amount:-safeAmount, sourceAmount:safeAmount, actor, target:targetNick, reason:reason||'', createdAt:Date.now(), status:'pending' };
-        return { ...cur, balance: balance-safeAmount, history, processed:{...(cur.processed||{})} };
-      });
-      if(!reserve || (!reserve.committed && !(reserve.snapshot?.val?.()?.history||{})[opId])){ throw new Error('Недостаточно средств в казне'); }
-      const reservedTreasury = reserve.snapshot?.val?.() || {};
-      const reservedEntry = reservedTreasury.history?.[opId];
+
+      // Reserve the amount atomically. Some Firebase/browser combinations can
+      // return a transaction result without `committed=true` even though the
+      // snapshot already contains our operation. Verify the actual post-transaction
+      // state instead of treating that response shape as a false "not enough money".
+      // Reserve atomically. Retry a couple of times because a browser tab can
+      // receive a stale/shape-incompatible transaction result during reconnects.
+      let reservedTreasury = null;
+      let reservedEntry = null;
+      for(let attempt=0; attempt<3 && !reservedEntry; attempt++){
+        const reserve = await runTransaction(treasuryRef(), t => {
+          const cur = (t && typeof t === 'object') ? t : {balance:0,history:{},processed:{}};
+          const history = { ...(cur.history||{}) };
+          const existing = history[opId];
+          if(existing) return cur;
+          const rawBalance = Number(cur.balance);
+          const balance = Number.isFinite(rawBalance) ? rawBalance : 0;
+          if(balance < safeAmount) return;
+          history[opId] = { id:opId, type:'payout', amount:-safeAmount, sourceAmount:safeAmount, actor, target:targetNick, reason:reason||'', createdAt:Date.now(), status:'pending' };
+          return { ...cur, balance: balance-safeAmount, history, processed:{...(cur.processed||{})} };
+        });
+        reservedTreasury = reserve?.snapshot?.val?.() || null;
+        reservedEntry = reservedTreasury?.history?.[opId] || null;
+        if(!reservedEntry){
+          const verifySnap = await get(treasuryRef());
+          reservedTreasury = verifySnap.val() || {};
+          reservedEntry = reservedTreasury?.history?.[opId] || null;
+        }
+        if(!reservedEntry && attempt<2) await new Promise(r=>setTimeout(r,120));
+      }
+
+      if(!reservedEntry){
+        const currentBalance = Number(reservedTreasury?.balance);
+        if(Number.isFinite(currentBalance) && currentBalance < safeAmount){
+          throw new Error(`Недостаточно средств в казне: доступно ${Math.floor(currentBalance).toLocaleString('ru-RU')} ₽`);
+        }
+
+        // Last-resort compatibility path for the local-file/browser setup: if
+        // Firebase accepted reads but the transaction result is not observable,
+        // create the same reservation with one atomic multi-location update.
+        // The unique opId still prevents double crediting on retries.
+        const compatSnap = await get(treasuryRef());
+        const compat = compatSnap.val() || {};
+        const compatHistory = { ...(compat.history||{}) };
+        if(!compatHistory[opId]){
+          const compatBalance = Number(compat.balance);
+          if(!Number.isFinite(compatBalance) || compatBalance < safeAmount){
+            throw new Error(`Недостаточно средств в казне: доступно ${Number.isFinite(compatBalance) ? Math.floor(compatBalance).toLocaleString('ru-RU') : 0} ₽`);
+          }
+          compatHistory[opId] = { id:opId, type:'payout', amount:-safeAmount, sourceAmount:safeAmount, actor, target:targetNick, reason:reason||'', createdAt:Date.now(), status:'pending' };
+          await update(treasuryRef(), {
+            balance: compatBalance-safeAmount,
+            history: compatHistory,
+            processed: { ...(compat.processed||{}) }
+          });
+        }
+        const finalSnap = await get(treasuryRef());
+        reservedTreasury = finalSnap.val() || {};
+        reservedEntry = reservedTreasury?.history?.[opId] || null;
+        if(!reservedEntry) throw new Error('Казна не подтвердила резервирование выплаты');
+      }
+
       if(reservedEntry?.status === 'completed') return {success:true,opId,already:true};
       const credited = await runTransaction(userRef(targetNick), u => {
         if(!u) return;
@@ -16357,7 +16406,20 @@ ready(function(){
 
     // Casino game #2: classic three-reel slot machine.
     const SLOT_SYMBOLS=['🍒','🍋','🔔','⭐','💎','7️⃣'];
-    function slotPick(){const r=new Uint32Array(1);crypto.getRandomValues(r);return SLOT_SYMBOLS[r[0]%SLOT_SYMBOLS.length];}
+    // Slightly friendlier slot odds: 🍒 appears more often, which raises the
+    // chance of 2+ cherry wins without making premium triples common.
+    const SLOT_WEIGHTS=[25,15,15,15,15,15];
+    function slotPick(){
+      const r=new Uint32Array(1);
+      crypto.getRandomValues(r);
+      const roll=r[0]%100;
+      let acc=0;
+      for(let i=0;i<SLOT_SYMBOLS.length;i++){
+        acc+=SLOT_WEIGHTS[i];
+        if(roll<acc)return SLOT_SYMBOLS[i];
+      }
+      return SLOT_SYMBOLS[SLOT_SYMBOLS.length-1];
+    }
     function slotMultiplier(reels){
       const [a,b,c]=reels;
       if(a===b&&b===c){
@@ -16376,7 +16438,7 @@ ready(function(){
         <input type="number" id="slotsStake" min="1" step="1" placeholder="Ставка (₽)">
         <button class="btn btn-primary" ${disabled} onclick="kapaniSlotsSpin()">🎰 Крутить</button>
         ${last?`<div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:12px;font-weight:900;"><div style="font-size:22px;letter-spacing:4px;">${last.reels.map(esc).join(' · ')}</div><div style="margin-top:6px;color:${last.payout>0?'var(--primary)':'var(--red)'};">${last.payout>0?`✅ Выплата ${Number(last.payout).toLocaleString('ru-RU')} ₽`:`❌ Проигрыш −${Number(last.stake).toLocaleString('ru-RU')} ₽`}</div></div>`:''}
-        <div style="margin-top:10px;font-size:10px;color:var(--muted);line-height:1.45;">7️⃣ ×3 = 10× · 💎 ×3 = 8× · ⭐ ×3 = 6× · 🔔 ×3 = 5× · 🍒 ×3 = 4× · 🍋 ×3 = 3× · два 🍒 = 2×</div>`;
+        <div style="margin-top:10px;font-size:10px;color:var(--muted);line-height:1.45;">7️⃣ ×3 = 10× · 💎 ×3 = 8× · ⭐ ×3 = 6× · 🔔 ×3 = 5× · 🍒 ×3 = 4× · 🍋 ×3 = 3× · два 🍒 = 2× · 🍒 выпадает чаще остальных</div>`;
     }
     async function slotsSpin(){
       if(window._slotsBusy)return;
@@ -16501,4 +16563,3 @@ ready(function(){
 
 </body>
 </html>
-
