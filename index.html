@@ -411,6 +411,8 @@ select option{background:#1a2332;}
 /* === GAMES LIBRARY === */
 #gamesGrid .card{transition:.2s;}
 #gamesGrid .card:hover{transform:translateY(-3px);}
+#hospitalPhotosGallery img,#hospitalPanelPhotos img{transition:.2s;}
+#hospitalPhotosGallery img:hover,#hospitalPanelPhotos img:hover{transform:scale(1.02);}
 
 
 .sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#d97706);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
@@ -1098,6 +1100,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
         <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
         <div class="quick-card" onclick="navTo('hospital')" role="button" tabindex="0" aria-label="Больница"><div class="qico">🏥</div><div class="qlbl">Больница</div><div class="qsub">Лёхин шалаш</div></div>
+        <div class="quick-card" onclick="navTo('autoSchool')" role="button" tabindex="0" aria-label="Автошкола"><div class="qico">🚦</div><div class="qlbl">Автошкола</div><div class="qsub">Права и экзамены</div></div>
         <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" id="kveHomeCard" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub" id="kveHomeSub">Узнай о главном экзамене</div></div>
         <div class="quick-card" onclick="navTo('kEducation')" role="button" tabindex="0" aria-label="К-образование" style="background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(34,211,165,.06));border-color:rgba(251,191,36,.3);"><div class="qico">🎓</div><div class="qlbl">К-образование</div><div class="qsub">Подготовка к КВЭ · 2 000 ₽</div></div>
         <div class="quick-card" onclick="navTo('casino')" role="button" tabindex="0" aria-label="Казино" style="background:linear-gradient(135deg,rgba(248,113,113,.12),rgba(251,191,36,.06));border-color:rgba(248,113,113,.25);"><div class="qico">🎰</div><div class="qlbl">Казино</div><div class="qsub">Блекджек · Слоты</div></div>
@@ -1887,6 +1890,10 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div id="hospitalDoctorCard"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
     </div>
     <div class="card">
+        <div class="card-title">📸 Фотографии больницы</div>
+        <div id="hospitalPhotosGallery"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
+    <div class="card">
         <div class="card-title">🩺 Услуги</div>
         <div id="hospitalServicesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
     </div>
@@ -1907,7 +1914,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
 <!-- HOSPITAL PANEL (doctor-only) -->
 <div id="hospitalPanel" class="section">
     <div class="card" id="hospitalPanelNoAccess" style="display:none;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);">
-        <div style="font-size:13px;color:var(--red);">❌ Доступно только врачу.</div>
+        <div style="font-size:13px;color:var(--red);">❌ Доступно врачу или помощнику врача.</div>
     </div>
     <div class="card" style="border-color:rgba(34,211,165,.3);">
         <div class="card-title">🏥 Панель больницы</div>
@@ -1920,11 +1927,19 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <div class="card">
         <div class="card-title">🩺 Услуги</div>
         <div id="hospitalPanelServices"></div>
-        <div style="margin-top:12px;">
+        <div id="hospitalDoctorServiceEditor" style="margin-top:12px;">
             <input type="text" id="hospServiceName" placeholder="Название услуги" maxlength="60">
             <input type="text" id="hospServiceDesc" placeholder="Описание" maxlength="200" style="margin-top:8px;">
             <input type="number" id="hospServicePrice" placeholder="Цена ₽" min="1" step="1" style="margin-top:8px;">
             <button class="btn btn-primary" style="margin-top:8px;" onclick="addHospitalService()">+ Добавить услугу</button>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">📸 Фотографии больницы</div>
+        <div id="hospitalPanelPhotos"></div>
+        <div id="hospitalDoctorPhotoEditor" style="margin-top:12px;">
+            <input type="file" id="hospitalPhotoInput" accept="image/*" multiple>
+            <button class="btn btn-primary" style="margin-top:8px;" onclick="uploadHospitalPhotos()">📸 Опубликовать фото</button>
         </div>
     </div>
     <div class="card">
@@ -3553,6 +3568,7 @@ function startApp() {
           if(loStatus) loStatus.textContent='Готово!';
           if(loBar) loBar.style.cssText='width:100%;transition:width .2s ease;';
           hideLoadingSafe();
+          setTimeout(()=>showFirstPushPrompt(), 600);
           const defer = window.requestIdleCallback || ((cb)=>setTimeout(cb, 0));
           defer(()=>{
               try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:',e); }
@@ -3964,7 +3980,7 @@ function updateHeader(u) {
     window._isDutyOfficer = isDuty;
     const dutyBtn=qs('dutyQuickBtn'); if(dutyBtn) dutyBtn.style.display=isDuty?'block':'none';
     // Кнопка панели больницы — только для врача
-    const hospBtn=qs('hospitalQuickBtn'); if(hospBtn) hospBtn.style.display=hasMunicipalJob(u,'Врач')?'block':'none';
+    const hospBtn=qs('hospitalQuickBtn'); if(hospBtn) hospBtn.style.display=(hasMunicipalJob(u,'Врач')||hasMunicipalJob(u,'Помощник врача'))?'block':'none';
 }
 
 // ─── ВЫЗОВЫ (КСБ / Полиция) ───────────────
@@ -4176,6 +4192,43 @@ window.handlePushBtn=async function(){
 };
 window.toggleMasterPush=function(){const p=getPushPrefs();p.enabled=p.enabled!==false?false:true;savePushPrefs(p);toast(p.enabled?'🔔 Включены':'🔕 Выключены',p.enabled?'green':'gold');updatePushSettingsUI();};
 window.togglePushCat=function(cat){const p=getPushPrefs();p[cat]=p[cat]===false?true:false;savePushPrefs(p);updatePushSettingsUI();toast((p[cat]!==false?'🔔 ':'🔕 ')+'Обновлено','green');};
+
+// ─── FIRST LOGIN PUSH PROMPT ─────────────────
+function getFirstPushPromptKey(){ return currentNick ? `kp_first_push_prompt_${currentNick}` : 'kp_first_push_prompt'; }
+function wasFirstPushPromptHandled(){ try{return localStorage.getItem(getFirstPushPromptKey())==='1';}catch(e){return false;} }
+function markFirstPushPromptHandled(){ try{localStorage.setItem(getFirstPushPromptKey(),'1');}catch(e){} }
+function closeFirstPushPrompt(){ const m=qs('firstPushPrompt'); if(m)m.remove(); }
+async function finishFirstPushPrompt(allow){
+    // Mark immediately: regardless of choice, this account must never see this
+    // first-login prompt again.
+    markFirstPushPromptHandled();
+    closeFirstPushPrompt();
+    if(allow){
+        try{ await requestPushPermission(); }catch(e){ console.warn('[push first prompt]',e); }
+    } else {
+        toast('🔕 Уведомления отключены. Их всегда можно включить в профиле.','gold');
+    }
+    // This is an in-app notification explaining where the setting lives.
+    // It is written independently from browser permission, so declining the
+    // browser prompt never blocks the informational notification.
+    try{ await pushNotification(currentNick,'🔔 Уведомления всегда можно включить в профиле','system'); }catch(e){}
+}
+function showFirstPushPrompt(){
+    if(!currentNick || wasFirstPushPromptHandled() || qs('firstPushPrompt')) return;
+    if(!('Notification' in window)) { markFirstPushPromptHandled(); return; }
+    if(Notification.permission==='granted') { markFirstPushPromptHandled(); try{requestPushPermission();}catch(e){} return; }
+    const m=document.createElement('div');
+    m.id='firstPushPrompt';
+    m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;display:flex;align-items:flex-end;justify-content:center;padding:16px;';
+    m.innerHTML=`<div style="width:100%;max-width:490px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:22px;box-shadow:var(--shadow);">
+      <div style="font-size:34px;margin-bottom:8px;">🔔</div>
+      <div style="font-size:20px;font-weight:900;margin-bottom:6px;">Включить уведомления?</div>
+      <div style="font-size:13px;line-height:1.55;color:var(--muted);margin-bottom:16px;">Получайте сообщения, переводы, уведомления мэрии и другие важные события Капани.</div>
+      <button class="btn btn-primary" type="button" onclick="finishFirstPushPrompt(true)">🔔 Включить уведомления</button>
+      <button class="btn btn-ghost" type="button" style="margin-top:8px;" onclick="finishFirstPushPrompt(false)">Не сейчас</button>
+    </div>`;
+    document.body.appendChild(m);
+}
 
 // ─── NOTIFICATIONS ────────────────────────
 async function pushNotification(nick,text,cat='system'){await push(notifRef(nick),{text,time:nowTime(),cat});}
@@ -5704,7 +5757,7 @@ window.closeInfoModal = function(){
     if(m) m.style.display = 'none';
 };
 window.showInfoTab = function(tab){
-    ['pdd','reg','money'].forEach(t=>{
+    ['pdd','rules','reg','money'].forEach(t=>{
         const c = qs('infoTab_'+t);
         const b = qs('infoTabBtn_'+t);
         if(c) c.style.display = (t===tab) ? 'block' : 'none';
@@ -7771,36 +7824,33 @@ window.adminMoney=async function(){
     _adminMoneyBusy=true;
     try{
         const target=qs('adminTarget')?.value;
-        const amt=Number(qs('adminAmt')?.value||0);
-        if(!target) return toast('⚠️ Выберите жителя','gold');
-        if(!Number.isSafeInteger(amt) || amt===0) return toast('⚠️ Укажите целую сумму','gold');
-        const result=await runTransaction(userRef(target),u=>{
-            if(!u) return;
-            const balance=Number(u.balance||0);
-            if(!Number.isFinite(balance)) return;
+        const amtRaw=String(qs('adminAmt')?.value||'').trim();
+        const amt=/^-?\d+$/.test(amtRaw) ? Number(amtRaw) : NaN;
+        if(!target)return toast('⚠️ Выберите жителя','gold');
+        if(!Number.isSafeInteger(amt)||amt===0)return toast('⚠️ Укажите целую сумму','gold');
+        const balanceRef=ref(db, `users/${target}/balance`);
+        const result=await runTransaction(balanceRef,currentBalance=>{
+            const balance=Number(currentBalance||0);
+            if(!Number.isFinite(balance))return;
             const nextBalance=balance+amt;
-            if(!Number.isSafeInteger(nextBalance)) return;
-            return {...u,balance:nextBalance};
+            if(!Number.isSafeInteger(nextBalance))return;
+            return nextBalance;
         });
-        if(!result?.committed) return toast('❌ Не удалось изменить баланс','red');
-        const committedUser=result.snapshot.val()||{};
-        allUsersCache[target]=committedUser;
-        window.allUsersCache=allUsersCache;
-        if(amt>0){
-            await logTx(target,{type:'in',who:'Мэрия',amt,desc:'Зачисление от мэрии'});
-        }else{
-            await logTx(target,{type:'out',who:'Мэрия',amt:Math.abs(amt),desc:'Списание мэрией'});
-        }
-        await pushNotification(target,`${amt>0?'💰 Зачислено':'💸 Списано'} ${Math.abs(amt)}₽ мэром`,'money');
-        if(qs('adminAmt')) qs('adminAmt').value='';
-        updateHeader_balance(committedUser);
+        if(!result?.committed)return toast('❌ Не удалось изменить баланс','red');
+        const committedUser=(await get(userRef(target))).val()||{};
+        allUsersCache[target]=committedUser;window.allUsersCache=allUsersCache;
+        if(amt>0) await logTx(target,{type:'in',who:'Мэрия',amt,desc:'Зачисление от мэрии'});
+        else await logTx(target,{type:'out',who:'Мэрия',amt:Math.abs(amt),desc:'Списание мэрией'});
+        await pushNotification(target,`${amt>0?'💰 Зачислено':'💸 Списано'} ${Math.abs(amt).toLocaleString('ru-RU')} ₽ мэром`,'money');
+        if(qs('adminAmt'))qs('adminAmt').value='';
+        if(target===currentNick){updateHeader(committedUser);updateHeader_balance(committedUser);}
+        else {const me=allUsersCache[currentNick]||{};updateHeader(me);updateHeader_balance(me);}
         toast(`${amt>0?'💰':'💸'} ${Math.abs(amt).toLocaleString('ru-RU')} ₽ → ${target}`,amt>0?'green':'red');
+        if(typeof window.renderAdmin==='function') window.renderAdmin();
     }catch(e){
         console.error('[adminMoney]',e);
         toast('❌ '+(e.message||'Ошибка'),'red');
-    }finally{
-        _adminMoneyBusy=false;
-    }
+    }finally{_adminMoneyBusy=false;}
 };
 
 window.adminFineWorker=async function(){
@@ -7878,10 +7928,12 @@ window.adminFireWorker=async function(){
     // Собираем список должностей из employments + legacy job (без рекурсии через allBusinessesCache)
     const rawArr = Array.isArray(u.employments) ? u.employments : [];
     const seenIds = new Set(rawArr.map(e=>e&&e.id).filter(Boolean));
-    const allEmps = rawArr.filter(e=>e&&e.id&&e.role).map(e=>({
-        id:String(e.id), type:String(e.type||'municipal'), role:String(e.role),
-        bizId: e.bizId ? String(e.bizId) : undefined
-    }));
+    const allEmps = rawArr.filter(e=>e&&e.id&&e.role).map(e=>{
+        const out={id:String(e.id),type:String(e.type||'municipal'),role:String(e.role)};
+        if(e.bizId!==undefined && e.bizId!==null && String(e.bizId).trim()!=='') out.bizId=String(e.bizId);
+        if(e.bizName!==undefined && e.bizName!==null && String(e.bizName).trim()!=='') out.bizName=String(e.bizName);
+        return out;
+    });
     if(u.job && u.job !== 'Житель' && !seenIds.has(`muni_${u.job}`)){
         allEmps.push({ id:`muni_${u.job}`, type:'municipal', role:u.job });
     }
@@ -13769,9 +13821,29 @@ function hospitalFindByRole(role){
 }
 function getHospitalDoctor(){ return hospitalFindByRole('Врач'); }
 function getHospitalAssistant(){ return hospitalFindByRole('Помощник врача'); }
+async function refreshHospitalUsersCache(){
+    try{
+        const snap=await get(ref(db,'users'));
+        const users=snap.val()||{};
+        allUsersCache=users;window.allUsersCache=allUsersCache;
+        return users;
+    }catch(e){ console.error('[hospital users refresh]',e);return allUsersCache||{}; }
+}
+async function getHospitalDoctorFresh(){
+    const users=await refreshHospitalUsersCache();
+    const found=Object.entries(users||{}).find(([nick,u])=>u&&hasMunicipalJob(u,'Врач'));
+    return found?{nick:found[0],user:found[1]}:null;
+}
+async function getHospitalAssistantFresh(){
+    const users=await refreshHospitalUsersCache();
+    const found=Object.entries(users||{}).find(([nick,u])=>u&&hasMunicipalJob(u,'Помощник врача'));
+    return found?{nick:found[0],user:found[1]}:null;
+}
 function isHospitalDoctor(nick){
-    const u = allUsersCache[nick || currentNick];
-    return !!u && hasMunicipalJob(u, 'Врач');
+    const u=allUsersCache[nick||currentNick];return !!u&&hasMunicipalJob(u,'Врач');
+}
+function isHospitalAssistant(nick){
+    const u=allUsersCache[nick||currentNick];return !!u&&hasMunicipalJob(u,'Помощник врача');
 }
 function splitDisplayName(u, nick){
     const dn = (displayNick(u) || nick || '').trim();
@@ -13796,24 +13868,19 @@ function hospitalStatusBadge(appt){
 // 🏥 HOSPITAL — UI: patient-facing page
 // ══════════════════════════════════════════════════════════════════
 async function renderHospital(){
-    const doc = getHospitalDoctor();
-    const asst = getHospitalAssistant();
-    const docCard = qs('hospitalDoctorCard');
+    const doc=await getHospitalDoctorFresh();
+    const asst=await getHospitalAssistantFresh();
+    const docCard=qs('hospitalDoctorCard');
     if(docCard){
         if(doc){
-            const dn = displayNick(doc.user) || doc.nick;
-            docCard.innerHTML = `<div class="item-row"><div><div style="font-weight:900;">👨‍⚕️ ${escHtml(dn)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(doc.nick)}</div></div></div>
-            <div style="font-size:12px;color:var(--muted);margin-top:8px;">${asst ? `🩺 Помощник врача: ${escHtml(displayNick(asst.user)||asst.nick)}` : '🩺 Помощник врача не назначен.'}</div>`;
-        } else {
-            docCard.innerHTML = `<div style="color:var(--muted);font-size:13px;">👨‍⚕️ Сейчас врач не назначен.</div>`;
-        }
+            const dn=displayNick(doc.user)||doc.nick;
+            docCard.innerHTML=`<div class="item-row"><div style="flex:1;min-width:0;"><div style="font-weight:900;">👨‍⚕️ ${escHtml(dn)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(doc.nick)}</div></div><button class="btn btn-ghost btn-sm" onclick="openUserProfile('${escHtml(doc.nick)}')">👤 Профиль</button></div><div style="font-size:12px;color:var(--muted);margin-top:8px;">${asst?`🩺 Помощник врача: ${escHtml(displayNick(asst.user)||asst.nick)}`:'🩺 Помощник врача не назначен.'}</div>`;
+        }else docCard.innerHTML='<div style="color:var(--muted);font-size:13px;">👨‍⚕️ Сейчас врач не назначен.</div>';
     }
-    try {
-        const svcSnap = await get(hospitalServicesRef());
-        renderHospitalServicesList(svcSnap.val() || {}, doc);
-        const apptSnap = await get(hospitalAppointmentsRef());
-        renderHospitalMyAppointments(apptSnap.val() || {});
-    } catch(e){ console.error('[hospital render]', e); }
+    try{
+        const [svcSnap,apptSnap,photoSnap]=await Promise.all([get(hospitalServicesRef()),get(hospitalAppointmentsRef()),get(ref(db,'hospital/photos'))]);
+        renderHospitalServicesList(svcSnap.val()||{},doc);renderHospitalMyAppointments(apptSnap.val()||{});renderHospitalPhotosGallery(photoSnap.val()||{});
+    }catch(e){console.error('[hospital render]',e);}
 }
 function renderHospitalServicesList(services, doc){
     const el = qs('hospitalServicesList'); if(!el) return;
@@ -13879,7 +13946,7 @@ window.confirmHospitalBooking = async function(){
     if(!date || !time) return toast('⚠️ Укажите дату и время','gold');
     _hospBookingBusy = true;
     try {
-        const doc = getHospitalDoctor();
+        const doc = await getHospitalDoctorFresh();
         if(!doc) { toast('❌ Врач не назначен','red'); return; }
         const svcSnap = await get(hospitalServiceRef(_hospBookingServiceId));
         const s = svcSnap.val();
@@ -13990,25 +14057,28 @@ async function tryFinalizeHospitalPayment(id){
 // 🏥 HOSPITAL — Doctor Panel: appointments
 // ══════════════════════════════════════════════════════════════════
 async function renderHospitalPanel(){
-    const isDoc = isHospitalDoctor(currentNick);
-    const notice = qs('hospitalPanelNoAccess');
-    const panel = qs('hospitalPanel');
-    if(notice) notice.style.display = isDoc ? 'none' : 'block';
-    if(panel) panel.querySelectorAll(':scope > .card:not(#hospitalPanelNoAccess)').forEach(c=>c.style.display = isDoc ? '' : 'none');
-    if(!isDoc) return;
-    try {
-        const [apptSnap, svcSnap, appsSnap, salarySnap] = await Promise.all([
-            get(hospitalAppointmentsRef()), get(hospitalServicesRef()), get(hospitalAssistantAppsRef()), get(hospitalAssistantSalaryRef())
-        ]);
-        renderHospitalPanelAppointments(apptSnap.val()||{});
-        renderHospitalPanelServices(svcSnap.val()||{});
-        renderHospitalPanelAssistant(appsSnap.val()||{}, salarySnap.val()||0);
-        renderHospitalPanelFinance(Object.values(apptSnap.val()||{}));
-    } catch(e){ console.error('[hospital panel render]', e); }
+    await refreshHospitalUsersCache();
+    const isDoc=isHospitalDoctor(currentNick), isAsst=!isDoc&&isHospitalAssistant(currentNick), canAccess=isDoc||isAsst;
+    const notice=qs('hospitalPanelNoAccess'), panel=qs('hospitalPanel');
+    if(notice)notice.style.display=canAccess?'none':'block';
+    if(panel)panel.querySelectorAll(':scope > .card:not(#hospitalPanelNoAccess)').forEach(c=>c.style.display=canAccess?'':'none');
+    if(!canAccess)return;
+    const doc=getHospitalDoctor();
+    try{
+        const [apptSnap,svcSnap,appsSnap,salarySnap,photoSnap]=await Promise.all([get(hospitalAppointmentsRef()),get(hospitalServicesRef()),get(hospitalAssistantAppsRef()),get(hospitalAssistantSalaryRef()),get(ref(db,'hospital/photos'))]);
+        renderHospitalPanelAppointments(apptSnap.val()||{},doc?.nick||null);
+        renderHospitalPanelServices(svcSnap.val()||{},isDoc);
+        renderHospitalPanelAssistant(appsSnap.val()||{},salarySnap.val()||0,isDoc);
+        renderHospitalPanelPhotos(photoSnap.val()||{},isDoc);
+        renderHospitalPanelFinance(Object.values(apptSnap.val()||{}),doc?.nick||null);
+        const se=qs('hospitalDoctorServiceEditor');if(se)se.style.display=isDoc?'':'none';
+        const pe=qs('hospitalDoctorPhotoEditor');if(pe)pe.style.display=isDoc?'':'none';
+    }catch(e){console.error('[hospital panel render]',e);}
 }
-function renderHospitalPanelAppointments(appts){
-    const el = qs('hospitalPanelAppointments'); if(!el) return;
-    const mine = Object.values(appts).filter(a=>a.doctorNick===currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+function renderHospitalPanelAppointments(appts,doctorNick){
+    const el=qs('hospitalPanelAppointments');if(!el)return;
+    if(!doctorNick){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Врач ещё не назначен.</div>';return;}
+    const mine=Object.values(appts).filter(a=>a.doctorNick===doctorNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     if(!mine.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет записей</div>'; return; }
     const today = todayKey();
     const groups = {today:[], upcoming:[], completed:[], other:[]};
@@ -14041,15 +14111,18 @@ function renderHospitalPanelAppointments(appts){
     el.innerHTML = html;
 }
 let _hospDoctorBusy = false;
-async function hospitalDoctorSetStatus(id, newStatus, notifyTextFn, extraPatch){
-    if(_hospDoctorBusy) return;
-    if(!isHospitalDoctor(currentNick)) { toast('❌ Только для врача','red'); return; }
-    _hospDoctorBusy = true;
-    try {
-        const snap = await get(hospitalAppointmentRef(id));
-        const a = snap.val();
-        if(!a) { toast('❌ Запись не найдена','red'); return; }
-        if(a.doctorNick !== currentNick) { toast('❌ Это не ваш пациент','red'); return; }
+async function hospitalDoctorSetStatus(id,newStatus,notifyTextFn,extraPatch){
+    if(_hospDoctorBusy)return;
+    await refreshHospitalUsersCache();
+    const isDoc=isHospitalDoctor(currentNick),isAsst=!isDoc&&isHospitalAssistant(currentNick);
+    if(!isDoc&&!isAsst){toast('❌ Только сотрудникам больницы','red');return;}
+    const doctor=getHospitalDoctor();if(!doctor){toast('❌ Врач не назначен','red');return;}
+    _hospDoctorBusy=true;
+    try{
+        const snap=await get(hospitalAppointmentRef(id));
+        const a=snap.val();
+        if(!a){toast('❌ Запись не найдена','red');return;}
+        if(a.doctorNick!==doctor.nick){toast('❌ Это не запись вашего врача','red');return;}
         const allowedFrom = { accepted:['pending'], rejected:['pending'], awaiting_confirmation:['accepted'] };
         if(!allowedFrom[newStatus].includes(a.status)) { toast('⚠️ Недопустимый переход статуса','gold'); return; }
         const patch = Object.assign({ status:newStatus, updatedAt: Date.now() }, extraPatch||{});
@@ -14074,18 +14147,10 @@ window.doctorCompleteAppointment = function(id){
 // ══════════════════════════════════════════════════════════════════
 // 🏥 HOSPITAL — Doctor Panel: services CRUD
 // ══════════════════════════════════════════════════════════════════
-function renderHospitalPanelServices(services){
-    const el = qs('hospitalPanelServices'); if(!el) return;
-    const list = Object.values(services);
-    if(!list.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;">Пока нет услуг</div>'; return; }
-    el.innerHTML = list.map(s=>`<div class="item-row">
-        <div><div style="font-weight:800;">${escHtml(s.name)} ${s.active===false?'<span style="color:var(--muted);font-size:11px;">(отключена)</span>':''}</div><div style="font-size:12px;color:var(--muted);">${escHtml(s.desc||'')} · ${(s.price||0).toLocaleString()} ₽</div></div>
-        <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost btn-sm" onclick="editHospitalService('${s.id}')">✏️</button>
-            <button class="btn btn-ghost btn-sm" onclick="toggleHospitalService('${s.id}')">${s.active===false?'▶️':'⏸'}</button>
-            <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteHospitalService('${s.id}')">🗑</button>
-        </div>
-    </div>`).join('');
+function renderHospitalPanelServices(services,canManage=true){
+    const el=qs('hospitalPanelServices');if(!el)return;const list=Object.values(services);
+    if(!list.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Пока нет услуг</div>';return;}
+    el.innerHTML=list.map(s=>`<div class="item-row"><div><div style="font-weight:800;">${escHtml(s.name)} ${s.active===false?'<span style="color:var(--muted);font-size:11px;">(отключена)</span>':''}</div><div style="font-size:12px;color:var(--muted);">${escHtml(s.desc||'')} · ${(s.price||0).toLocaleString()} ₽</div></div>${canManage?`<div style="display:flex;gap:6px;"><button class="btn btn-ghost btn-sm" onclick="editHospitalService('${s.id}')">✏️</button><button class="btn btn-ghost btn-sm" onclick="toggleHospitalService('${s.id}')">${s.active===false?'▶️':'⏸'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteHospitalService('${s.id}')">🗑</button></div>`:''}</div>`).join('');
 }
 window.addHospitalService = async function(){
     if(!isHospitalDoctor(currentNick)) { toast('❌ Только для врача','red'); return; }
@@ -14154,31 +14219,12 @@ window.applyForHospitalAssistant = async function(){
     toast('⏳ Заявка отправлена врачу','green');
     renderHospitalJobsCard();
 };
-function renderHospitalPanelAssistant(apps, salary){
-    const asst = getHospitalAssistant();
-    const el = qs('hospitalPanelAssistant'); if(!el) return;
-    let html = '';
-    if(asst){
-        html += `<div class="item-row"><div><div style="font-weight:900;">🩺 ${escHtml(displayNick(asst.user)||asst.nick)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(asst.nick)}</div></div></div>
-        <div style="margin-top:10px;">
-            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Зарплата (₽)</div>
-            <input type="number" id="hospAssistantSalaryInput" min="0" step="1" value="${Number(salary)||0}">
-            <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="saveHospitalAssistantSalary()">💾 Сохранить зарплату</button>
-            <button class="btn btn-gold btn-sm" style="margin-top:8px;margin-left:8px;" onclick="payHospitalAssistantSalary()">💰 Выдать зарплату</button>
-        </div>`;
-    } else {
-        html += `<div style="color:var(--muted);font-size:13px;">🩺 Помощник врача не назначен.</div>`;
-    }
-    el.innerHTML = html;
-    const pending = Object.entries(apps).filter(([,a])=>a.status==='pending');
-    const appsEl = qs('hospitalPanelAssistantApps');
-    if(appsEl){
-        appsEl.innerHTML = pending.length ? pending.map(([id,a])=>{
-            const u = allUsersCache[a.from]||{};
-            return `<div class="item-row"><div><div style="font-weight:800;">👤 ${escHtml(displayNick(u)||a.from)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(a.from)} · КВЭ: ${a.kveScore}</div></div>
-            <div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="acceptHospitalAssistantApp('${id}')">Принять</button><button class="btn btn-red btn-sm" onclick="rejectHospitalAssistantApp('${id}')">Отклонить</button></div></div>`;
-        }).join('') : '<div style="color:var(--muted);font-size:13px;">Нет заявок</div>';
-    }
+function renderHospitalPanelAssistant(apps,salary,canManageAssistant=true){
+    const asst=getHospitalAssistant();const el=qs('hospitalPanelAssistant');if(!el)return;let html='';
+    if(asst){html+=`<div class="item-row"><div><div style="font-weight:900;">🩺 ${escHtml(displayNick(asst.user)||asst.nick)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(asst.nick)}</div></div></div>`;if(canManageAssistant)html+=`<div style="margin-top:10px;"><div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Зарплата (₽)</div><input type="number" id="hospAssistantSalaryInput" min="0" step="1" value="${Number(salary)||0}"><button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="saveHospitalAssistantSalary()">💾 Сохранить зарплату</button><button class="btn btn-gold btn-sm" style="margin-top:8px;margin-left:8px;" onclick="payHospitalAssistantSalary()">💰 Выдать зарплату</button></div>`;}
+    else html='<div style="color:var(--muted);font-size:13px;">🩺 Помощник врача не назначен.</div>';
+    if(!canManageAssistant)html+='<div style="font-size:11px;color:var(--muted);margin-top:8px;">Вам доступно принятие записей клиентов. Создание услуг, публикация фото и управление помощником недоступны.</div>';
+    el.innerHTML=html;const appsEl=qs('hospitalPanelAssistantApps');if(appsEl)appsEl.innerHTML=canManageAssistant?'<div style="color:var(--muted);font-size:13px;">Заявки доступны врачу.</div>':'<div style="color:var(--muted);font-size:13px;">Назначение помощника доступно только врачу.</div>';
 }
 let _hospAssistantBusy = false;
 window.acceptHospitalAssistantApp = async function(id){
@@ -14252,17 +14298,34 @@ window.payHospitalAssistantSalary = async function(){
 };
 
 // ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Photos
+// ══════════════════════════════════════════════════════════════════
+function escAttr(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function renderHospitalPhotoCards(photos,canDelete){
+    const list=Object.entries(photos||{}).sort((a,b)=>(b[1]?.createdAt||0)-(a[1]?.createdAt||0));
+    if(!list.length)return '<div style="color:var(--muted);font-size:13px;">Фотографий пока нет.</div>';
+    return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${list.map(([id,p])=>`<div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;"><img src="${escAttr(p.data||'')}" alt="Фото больницы" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:pointer;" onclick="openImageFullscreen('${escAttr(p.data||'')}')">${canDelete?`<button class="btn btn-red btn-sm" style="position:absolute;right:6px;top:6px;min-width:0;padding:7px 9px;" onclick="deleteHospitalPhoto('${escAttr(id)}')">🗑</button>`:''}<div style="font-size:10px;color:var(--muted);padding:7px 8px;">${escHtml(p.authorNick||'Врач')}</div></div>`).join('')}</div>`;
+}
+function renderHospitalPhotosGallery(photos){const el=qs('hospitalPhotosGallery');if(el)el.innerHTML=renderHospitalPhotoCards(photos,false);}
+function renderHospitalPanelPhotos(photos,canDelete){const el=qs('hospitalPanelPhotos');if(el)el.innerHTML=renderHospitalPhotoCards(photos,canDelete);}
+function readHospitalImage(file){return new Promise((resolve,reject)=>{if(!file||!file.type.startsWith('image/'))return reject(new Error('Нужен файл изображения'));const r=new FileReader();r.onerror=()=>reject(new Error('Не удалось прочитать фото'));r.onload=()=>{const img=new Image();img.onload=()=>{const max=1280,scale=Math.min(1,max/Math.max(img.width,img.height)),w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',0.82));};img.onerror=()=>reject(new Error('Не удалось обработать фото'));img.src=r.result;};r.readAsDataURL(file);});}
+let _hospitalPhotosBusy=false;
+window.uploadHospitalPhotos=async function(){if(!isHospitalDoctor(currentNick))return toast('❌ Публиковать фото может только врач','red');if(_hospitalPhotosBusy)return;const input=qs('hospitalPhotoInput'),files=Array.from(input?.files||[]);if(!files.length)return toast('⚠️ Выберите фотографии','gold');if(files.length>6)return toast('⚠️ За раз можно добавить максимум 6 фото','gold');_hospitalPhotosBusy=true;try{for(const f of files){const data=await readHospitalImage(f),id=genId();await set(ref(db,`hospital/photos/${id}`),{id,data,authorNick:currentNick,createdAt:Date.now()});}if(input)input.value='';toast(`✅ Добавлено фото: ${files.length}`,'green');renderHospitalPanel();renderHospital();}catch(e){console.error('[hospital photo upload]',e);toast('❌ '+(e.message||'Не удалось загрузить фото'),'red');}finally{_hospitalPhotosBusy=false;}};
+window.deleteHospitalPhoto=async function(id){if(!isHospitalDoctor(currentNick))return toast('❌ Удалять фото может только врач','red');if(!confirm('Удалить эту фотографию больницы?'))return;try{await remove(ref(db,`hospital/photos/${id}`));toast('🗑 Фото удалено','gold');renderHospitalPanel();renderHospital();}catch(e){console.error('[hospital photo delete]',e);toast('❌ Не удалось удалить фото','red');}};
+
+// ══════════════════════════════════════════════════════════════════
 // 🏥 HOSPITAL — Doctor Panel: finance & stats
 // ══════════════════════════════════════════════════════════════════
-function renderHospitalPanelFinance(appts){
-    const el = qs('hospitalPanelFinance'); if(!el) return;
-    const paid = appts.filter(a=>a.doctorNick===currentNick && a.paymentStatus==='paid');
+function renderHospitalPanelFinance(appts,doctorNick){
+    const el=qs('hospitalPanelFinance');if(!el)return;
+    if(!doctorNick){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет назначенного врача.</div>';return;}
+    const paid=appts.filter(a=>a.doctorNick===doctorNick && a.paymentStatus==='paid');
     const total = paid.reduce((s,a)=>s+(a.price||0),0);
     const now = Date.now();
     const weekAgo = now - 7*24*60*60*1000;
     const monthAgo = now - 30*24*60*60*1000;
     const todayStr = todayKey();
-    const todayCount = appts.filter(a=>a.doctorNick===currentNick && a.date===todayStr && a.status!=='rejected' && a.status!=='cancelled').length;
+    const todayCount = appts.filter(a=>a.doctorNick===doctorNick && a.date===todayStr && a.status!=='rejected' && a.status!=='cancelled').length;
     const weekSum = paid.filter(a=>(a.paidAt||0)>=weekAgo).reduce((s,a)=>s+(a.price||0),0);
     const monthSum = paid.filter(a=>(a.paidAt||0)>=monthAgo).reduce((s,a)=>s+(a.price||0),0);
     const clients = new Set(paid.map(a=>a.clientNick)).size;
@@ -14280,8 +14343,9 @@ function renderHospitalPanelFinance(appts){
 // ══════════════════════════════════════════════════════════════════
 // 🏥 HOSPITAL — Jobs page integration ("О профессиях" / assistant apply)
 // ══════════════════════════════════════════════════════════════════
-function renderHospitalJobsCard(){
+async function renderHospitalJobsCard(){
     const el = qs('hospitalJobsInfo'); if(!el) return;
+    await refreshHospitalUsersCache();
     const doc = getHospitalDoctor();
     const asst = getHospitalAssistant();
     const u = allUsersCache[currentNick] || {};
@@ -14662,6 +14726,7 @@ try {
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex:none;">
             <button class="btn btn-primary btn-sm" id="infoTabBtn_pdd" style="flex:1;padding:10px 6px;" onclick="showInfoTab('pdd')">🚦 ПДД</button>
+            <button class="btn btn-ghost btn-sm" id="infoTabBtn_rules" style="flex:1;padding:10px 6px;" onclick="showInfoTab('rules')">📜 Правила</button>
             <button class="btn btn-ghost btn-sm" id="infoTabBtn_reg" style="flex:1;padding:10px 6px;" onclick="showInfoTab('reg')">📋 Регистрация</button>
             <button class="btn btn-ghost btn-sm" id="infoTabBtn_money" style="flex:1;padding:10px 6px;" onclick="showInfoTab('money')">💰 Деньги</button>
         </div>
@@ -14689,13 +14754,30 @@ try {
                     <div class="info-row"><span>Езда по встречке</span><b style="color:var(--red);white-space:nowrap;">1000 ₽</b></div>
                 </div>
             </div>
+            <!-- ПРАВИЛА -->
+            <div id="infoTab_rules" class="info-tab-content" style="display:none;font-size:13px;line-height:1.65;color:var(--text);">
+                <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:var(--gold);">📜 Правила</div>
+                <div style="margin-bottom:10px;">Текущие правила и штрафы:</div>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:2px 14px;">
+                    <div class="info-row"><span>Превышение скорости</span><b style="color:var(--red);white-space:nowrap;">500 р.</b></div>
+                    <div class="info-row"><span>Езда по встречке</span><b style="color:var(--red);white-space:nowrap;">1.000 р.</b></div>
+                    <div class="info-row"><span>Езда без прав</span><b style="color:var(--red);white-space:nowrap;">2.000 р.</b></div>
+                    <div class="info-row"><span>Драка</span><b style="color:var(--red);white-space:nowrap;">1.000 р.</b></div>
+                    <div class="info-row"><span>Покушение на убийство/нападение</span><b style="color:var(--red);white-space:nowrap;">1.000 р.</b></div>
+                    <div class="info-row"><span>Распущенное поведение</span><b style="color:var(--red);white-space:nowrap;">600 р.</b></div>
+                    <div class="info-row"><span>Угон чужого транспорта</span><b style="color:var(--red);white-space:nowrap;">1.500 р.</b></div>
+                    <div class="info-row"><span>Нарушение ПДД</span><b style="color:var(--red);white-space:nowrap;">1.000 р.</b></div>
+                    <div class="info-row"><span>Езда с телефоном в руке/разговаривая по телефону за рулём</span><b style="color:var(--red);white-space:nowrap;">800 р.</b></div>
+                    <div class="info-row"><span>Незаконное проникновение на частную территорию</span><b style="color:var(--red);white-space:nowrap;">1.500 р.</b></div>
+                </div>
+            </div>
             <!-- РЕГИСТРАЦИЯ -->
             <div id="infoTab_reg" class="info-tab-content" style="display:none;font-size:13px;line-height:1.7;color:var(--text);">
                 <p style="margin-bottom:10px;">Для <b>полной регистрации</b> вам необходимо получить <b style="color:var(--primary)">паспорт</b>, который будут проверять менты при остановке. Для этого обратитесь к <b style="color:var(--gold)">мэру</b>.</p>
                 <p style="margin-bottom:10px;">Для получения <b>водительских прав</b> (на велосипед или скутер) также стоит обратиться к мэру.</p>
                 <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:2px 14px;margin-bottom:10px;">
-                    <div class="info-row"><span>🚲 Права на велосипед</span><b style="color:var(--primary);white-space:nowrap;">100 ₽</b></div>
-                    <div class="info-row"><span>🛵 Права на скутер</span><b style="color:var(--primary);white-space:nowrap;">500 ₽</b></div>
+                    <div class="info-row"><span>🚲 Права на велосипед</span><b style="color:var(--primary);white-space:nowrap;">250 ₽</b></div>
+                    <div class="info-row"><span>🛵 Права на скутер</span><b style="color:var(--primary);white-space:nowrap;">1 500 ₽</b></div>
                 </div>
                 <p>Максимум ошибок на экзамене — <b style="color:var(--red)">3</b>.</p>
             </div>
@@ -15570,25 +15652,37 @@ ready(function(){
           desc:`Штраф: ${reason}`,
           ...(packFullDateTimeStr())
       };
-      const txResult = await runTransaction(userRef(tnick), current => {
-          if(current === null) throw new Error('Пользователь не найден');
-          const currentBalance = Number(current.balance || 0);
-          if(!Number.isFinite(currentBalance)) throw new Error('Некорректный баланс нарушителя');
-          const nextBalance = currentBalance - amt;
+      // В первый запуск Firebase может дать transaction callback значение null
+      // из-за отсутствия локального кеша, хотя пользователь уже есть на сервере.
+      // Поэтому сначала получаем актуальный объект пользователя и используем его
+      // как безопасный fallback внутри транзакции. Это устраняет ложное
+      // `Пользователь не найден` при первом нажатии.
+      const freshUserSnap = await get(userRef(tnick));
+      if(!freshUserSnap.exists()) throw new Error('Пользователь не найден');
+      const freshUser = freshUserSnap.val() || {};
+      const balanceRef = ref(db, `users/${tnick}/balance`);
+      const txResult = await runTransaction(userRef(tnick), currentUser => {
+          const base = (currentUser === null || currentUser === undefined) ? freshUser : currentUser;
+          if(!base) return;
+          const currentValue = Number(base.balance || 0);
+          if(!Number.isFinite(currentValue)) throw new Error('Некорректный баланс нарушителя');
+          const nextBalance = currentValue - amt;
           if(!Number.isFinite(nextBalance)) throw new Error('Некорректное списание');
           if(nextBalance <= Number(window.MIN_BALANCE_ALLOWED ?? -Infinity)) throw new Error('Нельзя выписать штраф: баланс достигнет критического лимита');
-          const next = { ...current, balance: nextBalance, txlog: { ...(current.txlog || {}) } };
-          if(!next.txlog[fineTxId]) next.txlog[fineTxId] = txEntry;
-          return next;
+          return {...base, balance: nextBalance};
       });
       if(!txResult.committed) throw new Error('Firebase не подтвердил списание');
+      // Запись операции — отдельным update, чтобы она не могла блокировать
+      // списание баланса из-за старых/битых полей в объекте пользователя.
+      await set(ref(db, `users/${tnick}/txlog/${fineTxId}`), txEntry);
 
       // Update the local cache immediately as well. The target user's own
       // `users/<currentNick>` realtime listener will update their header/balance
       // without a page reload; this cache update also keeps any already-open
       // profile/rating/business UI from showing the old balance until its next read.
       try {
-        const committedUser = txResult.snapshot && txResult.snapshot.val ? txResult.snapshot.val() : null;
+        const committedUserSnap = await get(userRef(tnick));
+        const committedUser = committedUserSnap.exists() ? committedUserSnap.val() : null;
         if(committedUser){
           allUsersCache[tnick] = committedUser;
           window.allUsersCache = allUsersCache;
@@ -15734,41 +15828,74 @@ ready(function(){
         renderRightsCard();
       }finally{window._bikeLicenseBusy=false;}
     }
+    const SCOOTER_EXAM_QUESTIONS=[
+      {q:'На каком свете светофора можно продолжать движение?',a:['На красном','На зелёном','На любом'],c:1},
+      {q:'Что нужно сделать перед началом движения?',a:['Проверить обстановку и убедиться в безопасности','Сразу резко разогнаться','Закрыть глаза и ехать по памяти'],c:0},
+      {q:'Что запрещено делать во время управления транспортом?',a:['Использовать телефон в руке','Соблюдать дистанцию','Снижать скорость перед препятствием'],c:0},
+      {q:'Что следует сделать перед поворотом?',a:['Подать сигнал поворота и убедиться в безопасности','Ускориться и не подавать сигнал','Остановиться посреди перекрёстка'],c:0},
+      {q:'Что нужно сделать, если дорожный знак ограничивает скорость?',a:['Соблюдать установленное ограничение','Всегда ехать в два раза быстрее','Игнорировать знак'],c:0}
+    ];
+    let _scooterExamState=null;
     async function purchaseScooterLicense(){
-      if(window._scooterLicenseBusy) return;
+      if(window._scooterLicenseBusy)return;
       window._scooterLicenseBusy=true;
       try{
-        const nick=current();
-        const uSnap=await get(userRef(nick)); const u=uSnap.val()||{};
+        const nick=current();const uSnap=await get(userRef(nick));const u=uSnap.val()||{};
+        const lic={...(u.licenses||{})};const app=u.scooterLicenseApplication||{};
+        if(lic.scooter)return toast('✅ Права на скутер уже получены','green');
+        if(app.status==='pending')return toast('⏳ Заявка уже находится на рассмотрении мэрии','gold');
+        if(Number(u.balance||0)<1500)return toast('❌ Недостаточно средств: нужно 1 500 ₽','red');
         const passport=await getPassportData(nick,u);
-        const appId=genId();
         const result=await runTransaction(userRef(nick),currentUser=>{
-          if(!currentUser) return;
-          const lic={...(currentUser.licenses||{})};
-          const old=currentUser.scooterLicenseApplication||{};
-          if(lic.scooter) return;
-          if(old.status==='pending') return;
-          const balance=Number(currentUser.balance||0);
-          if(balance<1500) return;
-          return {
-            ...currentUser,
-            balance:balance-1500,
-            scooterLicenseApplication:{
-              id:appId,status:'pending',createdAt:Date.now(),nick,
-              firstName:String(passport.firstName||currentUser.firstName||'').trim(),
-              lastName:String(passport.lastName||currentUser.lastName||'').trim(),
-              displayName:String(currentUser.displayName||nick).trim()
-            }
-          };
+          if(!currentUser)return;
+          const currentLic={...(currentUser.licenses||{})};const currentApp=currentUser.scooterLicenseApplication||{};
+          if(currentLic.scooter||currentApp.status==='pending')return;
+          const balance=Number(currentUser.balance||0);if(balance<1500)return;
+          return {...currentUser,balance:balance-1500,scooterExam:{status:'in_progress',fee:1500,startedAt:Date.now()}};
         });
-        if(!result?.committed) return toast('❌ Недостаточно средств, права уже есть или заявка уже ожидает решения','red');
-        await window.logTx?.(nick,{type:'out',who:'Права',amt:1500,desc:'Заявка на права на скутер'});
-        await pushNotification(nick,'⏳ Заявка на получение прав на скутер отправлена в мэрию. Деньги не возвращаются независимо от решения.','money');
-        await pushNotification(ADMIN,`🛵 Новая заявка на права на скутер от ${String(u.displayName||nick)} (@${nick})`,'system');
-        toast('⏳ Заявка отправлена в мэрию.','gold');
-        renderRightsCard();
+        if(!result?.committed)return toast('❌ Не удалось начать экзамен. Проверьте баланс или статус прав','red');
+        await window.logTx?.(nick,{type:'out',who:'Автошкола',amt:1500,desc:'Оплата экзамена на права на скутер. При провале возврата нет.'});
+        await pushNotification(nick,'🛵 Экзамен на права на скутер оплачен: 1 500 ₽. При провале экзамена деньги не возвращаются.','money');
+        _scooterExamState={nick,index:0,answers:[]};
+        openScooterExam();
       }finally{window._scooterLicenseBusy=false;}
     }
+    function openScooterExam(){
+      if(!_scooterExamState)_scooterExamState={nick:current(),index:0,answers:[]};
+      let modal=qs('scooterExamModal');
+      if(!modal){
+        modal=document.createElement('div');modal.id='scooterExamModal';modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9996;display:flex;align-items:center;justify-content:center;padding:16px;';
+        document.body.appendChild(modal);
+      }
+      renderScooterExam();
+    }
+    function closeScooterExam(){const m=qs('scooterExamModal');if(m)m.remove();}
+    function renderScooterExam(){
+      const m=qs('scooterExamModal');if(!m||!_scooterExamState)return;
+      const st=_scooterExamState,q=SCOOTER_EXAM_QUESTIONS[st.index];
+      m.innerHTML=`<div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);"><div style="font-size:20px;font-weight:900;margin-bottom:8px;">🛵 Экзамен на скутер</div><div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Вопрос ${st.index+1} из ${SCOOTER_EXAM_QUESTIONS.length}. Оплаченные 1 500 ₽ не возвращаются при провале.</div><div style="font-weight:900;font-size:15px;line-height:1.5;margin-bottom:12px;">${escHtml(q.q)}</div><div style="display:grid;gap:8px;">${q.a.map((a,i)=>`<button class="btn btn-ghost" style="text-align:left;" onclick="chooseScooterExamAnswer(${i})">${i+1}. ${escHtml(a)}</button>`).join('')}</div><button class="btn btn-ghost" style="margin-top:10px;" onclick="closeScooterExam()">Закрыть и продолжить позже</button></div>`;
+    }
+    window.chooseScooterExamAnswer=async function(choice){
+      if(!_scooterExamState)return;const q=SCOOTER_EXAM_QUESTIONS[_scooterExamState.index];_scooterExamState.answers.push(choice===q.c?1:0);
+      _scooterExamState.index++;
+      if(_scooterExamState.index<SCOOTER_EXAM_QUESTIONS.length){renderScooterExam();return;}
+      const nick=_scooterExamState.nick,score=_scooterExamState.answers.reduce((a,b)=>a+b,0),passed=score>=4;
+      try{
+        if(passed){
+          const u=(await get(userRef(nick))).val()||{},passport=await getPassportData(nick,u),appId=genId();
+          await update(userRef(nick),{scooterExam:{status:'passed',score,total:SCOOTER_EXAM_QUESTIONS.length,finishedAt:Date.now()},scooterLicenseApplication:{id:appId,status:'pending',createdAt:Date.now(),nick,examScore:score,firstName:String(passport.firstName||u.firstName||'').trim(),lastName:String(passport.lastName||u.lastName||'').trim(),displayName:String(u.displayName||nick).trim()}});
+          await pushNotification(nick,'✅ Экзамен на скутер сдан. Заявка отправлена в мэрию.','system');
+          await pushNotification(ADMIN,`🛵 ${String(u.displayName||nick)} (@${nick}) сдал(а) экзамен на скутер — заявка отправлена в мэрию.`,'system');
+          toast('✅ Экзамен сдан. Заявка отправлена в мэрию.','green');
+        }else{
+          await update(userRef(nick),{scooterExam:{status:'failed',score,total:SCOOTER_EXAM_QUESTIONS.length,finishedAt:Date.now(),refunded:false}});
+          await pushNotification(nick,`❌ Экзамен на скутер не сдан (${score}/${SCOOTER_EXAM_QUESTIONS.length}). 1 500 ₽ не возвращаются.`,'money');
+          toast(`❌ Экзамен не сдан: ${score}/${SCOOTER_EXAM_QUESTIONS.length}. Деньги не возвращаются.`,'red');
+        }
+      }catch(e){console.error('[scooter exam]',e);toast('❌ Не удалось сохранить результат экзамена','red');}
+      _scooterExamState=null;closeScooterExam();renderRightsCard();
+    };
+
 
     async function renderRightsCard(){
       const host=qs('kapaniRightsCard'); if(!host || !current()) return;
@@ -15780,8 +15907,8 @@ ready(function(){
       host.innerHTML=`
         <div class="card-title">🪪 Права</div>
         <div style="display:grid;gap:8px;">
-          <div class="item-row"><div><b>🚲 Права на велосипед</b><div style="font-size:11px;color:var(--muted);">Стоимость: 250 ₽ · без подтверждения мэрии</div></div>${lic.bike?'<b style="color:var(--primary);">✅ Получены</b>':'<button class="btn btn-primary btn-sm" onclick="kapaniBuyBikeLicense()">Получить</button>'}</div>
-          <div class="item-row"><div><b>🛵 Права на скутер</b><div style="font-size:11px;color:var(--muted);">Стоимость: 1 500 ₽ · решение мэрии</div>${app.status==='pending'?'<div style="color:var(--gold);font-size:11px;margin-top:4px;">⏳ Заявка на получение прав на скутер отправлена в мэрию.</div>':''}${app.status==='rejected'?'<div style="color:var(--red);font-size:11px;margin-top:4px;">❌ Мэрия отказала в выдаче прав на скутер.</div>':''}</div>${lic.scooter?'<b style="color:var(--primary);">✅ Одобрены</b>':app.status==='pending'?'<b style="color:var(--gold);">⏳ На рассмотрении</b>':'<button class="btn btn-primary btn-sm" onclick="kapaniBuyScooterLicense()">Подать заявку</button>'}</div>
+          <div class="item-row"><div><b>🚲 Права на велосипед</b><div style="font-size:11px;color:var(--muted);">Купить права на велосипед. Сдавать экзамен не нужно — 250 ₽.</div></div>${lic.bike?'<b style="color:var(--primary);">✅ Получены</b>':'<button class="btn btn-primary btn-sm" onclick="kapaniBuyBikeLicense()">Купить за 250 ₽</button>'}</div>
+          <div class="item-row"><div><b>🛵 Права на скутер</b><div style="font-size:11px;color:var(--muted);">Купить права на скутер. Необходимо будет сдать экзамен. В случае провала экзамена деньги возвращены не будут — 1 500 ₽.</div>${app.status==='pending'?'<div style="color:var(--gold);font-size:11px;margin-top:4px;">⏳ Экзамен сдан, заявка находится на рассмотрении мэрии.</div>':''}${app.status==='rejected'?'<div style="color:var(--red);font-size:11px;margin-top:4px;">❌ Мэрия отказала в выдаче прав на скутер.</div>':''}${u.scooterExam?.status==='failed'?`<div style="color:var(--red);font-size:11px;margin-top:4px;">❌ Последний экзамен не сдан: ${Number(u.scooterExam.score)||0}/${Number(u.scooterExam.total)||5}. Деньги не возвращены.</div>`:''}</div>${lic.scooter?'<b style="color:var(--primary);">✅ Одобрены</b>':app.status==='pending'?'<b style="color:var(--gold);">⏳ На рассмотрении</b>':u.scooterExam?.status==='in_progress'?'<button class="btn btn-gold btn-sm" onclick="openScooterExam()">Продолжить экзамен</button>':'<button class="btn btn-primary btn-sm" onclick="kapaniBuyScooterLicense()">Купить за 1 500 ₽</button>'}</div>
         </div>`;
     }
     window.kapaniBuyBikeLicense=purchaseBikeLicense;
@@ -16094,11 +16221,60 @@ ready(function(){
     }
     window.kapaniSlotsSpin=slotsSpin;
 
+    // Casino mini-games: Roulette, Coin Flip, Dice.
+    function setCasinoGameBusy(id,busy){
+      const b=qs(id); if(!b)return;
+      b.disabled=!!busy;
+      b.style.pointerEvents=busy?'none':'';
+      b.style.opacity=busy?'0.55':'';
+      b.textContent = busy ? '⏳ Играет…' : (id==='rouletteSpinBtn'?'🎯 Крутить':id==='coinflipPlayBtn'?'🪙 Подбросить':'🎲 Бросить');
+    }
+    async function casinoRound(refPath,result,stake,payout,lastKey,lastValue,label){
+      const tx=await runTransaction(ref(db,refPath),casino=>{
+        const c={...(casino||{})},cb=Math.max(0,Number(c.balance||0));if(cb<stake)return;
+        return {...c,balance:cb-stake+payout,[lastKey]:{...lastValue,createdAt:Date.now()}};
+      });
+      if(!tx?.committed)return null;
+      const nu=(await get(userRef(current()))).val()||{};allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
+      // Логи — вторичные: не должны оставлять кнопку игры заблокированной,
+      // если запись истории тормозит или временно падает.
+      const logs=[
+        window.logTx?.(current(),{type:'out',who:`Казино · ${label}`,amt:stake,desc:`Ставка в ${label.toLowerCase()}`}),
+        payout>0 ? window.logTx?.(current(),{type:'in',who:`Казино · ${label}`,amt:payout,desc:`Выигрыш в ${label.toLowerCase()}`}) : null
+      ].filter(Boolean);
+      Promise.allSettled(logs).catch(()=>{});
+      return nu;
+    }
+    async function rouletteSpin(){
+      if(window._rouletteBusy)return;const stake=Math.floor(Number(qs('rouletteStake')?.value||0)),bet=String(qs('rouletteBet')?.value||'red');
+      if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');window._rouletteBusy=true;setCasinoGameBusy('rouletteSpinBtn',true);
+      try{const n=crypto.getRandomValues(new Uint32Array(1))[0]%37,color=n===0?'green':([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(n)?'red':'black'),mult=color==='green'?36:(bet===color?2:0),payout=stake*mult,nu=await casinoRound(`users/${current()}/casino`,{n,color},stake,payout,'rouletteLast',{number:n,color,bet,stake,payout,multiplier:mult},'Рулетка');
+        if(!nu)return toast('❌ Недостаточно средств на балансе казино','red');await renderCasinoBalances(nu);await renderRoulette();toast(payout?`🎯 Выпало ${n} — +${payout.toLocaleString('ru-RU')} ₽`:`🎯 Выпало ${n} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');
+      }catch(e){console.error('[casino roulette]',e);toast('❌ Ошибка рулетки: '+(e.message||'операция не выполнена'),'red');}
+      finally{window._rouletteBusy=false;setCasinoGameBusy('rouletteSpinBtn',false);}
+    }
+    window.kapaniRouletteSpin=rouletteSpin;
+    async function renderRoulette(){const h=qs('rouletteArea');if(!h)return;const u=await getCasinoUser(),l=u.casino?.rouletteLast;h.innerHTML=`<div class="card-title">🎯 Рулетка</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">🔴 Красное / ⚫ чёрное — 2×, 🟢 0 — 36×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="rouletteBet" style="margin:0;"><option value="red">🔴 Красное</option><option value="black">⚫ Чёрное</option><option value="green">🟢 Зелёное 0</option></select><input id="rouletteStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="rouletteSpinBtn" style="margin-top:8px;" onclick="kapaniRouletteSpin()">🎯 Крутить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний результат: <b>${l.number}</b> · ${l.color==='green'?'🟢':l.color==='red'?'🔴':'⚫'} · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
+    async function coinflipPlay(){
+      if(window._coinflipBusy)return;const stake=Math.floor(Number(qs('coinflipStake')?.value||0)),choice=String(qs('coinflipChoice')?.value||'heads');
+      if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');window._coinflipBusy=true;setCasinoGameBusy('coinflipPlayBtn',true);
+      try{const result=crypto.getRandomValues(new Uint32Array(1))[0]%2?'tails':'heads',payout=choice===result?stake*2:0,nu=await casinoRound(`users/${current()}/casino`,{result},stake,payout,'coinflipLast',{result,choice,stake,payout},'Орлянка');if(!nu)return toast('❌ Недостаточно средств на балансе казино','red');await renderCasinoBalances(nu);await renderCoinflip();toast(payout?`🪙 ${result==='heads'?'Орёл':'Решка'} — +${payout.toLocaleString('ru-RU')} ₽`:`🪙 ${result==='heads'?'Орёл':'Решка'} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');}finally{window._coinflipBusy=false;}
+    }
+    window.kapaniCoinflipPlay=coinflipPlay;
+    async function renderCoinflip(){const h=qs('coinflipArea');if(!h)return;const u=await getCasinoUser(),l=u.casino?.coinflipLast;h.innerHTML=`<div class="card-title">🪙 Орлянка</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Угадайте сторону монеты и получите 2×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="coinflipChoice" style="margin:0;"><option value="heads">🪙 Орёл</option><option value="tails">🪙 Решка</option></select><input id="coinflipStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="coinflipPlayBtn" style="margin-top:8px;" onclick="kapaniCoinflipPlay()">🪙 Подбросить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний результат: ${l.result==='heads'?'🦅 Орёл':'👑 Решка'} · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
+    async function dicePlay(){
+      if(window._diceBusy)return;const stake=Math.floor(Number(qs('diceStake')?.value||0)),guess=String(qs('diceGuess')?.value||'high');
+      if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');window._diceBusy=true;setCasinoGameBusy('dicePlayBtn',true);
+      try{const n=(crypto.getRandomValues(new Uint32Array(1))[0]%6)+1,actual=n>=4?'high':'low',payout=guess===actual?stake*2:0,nu=await casinoRound(`users/${current()}/casino`,{number:n},stake,payout,'diceLast',{number:n,guess,result:actual,stake,payout},'Кубик');if(!nu)return toast('❌ Недостаточно средств на балансе казино','red');await renderCasinoBalances(nu);await renderDice();toast(payout?`🎲 Выпало ${n} — +${payout.toLocaleString('ru-RU')} ₽`:`🎲 Выпало ${n} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');}finally{window._diceBusy=false;}
+    }
+    window.kapaniDicePlay=dicePlay;
+    async function renderDice(){const h=qs('diceArea');if(!h)return;const u=await getCasinoUser(),l=u.casino?.diceLast;h.innerHTML=`<div class="card-title">🎲 Кубик</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Угадайте 1–3 или 4–6. Победа — 2×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="diceGuess" style="margin:0;"><option value="high">⬆️ 4–6</option><option value="low">⬇️ 1–3</option></select><input id="diceStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="dicePlayBtn" style="margin-top:8px;" onclick="kapaniDicePlay()">🎲 Бросить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний бросок: <b>${l.number}</b> · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
+
     async function renderCasino(){
       const host=qs('casino');if(!host)return;
       const u=await getCasinoUser();
       await renderCasinoBalances(u);
-      await renderBlackjack();await renderSlots();
+      await renderBlackjack();await renderSlots();await renderRoulette();await renderCoinflip();await renderDice();
     }
     window.kapaniRenderCasino=renderCasino;
     window.kapaniRenderKEducation=renderKEducation;
@@ -16118,11 +16294,11 @@ ready(function(){
     }
 
     function injectRightsCard(){
-      const profile=qs('profile');if(!profile)return;
+      ensureEconomySections();
+      const host=qs('autoSchool');if(!host)return;
       if(!qs('kapaniRightsCard')){
         const c=document.createElement('div');c.className='card';c.id='kapaniRightsCard';c.style.cssText='border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.04);';
-        // Put it after existing profile cards so it remains additive.
-        profile.appendChild(c);
+        host.appendChild(c);
       }
       renderRightsCard();
     }
@@ -16139,17 +16315,29 @@ ready(function(){
         edu.innerHTML='<div id="kEducationContent"></div>';
         main.appendChild(edu);
       }
+      let autoSchool=qs('autoSchool');
+      if(!autoSchool){
+        autoSchool=document.createElement('div');
+        autoSchool.id='autoSchool';
+        autoSchool.className='section';
+        autoSchool.innerHTML='<div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.08),rgba(251,191,36,.05));border-color:rgba(34,211,165,.25);"><div style="font-size:22px;font-weight:900;">🚦 Автошкола</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Купить права на велосипед без экзамена или оплатить экзамен на права на скутер</div><div id="kapaniRightsCard"></div></div>';
+        main.appendChild(autoSchool);
+        renderRightsCard();
+      }
       let casino=qs('casino');
       if(!casino){
         casino=document.createElement('div');
         casino.id='casino';
         casino.className='section';
-        casino.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);"><div style="font-size:22px;font-weight:900;">🎰 Казино</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек и игровые слоты</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;"><div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div><div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div></div><div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div><div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;"><button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button><div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div></div></div><div class="card" id="blackjackArea"></div><div class="card" id="slotsArea"></div>`;
+        casino.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);"><div style="font-size:22px;font-weight:900;">🎰 Казино</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек, слоты и новые мини-игры</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;"><div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div><div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div></div><div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div><div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;"><button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button><div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div></div></div><div class="card" id="blackjackArea"></div><div class="card" id="slotsArea"></div><div class="card" id="rouletteArea"></div><div class="card" id="coinflipArea"></div><div class="card" id="diceArea"></div>`;
         main.appendChild(casino);
       }
       if(!qs('kEducationContent')){const c=document.createElement('div');c.id='kEducationContent';edu.appendChild(c);}
       if(!qs('blackjackArea')){const c=document.createElement('div');c.className='card';c.id='blackjackArea';casino.appendChild(c);}
       if(!qs('slotsArea')){const c=document.createElement('div');c.className='card';c.id='slotsArea';casino.appendChild(c);}
+      if(!qs('rouletteArea')){const c=document.createElement('div');c.className='card';c.id='rouletteArea';casino.appendChild(c);}
+      if(!qs('coinflipArea')){const c=document.createElement('div');c.className='card';c.id='coinflipArea';casino.appendChild(c);}
+      if(!qs('diceArea')){const c=document.createElement('div');c.className='card';c.id='diceArea';casino.appendChild(c);}
       return {edu,casino};
     }
     function injectKEducationSection(){ return ensureEconomySections(); }
@@ -16169,13 +16357,13 @@ ready(function(){
     window.navTo=function(id){
       try{
         // Guarantee that the destination exists BEFORE the original navigator hides all sections.
-        if(id==='kEducation' || id==='casino') ensureEconomySections();
+        if(id==='kEducation' || id==='casino' || id==='autoSchool') ensureEconomySections();
       }catch(e){}
       const ret=typeof oldNav==='function'?oldNav.apply(this,arguments):undefined;
       try{
-        if(id==='profile') setTimeout(()=>injectRightsCard(),40);
+        if(id==='autoSchool') setTimeout(()=>injectRightsCard(),40);
         if(id==='kEducation') renderKEducation().catch(e=>{console.error('[K-education render]',e);const host=qs('kEducationContent');if(host)host.innerHTML='<div class=\"card\"><div style=\"font-weight:900;color:var(--red);\">❌ Не удалось загрузить К-образование</div><div style=\"font-size:12px;color:var(--muted);margin-top:6px;\">Попробуйте открыть вкладку ещё раз.</div></div>';});
-        if(id==='casino') renderCasino().catch(e=>{console.error('[Casino render]',e);const bj=qs('blackjackArea'),sl=qs('slotsArea');if(bj)bj.innerHTML='<div style=\"color:var(--red);\">❌ Не удалось загрузить блекджек</div>';if(sl)sl.innerHTML='<div style=\"color:var(--red);\">❌ Не удалось загрузить игровые слоты</div>';});
+        if(id==='casino') renderCasino().catch(e=>{console.error('[Casino render]',e);const ids=['blackjackArea','slotsArea','rouletteArea','coinflipArea','diceArea'];ids.forEach(id=>{const el=qs(id);if(el)el.innerHTML='<div style=\"color:var(--red);\">❌ Не удалось загрузить игру</div>';});});
         if(id==='tasks') setTimeout(()=>{const u=window.allUsersCache?.[current()]||{};const el=qs('taskBalanceDisplay');if(el)el.textContent=`${Number(u.taskBalance||0).toLocaleString('ru-RU')} ₽`;},80);
         if(id==='adminPage') setTimeout(()=>injectEconomyAdminUI(),120);
       }catch(e){console.warn('[Kapani economy nav]',e)}
