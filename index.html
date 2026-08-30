@@ -2749,6 +2749,11 @@ window.onDmInputTyping = function(){
 // ─── CLOUD FUNCTION FALLBACK HELPERS ────────
 // These helpers try Cloud Functions first, then fall back to direct DB operations
 async function callFunctionWithFallback(functionName, data, fallbackFn) {
+    // Local file:// runs have an opaque origin and callable Cloud Functions
+    // are rejected by the browser's CORS policy. The existing direct-DB
+    // fallback is functionally equivalent for this client-side path, so use
+    // it immediately and avoid a guaranteed noisy failed network call.
+    if(location.protocol === 'file:' && fallbackFn) return await fallbackFn(data);
     try {
         const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
         const fn = httpsCallable(await ensureFunctions(), functionName);
@@ -3523,8 +3528,9 @@ function startApp() {
     if(bottom) bottom.style.display='none';
     if(main) main.style.display='none';
 
-    try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:',e); }
-
+    // Resolve the persisted identity before binding any user-scoped listeners.
+    // This prevents notifications/user listeners from being attached to an
+    // outdated or empty nick during the startup race.
     try {
         const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null');
         if(auth && auth.nick && (!currentNick || currentNick!==auth.nick)) {
@@ -3534,6 +3540,7 @@ function startApp() {
         }
     } catch(e) {}
     syncCurrentNick();
+    try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:',e); }
 
     const loStatus = document.getElementById('loStatus');
     const loBar    = document.getElementById('loBar');
@@ -3758,7 +3765,7 @@ function enterService(page){
     if(service==='market'){ const r=marketRef(); addServiceListener('market','market',r,s=>{if(curPage==='market')renderMarket(s.val()||{});}); }
     if(service==='ratings'){ loadAllUsersCache().then(u=>{if(curPage==='ratings')renderLeaderboard(u);}).catch(e=>console.warn('[Kapani] ratings users:',e)); }
     if(service==='admin'){ loadAllUsersCache().then(u=>{if(curPage==='adminPage'){renderAdminUsers(u);renderAdminUserSelect(u);renderUnverifiedAccounts();}}).catch(e=>console.warn('[Kapani] admin users:',e)); const aRef=appsRef(); addServiceListener('admin','apps',aRef,s=>{if(curPage==='adminPage')renderAdminApps(s.val()||{});}); attachOrderService(); }
-    if(service==='business'){ const r=bizRef(); addServiceListener('business','businesses',r,s=>{allBusinessesCache=s.val()||{};window.allBusinessesCache=allBusinessesCache;if(curPage==='businesses')renderBusinesses();if(curPage==='bizDetail')renderBizDetail();if(curPage==='bizOwnerPanel')renderBizOwnerPanel();}); }
+    if(service==='business'){ const r=bizRef(); addServiceListener('business','businesses',r,s=>{allBusinessesCache=s.val()||{};window.allBusinessesCache=allBusinessesCache;if(curPage==='businesses')renderBusinesses();if(curPage==='bizDetail' && typeof window.renderBizDetail==='function')window.renderBizDetail();if(curPage==='bizOwnerPanel' && typeof window.renderBizOwnerPanel==='function')window.renderBizOwnerPanel();}); }
     if(service==='duty'){ startCallsListener(); }
 }
 function leaveService(page){
@@ -6556,7 +6563,7 @@ async function checkDailyTaskCondition(taskId, u, ordersVal, marketVal, chatVal,
         case 'chat': return Object.values(chatVal||{}).some(m=>m.nick===currentNick&&localDateKey(m.createdAt||0)===today);
         case 'wall': return Object.values(wallVal||{}).some(p=>localDateKey(p.createdAt||0)===today);
         case 'transfer': return Object.values(txVal||{}).some(tx=>tx.type==='out'&&tx.date===new Date().toLocaleDateString('ru')&&tx.desc&&tx.desc.startsWith('Перевод пользователю'));
-        case 'shop': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='shop');
+        case 'shop': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='shop') || Object.values(window._taskDeliveryCustomOrders||{}).some(o=>o.client===currentNick && (o.source==='business' || o.itemKind==='business_product'));
         case 'taxi_req': return Object.values(ordersVal||{}).some(o=>o.client===currentNick&&o.type==='taxi');
         case 'market_browse': return true; // just opening tasks page counts
         case 'dm': return Object.values(dmVal||{}).some(m=>m.nick===currentNick&&localDateKey(m.createdAt||0)===today);
@@ -6669,10 +6676,11 @@ window.renderTasks = async function(){
     try{
         const today = todayKey();
         const claimedKey = `dailyClaimed_${today}`;
-        const [uSnap, ordersSnap, marketSnap, chatSnap, wallSnap, txSnap, passportSnap, licenseSnap] = await Promise.all([
+        const [uSnap, ordersSnap, marketSnap, chatSnap, wallSnap, txSnap, passportSnap, licenseSnap, deliveryCustomSnap] = await Promise.all([
             get(userRef(currentNick)), get(ordersRef()), get(marketRef()), get(chatRef()), get(wallRef(currentNick)), get(txLogRef(currentNick)),
             get(ref(db,`passports/${currentNick}`)).catch(()=>null),
-            get(ref(db,`licenses/${currentNick}`)).catch(()=>null)
+            get(ref(db,`licenses/${currentNick}`)).catch(()=>null),
+            get(deliveryCustomOrdersRef()).catch(()=>null)
         ]);
         const u = uSnap.val() || {};
         const claimed = u[claimedKey] || [];
@@ -6681,6 +6689,7 @@ window.renderTasks = async function(){
         const chatVal = chatSnap.val()||{};
         const wallVal = wallSnap.val()||{};
         const txVal = txSnap.val()||{};
+        window._taskDeliveryCustomOrders = deliveryCustomSnap?.val ? (deliveryCustomSnap.val() || {}) : {};
         // Collect DM messages sent today across all convos
         let dmTodayMsgs = [];
         try {
@@ -8392,7 +8401,14 @@ window.navTo=function(id){
     if(id==='jobs') renderKveSection();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
     if(id==='messages'){ const chatHost=qs('chatMessages');if(chatHost&&!chatHost.innerHTML.trim())chatHost.innerHTML=loadingHtml('Загрузка чата...');const dmHost=qs('dmMessages');if(dmHost&&currentDmNick&&!dmHost.innerHTML.trim())dmHost.innerHTML=loadingHtml('Загрузка сообщений...');chatLoading=true; }
-    if(id==='profile'){updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
+    if(id==='profile'){
+        updatePushSettingsUI();
+        // Read notifications against the current nick at navigation time.
+        // This also repairs sessions created before auth identity restoration.
+        get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{})).catch(e=>console.warn('[Kapani] notifications load:',e));
+        get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));
+        buildWallEmojiIfNeeded();
+    }
     if(id==='market') renderDebtNotice('marketDebtNotice',allUsersCache[currentNick]||{});
     if(id==='bank'){renderRecentTransfers();renderFinancialStats();renderSavingsDisplay();}
     if(id==='subscription') renderSubscription();
