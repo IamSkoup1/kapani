@@ -16036,9 +16036,10 @@ ready(function(){
 
     // Casino game #2: classic three-reel slot machine.
     const SLOT_SYMBOLS=['🍒','🍋','🔔','⭐','💎','7️⃣'];
-    // Slightly friendlier slot odds: 🍒 appears more often, which raises the
-    // chance of 2+ cherry wins without making premium triples common.
-    const SLOT_WEIGHTS=[25,15,15,15,15,15];
+    // Повышенные шансы слотов. Сумма весов = 100:
+    // 🍒 30% · 🍋 10% · 🔔 10% · ⭐ 15% · 💎 25% · 7️⃣ 10%
+    // Благодаря этому выигрыши выпадают заметно чаще, а 3 💎 имеют шанс 1.5625% за спин.
+    const SLOT_WEIGHTS=[30,10,10,15,25,10];
     function slotPick(){
       const r=new Uint32Array(1);
       crypto.getRandomValues(r);
