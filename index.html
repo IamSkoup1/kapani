@@ -3301,7 +3301,6 @@ async function processEconomyChargesForUser(nick, opts = {}) {
             if(!Number.isFinite(mainBalance)) mainBalance = 0;
             let savingsBalance = Number(next.savingsBalance || 0);
             if(!Number.isFinite(savingsBalance)) savingsBalance = 0;
-            const pending = { ...(next.treasuryPending || {}) };
             const notifications = [];
             let processedAt = Number(next.economyLastProcessedAt || lastProcessed);
 
@@ -3314,24 +3313,12 @@ async function processEconomyChargesForUser(nick, opts = {}) {
                 const total = accountFee + wealthTax;
                 mainBalance -= total;
                 const receiptId = `${nick}_tax_${periodMarker}`.replace(/[.#$\[\]\/]/g,'_');
-                pending[receiptId] = {
-                    id: receiptId,
-                    sourceKey: receiptId,
-                    type: 'tax',
-                    amount: wealthTax,
-                    sourceAmount: wealthTax,
-                    actor: nick,
-                    target: nick,
-                    reason: `Налог на богатство (${Math.round(rate*100)}%)`,
-                    createdAt: periodMarker
-                };
                 notifications.push({ accountFee, wealthTax, taxBase, rate, total });
                 processedAt = periodMarker;
             }
 
             next.balance = mainBalance;
             next.economyLastProcessedAt = processedAt;
-            next.treasuryPending = pending;
             return next;
         });
         if(!result || !result.committed) return u;
@@ -3357,9 +3344,6 @@ async function processEconomyChargesForUser(nick, opts = {}) {
                 await pushNotification(nick, `💳 Списано за ${weeksApplied} нед.: ${parts.join(' + ')}. Налог считается с основного + накопительного счёта и списывается только с основного.`, 'money');
                 toast(`💳 Налог и абонентская плата: ${weeksApplied} нед.`, 'gold');
             }
-        }
-        if(typeof window.kapaniProcessTreasuryPending === 'function'){
-            try { await window.kapaniProcessTreasuryPending(nick); } catch(e) { console.warn('[treasury pending]', e); }
         }
         return {...u, ...updated};
     } catch(e) {
@@ -3578,9 +3562,6 @@ function startApp() {
                   window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)), 5 * 60 * 1000);
               } catch(e) {}
               try { requestPersistentStorage(); } catch(e) {}
-              if(typeof window.kapaniProcessTreasuryPending === 'function' && currentNick){
-                  Promise.resolve().then(()=>window.kapaniProcessTreasuryPending(currentNick)).catch(()=>{});
-              }
               if(typeof window.startKapaniRentExpiryWatcher === 'function') window.startKapaniRentExpiryWatcher();
           }, {timeout: 1500});
       });
@@ -7786,47 +7767,42 @@ window.approveApp=async function(id,ok){
 let _adminMoneyBusy = false;
 window.adminMoney=async function(){
     if(_adminMoneyBusy) return toast('⏳ Операция уже выполняется…','gold');
-    _adminMoneyBusy = true;
-    try {
-    const target=qs('adminTarget').value,amt=parseInt(qs('adminAmt').value)||0;
-    if(!target)return toast('⚠️ Выберите жителя','gold');if(amt===0)return toast('⚠️ Сумма','gold');
-    const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
-    
-    try {
-        // Вызываем Cloud Function с fallback
-        const result = await callFunctionWithFallback('adminAdjustBalance', { 
-            uid: target, 
-            amount: amt, 
-            type: 'adjustment',
-            description: amt > 0 ? 'Зачисление от мэрии' : 'Списание мэрией'
-        }, fallbackAdminAdjustBalance);
-        
-        if (result.success) {
-            // Проверяем и обновляем статус заморозки аккаунта
-            const userSnap = await get(userRef(target));
-            const user = userSnap.val();
-            const newBal = result.newBalance;
-            const patch = {};
-            if (newBal <= MIN_BALANCE_ALLOWED) patch.accountFrozen = true;
-            else if (newBal > 0) patch.accountFrozen = false;
-            
-            if (Object.keys(patch).length > 0) {
-                await update(userRef(target), patch);
-            }
-            
-            await pushNotification(target,`${amt>0?'💰 Зачислено':'💸 Списано'} ${Math.abs(amt)}₽ мэром`,'money');
-            qs('adminAmt').value='';
-            toast(`${amt>0?'💰':'💸'} ${Math.abs(amt)}₽ → ${target}`,amt>0?'green':'red');
+    if(currentNick!==ADMIN) return toast('🚫 Только мэр','red');
+    _adminMoneyBusy=true;
+    try{
+        const target=qs('adminTarget')?.value;
+        const amt=Number(qs('adminAmt')?.value||0);
+        if(!target) return toast('⚠️ Выберите жителя','gold');
+        if(!Number.isSafeInteger(amt) || amt===0) return toast('⚠️ Укажите целую сумму','gold');
+        const result=await runTransaction(userRef(target),u=>{
+            if(!u) return;
+            const balance=Number(u.balance||0);
+            if(!Number.isFinite(balance)) return;
+            const nextBalance=balance+amt;
+            if(!Number.isSafeInteger(nextBalance)) return;
+            return {...u,balance:nextBalance};
+        });
+        if(!result?.committed) return toast('❌ Не удалось изменить баланс','red');
+        const committedUser=result.snapshot.val()||{};
+        allUsersCache[target]=committedUser;
+        window.allUsersCache=allUsersCache;
+        if(amt>0){
+            await logTx(target,{type:'in',who:'Мэрия',amt,desc:'Зачисление от мэрии'});
+        }else{
+            await logTx(target,{type:'out',who:'Мэрия',amt:Math.abs(amt),desc:'Списание мэрией'});
         }
-    } catch (error) {
-        console.error('Ошибка админской операции:', error);
-        const message = error.message || 'Ошибка при выполнении операции';
-        toast(`❌ ${message}`,'red');
-    }
-    } finally {
-        _adminMoneyBusy = false;
+        await pushNotification(target,`${amt>0?'💰 Зачислено':'💸 Списано'} ${Math.abs(amt)}₽ мэром`,'money');
+        if(qs('adminAmt')) qs('adminAmt').value='';
+        updateHeader_balance(committedUser);
+        toast(`${amt>0?'💰':'💸'} ${Math.abs(amt).toLocaleString('ru-RU')} ₽ → ${target}`,amt>0?'green':'red');
+    }catch(e){
+        console.error('[adminMoney]',e);
+        toast('❌ '+(e.message||'Ошибка'),'red');
+    }finally{
+        _adminMoneyBusy=false;
     }
 };
+
 window.adminFineWorker=async function(){
     const target=qs('adminTarget').value;
     const amt=Math.abs(parseInt(qs('adminFineAmt').value)||0);
@@ -10389,15 +10365,8 @@ window.submitBizApply = async function(){
     const actualFee = hasPrimeForBiz ? 1250 : (hasUltraForBiz ? 2000 : ECONOMY_BUSINESS_CREATION_FEE);
     if((u.balance || 0) < actualFee) return toast(`❌ Для создания бизнеса нужно ${actualFee}₽ госпошлины`,'red');
     const id = genId();
-    const feeReceiptId = `business_fee_${id}`;
     const updatedBizBalance = Number(u.balance || 0) - actualFee;
-    await update(userRef(currentNick), {
-        balance: updatedBizBalance,
-        treasuryPending: {
-            ...(u.treasuryPending || {}),
-            [feeReceiptId]: { id:feeReceiptId, sourceKey:feeReceiptId, type:'business_fee', amount:actualFee, sourceAmount:actualFee, actor:currentNick, target:'Мэрия', reason:'Госпошлина за создание бизнеса', createdAt:Date.now() }
-        }
-    });
+    await update(userRef(currentNick), { balance: updatedBizBalance });
     await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -50%)' : (hasUltraForBiz ? ' (Ultra -20%)' : '')}` });
     await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasPrimeForBiz ? ' (скидка Prime)' : (hasUltraForBiz ? ' (скидка Ultra)' : '')}`, 'money');
     await set(bizAppRef(id), {
@@ -15608,10 +15577,7 @@ ready(function(){
           const nextBalance = currentBalance - amt;
           if(!Number.isFinite(nextBalance)) throw new Error('Некорректное списание');
           if(nextBalance <= Number(window.MIN_BALANCE_ALLOWED ?? -Infinity)) throw new Error('Нельзя выписать штраф: баланс достигнет критического лимита');
-          const pending = { ...(current.treasuryPending || {}) };
-          const receiptId = `fine_${fineTxId}`.replace(/[.#$\[\]\/]/g,'_');
-          pending[receiptId] = { id:receiptId, sourceKey:receiptId, type:'fine', amount:amt, sourceAmount:amt, actor:myNick, target:tnick, reason:`Штраф: ${reason}`, createdAt:Date.now() };
-          const next = { ...current, balance: nextBalance, txlog: { ...(current.txlog || {}) }, treasuryPending: pending };
+          const next = { ...current, balance: nextBalance, txlog: { ...(current.txlog || {}) } };
           if(!next.txlog[fineTxId]) next.txlog[fineTxId] = txEntry;
           return next;
       });
@@ -15686,7 +15652,7 @@ ready(function(){
 
 <!-- ═══════════════════════════════════════════════════════════════════
      KAPANI ECONOMY EXTENSION — ONLY REQUESTED ECONOMIC SYSTEMS
-     Rights · K-education · Task account · Treasury · Casino
+     Rights · K-education · Task account · Casino
      ═══════════════════════════════════════════════════════════════════ -->
 <script>
 (function(){
@@ -15735,340 +15701,8 @@ ready(function(){
     const esc = window.escHtml || ((s)=>String(s ?? ''));
     const jsEsc = window.jsEsc || esc;
     const current = ()=>window._getCurrentNick ? window._getCurrentNick() : window.currentNick;
-    const treasuryRef = ()=>ref(db,'treasury');
     const formatDate = ts => ts ? new Date(Number(ts)).toLocaleString('ru-RU') : '—';
     const genId = ()=> (window.genId ? window.genId() : `${Date.now()}_${Math.random().toString(36).slice(2,10)}`);
-
-    // ────────────────────────────────────────────────────────────────
-    // Treasury: +40% on every state income; no multiplier on outflows.
-    // ────────────────────────────────────────────────────────────────
-    const treasuryKey = k => String(k||'').replace(/[.#$\[\]\/]/g,'_').slice(0,120);
-    async function collectTreasuryIncome(receipt){
-      if(!receipt || !receipt.sourceKey) return {success:false};
-      const sourceKey = treasuryKey(receipt.sourceKey);
-      const sourceAmount = Math.max(0, Math.round(Number(receipt.sourceAmount ?? receipt.amount) || 0));
-      if(sourceAmount <= 0) return {success:true, already:false};
-      const credited = Math.round(sourceAmount * 1.4);
-      const result = await runTransaction(treasuryRef(), currentTreasury => {
-        const t = currentTreasury || { balance:0, history:{}, processed:{} };
-        const processed = { ...(t.processed || {}) };
-        const history = { ...(t.history || {}) };
-        if(processed[sourceKey] || history[sourceKey]?.sourceKey === sourceKey) return t;
-        const historyEntry = {
-          id: sourceKey,
-          type: receipt.type || 'state_income',
-          amount: credited,
-          sourceAmount,
-          actor: receipt.actor || '',
-          target: receipt.target || 'Казна',
-          reason: receipt.reason || '',
-          createdAt: Number(receipt.createdAt || Date.now()),
-          sourceKey,
-          status:'completed'
-        };
-        return {
-          ...t,
-          balance: Math.max(0, Number(t.balance||0)) + credited,
-          history: { ...history, [sourceKey]: historyEntry },
-          processed: { ...processed, [sourceKey]: true }
-        };
-      });
-      const resultTreasury = result?.snapshot?.val?.() || {};
-      if(!result || (!result.committed && !(resultTreasury.processed||{})[sourceKey])) throw new Error('Казна не подтвердила поступление');
-      return {success:true, already: !!(result.snapshot.val()?.processed||{})[sourceKey], credited};
-    }
-    window.kapaniTreasuryCollect = collectTreasuryIncome;
-
-    async function clearUserTreasuryPending(nick, sourceKey){
-      if(!nick || !sourceKey) return;
-      const safeKey = treasuryKey(sourceKey);
-      await runTransaction(userRef(nick), u => {
-        if(!u) return;
-        const pending = { ...(u.treasuryPending || {}) };
-        if(!pending[safeKey] && !pending[sourceKey]) return;
-        delete pending[safeKey];
-        delete pending[sourceKey];
-        return { ...u, treasuryPending: pending };
-      }).catch(()=>{});
-    }
-    async function processTreasuryPendingForUser(nick){
-      if(!nick) return;
-      const snap = await get(userRef(nick));
-      if(!snap.exists()) return;
-      const u = snap.val() || {};
-      const pending = u.treasuryPending || {};
-      for(const receipt of Object.values(pending)){
-        try{
-          await collectTreasuryIncome(receipt);
-          await clearUserTreasuryPending(nick, receipt.sourceKey || receipt.id);
-        }catch(e){ console.warn('[treasury receipt]', receipt?.id, e); }
-      }
-    }
-    window.kapaniProcessTreasuryPending = processTreasuryPendingForUser;
-
-    async function sweepAllPendingTreasury(){
-      try{
-        const snap = await get(ref(db,'users'));
-        const users = snap.val() || {};
-        for(const nick of Object.keys(users)){
-          if(Object.keys(users[nick]?.treasuryPending || {}).length) await processTreasuryPendingForUser(nick);
-        }
-      }catch(e){ console.warn('[treasury sweep]',e); }
-    }
-
-    async function treasurySnapshot(){ return (await get(treasuryRef())).val() || {balance:0,history:{},processed:{}}; }
-
-    // Robust treasury outflow: reserve in treasury as pending, credit target once, then mark complete.
-    async function treasuryPayout(targetNick, amount, reason, actor=ADMIN, fixedOpId=null){
-      const safeAmount = Math.floor(Number(amount)||0);
-      if(!targetNick || safeAmount<=0) throw new Error('Некорректная сумма выплаты');
-      const targetSnap = await get(userRef(targetNick));
-      if(!targetSnap.exists()) throw new Error('Получатель не найден');
-      const opId = fixedOpId || `payout_${genId()}`;
-
-      // Reserve the amount atomically. Some Firebase/browser combinations can
-      // return a transaction result without `committed=true` even though the
-      // snapshot already contains our operation. Verify the actual post-transaction
-      // state instead of treating that response shape as a false "not enough money".
-      // Reserve atomically. Retry a couple of times because a browser tab can
-      // receive a stale/shape-incompatible transaction result during reconnects.
-      let reservedTreasury = null;
-      let reservedEntry = null;
-      for(let attempt=0; attempt<3 && !reservedEntry; attempt++){
-        const reserve = await runTransaction(treasuryRef(), t => {
-          const cur = (t && typeof t === 'object') ? t : {balance:0,history:{},processed:{}};
-          const history = { ...(cur.history||{}) };
-          const existing = history[opId];
-          if(existing) return cur;
-          const rawBalance = Number(cur.balance);
-          const balance = Number.isFinite(rawBalance) ? rawBalance : 0;
-          if(balance < safeAmount) return;
-          history[opId] = { id:opId, type:'payout', amount:-safeAmount, sourceAmount:safeAmount, actor, target:targetNick, reason:reason||'', createdAt:Date.now(), status:'pending' };
-          return { ...cur, balance: balance-safeAmount, history, processed:{...(cur.processed||{})} };
-        });
-        reservedTreasury = reserve?.snapshot?.val?.() || null;
-        reservedEntry = reservedTreasury?.history?.[opId] || null;
-        if(!reservedEntry){
-          const verifySnap = await get(treasuryRef());
-          reservedTreasury = verifySnap.val() || {};
-          reservedEntry = reservedTreasury?.history?.[opId] || null;
-        }
-        if(!reservedEntry && attempt<2) await new Promise(r=>setTimeout(r,120));
-      }
-
-      if(!reservedEntry){
-        const currentBalance = Number(reservedTreasury?.balance);
-        if(Number.isFinite(currentBalance) && currentBalance < safeAmount){
-          throw new Error(`Недостаточно средств в казне: доступно ${Math.floor(currentBalance).toLocaleString('ru-RU')} ₽`);
-        }
-
-        // Last-resort compatibility path for the local-file/browser setup: if
-        // Firebase accepted reads but the transaction result is not observable,
-        // create the same reservation with one atomic multi-location update.
-        // The unique opId still prevents double crediting on retries.
-        const compatSnap = await get(treasuryRef());
-        const compat = compatSnap.val() || {};
-        const compatHistory = { ...(compat.history||{}) };
-        if(!compatHistory[opId]){
-          const compatBalance = Number(compat.balance);
-          if(!Number.isFinite(compatBalance) || compatBalance < safeAmount){
-            throw new Error(`Недостаточно средств в казне: доступно ${Number.isFinite(compatBalance) ? Math.floor(compatBalance).toLocaleString('ru-RU') : 0} ₽`);
-          }
-          compatHistory[opId] = { id:opId, type:'payout', amount:-safeAmount, sourceAmount:safeAmount, actor, target:targetNick, reason:reason||'', createdAt:Date.now(), status:'pending' };
-          await update(treasuryRef(), {
-            balance: compatBalance-safeAmount,
-            history: compatHistory,
-            processed: { ...(compat.processed||{}) }
-          });
-        }
-        const finalSnap = await get(treasuryRef());
-        reservedTreasury = finalSnap.val() || {};
-        reservedEntry = reservedTreasury?.history?.[opId] || null;
-        if(!reservedEntry) throw new Error('Казна не подтвердила резервирование выплаты');
-      }
-
-      if(reservedEntry?.status === 'completed') return {success:true,opId,already:true};
-      const credited = await runTransaction(userRef(targetNick), u => {
-        if(!u) return;
-        const payouts = { ...(u.treasuryPayouts || {}) };
-        if(payouts[opId]) return u;
-        return { ...u, balance:Number(u.balance||0)+safeAmount, treasuryPayouts:{...payouts,[opId]:{id:opId,amount:safeAmount,reason:reason||'',actor,createdAt:Date.now()}} };
-      });
-      if(!credited || !credited.committed){
-        // Leave the treasury record pending so a later retry can finish without a second debit.
-        throw new Error('Не удалось зачислить выплату получателю');
-      }
-      await runTransaction(treasuryRef(), t => {
-        const cur=t||{balance:0,history:{},processed:{}};
-        const history={...(cur.history||{})};
-        if(history[opId]) history[opId]={...history[opId],status:'completed'};
-        return {...cur,history};
-      });
-      await pushNotification(targetNick,`🏛 Вам выплачено ${safeAmount}₽ из казны${reason?` — ${reason}`:''}`,'money');
-      return {success:true,opId,already:false};
-    }
-
-    window.kapaniTreasuryPayout = treasuryPayout;
-
-    // Existing mayor money controls are now routed through the treasury so they cannot mint money outside the treasury.
-    let _adminMoneyBusyExt = false;
-    const legacyAdminMoney = window.adminMoney;
-    if(typeof legacyAdminMoney === 'function'){
-      window.adminMoney = async function(){
-        if(_adminMoneyBusyExt) return toast('⏳ Операция уже выполняется…','gold');
-        if(current()!==ADMIN) return toast('🚫 Только Кайон','red');
-        const target=qs('adminTarget')?.value;
-        const signed=Number(qs('adminAmt')?.value||0);
-        if(!target) return toast('⚠️ Выберите жителя','gold');
-        if(!Number.isSafeInteger(signed) || signed===0) return toast('⚠️ Укажите сумму','gold');
-        _adminMoneyBusyExt=true;
-        try{
-          if(signed>0){
-            const result=await treasuryPayout(target,signed,'Зачисление от мэрии',ADMIN,`admin_money_${target}_${signed}_${Date.now()}`);
-            if(result.success && !result.already){
-              await window.logTx?.(target,{type:'in',who:'Мэрия',amt:signed,desc:'Зачисление из казны'});
-              if(qs('adminAmt'))qs('adminAmt').value='';
-              toast(`✅ ${signed} ₽ → ${target}`,'green');
-            }
-          }else{
-            const amount=Math.abs(signed);
-            const before=await get(userRef(target));
-            if(!before.exists()) return toast('❌ Не найден','red');
-            const result=await runTransaction(userRef(target),u=>{
-              if(!u)return;
-              const nextBalance=Number(u.balance||0)-amount;
-              const receiptId=`admin_deduction_${target}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-              const pending={...(u.treasuryPending||{})};
-              pending[receiptId]={id:receiptId,sourceKey:receiptId,type:'state_deduction',amount,sourceAmount:amount,actor:ADMIN,target,reason:'Списание мэрией',createdAt:Date.now()};
-              return {...u,balance:nextBalance,treasuryPending:pending};
-            });
-            if(!result?.committed) return toast('❌ Не удалось выполнить списание','red');
-            await window.logTx?.(target,{type:'out',who:'Мэрия',amt:amount,desc:'Списание мэрией'});
-            try{const receipt=Object.values(result.snapshot.val()?.treasuryPending||{}).find(r=>r.type==='state_deduction'&&r.target===target);if(receipt){await collectTreasuryIncome(receipt);await clearUserTreasuryPending(target,receipt.sourceKey);}}catch(e){console.warn('[admin treasury deduction]',e);}
-            await pushNotification(target,`💸 Списано ${amount}₽ мэрией`,'money');
-            if(qs('adminAmt'))qs('adminAmt').value='';
-            toast(`💸 ${amount} ₽ → ${target}`,'red');
-          }
-        }catch(e){console.error('[adminMoney treasury]',e);toast('❌ '+(e.message||'Ошибка'),'red');}
-        finally{_adminMoneyBusyExt=false;}
-      };
-    }
-
-    // Existing mayor fine control keeps its Cloud Function, but successful deductions are reflected in treasury +40%.
-    let _adminFineBusyExt=false;
-    const legacyAdminFineWorker=window.adminFineWorker;
-    if(typeof legacyAdminFineWorker==='function'){
-      window.adminFineWorker=async function(){
-        if(_adminFineBusyExt) return toast('⏳ Штраф уже оформляется…','gold');
-        if(current()!==ADMIN) return toast('🚫 Только Кайон','red');
-        const target=qs('adminTarget')?.value;const requested=Math.abs(Math.floor(Number(qs('adminFineAmt')?.value||0)));const reason=(qs('adminFineReason')?.value||'').trim();
-        if(!target||requested<=0||!reason) return legacyAdminFineWorker();
-        _adminFineBusyExt=true;
-        try{
-          const before=(await get(userRef(target))).val()||{};
-          await legacyAdminFineWorker();
-          const after=(await get(userRef(target))).val()||{};
-          const diff=Math.max(0,Math.round(Number(before.balance||0)-Number(after.balance||0)));
-          if(diff>0){
-            const receipt={sourceKey:`admin_fine_${target}_${before.balance}_${after.balance}_${Date.now()}`,type:'fine',amount:diff,sourceAmount:diff,actor:ADMIN,target,reason:`Штраф: ${reason}`,createdAt:Date.now()};
-            try{await collectTreasuryIncome(receipt);}catch(e){console.warn('[admin fine treasury]',e);}
-          }
-        }finally{_adminFineBusyExt=false;}
-      };
-    }
-
-    // Janitor payments are existing government payouts and now come out of the treasury.
-    const legacyJanitorPayout=window.payoutJanitorSubmission;
-    if(typeof legacyJanitorPayout==='function'){
-      window.payoutJanitorSubmission=async function(id){
-        if(current()!==ADMIN) return;
-        const snap=await get(ref(db,`janitorSubmissions/${id}`));
-        if(!snap.exists()) return toast('❌ Отчёт не найден','red');
-        const sub=snap.val();
-        if(sub.status!=='pending') return toast('✅ Этот отчёт уже обработан','gold');
-        const amt=Math.floor(Number(prompt('Сумма выплаты уборщику (₽)','250')||0));
-        if(amt<=0) return toast('⚠️ Сумма','gold');
-        try{
-          const result=await treasuryPayout(sub.worker,amt,'Выплата за уборку (одобрено Кайоном)',ADMIN,`janitor_${id}`);
-          if(!result.success) return;
-          await update(ref(db,`janitorSubmissions/${id}`),{status:'approved',reviewedBy:ADMIN,reviewedAt:Date.now(),reward:amt,treasuryPayoutOpId:`janitor_${id}`});
-          await window.logTx?.(sub.worker,{type:'in',who:'Мэрия',amt,desc:'Выплата за уборку (из казны)'});
-          await pushNotification(sub.worker,`✅ Уборка одобрена. +${amt}₽`,'money');
-          toast(`✅ ${sub.worker} +${amt}₽`,'green');
-          if(typeof window.renderAdmin==='function') window.renderAdmin();
-        }catch(e){toast('❌ '+(e.message||'Ошибка выплаты'),'red');}
-      };
-    }
-
-    async function mayorTreasuryTopup(amount){
-      if(current()!==ADMIN) throw new Error('Только Кайон');
-      const safeAmount=Math.floor(Number(amount)||0);
-      if(safeAmount<=0) throw new Error('Укажите сумму');
-      const result=await runTransaction(userRef(ADMIN), u=>{
-        if(!u) return;
-        const balance=Number(u.balance||0);
-        if(balance<safeAmount) return;
-        return {...u,balance:balance-safeAmount};
-      });
-      if(!result?.committed) throw new Error('Недостаточно средств на личном счёте Кайона');
-      try{
-        await collectTreasuryIncome({sourceKey:`mayor_topup_${genId()}`,type:'mayor_topup',amount:safeAmount,sourceAmount:safeAmount,actor:ADMIN,target:'Казна',reason:'Пополнение казны Кайоном',createdAt:Date.now()});
-      }catch(e){
-        // The personal debit stays recorded; store a receipt for retry.
-        const retryKey=`mayor_topup_retry_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-        const retry={sourceKey:retryKey,type:'mayor_topup',amount:safeAmount,sourceAmount:safeAmount,actor:ADMIN,target:'Казна',reason:'Пополнение казны Кайоном',createdAt:Date.now()};
-        await update(userRef(ADMIN),{[`treasuryPending/${treasuryKey(retryKey)}`]:retry});
-        throw e;
-      }
-      return safeAmount;
-    }
-
-    async function mayorTreasuryWithdraw(amount){
-      if(current()!==ADMIN) throw new Error('Только Кайон');
-      const safeAmount=Math.floor(Number(amount)||0);
-      if(safeAmount<=0) throw new Error('Укажите сумму');
-      return treasuryPayout(ADMIN,safeAmount,'Получение денег из казны',ADMIN);
-    }
-
-    async function renderTreasuryCard(){
-      const host=qs('kapaniTreasuryCard'); if(!host || current()!==ADMIN) return;
-      const t=await treasurySnapshot();
-      const history=Object.values(t.history||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-      host.innerHTML=`
-        <div class="card-title" style="color:var(--gold);">🏛 Казна</div>
-        <div style="background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;"><span>Баланс казны</span><b style="font-size:24px;color:var(--gold);">${Number(t.balance||0).toLocaleString('ru-RU')} ₽</b></div>
-        <div style="display:grid;gap:8px;">
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:12px;font-weight:900;margin-bottom:6px;">Пополнить казну</div><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Ваш личный баланс уменьшается на указанную сумму, казна получает сумму × 1,4.</div><input id="treasuryTopupAmt" type="number" min="1" step="1" placeholder="Сумма"><button class="btn btn-gold btn-sm" onclick="kapaniTreasuryTopupUI()">Пополнить</button></div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:12px;font-weight:900;margin-bottom:6px;">💸 Получить деньги из казны</div><input id="treasuryWithdrawAmt" type="number" min="1" step="1" placeholder="Сумма"><button class="btn btn-primary btn-sm" onclick="kapaniTreasuryWithdrawUI()">Получить</button></div>
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:12px;font-weight:900;margin-bottom:6px;">🏛 Выплата из казны</div><input id="treasuryPayoutNick" type="text" placeholder="@nick"><input id="treasuryPayoutAmt" type="number" min="1" step="1" placeholder="Сумма"><input id="treasuryPayoutReason" type="text" placeholder="Причина"><button class="btn btn-primary btn-sm" onclick="kapaniTreasuryPayoutUI()">Выплатить</button></div>
-        </div>
-        <div style="margin-top:14px;font-size:12px;font-weight:900;color:var(--muted);">🏛 История казны</div>
-        <div style="margin-top:8px;">${history.length?history.map(h=>`<div style="padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-size:12px;"><div style="display:flex;justify-content:space-between;gap:8px;"><b style="color:${Number(h.amount||0)>=0?'var(--primary)':'var(--red)'};">${Number(h.amount||0)>=0?'+':''}${Number(h.amount||0).toLocaleString('ru-RU')} ₽</b><span style="color:var(--muted);">${formatDate(h.createdAt)}</span></div><div style="margin-top:3px;">${esc(h.type||'операция')} · ${esc(h.reason||'')}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">actor: ${esc(h.actor||'—')} · target: ${esc(h.target||'—')}${h.sourceAmount!=null?` · source: ${Number(h.sourceAmount).toLocaleString('ru-RU')} ₽`:''}</div></div>`).join(''):'<div style="color:var(--muted);font-size:12px;padding:10px 0;">Операций пока нет.</div>'}</div>
-      `;
-    }
-
-    window.kapaniTreasuryTopupUI=async function(){
-      const amt=Math.floor(Number(qs('treasuryTopupAmt')?.value||0));
-      if(!confirm(`Пополнить казну на ${amt} ₽?\n\nС вашего основного баланса будет списано ${amt} ₽, в казну поступит ${Math.round(amt*1.4)} ₽.`)) return;
-      try{ await mayorTreasuryTopup(amt); toast(`✅ Казна пополнена на ${Math.round(amt*1.4)} ₽`,'green'); renderTreasuryCard(); }
-      catch(e){ toast('❌ '+(e.message||'Ошибка'),'red'); }
-    };
-    window.kapaniTreasuryWithdrawUI=async function(){
-      const amt=Math.floor(Number(qs('treasuryWithdrawAmt')?.value||0));
-      if(!confirm(`Получить ${amt} ₽ из казны?`)) return;
-      try{ await mayorTreasuryWithdraw(amt); toast(`✅ Получено ${amt} ₽`,'green'); renderTreasuryCard(); }
-      catch(e){ toast('❌ '+(e.message||'Ошибка'),'red'); }
-    };
-    window.kapaniTreasuryPayoutUI=async function(){
-      const nick=(qs('treasuryPayoutNick')?.value||'').trim().replace(/^@/,'');
-      const amt=Math.floor(Number(qs('treasuryPayoutAmt')?.value||0));
-      const reason=(qs('treasuryPayoutReason')?.value||'').trim();
-      if(!nick || amt<=0) return toast('⚠️ Укажите получателя и сумму','gold');
-      if(!reason) return toast('⚠️ Укажите причину','gold');
-      if(!confirm(`Подтвердить выплату?\n\nПолучатель: @${nick}\nСумма: ${amt} ₽\nПричина: ${reason}`)) return;
-      try{ await treasuryPayout(nick,amt,reason,ADMIN); toast('✅ Выплата выполнена','green'); renderTreasuryCard(); }
-      catch(e){ toast('❌ '+(e.message||'Ошибка выплаты'),'red'); }
-    };
 
     // ────────────────────────────────────────────────────────────────
     // Rights / documents
@@ -16225,19 +15859,15 @@ ready(function(){
         if(u.kEducationPurchase?.status==='paid'||u.kEducationPurchase?.status==='submitted') return toast('✅ К-образование уже оплачено','gold');
         const p=await getPassportData(nick,u);
         const purchaseId=genId();
-        const receiptId=`kedu_${purchaseId}`;
         const purchaseCreatedAt=Date.now();
-        const receipt={id:receiptId,sourceKey:receiptId,type:'k_education',amount:2000,sourceAmount:2000,actor:nick,target:'Мэрия',reason:'Оплата К-образования',createdAt:purchaseCreatedAt};
         const result=await runTransaction(userRef(nick),cu=>{
           if(!cu) return;
           if(cu.kEducationPurchase?.status==='paid'||cu.kEducationPurchase?.status==='submitted') return;
           const bal=Number(cu.balance||0); if(bal<2000) return;
-          const pending={...(cu.treasuryPending||{}),[treasuryKey(receiptId)]:receipt};
-          return {...cu,balance:bal-2000,kEducationPurchase:{id:purchaseId,status:'submitted',createdAt:purchaseCreatedAt,nick,displayName:String(cu.displayName||nick),firstName:String(p.firstName||cu.firstName||''),lastName:String(p.lastName||cu.lastName||'')},treasuryPending:pending};
+          return {...cu,balance:bal-2000,kEducationPurchase:{id:purchaseId,status:'submitted',createdAt:purchaseCreatedAt,nick,displayName:String(cu.displayName||nick),firstName:String(p.firstName||cu.firstName||''),lastName:String(p.lastName||cu.lastName||'')}};
         });
         if(!result?.committed) return toast('❌ Недостаточно средств или К-образование уже оплачено','red');
         await window.logTx?.(nick,{type:'out',who:'К-образование',amt:2000,desc:'Оплата К-образования'});
-        try{await collectTreasuryIncome(receipt);await clearUserTreasuryPending(nick,receiptId);}catch(e){console.warn('[keducation treasury]',e);}
         await pushNotification(ADMIN,`🎓 Новая заявка «К-образование» от ${String(u.displayName||nick)} (@${nick})`,'system');
         await pushNotification(nick,'🎓 К-образование оплачено. Заявка отправлена в мэрию.','system');
         allUsersCache[nick] = result.snapshot.val(); window.allUsersCache=allUsersCache;
@@ -16477,17 +16107,13 @@ ready(function(){
     // ────────────────────────────────────────────────────────────────
     function injectEconomyAdminUI(){
       const page=qs('adminPage'); if(!page || current()!==ADMIN) return;
-      if(!qs('kapaniTreasuryCard')){
-        const c=document.createElement('div');c.className='card';c.id='kapaniTreasuryCard';c.style.cssText='border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04);';page.appendChild(c);
-      }
       if(!qs('kapaniScooterApps')){
         const c=document.createElement('div');c.className='card';c.id='kapaniScooterAppsCard';c.innerHTML='<div class="card-title" style="color:var(--gold);">🛵 Заявки на права на скутер</div><div id="kapaniScooterApps">Загрузка…</div>';page.appendChild(c);
       }
       if(!qs('kapaniKEducationApps')){
         const c=document.createElement('div');c.className='card';c.id='kapaniKEducationAppsCard';c.innerHTML='<div class="card-title" style="color:var(--primary);">🎓 К-образование</div><div id="kapaniKEducationApps">Загрузка…</div>';page.appendChild(c);
       }
-      renderTreasuryCard();renderAdminScooterApplications();renderAdminKEducation();
-      sweepAllPendingTreasury();
+      renderAdminScooterApplications();renderAdminKEducation();
     }
 
     function injectRightsCard(){
