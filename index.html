@@ -1047,6 +1047,47 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
 <!-- MAIN APP -->
 <div id="mainApp" style="display:none;" class="page-wrap">
 
+<!-- K-EDUCATION -->
+<div id="kEducation" class="section">
+  <div id="kEducationContent">
+    <div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.08),rgba(251,191,36,.05));border-color:rgba(34,211,165,.25);">
+      <div style="font-size:22px;font-weight:900;margin-bottom:8px;">🎓 К-образование</div>
+      <div style="font-size:16px;font-weight:900;line-height:1.5;">Подготовим к КВЭ за один день — и сразу сдадим экзамен.</div>
+      <div style="font-size:15px;color:var(--gold);font-weight:900;margin-top:8px;">Стоимость: 2.000 рублей.</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-top:10px;">Напоминаем, что при высоком балле КВЭ открываются новые доступные профессии.</div>
+    </div>
+    <div class="card"><div style="color:var(--muted);font-size:13px;">Загрузка…</div></div>
+  </div>
+</div>
+
+<!-- CASINO -->
+<div id="casino" class="section">
+  <div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);">
+    <div style="font-size:22px;font-weight:900;">🎰 Казино</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек и игровые слоты</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+      <div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div>
+        <div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div>
+      </div>
+      <div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div>
+        <div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+      <input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;">
+      <button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button>
+      <div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div>
+    </div>
+  </div>
+  <div class="card" id="blackjackArea"></div>
+  <div class="card" id="slotsArea"></div>
+</div>
+
 <!-- HOME -->
 <div id="home" class="section active">
     <div class="stats-row" id="homeStats"></div>
@@ -1058,6 +1099,8 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
         <div class="quick-card" onclick="navTo('hospital')" role="button" tabindex="0" aria-label="Больница"><div class="qico">🏥</div><div class="qlbl">Больница</div><div class="qsub">Лёхин шалаш</div></div>
         <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" id="kveHomeCard" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub" id="kveHomeSub">Узнай о главном экзамене</div></div>
+        <div class="quick-card" onclick="navTo('kEducation')" role="button" tabindex="0" aria-label="К-образование" style="background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(34,211,165,.06));border-color:rgba(251,191,36,.3);"><div class="qico">🎓</div><div class="qlbl">К-образование</div><div class="qsub">Подготовка к КВЭ · 2 000 ₽</div></div>
+        <div class="quick-card" onclick="navTo('casino')" role="button" tabindex="0" aria-label="Казино" style="background:linear-gradient(135deg,rgba(248,113,113,.12),rgba(251,191,36,.06));border-color:rgba(248,113,113,.25);"><div class="qico">🎰</div><div class="qlbl">Казино</div><div class="qsub">Блекджек · Слоты</div></div>
         <div class="quick-card" onclick="navTo('deputySession')" id="deputySessionQuickBtn" role="button" tabindex="0" aria-label="Заседание" style="display:none;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.06));border-color:rgba(251,191,36,.35);"><div class="qico">🏛</div><div class="qlbl">Заседание</div><div class="qsub">Предложения и запросы</div></div>
         <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.10));border-color:rgba(251,191,36,.3);"><div class="qico">🏁</div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
     </div>
@@ -1333,7 +1376,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
                 <div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;">На счёте</div>
                 <div style="font-size:24px;font-weight:900;color:var(--gold);" id="savingsBalanceDisplay">0 ₽</div>
             </div>
-            <div style="font-size:12px;color:var(--muted);text-align:right;line-height:1.5;">+0,5% каждый день<br>от суммы на счёте</div>
+            <div style="font-size:12px;color:var(--muted);text-align:right;line-height:1.5;">ставка: <span id="savingsRateDisplay">7%</span><br>по сумме на счёте</div>
         </div>
         <input type="number" id="savingsAmt" placeholder="Сумма (₽)" min="1" step="1">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
@@ -1401,16 +1444,16 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;margin-bottom:10px;">
             <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:12px;">
-                <span style="color:var(--muted);">До 1 000 ₽</span><b style="color:var(--red);">5%</b>
+                <span style="color:var(--muted);">До 1 000 ₽</span><b style="color:var(--red);">7%</b>
             </div>
             <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:12px;">
-                <span style="color:var(--muted);">1 000 – 10 000 ₽</span><b style="color:var(--red);">7%</b>
+                <span style="color:var(--muted);">1 000 – 10 000 ₽</span><b style="color:var(--red);">10%</b>
             </div>
             <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);font-size:12px;">
-                <span style="color:var(--muted);">10 001 – 100 000 ₽</span><b style="color:var(--red);">10%</b>
+                <span style="color:var(--muted);">10 001 – 100 000 ₽</span><b style="color:var(--red);">17%</b>
             </div>
             <div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(248,113,113,.1);border-radius:10px;border:1px solid rgba(248,113,113,.25);font-size:12px;">
-                <span style="color:var(--muted);">Более 100 000 ₽</span><b style="color:var(--red);">20%</b>
+                <span style="color:var(--muted);">Более 100 000 ₽</span><b style="color:var(--red);">25%</b>
             </div>
         </div>
         <div id="taxNextInfo" style="font-size:12px;color:var(--muted);padding:10px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);margin-top:4px;">Загрузка расписания...</div>
@@ -1664,6 +1707,16 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <div class="card">
         <div class="card-title">🗂 Задания</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Одноразовые задания открывают базовые возможности, а ежедневные обновляются каждый день.</div>
+        <div class="card" style="margin:0 0 14px;padding:16px;background:rgba(34,211,165,.05);border-color:rgba(34,211,165,.25);">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;">
+                <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;">💰 Счёт заданий</div><div id="taskBalanceDisplay" style="font-size:25px;font-weight:900;color:var(--primary);">0 ₽</div></div>
+                <div style="font-size:11px;color:var(--muted);text-align:right;max-width:180px;line-height:1.4;">Деньги поступают только за выполнение заданий.</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input type="number" id="taskWithdrawAmt" min="500" step="1" placeholder="Сумма вывода (от 500 ₽)" style="margin:0;">
+                <button class="btn btn-primary btn-sm" onclick="withdrawTaskBalance()" style="white-space:nowrap;">Вывести</button>
+            </div>
+        </div>
         <div id="tasksList" class="task-section"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Загрузка...</div></div>
     </div>
 </div>
@@ -2442,7 +2495,27 @@ const ECONOMY_MARKET_PIN_DURATION_MS = ECONOMY_WEEK_MS;
 const ECONOMY_BUSINESS_PROMOTE_PRICE = 600;
 const ECONOMY_BUSINESS_PROMOTE_DURATION_MS = ECONOMY_WEEK_MS;
 const ECONOMY_BUSINESS_WEEKLY_FEE = 500;
-const ECONOMY_SAVINGS_DAILY_RATE = 0.005;
+const ECONOMY_SAVINGS_RATE_TIERS = [
+    { max: 999.99, rate: 0.07, label: '7%' },
+    { max: 10000, rate: 0.10, label: '10%' },
+    { max: 100000, rate: 0.17, label: '17%' },
+    { max: Infinity, rate: 0.25, label: '25%' }
+];
+function getSavingsDailyRate(balance){
+    const amount = Math.max(0, Number(balance) || 0);
+    return (ECONOMY_SAVINGS_RATE_TIERS.find(t => amount <= t.max) || ECONOMY_SAVINGS_RATE_TIERS[3]).rate;
+}
+function getSavingsRateLabel(balance){
+    const amount = Math.max(0, Number(balance) || 0);
+    return (ECONOMY_SAVINGS_RATE_TIERS.find(t => amount <= t.max) || ECONOMY_SAVINGS_RATE_TIERS[3]).label;
+}
+function getWealthTaxRate(taxBase){
+    const amount = Math.max(0, Number(taxBase) || 0);
+    if(amount < 1000) return 0.07;
+    if(amount <= 10000) return 0.10;
+    if(amount <= 100000) return 0.17;
+    return 0.25;
+}
 const ECONOMY_DAY_MS = 24 * 60 * 60 * 1000;
 const BIZ_BASE_LIMITS = { employees: 3, products: 3, maxProductPrice: 1000 };
 const BIZ_UPGRADE_PRICES = { employee: 350, product: 250, priceCap: 400 };
@@ -2453,7 +2526,10 @@ const BIZ_BG_EFFECTS = [
     { id: 'fire', name: '🔥 Пламя', price: 449, cls: 'profile-bg-fire' },
     { id: 'plasma', name: '💜 Плазма', price: 499, cls: 'profile-bg-plasma' },
     { id: 'galaxy', name: '🌠 Галактика', price: 549, cls: 'profile-bg-galaxy' },
-    { id: 'prime', name: '👑 Прайм', price: 799, cls: 'profile-bg-prime' }
+    { id: 'thunder', name: '⚡ Гром', price: 699, cls: 'profile-bg-thunder' },
+    { id: 'hologram', name: '🪩 Голограмма', price: 749, cls: 'profile-bg-hologram' },
+    { id: 'dragon', name: '🐉 Дракон', price: 849, cls: 'profile-bg-dragon' },
+    { id: 'prime', name: '👑 Прайм', price: 899, cls: 'profile-bg-prime' }
 ];
 const PRICE_PER_KM = CONFIG.finance.pricePerKm;
 const MAX_SPEED_KMH = CONFIG.finance.maxSpeedKmh;
@@ -2471,6 +2547,8 @@ let curPage = 'home';
 let listeners = {};
 let onlineHeartbeatInterval = null;
 let allUsersCache = {};
+let allUsersCacheLoaded = false;
+let allUsersCachePromise = null;
 let lastChatMsgs = {};
 let lastDmMsgs = {};
 let pendingPhotoQueues = { chat: [], dm: [] };
@@ -2873,15 +2951,13 @@ function hideLoading() {
     }, 280);
 }
 
-// Loading status messages cycle
+// Loading status messages: finite stages instead of a permanent interval.
 (function(){
     const msgs = ['Подключение к серверу…','Загружаем данные…','Авторизация…','Почти готово…'];
-    let i = 0;
-    const iv = setInterval(() => {
-        const el = qs('loStatus');
-        if(!el || !qs('loadingOverlay') || qs('loadingOverlay').style.display === 'none'){ clearInterval(iv); return; }
-        el.textContent = msgs[i++ % msgs.length];
-    }, 900);
+    msgs.forEach((msg, i)=>setTimeout(()=>{
+        const el=qs('loStatus'); const ov=qs('loadingOverlay');
+        if(el && ov && ov.style.display !== 'none' && !ov.classList.contains('hidden')) el.textContent=msg;
+    }, i*900));
 })();
 
 // ─── ONLINE PRESENCE ──────────────────────
@@ -3178,12 +3254,15 @@ async function processSavingsInterest(nick, u, opts = {}){
     const days = Math.floor((now - last) / ECONOMY_DAY_MS);
     if(days <= 0) return u;
     let total = savings;
-    for(let i = 0; i < days; i++) total = Math.round(total * (1 + ECONOMY_SAVINGS_DAILY_RATE));
+    for(let i = 0; i < days; i++){
+        const dailyRate = getSavingsDailyRate(total);
+        total = Math.round(total * (1 + dailyRate));
+    }
     const interest = total - savings;
     const patch = { savingsBalance: total, savingsLastInterestAt: last + days * ECONOMY_DAY_MS };
     await update(userRef(nick), patch);
     if(interest > 0 && opts.notify !== false){
-        await logTx(nick, { type: 'in', who: 'Накопительный счёт', amt: interest, desc: `Начисление ${days} дн. (+0,5%/день)` });
+        await logTx(nick, { type: 'in', who: 'Накопительный счёт', amt: interest, desc: `Начисление ${days} дн. по действующей ставке` });
         await pushNotification(nick, `📈 Накопительный счёт: +${interest}₽ за ${days} дн.`, 'money');
     }
     return { ...u, ...patch };
@@ -3199,35 +3278,85 @@ async function processEconomyChargesForUser(nick, opts = {}) {
         const now = Date.now();
         const hasMarker = !!u.economyLastProcessedAt;
         const lastProcessed = hasMarker ? Number(u.economyLastProcessedAt) : now;
-        
+
         if(!hasMarker){
             await update(userRef(nick), { economyLastProcessedAt: now });
             return u;
         }
-        
+
         const weeks = Math.floor((now - lastProcessed) / ECONOMY_WEEK_MS);
         if(weeks <= 0) return u;
 
-        const notifications = []; 
-        const patch = { economyLastProcessedAt: lastProcessed + weeks * ECONOMY_WEEK_MS };
+        const marker = lastProcessed + weeks * ECONOMY_WEEK_MS;
+        const txIdPrefix = `tax_${nick}_${marker}`;
+        const result = await runTransaction(userRef(nick), current => {
+            if(current === null) return;
+            const next = { ...current };
+            let mainBalance = Number(next.balance || 0);
+            if(!Number.isFinite(mainBalance)) mainBalance = 0;
+            let savingsBalance = Number(next.savingsBalance || 0);
+            if(!Number.isFinite(savingsBalance)) savingsBalance = 0;
+            const pending = { ...(next.treasuryPending || {}) };
+            const notifications = [];
+            let processedAt = Number(next.economyLastProcessedAt || lastProcessed);
 
-        if(opts.notify !== false){
-            for(const n of notifications){
-                if(n.total <= 0) continue;
-                const parts = [`абонентская плата ${n.accountFee}₽`];
-                if(n.wealthTax > 0){
-                    let taxPct = n.taxBase < 1000 ? 5 : n.taxBase <= 10000 ? 7 : n.taxBase <= 100000 ? 10 : 20;
-                    parts.push(`налог ${taxPct}% = ${n.wealthTax}₽`);
-                }
-                const text = `💳 Списано за неделю: ${parts.join(' + ')}.`;
-                await pushNotification(nick, text, 'money');
+            for(let i = 1; i <= weeks; i++){
+                const periodMarker = lastProcessed + i * ECONOMY_WEEK_MS;
+                const taxBase = Math.max(0, mainBalance) + Math.max(0, savingsBalance);
+                const rate = getWealthTaxRate(taxBase);
+                const wealthTax = taxBase > 0 ? Math.round(taxBase * rate) : 0;
+                const accountFee = ECONOMY_ACCOUNT_WEEKLY_FEE;
+                const total = accountFee + wealthTax;
+                mainBalance -= total;
+                const receiptId = `${nick}_tax_${periodMarker}`.replace(/[.#$\[\]\/]/g,'_');
+                pending[receiptId] = {
+                    id: receiptId,
+                    sourceKey: receiptId,
+                    type: 'tax',
+                    amount: wealthTax,
+                    sourceAmount: wealthTax,
+                    actor: nick,
+                    target: nick,
+                    reason: `Налог на богатство (${Math.round(rate*100)}%)`,
+                    createdAt: periodMarker
+                };
+                notifications.push({ accountFee, wealthTax, taxBase, rate, total });
+                processedAt = periodMarker;
             }
-            if(notifications.length){
-                toast(`💳 Списания по аккаунту: ${notifications.length} нед.`, 'gold');
+
+            next.balance = mainBalance;
+            next.economyLastProcessedAt = processedAt;
+            next.treasuryPending = pending;
+            return next;
+        });
+        if(!result || !result.committed) return u;
+
+        const updated = result.snapshot.val() || {};
+        if(opts.notify !== false){
+            const weeksApplied = weeks;
+            let curMain = Number(u.balance || 0);
+            let curSavings = Number(u.savingsBalance || 0);
+            const notices = [];
+            for(let i = 1; i <= weeksApplied; i++){
+                const taxBase = Math.max(0, curMain) + Math.max(0, curSavings);
+                const rate = getWealthTaxRate(taxBase);
+                const wealthTax = taxBase > 0 ? Math.round(taxBase * rate) : 0;
+                const total = ECONOMY_ACCOUNT_WEEKLY_FEE + wealthTax;
+                curMain -= total;
+                notices.push({taxBase, rate, wealthTax, total});
+            }
+            const lastNotice = notices[notices.length-1];
+            if(lastNotice){
+                const parts = [`абонентская плата ${ECONOMY_ACCOUNT_WEEKLY_FEE}₽`];
+                if(lastNotice.wealthTax > 0) parts.push(`налог ${Math.round(lastNotice.rate*100)}% = ${lastNotice.wealthTax}₽`);
+                await pushNotification(nick, `💳 Списано за ${weeksApplied} нед.: ${parts.join(' + ')}. Налог считается с основного + накопительного счёта и списывается только с основного.`, 'money');
+                toast(`💳 Налог и абонентская плата: ${weeksApplied} нед.`, 'gold');
             }
         }
-        await update(userRef(nick), patch);
-        return {...u, ...patch};
+        if(typeof window.kapaniProcessTreasuryPending === 'function'){
+            try { await window.kapaniProcessTreasuryPending(nick); } catch(e) { console.warn('[treasury pending]', e); }
+        }
+        return {...u, ...updated};
     } catch(e) {
         console.warn('Economy maintenance failed:', e);
         return null;
@@ -3335,6 +3464,7 @@ window.handleAuth = async function() {
                 economyLastProcessedAt: now,
                 savingsBalance: 0,
                 savingsLastInterestAt: now,
+                taskBalance: 0,
                 employments: [],
                 totalEarned: 0,
                 accountVerified: false,
@@ -3393,16 +3523,7 @@ function startApp() {
     if(bottom) bottom.style.display='none';
     if(main) main.style.display='none';
 
-    const hw=qs('headerAvatarWrap'); if(hw) hw.classList.add('online');
-    try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:', e); }
-    try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:', e); }
-    try { ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)); } catch(e) {}
-    try {
-        window._economyTimer && clearInterval(window._economyTimer);
-        window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)), 5 * 60 * 1000);
-    } catch(e) {}
-    try { requestPersistentStorage(); } catch(e) {}
-    try { buildEmojiPanels(); } catch(e) { console.warn('[Kapani] emoji panels:',e); }
+    try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:',e); }
 
     try {
         const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null');
@@ -3440,7 +3561,21 @@ function startApp() {
           try{ revealApp(); }catch(e){ console.error('[Kapani] Failed to reveal app shell:',e); if(header) header.style.display='flex'; if(bottom) bottom.style.display='flex'; if(main) main.style.display='block'; }
           if(loStatus) loStatus.textContent='Готово!';
           if(loBar) loBar.style.cssText='width:100%;transition:width .2s ease;';
-          setTimeout(()=>hideLoadingSafe(),120);
+          hideLoadingSafe();
+          const defer = window.requestIdleCallback || ((cb)=>setTimeout(cb, 0));
+          defer(()=>{
+              try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:',e); }
+              try { ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)); } catch(e) {}
+              try {
+                  window._economyTimer && clearInterval(window._economyTimer);
+                  window._economyTimer = setInterval(()=>ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)), 5 * 60 * 1000);
+              } catch(e) {}
+              try { requestPersistentStorage(); } catch(e) {}
+              if(typeof window.kapaniProcessTreasuryPending === 'function' && currentNick){
+                  Promise.resolve().then(()=>window.kapaniProcessTreasuryPending(currentNick)).catch(()=>{});
+              }
+              if(typeof window.startKapaniRentExpiryWatcher === 'function') window.startKapaniRentExpiryWatcher();
+          }, {timeout: 1500});
       });
 }
 
@@ -3453,6 +3588,7 @@ function revealApp(){
 }
 
 window.logout = function() {
+    try { if(typeof stopTaskLiveListeners==='function') stopTaskLiveListeners(); } catch(e) {}
     stopAllActivity();
     leaveAllServiceServices();
     Object.values(listeners).forEach(({ref:r,fn})=>off(r,'value',fn));
@@ -3486,14 +3622,21 @@ function leaveAllServiceServices(){
     Object.keys(serviceListeners).forEach(removeAllServiceListeners);
 }
 async function loadAllUsersCache(force=false){
-    if(!force && allUsersCache && Object.keys(allUsersCache).length>1) return allUsersCache;
-    const snap=await get(ref(db,'users'));
-    allUsersCache=snap.val()||{};
-    window.allUsersCache=allUsersCache;
-    if(currentNick && !allUsersCache[currentNick]){
-        try{ const mine=await get(userRef(currentNick)); if(mine.exists()) allUsersCache[currentNick]=mine.val(); }catch(e){}
-    }
-    return allUsersCache;
+    if(force){ allUsersCacheLoaded=false; allUsersCachePromise=null; }
+    if(!force && allUsersCacheLoaded) return allUsersCache;
+    if(!force && allUsersCachePromise) return allUsersCachePromise;
+    allUsersCachePromise = (async()=>{
+        const snap=await get(ref(db,'users'));
+        allUsersCache=snap.val()||{};
+        allUsersCacheLoaded=true;
+        window.allUsersCache=allUsersCache;
+        if(currentNick && !allUsersCache[currentNick]){
+            try{ const mine=await get(userRef(currentNick)); if(mine.exists()) allUsersCache[currentNick]=mine.val(); }catch(e){}
+        }
+        return allUsersCache;
+    })();
+    try { return await allUsersCachePromise; }
+    finally { allUsersCachePromise=null; }
 }
 function attachUserListener(){
     removeServiceListener('core','user');
@@ -3504,6 +3647,16 @@ function attachUserListener(){
         allUsersCache[currentNick]=u; window.allUsersCache=allUsersCache;
         await syncJanitorTaskState(u);
         updateHeader(u); updateFrozenOverlay(u); updateHeader_balance(u);
+        const taskBalanceEl = qs('taskBalanceDisplay');
+        if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(u.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
+        const casinoBalanceEl = qs('casinoBalanceDisplay');
+        if(casinoBalanceEl) casinoBalanceEl.textContent = `${Math.max(0,Number(u.casino?.balance||0)).toLocaleString('ru-RU')} ₽`;
+        const casinoMainEl = qs('casinoMainBalanceDisplay');
+        if(casinoMainEl) casinoMainEl.textContent = `${Number(u.balance||0).toLocaleString('ru-RU')} ₽`;
+        if(curPage==='casino') {
+            try{ renderCasinoBalances(u); }catch(e){}
+        }
+        if(curPage==='tasks') scheduleTaskLiveRefresh();
         if(curPage==='market') renderDebtNotice('marketDebtNotice',u);
         if(curPage==='taxi') renderDebtNotice('taxiDebtNotice',u);
         if(curPage==='subscription' && typeof renderSubscription==='function') renderSubscription();
@@ -3597,10 +3750,11 @@ function attachChatService(){
     addServiceListener('messages','readState',rsRef,rsFn);
 }
 function enterService(page){
-    const service = page==='messages'?'messages':page==='market'?'market':page==='home'?'home':(['driverPage','deliveryPage'].includes(page)?'orders':page==='adminPage'?'admin':page==='ratings'?'ratings':(['businesses','bizDetail','bizOwnerPanel'].includes(page)?'business':page==='dutyPage'?'duty':null));
+    const service = page==='messages'?'messages':page==='market'?'market':page==='home'?'home':page==='tasks'?'tasks':(['driverPage','deliveryPage'].includes(page)?'orders':page==='adminPage'?'admin':page==='ratings'?'ratings':(['businesses','bizDetail','bizOwnerPanel'].includes(page)?'business':page==='dutyPage'?'duty':null));
     if(!service) return;
     if(service==='home'||service==='orders') attachOrderService();
-    if(service==='messages'){ loadAllUsersCache().then(()=>{ if(curPage==='messages') renderDmUserList(allUsersCache); }).catch(e=>console.warn('[Kapani] users cache:',e)); attachChatService(); }
+    if(service==='tasks') startTaskLiveListeners();
+    if(service==='messages'){ try{ if(!qs('chatEmojiPanel')) buildEmojiPanels(); }catch(e){} loadAllUsersCache().then(()=>{ if(curPage==='messages') renderDmUserList(allUsersCache); }).catch(e=>console.warn('[Kapani] users cache:',e)); attachChatService(); }
     if(service==='market'){ const r=marketRef(); addServiceListener('market','market',r,s=>{if(curPage==='market')renderMarket(s.val()||{});}); }
     if(service==='ratings'){ loadAllUsersCache().then(u=>{if(curPage==='ratings')renderLeaderboard(u);}).catch(e=>console.warn('[Kapani] ratings users:',e)); }
     if(service==='admin'){ loadAllUsersCache().then(u=>{if(curPage==='adminPage'){renderAdminUsers(u);renderAdminUserSelect(u);renderUnverifiedAccounts();}}).catch(e=>console.warn('[Kapani] admin users:',e)); const aRef=appsRef(); addServiceListener('admin','apps',aRef,s=>{if(curPage==='adminPage')renderAdminApps(s.val()||{});}); attachOrderService(); }
@@ -3608,13 +3762,18 @@ function enterService(page){
     if(service==='duty'){ startCallsListener(); }
 }
 function leaveService(page){
-    const mapping={messages:'messages',market:'market',home:'home',driverPage:'orders',deliveryPage:'orders',adminPage:'admin',ratings:'ratings',businesses:'business',bizDetail:'business',bizOwnerPanel:'business',dutyPage:'duty'};
+    const mapping={messages:'messages',market:'market',home:'home',tasks:'tasks',driverPage:'orders',deliveryPage:'orders',adminPage:'admin',ratings:'ratings',businesses:'business',bizDetail:'business',bizOwnerPanel:'business',dutyPage:'duty'};
     const service=mapping[page]; if(service) removeAllServiceListeners(service);
     if(page==='messages'){
         if(dmListeners.current){try{off(dmListeners.current.ref,'value',dmListeners.current.fn);}catch(e){} dmListeners.current=null;}
         if(dmListeners.read){try{off(dmListeners.read.ref,'value',dmListeners.read.fn);}catch(e){} dmListeners.read=null;}
         if(dmTypingUnsub){try{dmTypingUnsub();}catch(e){} dmTypingUnsub=null;}
         currentDmNick=null;
+    }
+    if(page==='tasks') stopTaskLiveListeners();
+    if((page==='bizDetail' || page==='bizOwnerPanel') && listeners.bizOrders){
+        try{ off(listeners.bizOrders.ref,'value',listeners.bizOrders.fn); }catch(e){}
+        delete listeners.bizOrders;
     }
     if(page==='dutyPage') stopCallsListener();
 }
@@ -4900,8 +5059,11 @@ window.savingsWithdraw=async function(){
 };
 function renderSavingsDisplay(){
     const el=qs('savingsBalanceDisplay');
+    const rateEl=qs('savingsRateDisplay');
     const u=allUsersCache[currentNick]||{};
-    if(el) el.textContent=(u.savingsBalance||0).toLocaleString()+' ₽';
+    const savings=Number(u.savingsBalance||0);
+    if(el) el.textContent=savings.toLocaleString()+' ₽';
+    if(rateEl && typeof getSavingsRateLabel==='function') rateEl.textContent=getSavingsRateLabel(savings);
 }
 window.editProfileDescription=async function(){
     const snap=await get(userRef(currentNick));
@@ -6401,36 +6563,107 @@ async function checkDailyTaskCondition(taskId, u, ordersVal, marketVal, chatVal,
         default: return false;
     }
 }
+async function creditTaskRewardOnce(taskKey, reward, title, claimedKey, claimValue){
+    if(!await requireNotMigrant('заработок через задания недоступен')) return false;
+    const safeReward = Math.max(0, Math.round(Number(reward) || 0));
+    if(!safeReward) return false;
+    const key = String(taskKey || '');
+    const result = await runTransaction(userRef(currentNick), current => {
+        if(current === null || isMigrantUser(current)) return;
+        if(current[key]) return;
+        const taskBalance = Math.max(0, Number(current.taskBalance || 0));
+        const next = { ...current, taskBalance: taskBalance + safeReward, [key]: claimValue === undefined ? true : claimValue };
+        if(claimedKey){
+            const claimed = Array.isArray(current[claimedKey]) ? current[claimedKey].slice() : [];
+            if(claimed.includes(String(claimValue))) return;
+            claimed.push(String(claimValue));
+            next[claimedKey] = claimed;
+        }
+        return next;
+    });
+    if(!result || !result.committed) return false;
+
+    // Update the local cache and visible balances immediately. Firebase's
+    // realtime listener will also reconcile the value, but the UI should not
+    // depend on a page reload or a later listener tick.
+    try {
+        const committed = result.snapshot?.val ? result.snapshot.val() : null;
+        if(committed){
+            allUsersCache[currentNick] = committed;
+            window.allUsersCache = allUsersCache;
+            const taskBalanceEl = qs('taskBalanceDisplay');
+            if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(committed.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
+            if(typeof updateHeader === 'function') updateHeader(committed);
+            if(typeof updateHeader_balance === 'function') updateHeader_balance(committed);
+        }
+    } catch(e){ console.warn('[tasks] immediate UI update:', e); }
+
+    await logTx(currentNick,{type:'in',who:'Задания',amt:safeReward,desc:title ? `Задание: ${title}` : `Задание выполнено`});
+    await pushNotification(currentNick, `🎁 +${safeReward}₽ на счёт заданий!`, 'money');
+    toast(`🎁 +${safeReward} ₽ на счёт заданий!`, 'green');
+    return true;
+}
 window.claimDailyTask = async function(taskId, reward){
-    if(!await requireNotMigrant('заработок через задания недоступен')) return;
+    if(!currentNick) return;
     const today = todayKey();
     const claimedKey = `dailyClaimed_${today}`;
-    const snap = await get(userRef(currentNick));
-    if(!snap.exists()) return;
-    const u = snap.val();
-    const claimed = u[claimedKey] || [];
+    const tasks = [...(getDailyTasksForToday()||[])];
+    try{
+        const snap = await get(userRef(currentNick));
+        const u = snap.val() || {};
+        const primeActive = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+        if(primeActive) tasks.push(...(getPrimeDailyTasksForToday()||[]));
+    }catch(e){}
+    const task = tasks.find(t => t.id === taskId);
+    if(!task) return toast('❌ Задание не найдено','red');
+    const claimed = (await get(userRef(currentNick))).val()?.[claimedKey] || [];
     if(claimed.includes(taskId)) return toast('✅ Уже получено','gold');
-    const newBal = (u.balance||0) + reward;
-    const newClaimed = [...claimed, taskId];
-    await update(userRef(currentNick), { balance: newBal, [claimedKey]: newClaimed });
-    await logTx(currentNick, {type:'in', who:'Задания', amt:reward, desc:`Ежедневное задание выполнено`});
-    await pushNotification(currentNick, `🎁 +${reward}₽ за ежедневное задание!`, 'money');
-    toast(`🎁 +${reward} ₽ получено!`, 'green');
-    renderTasks();
+    const ok = await creditTaskRewardOnce(`__dailyReward_${today}_${taskId}` , Number(task.reward), 'Ежедневное задание выполнено', claimedKey, taskId);
+    if(ok) renderTasks();
 };
 window.claimOneTimeTask = async function(taskKey, reward){
-    if(!await requireNotMigrant('заработок через задания недоступен')) return;
+    if(!currentNick) return;
+    const rewards = {
+        rewardedAvatar: REWARD_CUSTOM_AVATAR,
+        rewardedWall: REWARD_FIRST_WALL,
+        rewardedListing: 60,
+        rewardedTaxi: 80,
+        rewardedJob: 100,
+        rewardedMarket: 90,
+        rewardedPassport: 80,
+        rewardedAllLicenses: 90
+    };
+    if(!Object.prototype.hasOwnProperty.call(rewards, taskKey)) return toast('❌ Недействительное задание','red');
     const snap = await get(userRef(currentNick));
-    if(!snap.exists()) return;
-    const u = snap.val();
+    const u = snap.val() || {};
     if(u[taskKey]) return toast('✅ Уже получено','gold');
-    const newBal = (u.balance||0) + reward;
-    await update(userRef(currentNick), { balance: newBal, [taskKey]: true });
-    await logTx(currentNick, {type:'in', who:'Задания', amt:reward, desc:`Одноразовое задание выполнено`});
-    await pushNotification(currentNick, `🎁 +${reward}₽ за задание!`, 'money');
-    toast(`🎁 +${reward} ₽ получено!`, 'green');
-    renderTasks();
+    const ok = await creditTaskRewardOnce(taskKey, rewards[taskKey], 'Одноразовое задание выполнено');
+    if(ok) renderTasks();
 };
+window.withdrawTaskBalance = async function(){
+    if(!currentNick) return;
+    const input = qs('taskWithdrawAmt');
+    const amount = Math.floor(Number(input?.value || 0));
+    if(!Number.isSafeInteger(amount) || amount < 500) return toast('❌ Минимальная сумма вывода — 500 ₽','red');
+    if(window._taskWithdrawBusy) return toast('⏳ Операция уже выполняется…','gold');
+    window._taskWithdrawBusy = true;
+    try{
+        const result = await runTransaction(userRef(currentNick), current => {
+            if(current === null) return;
+            const taskBalance = Math.max(0, Number(current.taskBalance || 0));
+            const mainBalance = Number(current.balance || 0);
+            if(taskBalance < amount) return;
+            return { ...current, taskBalance: taskBalance - amount, balance: mainBalance + amount };
+        });
+        if(!result || !result.committed){ toast('❌ Недостаточно средств на счёте заданий','red'); return; }
+        await logTx(currentNick,{type:'out',who:'Счёт заданий',amt:amount,desc:'Вывод заработка на основной баланс'});
+        await pushNotification(currentNick,`💰 ${amount}₽ переведено со счёта заданий на основной баланс`,'money');
+        if(input) input.value='';
+        toast(`✅ ${amount} ₽ переведено на основной баланс`,'green');
+        renderTasks();
+    }finally{ window._taskWithdrawBusy=false; }
+};
+
 window.renderTasks = async function(){
     const el = qs('tasksList'); if(!el) return;
     try{
@@ -6547,24 +6780,40 @@ window.renderTasks = async function(){
             </div>`;
         }
 
-        // Auto-reward new one-time tasks (job and market purchase) if just completed
-        if(isMigrantUser(u)){
-            // Migrants cannot receive money from tasks
-        } else for(const t of oneTimeTasks){
-            if(t.done && !u[t.key]){
-                try {
-                    const latestSnap = await get(userRef(currentNick));
-                    const lu = latestSnap.val()||{};
-                    if(isMigrantUser(lu)) continue;
-                    if(!lu[t.key]){
-                        await update(userRef(currentNick),{[t.key]:true,balance:(lu.balance||0)+t.reward});
-                        await logTx(currentNick,{type:'in',who:'Задания',amt:t.reward,desc:`Одноразовое задание: ${t.title}`});
-                        await pushNotification(currentNick,`🎁 +${t.reward}₽ — ${t.title}`,'money');
-                        toast(`🎁 +${t.reward} ₽ — ${t.title}`,'gold');
-                    }
-                } catch(e){}
+        // Auto-reward completed one-time tasks into the dedicated task account.
+        if(!isMigrantUser(u)){
+            for(const t of oneTimeTasks){
+                if(t.done && !u[t.key]){
+                    try{
+                        const result = await runTransaction(userRef(currentNick), current => {
+                            if(current === null || isMigrantUser(current) || current[t.key]) return;
+                            const taskBalance = Math.max(0, Number(current.taskBalance || 0));
+                            return { ...current, [t.key]: true, taskBalance: taskBalance + Math.max(0, Number(t.reward)||0) };
+                        });
+                        if(result && result.committed){
+                            try {
+                                const committed = result.snapshot?.val ? result.snapshot.val() : null;
+                                if(committed){
+                                    allUsersCache[currentNick] = committed;
+                                    window.allUsersCache = allUsersCache;
+                                    const taskBalanceEl = qs('taskBalanceDisplay');
+                                    if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(committed.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
+                                    if(typeof updateHeader === 'function') updateHeader(committed);
+                                    if(typeof updateHeader_balance === 'function') updateHeader_balance(committed);
+                                }
+                            } catch(e){ console.warn('[tasks] immediate one-time UI update:', e); }
+                            await logTx(currentNick,{type:'in',who:'Задания',amt:t.reward,desc:`Одноразовое задание: ${t.title}`});
+                            await pushNotification(currentNick,`🎁 +${t.reward}₽ — ${t.title}`,'money');
+                            toast(`🎁 +${t.reward} ₽ — ${t.title}`,'gold');
+                        }
+                    }catch(e){ console.warn('[task auto reward]',e); }
+                }
             }
         }
+        const latestTaskSnap = await get(userRef(currentNick));
+        const latestTaskUser = latestTaskSnap.val() || {};
+        const taskBalanceEl = qs('taskBalanceDisplay');
+        if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(latestTaskUser.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
 
         el.innerHTML = `
             ${hasPrimeTasks ? `
@@ -8091,29 +8340,65 @@ window.saveEditNews = async function(msgId){
 };
 window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
-const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0,kveExam:11,deputySession:0,deliveryOrderPage:0};
+const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0,kveExam:11,deputySession:0,deliveryOrderPage:0,kEducation:0,casino:0};
+
+// ─── LIVE TASKS REFRESH ──────────────────
+let _taskLiveUnsubs=[];
+let _taskLiveTimer=null;
+let _taskLiveRendering=false;
+function scheduleTaskLiveRefresh(){
+    if(curPage!=='tasks') return;
+    clearTimeout(_taskLiveTimer);
+    _taskLiveTimer=setTimeout(async()=>{
+        if(curPage!=='tasks' || _taskLiveRendering) return;
+        _taskLiveRendering=true;
+        try{ await renderTasks(); }catch(e){ console.warn('[Kapani] live tasks refresh:',e); }
+        finally{ _taskLiveRendering=false; }
+    },120);
+}
+function stopTaskLiveListeners(){
+    _taskLiveUnsubs.splice(0).forEach(fn=>{try{fn();}catch(e){}});
+    clearTimeout(_taskLiveTimer); _taskLiveTimer=null;
+}
+function startTaskLiveListeners(){
+    stopTaskLiveListeners();
+    if(!currentNick || curPage!=='tasks') return;
+    // Core user listener already covers users/<currentNick>; task listeners are page-scoped.
+    const targets=[ordersRef(),marketRef(),chatRef(),wallRef(currentNick),txLogRef(currentNick),ref(db,'dms'),ref(db,`passports/${currentNick}`),ref(db,`licenses/${currentNick}`)];
+    targets.forEach(target=>{
+        const fn=()=>{
+            if(curPage==='tasks') scheduleTaskLiveRefresh();
+            else {
+                clearTimeout(_taskLiveTimer);
+                _taskLiveTimer=setTimeout(()=>{ try{ renderTasks(); }catch(e){} },180);
+            }
+        };
+        try{onValue(target,fn);_taskLiveUnsubs.push(()=>off(target,'value',fn));}catch(e){console.warn('[Kapani] task listener:',e);}
+    });
+}
 window.navTo=function(id){
     const previousPage=curPage;
-    if(previousPage && previousPage!==id) leaveService(previousPage);
+    if(previousPage && previousPage!==id){
+        leaveService(previousPage);
+    }
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
     for(let i=0;i<12;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
     unlockBodyScroll(true); window.scrollTo(0,0);
     if(el){requestAnimationFrame(()=>{void el.offsetHeight;el.style.pointerEvents='';});}
     enterService(id);
-    if(id==='ratings') loadAllUsersCache().then(u=>{if(curPage==='ratings')renderLeaderboard(u);});
     if(id==='adminPage') renderAdmin();
     if(id==='kveExam') renderKveSection();
     if(id==='jobs') renderKveSection();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
-    if(id==='messages'){ const chatHost=qs('chatMessages');if(chatHost&&!chatHost.innerHTML.trim())chatHost.innerHTML=loadingHtml('Загрузка чата...');const dmHost=qs('dmMessages');if(dmHost&&currentDmNick&&!dmHost.innerHTML.trim())dmHost.innerHTML=loadingHtml('Загрузка сообщений...');chatLoading=true;get(chatRef()).then(s=>{chatLoading=false;renderChat(s.val()||{});}); }
-    if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
+    if(id==='messages'){ const chatHost=qs('chatMessages');if(chatHost&&!chatHost.innerHTML.trim())chatHost.innerHTML=loadingHtml('Загрузка чата...');const dmHost=qs('dmMessages');if(dmHost&&currentDmNick&&!dmHost.innerHTML.trim())dmHost.innerHTML=loadingHtml('Загрузка сообщений...');chatLoading=true; }
+    if(id==='profile'){updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
     if(id==='market') renderDebtNotice('marketDebtNotice',allUsersCache[currentNick]||{});
     if(id==='bank'){renderRecentTransfers();renderFinancialStats();renderSavingsDisplay();}
     if(id==='subscription') renderSubscription();
     if(id==='home') renderHomeBizOrders();
     if(id==='rentBuildings') renderRentBuildings();
-    if(id==='tasks') renderTasks();
+    if(id==='tasks'){ renderTasks(); }
     if(id==='jobs'){renderJobAppStatus();renderHospitalJobsCard();}
     if(id==='hospital') renderHospital();
     if(id==='hospitalPanel') renderHospitalPanel();
@@ -8128,6 +8413,8 @@ window.navTo=function(id){
     if(id==='dutyPage'){startCallsListener();renderDutyCalls(_lastCalls);}
     if(id==='deliveryOrderPage'){renderMyDeliveryOrders();if(typeof renderDeliveryOrderOptions==='function')renderDeliveryOrderOptions(true);else updateDeliverySourceHint();}
     if(id==='events') renderEventsSection();
+    if(id==='kEducation' && typeof window.kapaniRenderKEducation==='function') window.kapaniRenderKEducation();
+    if(id==='casino' && typeof window.kapaniRenderCasino==='function') window.kapaniRenderCasino();
     if(id==='gameSpySection') initSpyGame();
     if(id==='gameMafiaSection') initMafiaGame();
     if(id==='gameMatch3Section') initMatch3();
@@ -10062,10 +10349,18 @@ window.submitBizApply = async function(){
     const hasPrimeForBiz = (u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const actualFee = hasPrimeForBiz ? 1250 : (hasUltraForBiz ? 2000 : ECONOMY_BUSINESS_CREATION_FEE);
     if((u.balance || 0) < actualFee) return toast(`❌ Для создания бизнеса нужно ${actualFee}₽ госпошлины`,'red');
-    await update(userRef(currentNick), { balance: (u.balance || 0) - actualFee });
+    const id = genId();
+    const feeReceiptId = `business_fee_${id}`;
+    const updatedBizBalance = Number(u.balance || 0) - actualFee;
+    await update(userRef(currentNick), {
+        balance: updatedBizBalance,
+        treasuryPending: {
+            ...(u.treasuryPending || {}),
+            [feeReceiptId]: { id:feeReceiptId, sourceKey:feeReceiptId, type:'business_fee', amount:actualFee, sourceAmount:actualFee, actor:currentNick, target:'Мэрия', reason:'Госпошлина за создание бизнеса', createdAt:Date.now() }
+        }
+    });
     await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -50%)' : (hasUltraForBiz ? ' (Ultra -20%)' : '')}` });
     await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasPrimeForBiz ? ' (скидка Prime)' : (hasUltraForBiz ? ' (скидка Ultra)' : '')}`, 'money');
-    const id = genId();
     await set(bizAppRef(id), {
         id, owner: currentNick, name, desc, address, category, services,
         status: 'pending', createdAt: Date.now(), feePaid: actualFee
@@ -10750,24 +11045,48 @@ function renderBizBgShop(b){
         </button>`).join('') +
         (current ? `<button class="btn btn-ghost btn-sm" style="color:var(--muted);" onclick="buyBizBgEffect('')">Убрать оформление</button>` : '');
 }
+let _bizUpgradeBusy = false;
 window.upgradeBizLimit = async function(kind){
+    if(_bizUpgradeBusy) return toast('⏳ Покупка уже выполняется…','gold');
     if(!currentBizId) return;
     const price = BIZ_UPGRADE_PRICES[kind];
     if(!price) return;
     const labels = { employee: 'дополнительного сотрудника', product: 'дополнительного товара', priceCap: 'увеличения лимита цены' };
-    if(!confirm(`Купить ${labels[kind] || 'улучшение бизнеса'} за ${price}₽?`)) return;
-    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
-    if((u.balance||0) < price) return toast(`❌ Нужно ${price}₽`,'red');
-    const field = kind === 'employee' ? 'employees' : kind === 'product' ? 'products' : 'priceCap';
-    const snap = await get(bizItemRef(currentBizId)); const b = snap.val()||{};
-    const bonus = b.limitBonus || {};
-    await update(userRef(currentNick), { balance: (u.balance||0)-price });
-    await update(bizItemRef(currentBizId), { limitBonus: { ...bonus, [field]: Number(bonus[field]||0)+1 } });
-    await logTx(currentNick, { type:'out', who:'Бизнес', amt:price, desc:`Улучшение бизнеса: ${labels[kind] || kind}` });
-    toast('✅ Лимит увеличен','green');
-    renderBizOwnerPanel();
+    if(!confirm(`Увеличение количества ${labels[kind] || 'улучшения бизнеса'}
+
+Стоимость: ${price} ₽
+
+После покупки деньги будут списаны с вашего основного баланса.
+
+Подтвердить покупку?`)) return;
+    _bizUpgradeBusy = true;
+    try{
+        const field = kind === 'employee' ? 'employees' : kind === 'product' ? 'products' : 'priceCap';
+        const bizSnap = await get(bizItemRef(currentBizId));
+        const b = bizSnap.val()||{};
+        const result = await runTransaction(userRef(currentNick), current => {
+            if(current === null) return;
+            const balance = Number(current.balance || 0);
+            if(balance < price) return;
+            return { ...current, balance: balance - price };
+        });
+        if(!result || !result.committed) return toast(`❌ Нужно ${price}₽`,'red');
+        const bonus = b.limitBonus || {};
+        const bizResult = await runTransaction(bizItemRef(currentBizId), current => {
+            const cur = current || {};
+            const curBonus = cur.limitBonus || {};
+            return { ...cur, limitBonus: { ...curBonus, [field]: Number(curBonus[field]||0)+1 } };
+        });
+        if(!bizResult.committed) throw new Error('Не удалось применить улучшение бизнеса');
+        await logTx(currentNick, { type:'out', who:'Бизнес', amt:price, desc:`Улучшение бизнеса: ${labels[kind] || kind}` });
+        toast('✅ Лимит увеличен','green');
+        renderBizOwnerPanel();
+    }catch(e){ toast('❌ '+(e.message||'Ошибка покупки'),'red'); }
+    finally{ _bizUpgradeBusy = false; }
 };
+let _bizBgBusy = false;
 window.buyBizBgEffect = async function(effectId){
+    if(_bizBgBusy) return toast('⏳ Покупка уже выполняется…','gold');
     if(!currentBizId) return;
     const snap = await get(bizItemRef(currentBizId)); const b = snap.val()||{};
     if(!effectId){
@@ -10781,16 +11100,31 @@ window.buyBizBgEffect = async function(effectId){
     const eff = BIZ_BG_EFFECTS.find(x=>x.id===effectId);
     if(!eff) return;
     if(b.bgEffect === effectId) return toast('✅ Уже активно','gold');
-    if(!confirm(`Купить оформление бизнеса «${eff.name}» за ${eff.price}₽?`)) return;
-    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
-    if((u.balance||0) < eff.price) return toast(`❌ Нужно ${eff.price}₽`,'red');
-    await update(userRef(currentNick), { balance: (u.balance||0)-eff.price });
-    await update(bizItemRef(currentBizId), { bgEffect: effectId });
-    if(currentBizDetailData) currentBizDetailData.bgEffect = effectId;
-    const effectHost = qs('bizDetailBgEffect'); if(effectHost) applyBizBgEffect(effectHost, effectId);
-    await logTx(currentNick, { type:'out', who:'Бизнес', amt:eff.price, desc:`Оформление бизнеса: ${eff.name}` });
-    toast('✅ Оформление применено','green');
-    renderBizOwnerPanel();
+    if(!confirm(`Купить оформление?
+
+Название: ${eff.name}
+Стоимость: ${eff.price} ₽
+
+После покупки деньги будут списаны с вашего основного баланса.
+
+Подтвердить покупку?`)) return;
+    _bizBgBusy = true;
+    try{
+        const result = await runTransaction(userRef(currentNick), current => {
+            if(current === null) return;
+            const balance = Number(current.balance || 0);
+            if(balance < eff.price) return;
+            return { ...current, balance: balance - eff.price };
+        });
+        if(!result || !result.committed) return toast(`❌ Нужно ${eff.price}₽`,'red');
+        await update(bizItemRef(currentBizId), { bgEffect: effectId });
+        if(currentBizDetailData) currentBizDetailData.bgEffect = effectId;
+        const effectHost = qs('bizDetailBgEffect'); if(effectHost) applyBizBgEffect(effectHost, effectId);
+        await logTx(currentNick, { type:'out', who:'Бизнес', amt:eff.price, desc:`Оформление бизнеса: ${eff.name}` });
+        toast('✅ Оформление применено','green');
+        renderBizOwnerPanel();
+    }catch(e){ toast('❌ '+(e.message||'Ошибка покупки'),'red'); }
+    finally{ _bizBgBusy = false; }
 };
 window.sendBizComplaint = async function(bizId, type){
     const text = (qs('bizComplaintText')?.value||'').trim();
@@ -11387,7 +11721,8 @@ async function checkAndClearExpiredRentals(list) {
 }
 
 // Background rental expiry checker — runs every 10 min regardless of page
-(function startRentExpiryWatcher(){
+(function setupRentExpiryWatcher(){
+    let started = false;
     async function runCheck(){
         try {
             const snap = await get(rentBuildingsRef());
@@ -11395,9 +11730,15 @@ async function checkAndClearExpiredRentals(list) {
             await checkAndClearExpiredRentals(list);
         } catch(e){ /* ignore — network may be down */ }
     }
-    // Run once 5s after load, then every 10 minutes
-    setTimeout(runCheck, 5000);
-    setInterval(runCheck, 10 * 60 * 1000);
+    function start(){
+        if(started || !window._getCurrentNick?.()) return;
+        started = true;
+        setTimeout(runCheck, 5000);
+        window._kapaniRentExpiryTimer = setInterval(runCheck, 10 * 60 * 1000);
+    }
+    // Maintenance is not part of the critical path. The main app starts it
+    // explicitly after the authenticated shell has been revealed.
+    window.startKapaniRentExpiryWatcher = start;
 })();
 
 window.renderRentBuildings = async function(){
@@ -12770,15 +13111,12 @@ window.renderSubscription = async function(){
         const nextCharge = new Date(lastProcessed + 7 * 24 * 60 * 60 * 1000);
         const daysLeft = Math.max(0, Math.ceil((nextCharge - Date.now()) / (1000 * 60 * 60 * 24)));
         const balance = Number(u.balance || 0);
-        const ACCOUNT_FEE = 15;
-        let wealthTax = 0;
-        let taxPct = 0;
-        if(balance > 0 && balance < 1000){ wealthTax = Math.round(balance * 0.05); taxPct = 5; }
-        else if(balance >= 1000 && balance <= 10000){ wealthTax = Math.round(balance * 0.07); taxPct = 7; }
-        else if(balance > 10000 && balance <= 100000){ wealthTax = Math.round(balance * 0.10); taxPct = 10; }
-        else if(balance > 100000){ wealthTax = Math.round(balance * 0.20); taxPct = 20; }
-        const totalNext = ACCOUNT_FEE + wealthTax;
-        taxEl.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-weight:800;">📅 Следующее списание</span><b style="color:var(--red);">−${totalNext} ₽</b></div><div style="font-size:11px;color:var(--muted);">Через <b style="color:var(--text);">${daysLeft} ${daysLeft===1?'день':(daysLeft>=2&&daysLeft<=4?'дня':'дней')}</b> · ${nextCharge.toLocaleDateString('ru',{day:'numeric',month:'long'})}<br>Абонентская плата: <b>15 ₽</b>${wealthTax>0?` + налог ${taxPct}% = <b>${wealthTax} ₽</b>`:'<br><span style="color:var(--primary);">Налог на богатство: не начисляется (баланс ≤ 0)</span>'}</div>`;
+        const savings = Number(u.savingsBalance || 0);
+        const taxBase = Math.max(0,balance) + Math.max(0,savings);
+        const wealthTax = taxBase > 0 ? Math.round(taxBase * getWealthTaxRate(taxBase)) : 0;
+        const taxPct = Math.round(getWealthTaxRate(taxBase) * 100);
+        const totalNext = ECONOMY_ACCOUNT_WEEKLY_FEE + wealthTax;
+        taxEl.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-weight:800;">📅 Следующее списание</span><b style="color:var(--red);">−${totalNext} ₽</b></div><div style="font-size:11px;color:var(--muted);">Через <b style="color:var(--text);">${daysLeft} ${daysLeft===1?'день':(daysLeft>=2&&daysLeft<=4?'дня':'дней')}</b> · ${nextCharge.toLocaleDateString('ru',{day:'numeric',month:'long'})}<br>Налоговая база: <b>${taxBase.toLocaleString('ru-RU')} ₽</b> (основной ${Math.max(0,balance).toLocaleString('ru-RU')} ₽ + накопительный ${Math.max(0,savings).toLocaleString('ru-RU')} ₽)<br>Ставка: <b>${taxPct}%</b> · налог: <b>${wealthTax.toLocaleString('ru-RU')} ₽</b><br>Абонентская плата: <b>${ECONOMY_ACCOUNT_WEEKLY_FEE} ₽</b><br><span style="color:var(--primary);">Списание налога — только с основного баланса. Накопительный счёт не уменьшается.</span></div>`;
     }
 };
 
@@ -14565,7 +14903,7 @@ ready(function(){
       }
       u = snap.val();
       passportData = (pSnap && pSnap.exists()) ? pSnap.val() : (u.passport || null);
-      u._licenses = (lSnap && lSnap.exists()) ? lSnap.val() : (u.licenses || {});
+      u._licenses = { ...(u.licenses || {}), ...((lSnap && lSnap.exists()) ? (lSnap.val() || {}) : {}) };
 
     } catch(e){
       console.error('[openPassport]', e);
@@ -14623,9 +14961,17 @@ ready(function(){
   // ═══════════════════════════════════════════
   // 3) MAYOR: licenses + per-user job control
   // ═══════════════════════════════════════════
+  function ensureAdminPoliceListener(){
+    if(window.__kapaniAdminPoliceListener || !qs('adminPoliceReqs')) return;
+    const pRef = policeReqRef();
+    const pFn = snap=>{ if(window._kapaniActivePage === 'adminPage') renderAdminPoliceReqs(snap.val()||{}); };
+    onValue(pRef, pFn);
+    window.__kapaniAdminPoliceListener = {ref:pRef, fn:pFn};
+  }
+
   function injectAdminUI(){
     const adminPage = qs('adminPage'); if(!adminPage) return;
-    if(qs('adminLicensesCard')) return;
+    if(qs('adminLicensesCard')){ ensureAdminPoliceListener(); _bindAdminTarget(); return; }
     const card = document.createElement('div');
     card.className = 'card';
     card.id = 'adminLicensesCard';
@@ -14646,6 +14992,8 @@ ready(function(){
     if(kveCard && kveCard.parentNode) kveCard.parentNode.insertBefore(card, kveCard.nextSibling);
     else adminPage.appendChild(card);
 
+    _bindAdminTarget();
+
     // Police requests card
     if(!qs('adminPoliceReqs')){
       const pcard = document.createElement('div');
@@ -14656,7 +15004,7 @@ ready(function(){
         <div id="adminPoliceReqs"><div style="color:var(--muted);font-size:13px;">Нет запросов</div></div>
       `;
       adminPage.appendChild(pcard);
-      onValue(policeReqRef(), (snap)=>renderAdminPoliceReqs(snap.val()||{}));
+      ensureAdminPoliceListener();
     }
   }
 
@@ -14717,7 +15065,6 @@ ready(function(){
     sel._licBound = true;
     sel.addEventListener('change', ()=>{ if(sel.value) showAdminLicenseStatus(sel.value); });
   };
-  setInterval(_bindAdminTarget, 1500);
 
   // ═══════════════════════════════════════════
   // 3b) КСБ / ПОЛИЦИЯ: просмотр паспорта и выдача прав любому жителю
@@ -14923,7 +15270,17 @@ ready(function(){
   // ═══════════════════════════════════════════
   function injectMarketRentUI(){
     const marketSection = qs('market'); if(!marketSection) return;
-    if(qs('rentListingForm')) return;
+    const ensureRentListener = ()=>{
+      if(window.__kapaniRentListener) return;
+      const rentRef = marketRentRef();
+      const rentFn = snap=>{ if(window._kapaniActivePage === 'market') renderRentListingsOnMarket(snap?.val?.() || {}); };
+      onValue(rentRef, rentFn);
+      window.__kapaniRentListener = {ref:rentRef, fn:rentFn};
+    };
+    // The UI is created once, while the realtime listener is attached only
+    // while the Market page is active. Reopening the page therefore reuses
+    // the DOM and safely reattaches a single listener.
+    if(qs('rentListingForm')){ ensureRentListener(); return; }
     // Find "create listing" panel (mktPanel2 area) and append a "rent building" sub-form
     const createPanel = qs('mktPanel2') || marketSection;
     const card = document.createElement('div');
@@ -14942,7 +15299,7 @@ ready(function(){
       <div id="myRentListings" style="margin-top:14px;"></div>
     `;
     createPanel.appendChild(card);
-    onValue(marketRentRef(), ()=>renderRentListingsOnMarket());
+    ensureRentListener();
   }
 
   window.publishRentListing = async function(){
@@ -14959,9 +15316,9 @@ ready(function(){
     renderRentListingsOnMarket();
   };
 
-  async function renderRentListingsOnMarket(){
-    const snap = await get(marketRentRef());
-    const all = Object.values(snap.val()||{}).filter(r=>r.status==='active').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  async function renderRentListingsOnMarket(data){
+    const source = (data && typeof data === 'object') ? data : ((await get(marketRentRef())).val() || {});
+    const all = Object.values(source).filter(r=>r.status==='active').sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     // Inject above marketListings
     const host = qs('marketListings'); if(!host) return;
     let block = qs('marketRentBlock');
@@ -15008,7 +15365,19 @@ ready(function(){
   // INJECTION HOOKS — единая обёртка навигации
   // ═══════════════════════════════════════════
   const _kapaniBaseNavTo = window.navTo;
+  let _kapaniLastPage = null;
   window.navTo = function(id){
+    const previous = _kapaniLastPage;
+    _kapaniLastPage = id;
+    window._kapaniActivePage = id;
+    if(previous==='market' && id!=='market' && window.__kapaniRentListener){
+      try{ window.dbOff(window.__kapaniRentListener.ref,'value',window.__kapaniRentListener.fn); }catch(e){}
+      window.__kapaniRentListener=null;
+    }
+    if(previous==='adminPage' && id!=='adminPage' && window.__kapaniAdminPoliceListener){
+      try{ window.dbOff(window.__kapaniAdminPoliceListener.ref,'value',window.__kapaniAdminPoliceListener.fn); }catch(e){}
+      window.__kapaniAdminPoliceListener=null;
+    }
     const r = typeof _kapaniBaseNavTo === 'function'
       ? _kapaniBaseNavTo.apply(this, arguments)
       : undefined;
@@ -15039,13 +15408,7 @@ ready(function(){
     return r;
   };
 
-  // Initial pass if user is already on one of these pages
-  setTimeout(()=>{
-    injectPassportUI(); injectAdminUI(); injectPoliceUI(); injectMarketRentUI();
-    refreshPolicePanelVisibility();
-    renderRentListingsOnMarket();
-    injectDutyPassportLicenseUI();
-  }, 1500);
+  // No startup injection: these integrations initialize only when their page opens.
 
   // ═══════════════════════════════════════════
   // 5) КСБ / Полиция — прямой штраф (на странице работ)
@@ -15209,7 +15572,10 @@ ready(function(){
           const nextBalance = currentBalance - amt;
           if(!Number.isFinite(nextBalance)) throw new Error('Некорректное списание');
           if(nextBalance <= Number(window.MIN_BALANCE_ALLOWED ?? -Infinity)) throw new Error('Нельзя выписать штраф: баланс достигнет критического лимита');
-          const next = { ...current, balance: nextBalance, txlog: { ...(current.txlog || {}) } };
+          const pending = { ...(current.treasuryPending || {}) };
+          const receiptId = `fine_${fineTxId}`.replace(/[.#$\[\]\/]/g,'_');
+          pending[receiptId] = { id:receiptId, sourceKey:receiptId, type:'fine', amount:amt, sourceAmount:amt, actor:myNick, target:tnick, reason:`Штраф: ${reason}`, createdAt:Date.now() };
+          const next = { ...current, balance: nextBalance, txlog: { ...(current.txlog || {}) }, treasuryPending: pending };
           if(!next.txlog[fineTxId]) next.txlog[fineTxId] = txEntry;
           return next;
       });
@@ -15276,10 +15642,825 @@ ready(function(){
   // adminFireWorker: master implementation is in the main app block — no override needed
 
   // Панель штрафов подключается общей обёрткой navTo выше.
-  setTimeout(()=>{ try{ injectFinePanel(); refreshFinePanelVisibility(); }catch(e){ console.error('[fine panel init]', e); } }, 1600);
 
   // Konec Kapani Pack v2
 });
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     KAPANI ECONOMY EXTENSION — ONLY REQUESTED ECONOMIC SYSTEMS
+     Rights · K-education · Task account · Treasury · Casino
+     ═══════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  const waitReady = async () => {
+    // The economy extension is a classic <script>, while the Firebase bootstrap
+    // is an ES module. The classic script can execute before the module has
+    // exported its Firebase helpers, so waiting only on KAPANI_READY is unsafe
+    // when that promise has not been created yet. Wait explicitly for the
+    // actual shared API before capturing any references.
+    const deadline = Date.now() + 20000;
+    while (Date.now() < deadline) {
+      if (window.KAPANI_READY && typeof window.KAPANI_READY.then === 'function') {
+        try { await window.KAPANI_READY; } catch(e) {}
+      }
+      if (
+        typeof window.dbRef === 'function' &&
+        typeof window.dbGet === 'function' &&
+        typeof window.dbSet === 'function' &&
+        typeof window.dbUpdate === 'function' &&
+        typeof window.dbPush === 'function' &&
+        typeof window.dbRemove === 'function' &&
+        typeof window.runTransaction === 'function' &&
+        window.db
+      ) break;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    }
+
+    if (
+      typeof window.dbRef !== 'function' ||
+      typeof window.dbGet !== 'function' ||
+      typeof window.dbUpdate !== 'function' ||
+      typeof window.runTransaction !== 'function' ||
+      !window.db
+    ) {
+      throw new Error('Firebase API Kapani не инициализирован');
+    }
+
+    const db = window.db;
+    const ref = window.dbRef, get = window.dbGet, set = window.dbSet, update = window.dbUpdate,
+          push = window.dbPush, remove = window.dbRemove, runTransaction = window.runTransaction;
+    const qs = window.qs;
+    const toast = window.toast || ((m)=>alert(m));
+    const ADMIN = window.ADMIN || 'Кайон';
+    const userRef = window.userRef || ((nick)=>ref(db,`users/${nick}`));
+    const pushNotification = window.pushNotification || (async()=>{});
+    const esc = window.escHtml || ((s)=>String(s ?? ''));
+    const jsEsc = window.jsEsc || esc;
+    const current = ()=>window._getCurrentNick ? window._getCurrentNick() : window.currentNick;
+    const treasuryRef = ()=>ref(db,'treasury');
+    const formatDate = ts => ts ? new Date(Number(ts)).toLocaleString('ru-RU') : '—';
+    const genId = ()=> (window.genId ? window.genId() : `${Date.now()}_${Math.random().toString(36).slice(2,10)}`);
+
+    // ────────────────────────────────────────────────────────────────
+    // Treasury: +40% on every state income; no multiplier on outflows.
+    // ────────────────────────────────────────────────────────────────
+    const treasuryKey = k => String(k||'').replace(/[.#$\[\]\/]/g,'_').slice(0,120);
+    async function collectTreasuryIncome(receipt){
+      if(!receipt || !receipt.sourceKey) return {success:false};
+      const sourceKey = treasuryKey(receipt.sourceKey);
+      const sourceAmount = Math.max(0, Math.round(Number(receipt.sourceAmount ?? receipt.amount) || 0));
+      if(sourceAmount <= 0) return {success:true, already:false};
+      const credited = Math.round(sourceAmount * 1.4);
+      const result = await runTransaction(treasuryRef(), currentTreasury => {
+        const t = currentTreasury || { balance:0, history:{}, processed:{} };
+        const processed = { ...(t.processed || {}) };
+        const history = { ...(t.history || {}) };
+        if(processed[sourceKey] || history[sourceKey]?.sourceKey === sourceKey) return t;
+        const historyEntry = {
+          id: sourceKey,
+          type: receipt.type || 'state_income',
+          amount: credited,
+          sourceAmount,
+          actor: receipt.actor || '',
+          target: receipt.target || 'Казна',
+          reason: receipt.reason || '',
+          createdAt: Number(receipt.createdAt || Date.now()),
+          sourceKey,
+          status:'completed'
+        };
+        return {
+          ...t,
+          balance: Math.max(0, Number(t.balance||0)) + credited,
+          history: { ...history, [sourceKey]: historyEntry },
+          processed: { ...processed, [sourceKey]: true }
+        };
+      });
+      const resultTreasury = result?.snapshot?.val?.() || {};
+      if(!result || (!result.committed && !(resultTreasury.processed||{})[sourceKey])) throw new Error('Казна не подтвердила поступление');
+      return {success:true, already: !!(result.snapshot.val()?.processed||{})[sourceKey], credited};
+    }
+    window.kapaniTreasuryCollect = collectTreasuryIncome;
+
+    async function clearUserTreasuryPending(nick, sourceKey){
+      if(!nick || !sourceKey) return;
+      const safeKey = treasuryKey(sourceKey);
+      await runTransaction(userRef(nick), u => {
+        if(!u) return;
+        const pending = { ...(u.treasuryPending || {}) };
+        if(!pending[safeKey] && !pending[sourceKey]) return;
+        delete pending[safeKey];
+        delete pending[sourceKey];
+        return { ...u, treasuryPending: pending };
+      }).catch(()=>{});
+    }
+    async function processTreasuryPendingForUser(nick){
+      if(!nick) return;
+      const snap = await get(userRef(nick));
+      if(!snap.exists()) return;
+      const u = snap.val() || {};
+      const pending = u.treasuryPending || {};
+      for(const receipt of Object.values(pending)){
+        try{
+          await collectTreasuryIncome(receipt);
+          await clearUserTreasuryPending(nick, receipt.sourceKey || receipt.id);
+        }catch(e){ console.warn('[treasury receipt]', receipt?.id, e); }
+      }
+    }
+    window.kapaniProcessTreasuryPending = processTreasuryPendingForUser;
+
+    async function sweepAllPendingTreasury(){
+      try{
+        const snap = await get(ref(db,'users'));
+        const users = snap.val() || {};
+        for(const nick of Object.keys(users)){
+          if(Object.keys(users[nick]?.treasuryPending || {}).length) await processTreasuryPendingForUser(nick);
+        }
+      }catch(e){ console.warn('[treasury sweep]',e); }
+    }
+
+    async function treasurySnapshot(){ return (await get(treasuryRef())).val() || {balance:0,history:{},processed:{}}; }
+
+    // Robust treasury outflow: reserve in treasury as pending, credit target once, then mark complete.
+    async function treasuryPayout(targetNick, amount, reason, actor=ADMIN, fixedOpId=null){
+      const safeAmount = Math.floor(Number(amount)||0);
+      if(!targetNick || safeAmount<=0) throw new Error('Некорректная сумма выплаты');
+      const targetSnap = await get(userRef(targetNick));
+      if(!targetSnap.exists()) throw new Error('Получатель не найден');
+      const opId = fixedOpId || `payout_${genId()}`;
+      const reserve = await runTransaction(treasuryRef(), t => {
+        const cur = t || {balance:0,history:{},processed:{}};
+        const history = { ...(cur.history||{}) };
+        const existing = history[opId];
+        if(existing) return cur;
+        const balance = Number(cur.balance||0);
+        if(balance < safeAmount) return;
+        history[opId] = { id:opId, type:'payout', amount:-safeAmount, sourceAmount:safeAmount, actor, target:targetNick, reason:reason||'', createdAt:Date.now(), status:'pending' };
+        return { ...cur, balance: balance-safeAmount, history, processed:{...(cur.processed||{})} };
+      });
+      if(!reserve || (!reserve.committed && !(reserve.snapshot?.val?.()?.history||{})[opId])){ throw new Error('Недостаточно средств в казне'); }
+      const reservedTreasury = reserve.snapshot?.val?.() || {};
+      const reservedEntry = reservedTreasury.history?.[opId];
+      if(reservedEntry?.status === 'completed') return {success:true,opId,already:true};
+      const credited = await runTransaction(userRef(targetNick), u => {
+        if(!u) return;
+        const payouts = { ...(u.treasuryPayouts || {}) };
+        if(payouts[opId]) return u;
+        return { ...u, balance:Number(u.balance||0)+safeAmount, treasuryPayouts:{...payouts,[opId]:{id:opId,amount:safeAmount,reason:reason||'',actor,createdAt:Date.now()}} };
+      });
+      if(!credited || !credited.committed){
+        // Leave the treasury record pending so a later retry can finish without a second debit.
+        throw new Error('Не удалось зачислить выплату получателю');
+      }
+      await runTransaction(treasuryRef(), t => {
+        const cur=t||{balance:0,history:{},processed:{}};
+        const history={...(cur.history||{})};
+        if(history[opId]) history[opId]={...history[opId],status:'completed'};
+        return {...cur,history};
+      });
+      await pushNotification(targetNick,`🏛 Вам выплачено ${safeAmount}₽ из казны${reason?` — ${reason}`:''}`,'money');
+      return {success:true,opId,already:false};
+    }
+
+    window.kapaniTreasuryPayout = treasuryPayout;
+
+    // Existing mayor money controls are now routed through the treasury so they cannot mint money outside the treasury.
+    let _adminMoneyBusyExt = false;
+    const legacyAdminMoney = window.adminMoney;
+    if(typeof legacyAdminMoney === 'function'){
+      window.adminMoney = async function(){
+        if(_adminMoneyBusyExt) return toast('⏳ Операция уже выполняется…','gold');
+        if(current()!==ADMIN) return toast('🚫 Только Кайон','red');
+        const target=qs('adminTarget')?.value;
+        const signed=Number(qs('adminAmt')?.value||0);
+        if(!target) return toast('⚠️ Выберите жителя','gold');
+        if(!Number.isSafeInteger(signed) || signed===0) return toast('⚠️ Укажите сумму','gold');
+        _adminMoneyBusyExt=true;
+        try{
+          if(signed>0){
+            const result=await treasuryPayout(target,signed,'Зачисление от мэрии',ADMIN,`admin_money_${target}_${signed}_${Date.now()}`);
+            if(result.success && !result.already){
+              await window.logTx?.(target,{type:'in',who:'Мэрия',amt:signed,desc:'Зачисление из казны'});
+              if(qs('adminAmt'))qs('adminAmt').value='';
+              toast(`✅ ${signed} ₽ → ${target}`,'green');
+            }
+          }else{
+            const amount=Math.abs(signed);
+            const before=await get(userRef(target));
+            if(!before.exists()) return toast('❌ Не найден','red');
+            const result=await runTransaction(userRef(target),u=>{
+              if(!u)return;
+              const nextBalance=Number(u.balance||0)-amount;
+              const receiptId=`admin_deduction_${target}_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+              const pending={...(u.treasuryPending||{})};
+              pending[receiptId]={id:receiptId,sourceKey:receiptId,type:'state_deduction',amount,sourceAmount:amount,actor:ADMIN,target,reason:'Списание мэрией',createdAt:Date.now()};
+              return {...u,balance:nextBalance,treasuryPending:pending};
+            });
+            if(!result?.committed) return toast('❌ Не удалось выполнить списание','red');
+            await window.logTx?.(target,{type:'out',who:'Мэрия',amt:amount,desc:'Списание мэрией'});
+            try{const receipt=Object.values(result.snapshot.val()?.treasuryPending||{}).find(r=>r.type==='state_deduction'&&r.target===target);if(receipt){await collectTreasuryIncome(receipt);await clearUserTreasuryPending(target,receipt.sourceKey);}}catch(e){console.warn('[admin treasury deduction]',e);}
+            await pushNotification(target,`💸 Списано ${amount}₽ мэрией`,'money');
+            if(qs('adminAmt'))qs('adminAmt').value='';
+            toast(`💸 ${amount} ₽ → ${target}`,'red');
+          }
+        }catch(e){console.error('[adminMoney treasury]',e);toast('❌ '+(e.message||'Ошибка'),'red');}
+        finally{_adminMoneyBusyExt=false;}
+      };
+    }
+
+    // Existing mayor fine control keeps its Cloud Function, but successful deductions are reflected in treasury +40%.
+    let _adminFineBusyExt=false;
+    const legacyAdminFineWorker=window.adminFineWorker;
+    if(typeof legacyAdminFineWorker==='function'){
+      window.adminFineWorker=async function(){
+        if(_adminFineBusyExt) return toast('⏳ Штраф уже оформляется…','gold');
+        if(current()!==ADMIN) return toast('🚫 Только Кайон','red');
+        const target=qs('adminTarget')?.value;const requested=Math.abs(Math.floor(Number(qs('adminFineAmt')?.value||0)));const reason=(qs('adminFineReason')?.value||'').trim();
+        if(!target||requested<=0||!reason) return legacyAdminFineWorker();
+        _adminFineBusyExt=true;
+        try{
+          const before=(await get(userRef(target))).val()||{};
+          await legacyAdminFineWorker();
+          const after=(await get(userRef(target))).val()||{};
+          const diff=Math.max(0,Math.round(Number(before.balance||0)-Number(after.balance||0)));
+          if(diff>0){
+            const receipt={sourceKey:`admin_fine_${target}_${before.balance}_${after.balance}_${Date.now()}`,type:'fine',amount:diff,sourceAmount:diff,actor:ADMIN,target,reason:`Штраф: ${reason}`,createdAt:Date.now()};
+            try{await collectTreasuryIncome(receipt);}catch(e){console.warn('[admin fine treasury]',e);}
+          }
+        }finally{_adminFineBusyExt=false;}
+      };
+    }
+
+    // Janitor payments are existing government payouts and now come out of the treasury.
+    const legacyJanitorPayout=window.payoutJanitorSubmission;
+    if(typeof legacyJanitorPayout==='function'){
+      window.payoutJanitorSubmission=async function(id){
+        if(current()!==ADMIN) return;
+        const snap=await get(ref(db,`janitorSubmissions/${id}`));
+        if(!snap.exists()) return toast('❌ Отчёт не найден','red');
+        const sub=snap.val();
+        if(sub.status!=='pending') return toast('✅ Этот отчёт уже обработан','gold');
+        const amt=Math.floor(Number(prompt('Сумма выплаты уборщику (₽)','250')||0));
+        if(amt<=0) return toast('⚠️ Сумма','gold');
+        try{
+          const result=await treasuryPayout(sub.worker,amt,'Выплата за уборку (одобрено Кайоном)',ADMIN,`janitor_${id}`);
+          if(!result.success) return;
+          await update(ref(db,`janitorSubmissions/${id}`),{status:'approved',reviewedBy:ADMIN,reviewedAt:Date.now(),reward:amt,treasuryPayoutOpId:`janitor_${id}`});
+          await window.logTx?.(sub.worker,{type:'in',who:'Мэрия',amt,desc:'Выплата за уборку (из казны)'});
+          await pushNotification(sub.worker,`✅ Уборка одобрена. +${amt}₽`,'money');
+          toast(`✅ ${sub.worker} +${amt}₽`,'green');
+          if(typeof window.renderAdmin==='function') window.renderAdmin();
+        }catch(e){toast('❌ '+(e.message||'Ошибка выплаты'),'red');}
+      };
+    }
+
+    async function mayorTreasuryTopup(amount){
+      if(current()!==ADMIN) throw new Error('Только Кайон');
+      const safeAmount=Math.floor(Number(amount)||0);
+      if(safeAmount<=0) throw new Error('Укажите сумму');
+      const result=await runTransaction(userRef(ADMIN), u=>{
+        if(!u) return;
+        const balance=Number(u.balance||0);
+        if(balance<safeAmount) return;
+        return {...u,balance:balance-safeAmount};
+      });
+      if(!result?.committed) throw new Error('Недостаточно средств на личном счёте Кайона');
+      try{
+        await collectTreasuryIncome({sourceKey:`mayor_topup_${genId()}`,type:'mayor_topup',amount:safeAmount,sourceAmount:safeAmount,actor:ADMIN,target:'Казна',reason:'Пополнение казны Кайоном',createdAt:Date.now()});
+      }catch(e){
+        // The personal debit stays recorded; store a receipt for retry.
+        const retryKey=`mayor_topup_retry_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        const retry={sourceKey:retryKey,type:'mayor_topup',amount:safeAmount,sourceAmount:safeAmount,actor:ADMIN,target:'Казна',reason:'Пополнение казны Кайоном',createdAt:Date.now()};
+        await update(userRef(ADMIN),{[`treasuryPending/${treasuryKey(retryKey)}`]:retry});
+        throw e;
+      }
+      return safeAmount;
+    }
+
+    async function mayorTreasuryWithdraw(amount){
+      if(current()!==ADMIN) throw new Error('Только Кайон');
+      const safeAmount=Math.floor(Number(amount)||0);
+      if(safeAmount<=0) throw new Error('Укажите сумму');
+      return treasuryPayout(ADMIN,safeAmount,'Получение денег из казны',ADMIN);
+    }
+
+    async function renderTreasuryCard(){
+      const host=qs('kapaniTreasuryCard'); if(!host || current()!==ADMIN) return;
+      const t=await treasurySnapshot();
+      const history=Object.values(t.history||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      host.innerHTML=`
+        <div class="card-title" style="color:var(--gold);">🏛 Казна</div>
+        <div style="background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;"><span>Баланс казны</span><b style="font-size:24px;color:var(--gold);">${Number(t.balance||0).toLocaleString('ru-RU')} ₽</b></div>
+        <div style="display:grid;gap:8px;">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:12px;font-weight:900;margin-bottom:6px;">Пополнить казну</div><div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Ваш личный баланс уменьшается на указанную сумму, казна получает сумму × 1,4.</div><input id="treasuryTopupAmt" type="number" min="1" step="1" placeholder="Сумма"><button class="btn btn-gold btn-sm" onclick="kapaniTreasuryTopupUI()">Пополнить</button></div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:12px;font-weight:900;margin-bottom:6px;">💸 Получить деньги из казны</div><input id="treasuryWithdrawAmt" type="number" min="1" step="1" placeholder="Сумма"><button class="btn btn-primary btn-sm" onclick="kapaniTreasuryWithdrawUI()">Получить</button></div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;"><div style="font-size:12px;font-weight:900;margin-bottom:6px;">🏛 Выплата из казны</div><input id="treasuryPayoutNick" type="text" placeholder="@nick"><input id="treasuryPayoutAmt" type="number" min="1" step="1" placeholder="Сумма"><input id="treasuryPayoutReason" type="text" placeholder="Причина"><button class="btn btn-primary btn-sm" onclick="kapaniTreasuryPayoutUI()">Выплатить</button></div>
+        </div>
+        <div style="margin-top:14px;font-size:12px;font-weight:900;color:var(--muted);">🏛 История казны</div>
+        <div style="margin-top:8px;">${history.length?history.map(h=>`<div style="padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-size:12px;"><div style="display:flex;justify-content:space-between;gap:8px;"><b style="color:${Number(h.amount||0)>=0?'var(--primary)':'var(--red)'};">${Number(h.amount||0)>=0?'+':''}${Number(h.amount||0).toLocaleString('ru-RU')} ₽</b><span style="color:var(--muted);">${formatDate(h.createdAt)}</span></div><div style="margin-top:3px;">${esc(h.type||'операция')} · ${esc(h.reason||'')}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">actor: ${esc(h.actor||'—')} · target: ${esc(h.target||'—')}${h.sourceAmount!=null?` · source: ${Number(h.sourceAmount).toLocaleString('ru-RU')} ₽`:''}</div></div>`).join(''):'<div style="color:var(--muted);font-size:12px;padding:10px 0;">Операций пока нет.</div>'}</div>
+      `;
+    }
+
+    window.kapaniTreasuryTopupUI=async function(){
+      const amt=Math.floor(Number(qs('treasuryTopupAmt')?.value||0));
+      if(!confirm(`Пополнить казну на ${amt} ₽?\n\nС вашего основного баланса будет списано ${amt} ₽, в казну поступит ${Math.round(amt*1.4)} ₽.`)) return;
+      try{ await mayorTreasuryTopup(amt); toast(`✅ Казна пополнена на ${Math.round(amt*1.4)} ₽`,'green'); renderTreasuryCard(); }
+      catch(e){ toast('❌ '+(e.message||'Ошибка'),'red'); }
+    };
+    window.kapaniTreasuryWithdrawUI=async function(){
+      const amt=Math.floor(Number(qs('treasuryWithdrawAmt')?.value||0));
+      if(!confirm(`Получить ${amt} ₽ из казны?`)) return;
+      try{ await mayorTreasuryWithdraw(amt); toast(`✅ Получено ${amt} ₽`,'green'); renderTreasuryCard(); }
+      catch(e){ toast('❌ '+(e.message||'Ошибка'),'red'); }
+    };
+    window.kapaniTreasuryPayoutUI=async function(){
+      const nick=(qs('treasuryPayoutNick')?.value||'').trim().replace(/^@/,'');
+      const amt=Math.floor(Number(qs('treasuryPayoutAmt')?.value||0));
+      const reason=(qs('treasuryPayoutReason')?.value||'').trim();
+      if(!nick || amt<=0) return toast('⚠️ Укажите получателя и сумму','gold');
+      if(!reason) return toast('⚠️ Укажите причину','gold');
+      if(!confirm(`Подтвердить выплату?\n\nПолучатель: @${nick}\nСумма: ${amt} ₽\nПричина: ${reason}`)) return;
+      try{ await treasuryPayout(nick,amt,reason,ADMIN); toast('✅ Выплата выполнена','green'); renderTreasuryCard(); }
+      catch(e){ toast('❌ '+(e.message||'Ошибка выплаты'),'red'); }
+    };
+
+    // ────────────────────────────────────────────────────────────────
+    // Rights / documents
+    // ────────────────────────────────────────────────────────────────
+    async function getPassportData(nick,u){
+      const fromUser=u?.passport || {};
+      if(fromUser.firstName || fromUser.lastName) return fromUser;
+      try{ return (await get(ref(db,`passports/${nick}`))).val() || {}; }catch(e){ return {}; }
+    }
+    function getMergedLicenses(u,external){ return { ...(u?.licenses||{}), ...(external||{}) }; }
+
+    async function purchaseBikeLicense(){
+      if(window._bikeLicenseBusy) return;
+      window._bikeLicenseBusy=true;
+      try{
+        const result=await runTransaction(userRef(current()),u=>{
+          if(!u) return;
+          const lic={...(u.licenses||{})};
+          if(lic.bike) return;
+          const balance=Number(u.balance||0);
+          if(balance<250) return;
+          lic.bike=true; lic.bikeIssuedAt=Date.now();
+          return {...u,balance:balance-250,licenses:lic};
+        });
+        if(!result?.committed) return toast('❌ Недостаточно средств или права на велосипед уже есть','red');
+        await window.logTx?.(current(),{type:'out',who:'Права',amt:250,desc:'Права на велосипед'});
+        await pushNotification(current(),'🚲 Права на велосипед получены','system');
+        toast('✅ Права на велосипед выданы','green');
+        renderRightsCard();
+      }finally{window._bikeLicenseBusy=false;}
+    }
+    async function purchaseScooterLicense(){
+      if(window._scooterLicenseBusy) return;
+      window._scooterLicenseBusy=true;
+      try{
+        const nick=current();
+        const uSnap=await get(userRef(nick)); const u=uSnap.val()||{};
+        const passport=await getPassportData(nick,u);
+        const appId=genId();
+        const result=await runTransaction(userRef(nick),currentUser=>{
+          if(!currentUser) return;
+          const lic={...(currentUser.licenses||{})};
+          const old=currentUser.scooterLicenseApplication||{};
+          if(lic.scooter) return;
+          if(old.status==='pending') return;
+          const balance=Number(currentUser.balance||0);
+          if(balance<1500) return;
+          return {
+            ...currentUser,
+            balance:balance-1500,
+            scooterLicenseApplication:{
+              id:appId,status:'pending',createdAt:Date.now(),nick,
+              firstName:String(passport.firstName||currentUser.firstName||'').trim(),
+              lastName:String(passport.lastName||currentUser.lastName||'').trim(),
+              displayName:String(currentUser.displayName||nick).trim()
+            }
+          };
+        });
+        if(!result?.committed) return toast('❌ Недостаточно средств, права уже есть или заявка уже ожидает решения','red');
+        await window.logTx?.(nick,{type:'out',who:'Права',amt:1500,desc:'Заявка на права на скутер'});
+        await pushNotification(nick,'⏳ Заявка на получение прав на скутер отправлена в мэрию. Деньги не возвращаются независимо от решения.','money');
+        await pushNotification(ADMIN,`🛵 Новая заявка на права на скутер от ${String(u.displayName||nick)} (@${nick})`,'system');
+        toast('⏳ Заявка отправлена в мэрию.','gold');
+        renderRightsCard();
+      }finally{window._scooterLicenseBusy=false;}
+    }
+
+    async function renderRightsCard(){
+      const host=qs('kapaniRightsCard'); if(!host || !current()) return;
+      const nick=current();
+      const uSnap=await get(userRef(nick)); const u=uSnap.val()||{};
+      const ext=(await get(ref(db,`licenses/${nick}`)).catch(()=>null))?.val?.() || {};
+      const lic=getMergedLicenses(u,ext);
+      const app=u.scooterLicenseApplication||{};
+      host.innerHTML=`
+        <div class="card-title">🪪 Права</div>
+        <div style="display:grid;gap:8px;">
+          <div class="item-row"><div><b>🚲 Права на велосипед</b><div style="font-size:11px;color:var(--muted);">Стоимость: 250 ₽ · без подтверждения мэрии</div></div>${lic.bike?'<b style="color:var(--primary);">✅ Получены</b>':'<button class="btn btn-primary btn-sm" onclick="kapaniBuyBikeLicense()">Получить</button>'}</div>
+          <div class="item-row"><div><b>🛵 Права на скутер</b><div style="font-size:11px;color:var(--muted);">Стоимость: 1 500 ₽ · решение мэрии</div>${app.status==='pending'?'<div style="color:var(--gold);font-size:11px;margin-top:4px;">⏳ Заявка на получение прав на скутер отправлена в мэрию.</div>':''}${app.status==='rejected'?'<div style="color:var(--red);font-size:11px;margin-top:4px;">❌ Мэрия отказала в выдаче прав на скутер.</div>':''}</div>${lic.scooter?'<b style="color:var(--primary);">✅ Одобрены</b>':app.status==='pending'?'<b style="color:var(--gold);">⏳ На рассмотрении</b>':'<button class="btn btn-primary btn-sm" onclick="kapaniBuyScooterLicense()">Подать заявку</button>'}</div>
+        </div>`;
+    }
+    window.kapaniBuyBikeLicense=purchaseBikeLicense;
+    window.kapaniBuyScooterLicense=purchaseScooterLicense;
+
+    async function renderAdminScooterApplications(){
+      const host=qs('kapaniScooterApps'); if(!host || current()!==ADMIN) return;
+      const usersSnap=await get(ref(db,'users')); const users=usersSnap.val()||{};
+      const rows=Object.entries(users).map(([nick,u])=>({nick,u,app:u?.scooterLicenseApplication||{}})).filter(x=>x.app.status==='pending').sort((a,b)=>(b.app.createdAt||0)-(a.app.createdAt||0));
+      host.innerHTML=rows.length?rows.map(({nick,u,app})=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${esc(window.safeAvatar?window.safeAvatar(nick):u.avatar||'')}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(app.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(app.firstName||'—')} ${esc(app.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(app.createdAt)} · ${esc(app.status)}</div></div></div>
+        <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(nick)}')">💬 Связаться</button><button class="btn btn-primary btn-sm" onclick="kapaniReviewScooter('${jsEsc(nick)}',true)">✅ Одобрить</button><button class="btn btn-red btn-sm" onclick="kapaniReviewScooter('${jsEsc(nick)}',false)">❌ Отказать</button></div>
+      </div>`).join(''):'<div style="color:var(--muted);font-size:13px;">Заявок нет</div>';
+    }
+    window.kapaniReviewScooter=async function(nick,approve){
+      if(current()!==ADMIN) return toast('🚫 Только мэр','red');
+      const result=await runTransaction(userRef(nick),u=>{
+        if(!u) return;
+        const app=u.scooterLicenseApplication||{};
+        if(app.status!=='pending') return;
+        const next={...u,scooterLicenseApplication:{...app,status:approve?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:ADMIN}};
+        if(approve){ next.licenses={...(u.licenses||{}),scooter:true,scooterIssuedAt:Date.now()}; }
+        return next;
+      });
+      if(!result?.committed) return toast('❌ Заявка уже обработана или пользователь не найден','red');
+      await pushNotification(nick,approve?'🛵 Права на скутер одобрены мэрией.':'❌ Мэрия отказала в выдаче прав на скутер. Деньги не возвращаются.','system');
+      toast(approve?'✅ Права одобрены':'❌ Заявка отклонена',approve?'green':'gold');
+      renderAdminScooterApplications();
+    };
+
+    // ────────────────────────────────────────────────────────────────
+    // K-education
+    // ────────────────────────────────────────────────────────────────
+    async function renderKEducation(){
+      const host=qs('kEducationContent'); if(!host || !current()) return;
+      const snap=await get(userRef(current())); const u=snap.val()||{};
+      const purchase=u.kEducationPurchase||{};
+      const paid = purchase.status==='paid' || purchase.status==='submitted';
+      host.innerHTML=`
+        <div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.09),rgba(251,191,36,.06));border-color:rgba(34,211,165,.3);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <div style="font-size:34px;">🎓</div>
+            <div><div style="font-size:22px;font-weight:900;">К-образование</div><div style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.5px;">Подготовка к КВЭ</div></div>
+          </div>
+          <div style="font-size:16px;font-weight:900;line-height:1.55;">Подготовим к КВЭ за один день — и сразу сдадим экзамен.</div>
+          <div style="font-size:16px;color:var(--gold);font-weight:900;margin-top:10px;">Стоимость: 2.000 рублей.</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:10px;">Напоминаем, что при высоком балле КВЭ открываются новые доступные профессии.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">${paid?'Статус обучения':'Оплата К-образования'}</div>
+          ${paid
+            ? `<div style="padding:14px;border-radius:14px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.28);font-size:13px;line-height:1.65;">
+                 <div style="font-size:15px;font-weight:900;color:var(--primary);">✅ К-образование оплачено</div>
+                 <div style="margin-top:4px;">Заявка уже отправлена в мэрию.</div>
+                 <div style="color:var(--muted);font-size:11px;margin-top:6px;">Дата покупки: ${formatDate(purchase.createdAt)}</div>
+               </div>`
+            : `<div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:12px;">После оплаты 2 000 ₽ списываются с основного баланса и поступают государству. Дополнительного одобрения покупки не требуется.</div>
+               <button class="btn btn-primary" onclick="kapaniBuyKEducation()">🎓 Оплатить 2 000 ₽</button>`}
+        </div>
+        ${paid ? `<div class="card" style="background:var(--surface2);">
+          <div class="card-title">Что дальше</div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;line-height:1.55;">
+            <div style="font-size:28px;">📝</div>
+            <div>К-образование рассчитано на подготовку к КВЭ за один день. После покупки доступ к существующей системе КВЭ остаётся в разделе экзамена.</div>
+          </div>
+          <button class="btn btn-ghost" style="margin-top:12px;" onclick="navTo('kveExam')">📝 Открыть КВЭ</button>
+        </div>`:''}`;
+    }
+    window.kapaniBuyKEducation=async function(){
+      if(window._kEduBusy) return toast('⏳ Покупка уже выполняется…','gold');
+      window._kEduBusy=true;
+      try{
+        const nick=current();
+        const uSnap=await get(userRef(nick)); const u=uSnap.val()||{};
+        if(u.kEducationPurchase?.status==='paid'||u.kEducationPurchase?.status==='submitted') return toast('✅ К-образование уже оплачено','gold');
+        const p=await getPassportData(nick,u);
+        const purchaseId=genId();
+        const receiptId=`kedu_${purchaseId}`;
+        const purchaseCreatedAt=Date.now();
+        const receipt={id:receiptId,sourceKey:receiptId,type:'k_education',amount:2000,sourceAmount:2000,actor:nick,target:'Мэрия',reason:'Оплата К-образования',createdAt:purchaseCreatedAt};
+        const result=await runTransaction(userRef(nick),cu=>{
+          if(!cu) return;
+          if(cu.kEducationPurchase?.status==='paid'||cu.kEducationPurchase?.status==='submitted') return;
+          const bal=Number(cu.balance||0); if(bal<2000) return;
+          const pending={...(cu.treasuryPending||{}),[treasuryKey(receiptId)]:receipt};
+          return {...cu,balance:bal-2000,kEducationPurchase:{id:purchaseId,status:'submitted',createdAt:purchaseCreatedAt,nick,displayName:String(cu.displayName||nick),firstName:String(p.firstName||cu.firstName||''),lastName:String(p.lastName||cu.lastName||'')},treasuryPending:pending};
+        });
+        if(!result?.committed) return toast('❌ Недостаточно средств или К-образование уже оплачено','red');
+        await window.logTx?.(nick,{type:'out',who:'К-образование',amt:2000,desc:'Оплата К-образования'});
+        try{await collectTreasuryIncome(receipt);await clearUserTreasuryPending(nick,receiptId);}catch(e){console.warn('[keducation treasury]',e);}
+        await pushNotification(ADMIN,`🎓 Новая заявка «К-образование» от ${String(u.displayName||nick)} (@${nick})`,'system');
+        await pushNotification(nick,'🎓 К-образование оплачено. Заявка отправлена в мэрию.','system');
+        allUsersCache[nick] = result.snapshot.val(); window.allUsersCache=allUsersCache;
+        updateHeader(result.snapshot.val());
+        updateHeader_balance(result.snapshot.val());
+        toast('✅ К-образование оплачено','green');
+        await renderKEducation();
+      }finally{window._kEduBusy=false;}
+    };
+
+    async function renderAdminKEducation(){
+      const host=qs('kapaniKEducationApps'); if(!host || current()!==ADMIN) return;
+      const users=(await get(ref(db,'users'))).val()||{};
+      const rows=Object.entries(users).map(([nick,u])=>({nick,u,p:u?.kEducationPurchase||{}})).filter(x=>x.p.status==='submitted'||x.p.status==='paid').sort((a,b)=>(b.p.createdAt||0)-(a.p.createdAt||0));
+      host.innerHTML=rows.length?rows.map(({nick,u,p})=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${esc(window.safeAvatar?window.safeAvatar(nick):u.avatar||'')}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(p.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(p.firstName||'—')} ${esc(p.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(p.createdAt)} · ${esc(p.status||'submitted')}</div></div></div>
+        <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(nick)}')">💬 Связаться</button></div></div>`).join(''):'<div style="color:var(--muted);font-size:13px;">Заявок нет</div>';
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // Casino: separate balance + exactly Blackjack + ordinary European roulette.
+    // ────────────────────────────────────────────────────────────────
+    const bjCards=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const bjSuits=['♠','♥','♦','♣'];
+    function makeDeck(){const d=[];for(const suit of bjSuits)for(const rank of bjCards)d.push({rank,suit});return d;}
+    function shuffle(deck){const d=deck.slice();for(let i=d.length-1;i>0;i--){const b=new Uint32Array(1);crypto.getRandomValues(b);const j=b[0]%(i+1);[d[i],d[j]]=[d[j],d[i]];}return d;}
+    function handValue(cards){let total=0,aces=0;for(const c of cards){if(c.rank==='A'){total+=11;aces++;}else if(['K','Q','J'].includes(c.rank))total+=10;else total+=Number(c.rank);}while(total>21&&aces>0){total-=10;aces--;}return total;}
+    function renderCards(cards){return (cards||[]).map(c=>`<span style="display:inline-flex;width:48px;height:66px;align-items:center;justify-content:center;background:#fff;color:${['♥','♦'].includes(c.suit)?'#c33':'#111'};border-radius:8px;border:1px solid #ddd;font-weight:900;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.2);margin-right:5px;">${esc(c.rank)}${esc(c.suit)}</span>`).join('');}
+    async function getCasinoUser(){return (await get(userRef(current()))).val()||{};}
+    function casinoBalance(u){return Math.max(0,Number(u?.casino?.balance||0));}
+    function setCasinoTransferBusy(v){window._casinoTransferBusy=!!v;}
+    async function renderCasinoBalances(uOverride=null){
+      const u=uOverride||await getCasinoUser();
+      const mainEl=qs('casinoMainBalanceDisplay');if(mainEl)mainEl.textContent=`${Number(u.balance||0).toLocaleString('ru-RU')} ₽`;
+      const casinoEl=qs('casinoBalanceDisplay');if(casinoEl)casinoEl.textContent=`${casinoBalance(u).toLocaleString('ru-RU')} ₽`;
+    }
+    window.kapaniCasinoDeposit=async function(){
+      if(window._casinoTransferBusy)return toast('⏳ Перевод уже выполняется…','gold');
+      const input=qs('casinoTransferAmt'); const amount=Math.floor(Number(input?.value||0));
+      if(!Number.isSafeInteger(amount)||amount<=0)return toast('❌ Укажите корректную сумму','red');
+      if(input) input.value='';
+      window._casinoTransferBusy=true;
+      try{
+        const tx=await runTransaction(userRef(current()),u=>{
+          if(!u)return;
+          const main=Number(u.balance||0); if(main<amount)return;
+          const casino={...(u.casino||{})}; const cb=Math.max(0,Number(casino.balance||0));
+          return {...u,balance:main-amount,casino:{...casino,balance:cb+amount}};
+        });
+        if(!tx?.committed)return toast('❌ Недостаточно средств на основном балансе','red');
+        const nu=tx.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        await window.logTx?.(current(),{type:'out',who:'Казино',amt:amount,desc:'Пополнение игрового баланса казино'});
+        await renderCasinoBalances(nu); updateHeader(nu); updateHeader_balance(nu);
+        if(input)input.value='';
+        toast(`✅ ${amount.toLocaleString('ru-RU')} ₽ внесено в казино`,'green');
+      }finally{window._casinoTransferBusy=false;}
+    };
+    window.kapaniCasinoWithdraw=async function(){
+      if(window._casinoTransferBusy)return toast('⏳ Перевод уже выполняется…','gold');
+      const input=qs('casinoTransferAmt'); const amount=Math.floor(Number(input?.value||0));
+      if(!Number.isSafeInteger(amount)||amount<500)return toast('❌ Минимальная сумма вывода — 500 ₽','red');
+      if(input) input.value='';
+      window._casinoTransferBusy=true;
+      try{
+        const tx=await runTransaction(userRef(current()),u=>{
+          if(!u)return;
+          const casino={...(u.casino||{})}; const cb=Math.max(0,Number(casino.balance||0)); if(cb<amount)return;
+          return {...u,balance:Number(u.balance||0)+amount,casino:{...casino,balance:cb-amount}};
+        });
+        if(!tx?.committed)return toast('❌ Недостаточно средств на балансе казино','red');
+        const nu=tx.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        await window.logTx?.(current(),{type:'in',who:'Казино',amt:amount,desc:'Вывод игрового баланса казино'});
+        await renderCasinoBalances(nu); updateHeader(nu); updateHeader_balance(nu);
+        if(input)input.value='';
+        toast(`✅ ${amount.toLocaleString('ru-RU')} ₽ выведено из казино`,'green');
+      }finally{window._casinoTransferBusy=false;}
+    };
+
+    function bjTotalPayout(state){
+      const pv=handValue(state.player||[]), dv=handValue(state.dealer||[]);
+      if(pv>21)return 0;
+      if(dv>21 || pv>dv)return pv===21 && (state.player||[]).length===2 ? Math.round(state.stake*2.5) : state.stake*2;
+      if(pv===dv)return state.stake;
+      return 0;
+    }
+    async function renderBlackjack(){
+      const host=qs('blackjackArea'); if(!host)return;
+      const u=await getCasinoUser(); const st=u.casino?.blackjack;
+      if(!st || st.status==='finished'){
+        host.innerHTML=`<div class="card-title">🎰 Блекджек</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;">Классический блекджек. Победа — 1:1, натуральный блекджек — 3:2, ничья возвращает ставку.</div>
+          <input type="number" id="bjStake" min="1" step="1" placeholder="Ставка (₽)">
+          <button class="btn btn-primary" onclick="kapaniBlackjackStart()">♠️ Раздать карты</button>`;
+        return;
+      }
+      const pv=handValue(st.player||[]),dv=handValue(st.dealer||[]);
+      const disabled=window._blackjackActionBusy?'disabled':'';
+      host.innerHTML=`<div class="card-title">🎰 Блекджек</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><span style="font-size:12px;color:var(--muted);">Ставка</span><b style="color:var(--gold);">${Number(st.stake).toLocaleString('ru-RU')} ₽</b></div>
+        <div style="margin-bottom:12px;"><b>Игрок · ${pv}</b><div style="margin-top:7px;white-space:nowrap;overflow:auto;">${renderCards(st.player)}</div></div>
+        <div style="margin-bottom:12px;"><b>Дилер · ${st.status==='playing'?'?':dv}</b><div style="margin-top:7px;white-space:nowrap;overflow:auto;">${st.status==='playing'?renderCards([st.dealer[0]]):renderCards(st.dealer)}</div></div>
+        ${st.status==='playing'
+          ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><button class="btn btn-primary btn-sm" ${disabled} onclick="kapaniBlackjackHit()">➕ Hit</button><button class="btn btn-gold btn-sm" ${disabled} onclick="kapaniBlackjackStand()">✋ Stand</button></div>`
+          : `<div style="padding:12px;border-radius:12px;background:var(--surface2);margin-bottom:8px;font-weight:900;">${esc(st.resultText||'Раунд завершён')}</div><button class="btn btn-primary btn-sm" onclick="renderBlackjack()">🔄 Новая игра</button>`}`;
+    }
+    async function blackjackStart(){
+      if(window._blackjackActionBusy)return;
+      const stake=Math.floor(Number(qs('bjStake')?.value||0));
+      if(stake<=0)return toast('❌ Укажите ставку','red');
+      window._blackjackActionBusy=true;
+      try{
+        const result=await runTransaction(userRef(current()),u=>{
+          if(!u)return;
+          const casino={...(u.casino||{})}; const cb=Math.max(0,Number(casino.balance||0)); if(cb<stake)return;
+          const old=casino.blackjack;if(old?.status==='playing')return;
+          const deck=shuffle(makeDeck()); const player=[deck.pop(),deck.pop()]; const dealer=[deck.pop(),deck.pop()];
+          return {...u,casino:{...casino,balance:cb-stake,blackjack:{id:genId(),status:'playing',stake,deck,player,dealer,createdAt:Date.now()}}};
+        });
+        if(!result?.committed)return toast('❌ Недостаточно средств на балансе казино или текущая игра ещё не завершена','red');
+        const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        await window.logTx?.(current(),{type:'out',who:'Казино · Блекджек',amt:stake,desc:'Ставка в блекджек'});
+        await renderCasinoBalances(nu); renderBlackjack();
+        toast('🎰 Карты розданы','green');
+      }finally{window._blackjackActionBusy=false;}
+    }
+    async function blackjackHit(){
+      if(window._blackjackActionBusy)return;
+      window._blackjackActionBusy=true;
+      try{
+        const result=await runTransaction(userRef(current()),u=>{
+          const st=u?.casino?.blackjack; if(!st||st.status!=='playing')return;
+          const deck=(st.deck||[]).slice(); if(!deck.length)return;
+          const player=(st.player||[]).slice(); player.push(deck.pop()); const value=handValue(player);
+          if(value>21)return {...u,casino:{...(u.casino||{}),blackjack:{...st,deck,player,status:'finished',resultText:'❌ Перебор — проигрыш',payout:0,finishedAt:Date.now()}}};
+          return {...u,casino:{...(u.casino||{}),blackjack:{...st,deck,player}}};
+        });
+        if(!result?.committed)return;
+        const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        window._blackjackActionBusy=false;
+        await renderCasinoBalances(nu); await renderBlackjack();
+      }finally{window._blackjackActionBusy=false;}
+    }
+    async function blackjackStand(){
+      if(window._blackjackActionBusy)return;
+      window._blackjackActionBusy=true;
+      try{
+        const result=await runTransaction(userRef(current()),u=>{
+          const st=u?.casino?.blackjack; if(!st||st.status!=='playing')return;
+          const deck=(st.deck||[]).slice(); const player=(st.player||[]).slice(); const dealer=(st.dealer||[]).slice();
+          while(handValue(dealer)<17 && deck.length) dealer.push(deck.pop());
+          const payout=bjTotalPayout({...st,player,dealer});
+          const text=payout===0?'❌ Проигрыш':payout===st.stake?'🤝 Ничья — ставка возвращена':(payout===Math.round(st.stake*2.5)?'🎉 Натуральный блекджек — выплата 3:2':'🎉 Победа');
+          const casino={...(u.casino||{})}; const cb=Math.max(0,Number(casino.balance||0));
+          return {...u,casino:{...casino,balance:cb+payout,blackjack:{...st,deck,player,dealer,status:'finished',resultText:text,payout,finishedAt:Date.now()}}};
+        });
+        if(!result?.committed)return;
+        const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        const st=nu.casino?.blackjack; const payout=Number(st?.payout||0);
+        if(payout>0) await window.logTx?.(current(),{type:'in',who:'Казино · Блекджек',amt:payout,desc:st.resultText||'Выплата за блекджек'});
+        window._blackjackActionBusy=false;
+        await renderCasinoBalances(nu); await renderBlackjack();
+        toast(st?.resultText||'Раунд завершён',payout>0?'green':'red');
+      }finally{window._blackjackActionBusy=false;}
+    }
+    window.kapaniBlackjackStart=blackjackStart;window.kapaniBlackjackHit=blackjackHit;window.kapaniBlackjackStand=blackjackStand;
+
+    // Casino game #2: classic three-reel slot machine.
+    const SLOT_SYMBOLS=['🍒','🍋','🔔','⭐','💎','7️⃣'];
+    function slotPick(){const r=new Uint32Array(1);crypto.getRandomValues(r);return SLOT_SYMBOLS[r[0]%SLOT_SYMBOLS.length];}
+    function slotMultiplier(reels){
+      const [a,b,c]=reels;
+      if(a===b&&b===c){
+        if(a==='7️⃣')return 10;if(a==='💎')return 8;if(a==='⭐')return 6;if(a==='🔔')return 5;if(a==='🍒')return 4;return 3;
+      }
+      if([a,b,c].filter(x=>x==='🍒').length>=2)return 2;
+      return 0;
+    }
+    async function renderSlots(){
+      const host=qs('slotsArea');if(!host)return;
+      const u=await getCasinoUser();const last=u.casino?.slotsLast;const disabled=window._slotsBusy?'disabled':'';
+      const reels=last?.reels||['❔','❔','❔'];
+      host.innerHTML=`<div class="card-title">🎰 Игровые слоты</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;">Классический трёхбарабанный игровой автомат. Совпадение символов приносит выигрыш.</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0;">${reels.map(x=>`<div style="height:82px;display:flex;align-items:center;justify-content:center;font-size:42px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;">${esc(x)}</div>`).join('')}</div>
+        <input type="number" id="slotsStake" min="1" step="1" placeholder="Ставка (₽)">
+        <button class="btn btn-primary" ${disabled} onclick="kapaniSlotsSpin()">🎰 Крутить</button>
+        ${last?`<div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:12px;font-weight:900;"><div style="font-size:22px;letter-spacing:4px;">${last.reels.map(esc).join(' · ')}</div><div style="margin-top:6px;color:${last.payout>0?'var(--primary)':'var(--red)'};">${last.payout>0?`✅ Выплата ${Number(last.payout).toLocaleString('ru-RU')} ₽`:`❌ Проигрыш −${Number(last.stake).toLocaleString('ru-RU')} ₽`}</div></div>`:''}
+        <div style="margin-top:10px;font-size:10px;color:var(--muted);line-height:1.45;">7️⃣ ×3 = 10× · 💎 ×3 = 8× · ⭐ ×3 = 6× · 🔔 ×3 = 5× · 🍒 ×3 = 4× · 🍋 ×3 = 3× · два 🍒 = 2×</div>`;
+    }
+    async function slotsSpin(){
+      if(window._slotsBusy)return;
+      const stake=Math.floor(Number(qs('slotsStake')?.value||0));if(stake<=0)return toast('❌ Укажите ставку','red');
+      window._slotsBusy=true;
+      try{
+        const opId=genId();const reels=[slotPick(),slotPick(),slotPick()];const mult=slotMultiplier(reels);const payout=stake*mult;
+        const tx=await runTransaction(userRef(current()),u=>{
+          if(!u)return;const casino={...(u.casino||{})};const cb=Math.max(0,Number(casino.balance||0));if(cb<stake)return;
+          const ops=casino.slotsOps||{};if(ops[opId])return;
+          const last={id:opId,reels,stake,payout,multiplier:mult,createdAt:Date.now()};
+          return {...u,casino:{...casino,balance:cb-stake+payout,slotsLast:last,slotsOps:{...ops,[opId]:last}}};
+        });
+        if(!tx?.committed)return toast('❌ Недостаточно средств на балансе казино','red');
+        const nu=tx.snapshot.val();allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
+        const input=qs('slotsStake');if(input)input.value='';
+        await window.logTx?.(current(),{type:'out',who:'Казино · Слоты',amt:stake,desc:'Ставка в игровых слотах'});
+        if(payout>0)await window.logTx?.(current(),{type:'in',who:'Казино · Слоты',amt:payout,desc:`Выигрыш в слотах (${mult}×)`});
+        window._slotsBusy=false;await renderCasinoBalances(nu);await renderSlots();
+        toast(payout>0?`🎰 ${reels.join(' · ')} — выплата ${payout.toLocaleString('ru-RU')} ₽`:`🎰 ${reels.join(' · ')} — проигрыш ${stake.toLocaleString('ru-RU')} ₽`,payout>0?'green':'red');
+      }finally{window._slotsBusy=false;}
+    }
+    window.kapaniSlotsSpin=slotsSpin;
+
+    async function renderCasino(){
+      const host=qs('casino');if(!host)return;
+      const u=await getCasinoUser();
+      await renderCasinoBalances(u);
+      await renderBlackjack();await renderSlots();
+    }
+    window.kapaniRenderCasino=renderCasino;
+    window.kapaniRenderKEducation=renderKEducation;
+
+    // ────────────────────────────────────────────────────────────────
+    // Admin UI injection + navigation integration
+    // ────────────────────────────────────────────────────────────────
+    function injectEconomyAdminUI(){
+      const page=qs('adminPage'); if(!page || current()!==ADMIN) return;
+      if(!qs('kapaniTreasuryCard')){
+        const c=document.createElement('div');c.className='card';c.id='kapaniTreasuryCard';c.style.cssText='border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.04);';page.appendChild(c);
+      }
+      if(!qs('kapaniScooterApps')){
+        const c=document.createElement('div');c.className='card';c.id='kapaniScooterAppsCard';c.innerHTML='<div class="card-title" style="color:var(--gold);">🛵 Заявки на права на скутер</div><div id="kapaniScooterApps">Загрузка…</div>';page.appendChild(c);
+      }
+      if(!qs('kapaniKEducationApps')){
+        const c=document.createElement('div');c.className='card';c.id='kapaniKEducationAppsCard';c.innerHTML='<div class="card-title" style="color:var(--primary);">🎓 К-образование</div><div id="kapaniKEducationApps">Загрузка…</div>';page.appendChild(c);
+      }
+      renderTreasuryCard();renderAdminScooterApplications();renderAdminKEducation();
+      sweepAllPendingTreasury();
+    }
+
+    function injectRightsCard(){
+      const profile=qs('profile');if(!profile)return;
+      if(!qs('kapaniRightsCard')){
+        const c=document.createElement('div');c.className='card';c.id='kapaniRightsCard';c.style.cssText='border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.04);';
+        // Put it after existing profile cards so it remains additive.
+        profile.appendChild(c);
+      }
+      renderRightsCard();
+    }
+
+    function ensureEconomySections(){
+      const main=qs('mainApp');
+      if(!main) return;
+
+      let edu=qs('kEducation');
+      if(!edu){
+        edu=document.createElement('div');
+        edu.id='kEducation';
+        edu.className='section';
+        edu.innerHTML='<div id="kEducationContent"></div>';
+        main.appendChild(edu);
+      }
+      let casino=qs('casino');
+      if(!casino){
+        casino=document.createElement('div');
+        casino.id='casino';
+        casino.className='section';
+        casino.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);"><div style="font-size:22px;font-weight:900;">🎰 Казино</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек и игровые слоты</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;"><div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div><div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div></div><div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div><div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;"><button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button><div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div></div></div><div class="card" id="blackjackArea"></div><div class="card" id="slotsArea"></div>`;
+        main.appendChild(casino);
+      }
+      if(!qs('kEducationContent')){const c=document.createElement('div');c.id='kEducationContent';edu.appendChild(c);}
+      if(!qs('blackjackArea')){const c=document.createElement('div');c.className='card';c.id='blackjackArea';casino.appendChild(c);}
+      if(!qs('slotsArea')){const c=document.createElement('div');c.className='card';c.id='slotsArea';casino.appendChild(c);}
+      return {edu,casino};
+    }
+    function injectKEducationSection(){ return ensureEconomySections(); }
+    function injectCasinoSection(){ return ensureEconomySections(); }
+
+    // Existing profile passport renderer reads u._licenses/u.licenses, so no separate document UI is created here.
+    // Patch it once to merge the external /licenses record with purchased in-user licenses.
+    const oldOpenPassport=window.openPassport;
+    if(typeof oldOpenPassport==='function' && !oldOpenPassport.__kapaniMerged){
+      // Leave its original rendering intact; purchased licenses are mirrored into u.licenses and are read by the pack fallback.
+    }
+
+    const oldNav=window.navTo;
+    // Create both sections as soon as the main app exists, before any click can navigate to them.
+    // Economy-specific sections are created lazily when their page is opened.
+
+    window.navTo=function(id){
+      try{
+        // Guarantee that the destination exists BEFORE the original navigator hides all sections.
+        if(id==='kEducation' || id==='casino') ensureEconomySections();
+      }catch(e){}
+      const ret=typeof oldNav==='function'?oldNav.apply(this,arguments):undefined;
+      try{
+        if(id==='profile') setTimeout(()=>injectRightsCard(),40);
+        if(id==='kEducation') renderKEducation().catch(e=>{console.error('[K-education render]',e);const host=qs('kEducationContent');if(host)host.innerHTML='<div class=\"card\"><div style=\"font-weight:900;color:var(--red);\">❌ Не удалось загрузить К-образование</div><div style=\"font-size:12px;color:var(--muted);margin-top:6px;\">Попробуйте открыть вкладку ещё раз.</div></div>';});
+        if(id==='casino') renderCasino().catch(e=>{console.error('[Casino render]',e);const bj=qs('blackjackArea'),sl=qs('slotsArea');if(bj)bj.innerHTML='<div style=\"color:var(--red);\">❌ Не удалось загрузить блекджек</div>';if(sl)sl.innerHTML='<div style=\"color:var(--red);\">❌ Не удалось загрузить игровые слоты</div>';});
+        if(id==='tasks') setTimeout(()=>{const u=window.allUsersCache?.[current()]||{};const el=qs('taskBalanceDisplay');if(el)el.textContent=`${Number(u.taskBalance||0).toLocaleString('ru-RU')} ₽`;},80);
+        if(id==='adminPage') setTimeout(()=>injectEconomyAdminUI(),120);
+      }catch(e){console.warn('[Kapani economy nav]',e)}
+      return ret;
+    };
+
+    // Current-page integrations are intentionally lazy and are invoked from nav hooks.
+  };
+  waitReady().catch(e=>console.error('[Kapani Economy Extension]',e));
+})();
 </script>
 
 </body>
