@@ -1691,8 +1691,8 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <b style="color:var(--text)">🛡 КСБ (Капанёвская служба безопасности)</b> — обеспечивает порядок, имеет доступ к выписыванию штрафов жителям и приоритетный доступ к чату с Кайоном. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">4000 рублей/неделю</b><br>
             <b style="color:var(--text)">🏛 Депутат</b> — представляет интересы жителей, отправляет предложения и запросы в мэрию. Запросы рассматриваются, отклоняются или одобряются мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 95.</b> Зарплата: <b style="color:var(--gold)">5000 рублей/неделю</b><br>
             <b style="color:var(--text)">👮 Полицейский</b> — следит за порядком, может создавать запросы в мэрию на штраф нарушителя или удаление аккаунта. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">3400 рублей/неделю</b><br>
-            <b style="color:var(--text)">🏥 Врач</b> — принимает пациентов в больнице (Лёхин шалаш), сам создаёт и оценивает услуги. Доход — оплата приёмов пациентами. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b><br>
-            <b style="color:var(--text)">🩺 Помощник врача</b> — ассистирует врачу в больнице. Только одна должность одновременно, заявка подаётся в разделе «🏥 Больница» ниже. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата назначается врачом.
+            <b style="color:var(--text)">🏥 Врач</b> — принимает пациентов в больнице (Лёхин шалаш), сам создаёт и оценивает услуги. Доход — оплата приёмов пациентами. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">в зависимости от приёмов</b><br>
+            <b style="color:var(--text)">🩺 Помощник врача</b> — ассистирует врачу в больнице. Только одна должность одновременно, заявка подаётся в разделе «🏥 Больница» ниже. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">назначается врачом</b>.
         </div>
     </div>
     <div class="card">
@@ -2189,6 +2189,8 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <div class="item-row" style="justify-content:space-between;"><span>📰 Журналист</span><b style="color:var(--primary)">71 балл</b></div>
             <div class="item-row" style="justify-content:space-between;"><span>🛡 КСБ</span><b style="color:var(--primary)">90 баллов</b></div>
             <div class="item-row" style="justify-content:space-between;"><span>🏛 Депутат</span><b style="color:var(--primary)">95 баллов</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>🏥 Врач</span><b style="color:var(--primary)">90 баллов</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>🩺 Помощник врача</span><b style="color:var(--primary)">80 баллов</b></div>
             <div class="item-row" style="background:var(--pri-dim);border-color:rgba(34,211,165,.3);justify-content:space-between;"><span style="color:var(--primary);font-weight:900;">Минимум (остаться на сайте)</span><b style="color:var(--gold)">32 балла</b></div>
         </div>
     </div>
@@ -3153,10 +3155,10 @@ function collectEmploymentsFromData(u, nick){
 }
 function countActiveEmployments(u, nick){ return collectEmploymentsFromData(u, nick).length; }
 function getDisplayJobLabel(u, nick){
-    if(u?.displayJob) return u.displayJob;
     const emps = collectEmploymentsFromData(u, nick);
+    if(u?.displayJob && emps.some(e => e.role === u.displayJob)) return u.displayJob;
     if(emps.length) return emps[0].role;
-    return (u && u.job) || 'Житель';
+    return (u && u.job && u.job !== 'Житель') ? u.job : 'Житель';
 }
 function hasMunicipalJob(u, jobName){
     return collectEmploymentsFromData(u, u?.nick || currentNick).some(e => e.type === 'municipal' && e.role === jobName);
@@ -5496,9 +5498,15 @@ window.quitJob = async function(){
             const newMuniJob = remainingMuni.length > 0 ? remainingMuni[0].role : 'Житель';
 
             // 4) Формируем patch — все значения явно определены, без undefined
+            const activeDisplay = newEmps.find(e => e.role && e.role === u.displayJob) || newEmps[0] || null;
             const patch = {
                 employments: newEmps,
-                displayJob:  newEmps.length > 0 ? newEmps[0].role : null,
+                // displayJob is only valid while the corresponding employment exists.
+                // Never keep the fired role as a stale profile label.
+                displayJob: activeDisplay ? activeDisplay.role : null,
+                // Legacy municipal role must also be recalculated independently of the
+                // fired role. Business employment must never keep an old municipal job.
+                job: remainingMuni.length > 0 ? remainingMuni[0].role : 'Житель'
             };
 
             if(targetEmp.type === 'municipal'){
@@ -5530,6 +5538,10 @@ window.quitJob = async function(){
 
             // 7) Атомарное обновление Firebase
             await update(userRef(nick), safePatch);
+            const localFreshUser = { ...u, ...safePatch };
+            allUsersCache[nick] = localFreshUser;
+            window.allUsersCache = allUsersCache;
+            try { updateHeader(localFreshUser); } catch(e) {}
 
             toast(`🚪 Вы уволились с «${targetEmp.role}»`, 'green');
 
@@ -7257,7 +7269,7 @@ window.sendApp=async function(){
     if(hasMunicipalJob(u, target)) return toast('⚠️ Вы уже работаете на этой должности','gold');
     if(!await canTakeAnotherJob(u, currentNick)) return toast(`⚠️ Лимит работ: ${getJobLimit(u)}. Увольтесь с одной работы или оформите подписку.`,'gold');
     const kveScore = (u.kveScore !== undefined && u.kveScore !== null) ? Number(u.kveScore) : null;
-    const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90};
+    const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90,'Помощник врача':80};
     const required=KVE_REQUIREMENTS[target]||0;
     if(kveScore===null){
         return toast('📝 У вас ещё нет результата КВЭ. Дождитесь выставления балла мэрией.','gold');
@@ -7286,6 +7298,19 @@ window.withdrawApp=async function(){
     toast('📝 Заявка отозвана','gold');
     renderJobAppStatus();
 };
+function getMunicipalJobSalaryLabel(role){
+    const labels={
+        'Уборщик':'1500 ₽/неделю',
+        'Журналист':'2800 ₽/неделю',
+        'КСБ':'4000 ₽/неделю',
+        'Депутат':'5000 ₽/неделю',
+        'Полицейский':'3400 ₽/неделю',
+        'Врач':'в зависимости от приёмов',
+        'Помощник врача':'назначается врачом'
+    };
+    return labels[role] || (role==='Водитель'||role==='Доставщик' ? 'в зависимости от заказов' : '');
+}
+
 window.renderJobAppStatus=async function(){
     const snap=await get(appsRef());
     const apps=snap.val()||{};
@@ -7299,7 +7324,7 @@ window.renderJobAppStatus=async function(){
         const limit=getJobLimit(u);
         jobsListEl.innerHTML=emps.length?`<div style="padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;">
             <div style="font-weight:800;margin-bottom:6px;">Ваши работы (${emps.length}/${limit})</div>
-            ${emps.map(e=>`<div style="padding:6px 0;border-bottom:1px solid var(--border);">${escHtml(e.role)}${e.bizName?` <span style="color:var(--muted);font-size:11px;">· ${escHtml(e.bizName)}</span>`:''}</div>`).join('')}
+            ${emps.map(e=>{ const sal=getMunicipalJobSalaryLabel(e.role); return `<div style="padding:6px 0;border-bottom:1px solid var(--border);"><div>${escHtml(e.role)}${e.bizName?` <span style="color:var(--muted);font-size:11px;">· ${escHtml(e.bizName)}</span>`:''}</div>${sal?`<div style="font-size:11px;color:var(--gold);font-weight:800;margin-top:2px;">💰 ${escHtml(sal)}</div>`:''}</div>`; }).join('')}
         </div>`:'';
     }
     
@@ -11250,21 +11275,18 @@ function getBizEmployeeRoleName(entry){
     return entry.roleName || entry.role || 'Сотрудник';
 }
 function getUserBusinessRoleLabel(u, nick = (u && u.nick) || currentNick){
-    if(u?.displayJob) return u.displayJob;
+    if(!u) return 'Житель';
+
+    // The stored displayJob is only trusted when it still points to an active
+    // employment. This prevents a fired role (for example, 'Врач') from
+    // remaining visible until a full reload.
     const emps = collectEmploymentsFromData(u, nick);
+    if(u.displayJob && emps.some(e => e.role === u.displayJob)) return u.displayJob;
     if(emps.length) return emps[0].role;
-    const fallback = (u && u.job) || 'Житель';
-    if(!u) return fallback;
-    const scan = (allBusinessesCache && typeof allBusinessesCache === 'object') ? Object.values(allBusinessesCache) : [];
-    for(const b of scan){
-        const emp = b && b.employees && b.employees[nick];
-        if(emp) return getBizEmployeeRoleName(emp);
-    }
-    if(u.employerBizId && allBusinessesCache[u.employerBizId]){
-        const emp = allBusinessesCache[u.employerBizId].employees?.[nick];
-        if(emp) return getBizEmployeeRoleName(emp);
-    }
-    return fallback;
+
+    // Keep legacy municipal `job` compatible, but never let a stale value beat
+    // the absence of active employments.
+    return (u.job && u.job !== 'Житель') ? u.job : 'Житель';
 }
 function renderBizEmployeeTags(b){
     const entries = Object.entries(b?.employees || {});
