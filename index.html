@@ -16,46 +16,56 @@
 <script>
 // Early stubs for fine handlers: if user taps before late module wires
 // up, queue the call and replay once real handler is installed.
+// Resolution now uses window.KAPANI_READY (set by the main module) instead
+// of a setInterval poll — deterministic, fires exactly once, no timers left
+// running after the app has started.
 (function(){
   var queued = [];
   function makeStub(name){
-    return function(){
+    var stub = function(){
       var args = Array.prototype.slice.call(arguments);
       var ctx = this;
-      // Check if real handler is already installed under __real_ prefix
       var realFn = window['__real_' + name];
       if(typeof realFn === 'function') return realFn.apply(ctx, args);
       queued.push({name: name, ctx: ctx, args: args});
       try { (window.toast || function(){})('⏳ Загрузка… попробуйте ещё раз через секунду','gold'); } catch(e){}
     };
+    stub._isStub = true;
+    return stub;
   }
-  // Install stubs only if not yet defined
   ['submitDutyFine','ksbFineWorker'].forEach(function(n){
     if(typeof window[n] !== 'function') window[n] = makeStub(n);
   });
 
-  // Safe watcher: poll for real implementations instead of defineProperty
-  // (defineProperty get/set caused "Maximum call stack size exceeded" if
-  //  the real function internally referenced window[name] itself)
-  var checkInterval = setInterval(function(){
-    ['submitDutyFine','ksbFineWorker'].forEach(function(name){
-      var cur = window[name];
-      // If a real (non-stub) function is now assigned and we haven't stored it yet
-      if(typeof cur === 'function' && !cur._isStub && !window['__real_' + name]){
-        window['__real_' + name] = cur;
-        // Replay queued calls
-        var pending = queued.filter(function(q){ return q.name === name; });
-        queued = queued.filter(function(q){ return q.name !== name; });
-        pending.forEach(function(q){ try { cur.apply(q.ctx, q.args); } catch(e){ console.error(e); } });
-      }
-    });
-    // Stop polling once both are resolved
-    if(window['__real_submitDutyFine'] && window['__real_ksbFineWorker']) clearInterval(checkInterval);
-  }, 300);
-  // Mark stubs so we can detect them
-  ['submitDutyFine','ksbFineWorker'].forEach(function(n){
-    if(window[n]) window[n]._isStub = true;
-  });
+  function resolveReal(name){
+    var cur = window[name];
+    if(typeof cur === 'function' && !cur._isStub && !window['__real_' + name]){
+      window['__real_' + name] = cur;
+      var pending = queued.filter(function(q){ return q.name === name; });
+      queued = queued.filter(function(q){ return q.name !== name; });
+      pending.forEach(function(q){ try { cur.apply(q.ctx, q.args); } catch(e){ console.error(e); } });
+    }
+  }
+  // The real implementations are installed by the "Kapani Pack v2" module,
+  // which itself awaits window.KAPANI_READY. Wait for that same signal, then
+  // poll briefly (module eval order isn't guaranteed) and resolve once —
+  // no repeating timers left running after startup.
+  function waitForReal(){
+    var tries = 0;
+    (function attempt(){
+      resolveReal('submitDutyFine'); resolveReal('ksbFineWorker');
+      if(window.__real_submitDutyFine && window.__real_ksbFineWorker) return;
+      if(tries++ > 60) { console.error('[Kapani stub] handlers not installed after startup'); return; }
+      setTimeout(attempt, 250);
+    })();
+  }
+  if(window.KAPANI_READY && typeof window.KAPANI_READY.then === 'function'){
+    window.KAPANI_READY.then(waitForReal);
+  } else {
+    // Fallback for the unlikely case this script runs after KAPANI_READY was
+    // already defined-and-resolved elsewhere, or the bootstrap var is missing.
+    waitForReal();
+  }
 })();
 </script>
 
@@ -63,7 +73,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://unpkg.com">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root {
     --bg:#0c1117;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
@@ -1047,6 +1056,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div class="quick-card" onclick="navTo('deliveryOrderPage')" role="button" tabindex="0" aria-label="Заказать доставку из бизнеса"><div class="qico">🚚</div><div class="qlbl">Доставка</div><div class="qsub">Бизнесы и маркет</div></div>
         <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
         <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
+        <div class="quick-card" onclick="navTo('hospital')" role="button" tabindex="0" aria-label="Больница"><div class="qico">🏥</div><div class="qlbl">Больница</div><div class="qsub">Лёхин шалаш</div></div>
         <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" id="kveHomeCard" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub" id="kveHomeSub">Узнай о главном экзамене</div></div>
         <div class="quick-card" onclick="navTo('deputySession')" id="deputySessionQuickBtn" role="button" tabindex="0" aria-label="Заседание" style="display:none;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.06));border-color:rgba(251,191,36,.35);"><div class="qico">🏛</div><div class="qlbl">Заседание</div><div class="qsub">Предложения и запросы</div></div>
         <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.10));border-color:rgba(251,191,36,.3);"><div class="qico">🏁</div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
@@ -1082,6 +1092,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     </div>
     <div id="adminQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-gold" onclick="navTo('adminPage')">👑 Открыть Мэрию</button></div>
     <div id="dutyQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-red" onclick="navTo('dutyPage')">🛡 Панель КСБ / Полиции<span class="bn-badge" id="dutyCallsBadge" style="position:static;display:none;margin-left:8px;"></span></button></div>
+    <div id="hospitalQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-primary" onclick="navTo('hospitalPanel')">🏥 Панель больницы</button></div>
     <div class="card" style="padding:12px;">
         <div class="card-title" style="margin-bottom:12px;">🗺 Карта поселка</div>
         <iframe class="map-frame" style="height:280px;" src="https://www.google.com/maps/d/embed?mid=1uYqkCigRmRXX6WOjTjIH01PsF9Na2xw&hl=ru&ll=52.629519493712436,38.41743147652263&z=17" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -1620,6 +1631,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <option value="КСБ">🛡 КСБ (служба безопасности)</option>
             <option value="Депутат">🏛 Депутат</option>
             <option value="Полицейский">👮 Полицейский</option>
+            <option value="Врач">🏥 Врач</option>
         </select>
         <textarea id="jAppText" placeholder="Расскажите о себе и почему должны принять именно вас на эту работу..." style="min-height:80px;margin-top:8px;"></textarea>
         <button class="btn btn-primary" onclick="sendApp()">Подать заявку</button>
@@ -1635,8 +1647,14 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <b style="color:var(--text)">📰 Журналист</b> — публикует новости и важные объявления для жителей поселка. <b style="color:var(--primary)">Нужный балл КВЭ: 71.</b> Зарплата: <b style="color:var(--gold)">2800 рублей/неделю</b>. В случае выкладывания неподобающих объявлений — <b style="color:var(--red)">увольнение</b>.<br>
             <b style="color:var(--text)">🛡 КСБ (Капанёвская служба безопасности)</b> — обеспечивает порядок, имеет доступ к выписыванию штрафов жителям и приоритетный доступ к чату с Кайоном. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">4000 рублей/неделю</b><br>
             <b style="color:var(--text)">🏛 Депутат</b> — представляет интересы жителей, отправляет предложения и запросы в мэрию. Запросы рассматриваются, отклоняются или одобряются мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 95.</b> Зарплата: <b style="color:var(--gold)">5000 рублей/неделю</b><br>
-            <b style="color:var(--text)">👮 Полицейский</b> — следит за порядком, может создавать запросы в мэрию на штраф нарушителя или удаление аккаунта. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">3400 рублей/неделю</b>
+            <b style="color:var(--text)">👮 Полицейский</b> — следит за порядком, может создавать запросы в мэрию на штраф нарушителя или удаление аккаунта. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">3400 рублей/неделю</b><br>
+            <b style="color:var(--text)">🏥 Врач</b> — принимает пациентов в больнице (Лёхин шалаш), сам создаёт и оценивает услуги. Доход — оплата приёмов пациентами. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b><br>
+            <b style="color:var(--text)">🩺 Помощник врача</b> — ассистирует врачу в больнице. Только одна должность одновременно, заявка подаётся в разделе «🏥 Больница» ниже. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата назначается врачом.
         </div>
+    </div>
+    <div class="card">
+        <div class="card-title">🏥 Больница</div>
+        <div id="hospitalJobsInfo" style="font-size:13px;color:var(--muted);">Загрузка...</div>
     </div>
 </div>
 
@@ -1808,6 +1826,68 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     </div>
 </div>
 
+<!-- HOSPITAL (patient-facing) -->
+<div id="hospital" class="section">
+    <div class="card">
+        <div class="card-title">🏥 Больница Капани</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">📍 Лёхин шалаш</div>
+        <div id="hospitalDoctorCard"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
+    <div class="card">
+        <div class="card-title">🩺 Услуги</div>
+        <div id="hospitalServicesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
+    <div class="card" id="hospitalBookingCard" style="display:none;border-color:rgba(34,211,165,.3);">
+        <div class="card-title">📅 Записаться на приём</div>
+        <div id="hospitalBookingServiceInfo" style="font-size:13px;color:var(--muted);margin-bottom:10px;"></div>
+        <input type="date" id="hospitalBookDate">
+        <input type="time" id="hospitalBookTime" style="margin-top:8px;">
+        <button class="btn btn-primary" style="margin-top:10px;" onclick="confirmHospitalBooking()">✅ Записаться</button>
+        <button class="btn btn-ghost" style="margin-top:8px;" onclick="cancelHospitalBookingForm()">Отмена</button>
+    </div>
+    <div class="card">
+        <div class="card-title">📋 Мои записи</div>
+        <div id="hospitalMyAppointments"><div style="color:var(--muted);font-size:13px;">Нет записей</div></div>
+    </div>
+</div>
+
+<!-- HOSPITAL PANEL (doctor-only) -->
+<div id="hospitalPanel" class="section">
+    <div class="card" id="hospitalPanelNoAccess" style="display:none;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);">
+        <div style="font-size:13px;color:var(--red);">❌ Доступно только врачу.</div>
+    </div>
+    <div class="card" style="border-color:rgba(34,211,165,.3);">
+        <div class="card-title">🏥 Панель больницы</div>
+        <div style="font-size:13px;color:var(--muted);">📍 Лёхин шалаш</div>
+    </div>
+    <div class="card">
+        <div class="card-title">📅 Записи</div>
+        <div id="hospitalPanelAppointments"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
+    <div class="card">
+        <div class="card-title">🩺 Услуги</div>
+        <div id="hospitalPanelServices"></div>
+        <div style="margin-top:12px;">
+            <input type="text" id="hospServiceName" placeholder="Название услуги" maxlength="60">
+            <input type="text" id="hospServiceDesc" placeholder="Описание" maxlength="200" style="margin-top:8px;">
+            <input type="number" id="hospServicePrice" placeholder="Цена ₽" min="1" step="1" style="margin-top:8px;">
+            <button class="btn btn-primary" style="margin-top:8px;" onclick="addHospitalService()">+ Добавить услугу</button>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">👨‍⚕️ Помощник</div>
+        <div id="hospitalPanelAssistant"></div>
+        <div style="margin-top:14px;">
+            <div style="font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Заявки на должность</div>
+            <div id="hospitalPanelAssistantApps"></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-title">💰 Финансы и статистика</div>
+        <div id="hospitalPanelFinance"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
+    </div>
+</div>
+
 <!-- ADMIN PAGE -->
 
 <div id="adminPage" class="section">
@@ -1816,6 +1896,23 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div class="stats-row" id="adminStats"></div>
     </div>
     <div class="card"><div class="card-title">📋 Заявки на работу</div><div id="appList"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
+    <div class="card" style="border-color:rgba(251,191,36,.3);">
+        <div class="card-title" style="color:var(--gold);">🏛 Принудительное трудоустройство</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Назначает жителя на любую должность в обход требований КВЭ. Действие логируется.</div>
+        <select id="adminForceHireTarget" style="margin-bottom:8px;"></select>
+        <select id="adminForceHireJob" style="margin-bottom:8px;">
+            <option value="Водитель">🛵 Водитель</option>
+            <option value="Доставщик">📦 Доставщик</option>
+            <option value="Уборщик">🧹 Уборщик</option>
+            <option value="Журналист">📰 Журналист</option>
+            <option value="КСБ">🛡 КСБ</option>
+            <option value="Депутат">🏛 Депутат</option>
+            <option value="Полицейский">👮 Полицейский</option>
+            <option value="Врач">🏥 Врач</option>
+        </select>
+        <button class="btn btn-gold" onclick="adminForceHire()">🏛 Назначить (bypass КВЭ)</button>
+        <div id="adminForceHireStatus" style="margin-top:8px;font-size:12px;"></div>
+    </div>
     <div class="card"><div class="card-title">🆕 Новые аккаунты (на подтверждение)</div><div id="unverifiedAccounts"><div style="color:var(--muted);font-size:13px;">Нет неподтверждённых аккаунтов</div></div></div>
     <div class="card"><div class="card-title">🧹 Отчёты уборщиков (на проверке)</div><div id="janitorAdminList"><div style="color:var(--muted);font-size:13px;">Нет отчётов</div></div></div>
     <div class="card"><div class="card-title">🏪 Заявки на открытие бизнеса</div><div id="adminBizApps"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
@@ -2241,7 +2338,35 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Leaflet (JS + CSS) is loaded only when a map is actually opened.
+window.kapaniLoadLeaflet = (function(){
+  let promise = null;
+  return function(){
+    if(window.L) return Promise.resolve(window.L);
+    if(promise) return promise;
+    promise = new Promise((resolve,reject)=>{
+      let cssReady = false, jsReady = false, settled = false;
+      const finish = () => {
+        if(!settled && cssReady && jsReady && window.L){ settled = true; resolve(window.L); }
+      };
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      css.onload = () => { cssReady = true; finish(); };
+      css.onerror = () => { if(!settled){ settled=true; promise=null; reject(new Error('Не удалось загрузить стили карты')); } };
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.async = true;
+      script.onload = () => { jsReady = true; finish(); };
+      script.onerror = () => { if(!settled){ settled=true; promise=null; reject(new Error('Не удалось загрузить карту')); } };
+      document.head.appendChild(css);
+      document.head.appendChild(script);
+    });
+    return promise;
+  };
+})();
+</script>
 
 <script>
     window.openBizOwnerPanel = function(bizId){ currentBizId = bizId; try{sessionStorage.setItem('kapani:lastBizId',bizId);}catch(e){} navTo('bizOwnerPanel'); };
@@ -2261,19 +2386,44 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     navTo('bizOwnerPanel');
 };
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp }
+import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp, runTransaction }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getMessaging, getToken, onMessage, isSupported as messagingIsSupported } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
-import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
-import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+// Messaging / Functions / Storage are initialized only when their functionality is actually used.
+let functions = null;
+let storage = null;
+let messagingInstance = null;
+async function ensureFunctions(){
+    if(functions) return functions;
+    const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+    functions = mod.getFunctions(app, 'europe-west1');
+    return functions;
+}
+async function ensureStorage(){
+    if(storage) return storage;
+    const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js");
+    storage = mod.getStorage(app);
+    return storage;
+}
+async function ensureMessaging(){
+    const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
+    if(messagingInstance) return {mod, messaging:messagingInstance};
+    if(!(await mod.isSupported())) return {mod, messaging:null};
+    messagingInstance = mod.getMessaging(app);
+    return {mod, messaging:messagingInstance};
+}
 
 const firebaseConfig = CONFIG.firebase;
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
-const functions = getFunctions(app, 'europe-west1');
-const storage = getStorage(app);
 
 const ADMIN = 'Кайон';
+// ─── Deterministic bootstrap signal for additive modules (Kapani Pack v2 etc.) ───
+// Replaces the old setInterval/setTimeout polling handoff: other <script type="module">
+// blocks just `await window.kapaniReady()` instead of polling window.db every 250ms.
+let _resolveKapaniReady;
+window.KAPANI_READY = new Promise(res => { _resolveKapaniReady = res; });
+window.kapaniReady = function(){ return window.KAPANI_READY; };
 const JOB_JANITOR = CONFIG.jobs.janitor;
 const JOB_JOURNALIST = "Журналист";
 const JANITOR_TASK_TEXT = CONFIG.jobs.janitorTaskText;
@@ -2305,8 +2455,6 @@ const BIZ_BG_EFFECTS = [
     { id: 'galaxy', name: '🌠 Галактика', price: 549, cls: 'profile-bg-galaxy' },
     { id: 'prime', name: '👑 Прайм', price: 799, cls: 'profile-bg-prime' }
 ];
-let messagingInstance = null;
-
 const PRICE_PER_KM = CONFIG.finance.pricePerKm;
 const MAX_SPEED_KMH = CONFIG.finance.maxSpeedKmh;
 const KAPANI_LAT = CONFIG.location.kapani.lat;
@@ -2359,8 +2507,10 @@ async function uploadBlobToStorage(blobOrFile, folder){
     const mime = blobOrFile?.type || '';
     const ext = safeExtFromMime(mime, 'bin');
     const name = `${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
+    const { ref:sRef, uploadBytesResumable, getDownloadURL } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js");
     const path = `${folder}/${currentNick || 'anon'}/${name}`;
-    const r = sRef(storage, path);
+    const activeStorage = await ensureStorage();
+    const r = sRef(activeStorage, path);
     const task = uploadBytesResumable(r, blobOrFile, mime ? { contentType: mime } : undefined);
     await new Promise((res, rej) => {
         task.on('state_changed', () => {}, (err) => rej(err), () => res());
@@ -2522,7 +2672,8 @@ window.onDmInputTyping = function(){
 // These helpers try Cloud Functions first, then fall back to direct DB operations
 async function callFunctionWithFallback(functionName, data, fallbackFn) {
     try {
-        const fn = httpsCallable(functions, functionName);
+        const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+        const fn = httpsCallable(await ensureFunctions(), functionName);
         const result = await fn(data);
         return result.data;
     } catch (error) {
@@ -2766,13 +2917,30 @@ function showNotifPopup(text, time) {
     qs('npText').textContent = text;
     qs('npTime').textContent = time||nowTime();
     const el = qs('notifPopup');
+    // Reset any stale inline styles left over from clearBlockingLayers()/closeNotifPopup()
+    // (display:none / pointer-events:none set while hidden must not persist once shown,
+    // otherwise the whole popup — including the ✕ — silently stops receiving clicks).
+    el.style.display = '';
+    el.style.pointerEvents = 'auto';
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     npTimer = setTimeout(()=>closeNotifPopup(), 5000);
 }
 window.closeNotifPopup = function() {
-    qs('notifPopup').classList.remove('show'); qs('notifPopup').style.display='none';
+    const el = qs('notifPopup');
+    el.classList.remove('show');
+    el.style.display='none';
+    el.style.pointerEvents='none';
     if(npTimer) clearTimeout(npTimer);
 };
+// Reliable close handler: works for mouse, touch and iOS Safari regardless of
+// whatever inline styles other iOS-compat code may have toggled on ancestors.
+document.addEventListener('click', function(e){
+    const closeBtn = e.target.closest && e.target.closest('.np-close');
+    if(!closeBtn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.closeNotifPopup();
+});
 
 // ─── DB SHORTCUTS ─────────────────────────
 const userRef   = (nick) => ref(db, `users/${nick}`);
@@ -3209,8 +3377,6 @@ window.handleAuth = async function() {
 };
 
 function startApp() {
-    // Prevent duplicate initialization, but never leave a newly authenticated user
-    // with a hidden shell. The UI shell is independent from slow/failed Firebase reads.
     if(appStarted){
         revealApp();
         hideLoadingSafe();
@@ -3227,10 +3393,7 @@ function startApp() {
     if(bottom) bottom.style.display='none';
     if(main) main.style.display='none';
 
-    // Keep the loading screen visible until the profile and main service data are ready.
     const hw=qs('headerAvatarWrap'); if(hw) hw.classList.add('online');
-
-    // Non-critical startup services must not be able to abort the whole app.
     try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:', e); }
     try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:', e); }
     try { ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)); } catch(e) {}
@@ -3253,42 +3416,32 @@ function startApp() {
 
     const loStatus = document.getElementById('loStatus');
     const loBar    = document.getElementById('loBar');
-    if(loStatus) loStatus.textContent = 'Загружаем ваши данные…';
-    if(loBar) loBar.style.cssText = 'width:30%;transition:width .5s ease;';
+    if(loStatus) loStatus.textContent = 'Загружаем ваш профиль…';
+    if(loBar) loBar.style.cssText = 'width:45%;transition:width .35s ease;';
 
-    const essentialLoads = [
-        ['profile', get(userRef(currentNick)).then(snap => {
-            if(snap.exists()){ const u=snap.val(); updateHeader(u); updateFrozenOverlay(u); }
-            if(loStatus) loStatus.textContent='Загружаем профиль…';
-            if(loBar) loBar.style.cssText='width:35%;transition:width .35s ease;';
-        })],
-        ['users', get(ref(db,'users')).then(snap => {
-            if(snap.exists()){ allUsersCache=snap.val()||{}; window.allUsersCache=allUsersCache; renderHomeStats_users(allUsersCache); if(currentNick===ADMIN) renderAdminUserSelect(allUsersCache); updateHeader_balance(allUsersCache[currentNick]); }
-            if(loStatus) loStatus.textContent='Загружаем жителей…';
-            if(loBar) loBar.style.cssText='width:52%;transition:width .35s ease;';
-        })],
-        ['businesses', get(ref(db,'businesses')).then(snap => {
-            window.allBusinessesCache = snap.exists() ? (snap.val()||{}) : (window.allBusinessesCache||{});
-            if(loStatus) loStatus.textContent='Загружаем бизнесы…';
-            if(loBar) loBar.style.cssText='width:68%;transition:width .35s ease;';
-        })],
-        ['market', get(marketRef()).catch(()=>null)],
-        ['news', get(newsRef()).catch(()=>null)],
-        ['orders', get(ordersRef()).catch(()=>null)],
-        ['rentBuildings', get(rentBuildingsRef()).catch(()=>null)],
-        ['notifications', get(notifRef(currentNick)).catch(()=>null)],
-        ['wall', get(wallRef(currentNick)).catch(()=>null)],
-        ['applications', get(appsRef()).catch(()=>null)],
-        ['businessApplications', get(bizAppsRef()).catch(()=>null)]
-    ];
-    Promise.all(essentialLoads.map(([name,p])=>Promise.resolve(p).catch(e=>{ console.warn(`[Kapani] preload ${name} failed:`,e); return null; }))).then(()=>{
-        if(loStatus) loStatus.textContent='Запускаем сервисы…';
-        if(loBar) loBar.style.cssText='width:86%;transition:width .35s ease;';
-        try{ revealApp(); }catch(e){ console.error('[Kapani] Failed to reveal app shell:',e); if(header) header.style.display='flex'; if(bottom) bottom.style.display='flex'; if(main) main.style.display='block'; }
-        if(loStatus) loStatus.textContent='Готово!';
-        if(loBar) loBar.style.cssText='width:100%;transition:width .25s ease;';
-        setTimeout(()=>hideLoadingSafe(),220);
-    });
+    // Critical path: only the signed-in user's profile. Heavy/global branches are lazy.
+    Promise.resolve()
+      .then(()=>get(userRef(currentNick)))
+      .then(snap=>{
+          if(snap.exists()){
+              const u=snap.val();
+              if(!allUsersCache[currentNick]) allUsersCache[currentNick]=u;
+              window.allUsersCache=allUsersCache;
+              updateHeader(u);
+              updateFrozenOverlay(u);
+              updateHeader_balance(u);
+              renderHomeStats_users(allUsersCache);
+          }
+          if(loStatus) loStatus.textContent='Запускаем интерфейс…';
+          if(loBar) loBar.style.cssText='width:90%;transition:width .3s ease;';
+      })
+      .catch(e=>console.warn('[Kapani] critical profile load failed:',e))
+      .then(()=>{
+          try{ revealApp(); }catch(e){ console.error('[Kapani] Failed to reveal app shell:',e); if(header) header.style.display='flex'; if(bottom) bottom.style.display='flex'; if(main) main.style.display='block'; }
+          if(loStatus) loStatus.textContent='Готово!';
+          if(loBar) loBar.style.cssText='width:100%;transition:width .2s ease;';
+          setTimeout(()=>hideLoadingSafe(),120);
+      });
 }
 
 function revealApp(){
@@ -3301,109 +3454,73 @@ function revealApp(){
 
 window.logout = function() {
     stopAllActivity();
+    leaveAllServiceServices();
     Object.values(listeners).forEach(({ref:r,fn})=>off(r,'value',fn));
     if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);}
     if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
     listeners={};dmListeners={};
+    _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
     localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; syncCurrentNick(); location.reload();
 };
 
 // ─── REAL-TIME LISTENERS ──────────────────
-function attachListeners() {
+const serviceListeners = Object.create(null);
+function addServiceListener(service, key, targetRef, callback){
+    if(!serviceListeners[service]) serviceListeners[service]=Object.create(null);
+    removeServiceListener(service,key);
+    onValue(targetRef, callback);
+    serviceListeners[service][key]={ref:targetRef,fn:callback};
+    return serviceListeners[service][key];
+}
+function removeServiceListener(service,key){
+    const item=serviceListeners[service]?.[key];
+    if(item){ try{ off(item.ref,'value',item.fn); }catch(e){} delete serviceListeners[service][key]; }
+}
+function removeAllServiceListeners(service){
+    const bucket=serviceListeners[service];
+    if(!bucket) return;
+    Object.keys(bucket).forEach(key=>removeServiceListener(service,key));
+    delete serviceListeners[service];
+}
+function leaveAllServiceServices(){
+    Object.keys(serviceListeners).forEach(removeAllServiceListeners);
+}
+async function loadAllUsersCache(force=false){
+    if(!force && allUsersCache && Object.keys(allUsersCache).length>1) return allUsersCache;
+    const snap=await get(ref(db,'users'));
+    allUsersCache=snap.val()||{};
+    window.allUsersCache=allUsersCache;
+    if(currentNick && !allUsersCache[currentNick]){
+        try{ const mine=await get(userRef(currentNick)); if(mine.exists()) allUsersCache[currentNick]=mine.val(); }catch(e){}
+    }
+    return allUsersCache;
+}
+function attachUserListener(){
+    removeServiceListener('core','user');
     const uRef=userRef(currentNick);
-    const uFn=async (snap)=>{
-        if(snap.exists()){
-            const u=snap.val();
-            await syncJanitorTaskState(u);
-            updateHeader(u);
-            updateFrozenOverlay(u);
-            if(curPage==='market') renderDebtNotice('marketDebtNotice', u);
-            if(curPage==='taxi') renderDebtNotice('taxiDebtNotice', u);
-            if(curPage==='subscription' && typeof renderSubscription === 'function') renderSubscription();
-            if(curPage==='kveExam') renderKveSection(u);
-            if(curPage==='jobs') renderKveSection(u);
-            // Show KVE nav button if user has a score assigned
-            const kveBtn = qs('bn11');
-            if(kveBtn) kveBtn.style.display = (u.kveScore !== undefined && u.kveScore !== null) ? '' : 'none';
-            // Update home KVE card subtitle
-            const kveHomeSub = qs('kveHomeSub');
-            if(kveHomeSub){
-                if(u.kveScore !== undefined && u.kveScore !== null){
-                    kveHomeSub.textContent = 'Ваш балл: ' + u.kveScore;
-                    const kveCard = qs('kveHomeCard');
-                    if(kveCard) kveCard.style.borderColor = 'rgba(34,211,165,.6)';
-                } else {
-                    kveHomeSub.textContent = 'Результат ещё не получен';
-                }
-            }
+    const uFn=async(snap)=>{
+        if(!snap.exists()) return;
+        const u=snap.val();
+        allUsersCache[currentNick]=u; window.allUsersCache=allUsersCache;
+        await syncJanitorTaskState(u);
+        updateHeader(u); updateFrozenOverlay(u); updateHeader_balance(u);
+        if(curPage==='market') renderDebtNotice('marketDebtNotice',u);
+        if(curPage==='taxi') renderDebtNotice('taxiDebtNotice',u);
+        if(curPage==='subscription' && typeof renderSubscription==='function') renderSubscription();
+        if(curPage==='kveExam') renderKveSection(u);
+        if(curPage==='jobs') renderKveSection(u);
+        const kveBtn=qs('bn11'); if(kveBtn) kveBtn.style.display=(u.kveScore!==undefined&&u.kveScore!==null)?'':'none';
+        const kveHomeSub=qs('kveHomeSub');
+        if(kveHomeSub){
+            if(u.kveScore!==undefined&&u.kveScore!==null){ kveHomeSub.textContent='Ваш балл: '+u.kveScore; const k=qs('kveHomeCard'); if(k) k.style.borderColor='rgba(34,211,165,.6)'; }
+            else kveHomeSub.textContent='Результат ещё не получен';
         }
     };
-    onValue(uRef,uFn); listeners.user={ref:uRef,fn:uFn};
-
-    const oRef=ordersRef();
-    const oFn=(snap)=>{
-        const orders=snap.val()||{};
-        renderActiveOrders(orders); renderHomeWorker(orders); renderHomeStats_orders(orders);
-        if(curPage==='driverPage'||curPage==='deliveryPage') renderWorkerPage(orders);
-        if(curPage==='adminPage') renderAdminOrders(orders);
-    };
-    onValue(oRef,oFn); listeners.orders={ref:oRef,fn:oFn};
-
-    const aRef=appsRef();
-    const aFn=(snap)=>{if(curPage==='adminPage')renderAdminApps(snap.val()||{});};
-    onValue(aRef,aFn); listeners.apps={ref:aRef,fn:aFn};
-
-    const cRef=chatRef();
-    const cFn=(snap)=>{
-        const data = snap.val()||{};
-        // Уведомления о новых сообщениях в общем чате
-        const viewingChat = (curPage==='messages' && document.querySelector('#msgPanel0.active'));
-        if(window._chatNotifInit){
-            Object.entries(data).forEach(([id, m])=>{
-                if(!m || window._chatSeenKeys[id]) return;
-                if(m.nick && m.nick !== currentNick){
-                    const preview = m.text ? m.text : (m.msgType==='image'?'📷 Фото':(m.msgType==='voice'?'🎤 Голосовое':(m.msgType?'📎 Вложение':'')));
-                    if(!viewingChat){
-                        toast(`💬 ${escHtml(m.nick)}: ${escHtml(String(preview).slice(0,40))}`, 'green');
-                        const b=qs('dmBadge'); // общий бейдж на вкладке Чаты
-                        if(b){ b.textContent='•'; b.style.display='block'; }
-                    }
-                }
-            });
-        }
-        window._chatSeenKeys = {}; Object.keys(data).forEach(k=>window._chatSeenKeys[k]=true);
-        window._chatNotifInit = true;
-        if(viewingChat){ const b=qs('dmBadge'); if(b) b.style.display='none'; }
-        lastChatMsgs = data;
-        if(viewingChat) renderChat(lastChatMsgs);
-    };
-    onValue(cRef,cFn); listeners.chat={ref:cRef,fn:cFn};
-    const chatTypingRef = ref(db, 'typing/chat');
-    const chatTypingFn = (snap) => {
-        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')){
-            updateChatLiveStatus(snap.val() || {});
-        }
-    };
-    onValue(chatTypingRef, chatTypingFn);
-    listeners.chatTyping = { ref: chatTypingRef, fn: chatTypingFn };
-
-    const allRef=ref(db,'users');
-    const allFn=(snap)=>{
-        const users=snap.val()||{}; allUsersCache=users; window.allUsersCache=users;
-        renderHomeStats_users(users);
-        if(curPage==='ratings') renderLeaderboard(users);
-        if(curPage==='adminPage'){renderAdminUsers(users);renderAdminUserSelect(users);renderUnverifiedAccounts();}
-        if(currentNick===ADMIN) renderAdminUserSelect(users);
-        myPinnedChats = (users[currentNick] && users[currentNick].pinnedChats) || myPinnedChats || {};
-        updateHeader_balance(users[currentNick]);
-        if(curPage==='messages'&&document.querySelector('#msgPanel0.active')) renderChat(lastChatMsgs);
-        if(curPage==='messages'&&document.querySelector('#msgPanel1.active')) renderDmUserList(users);
-        if(curPage==='messages'&&currentDmNick) renderDmMessages(lastDmMsgs);
-        if(curPage==='tasks') renderTasks();
-    };
-    onValue(allRef,allFn); listeners.allUsers={ref:allRef,fn:allFn};
-
-    let notifInit=false, lastNotifCount=0;
+    addServiceListener('core','user',uRef,uFn);
+}
+function attachNotificationsListener(){
+    removeServiceListener('core','notifications');
+    let notifInit=false,lastNotifCount=0;
     const nRef=notifRef(currentNick);
     const nFn=(snap)=>{
         const notifs=snap.val()||{};
@@ -3411,8 +3528,7 @@ function attachListeners() {
         updateBadge(arr.length);
         if(curPage==='profile') renderNotifications(notifs);
         if(notifInit&&arr.length>lastNotifCount){
-            const sorted=arr.sort((a,b)=>a.id.localeCompare(b.id));
-            const newest=sorted[sorted.length-1];
+            const sorted=arr.sort((a,b)=>a.id.localeCompare(b.id)); const newest=sorted[sorted.length-1];
             if(newest){
                 if(curPage!=='profile') showNotifPopup(newest.text,newest.time);
                 const t=newest.text||''; let pushCat=newest.cat||'system';
@@ -3428,67 +3544,83 @@ function attachListeners() {
         }
         lastNotifCount=arr.length; notifInit=true;
     };
-    onValue(nRef,nFn); listeners.notifications={ref:nRef,fn:nFn};
-
-    const mRef=marketRef();
-    const mFn=(snap)=>{if(curPage==='market')renderMarket(snap.val()||{});};
-    onValue(mRef,mFn); listeners.market={ref:mRef,fn:mFn};
-
-    const dmInboxRef=ref(db,'dms');
-    let dmInboxInit=false; let dmLastMsgIds={};
-    const dmInboxFn=(snap)=>{
-        const allDms=snap.val()||{};
-        updateDmConvoMeta(allDms);
-        Object.entries(allDms).forEach(([key,conv])=>{
-            if(!key.includes(currentNick)) return;
-            const msgs=conv.messages||{};
-            const entries=Object.entries(msgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0));
-            if(!entries.length) return;
-            const [latestId,latestMsg]=entries[entries.length-1];
-            if(!dmInboxInit){dmLastMsgIds[key]=latestId;return;}
-            const prevId=dmLastMsgIds[key];
-            if(latestId!==prevId&&latestMsg.nick!==currentNick){
-                // Проверяем, не было ли это сообщение недавно удалено
-                if(window._recentlyDeletedMsgs && window._recentlyDeletedMsgs.has(latestId)){
-                    dmLastMsgIds[key]=latestId;
-                    return;
-                }
-                dmLastMsgIds[key]=latestId;
-                const senderNick=latestMsg.nick||'?';
-                if(curPage==='messages' && currentDmNick===senderNick){ dmLastMsgIds[key]=latestId; return; }
-                let notifText;
-                if(latestMsg.msgType==='voice') notifText=`🎤 ${senderNick}: Голосовое сообщение`;
-                else if(latestMsg.msgType==='video_circle') notifText=`⭕ ${senderNick}: Видеосообщение`;
-                else if(latestMsg.msgType==='image') notifText=`🖼 ${senderNick}: Фото`;
-                else if(latestMsg.msgType==='video') notifText=`🎬 ${senderNick}: Видео`;
-                else if(latestMsg.msgType==='gift_subscription') notifText=`🎁 ${senderNick}: Подарок подписки`;
-                else { const preview=latestMsg.text?(latestMsg.text.length>55?latestMsg.text.slice(0,52)+'...':latestMsg.text):''; notifText=`💬 ${senderNick}: ${preview}`; }
-                const alreadyInDm=curPage==='messages'&&currentDmNick===senderNick;
-                if(!alreadyInDm && !(window._recentlyDeletedMsgs && window._recentlyDeletedMsgs.has(latestId))){
-                    showNotifPopup(notifText,latestMsg.time||nowTime());
-                    sendPushNotification('Капани 💬',notifText,'messages');
-                    const badgeEl=qs('dmBadge');
-                    if(badgeEl){badgeEl.textContent='';badgeEl.style.display='block';setTimeout(()=>{if(badgeEl)badgeEl.style.display='none';},5000);}
-                }
-            } else if(latestId!==prevId){dmLastMsgIds[key]=latestId;}
-        });
-        if(curPage==='messages'){
-            if(document.querySelector('#msgPanel1.active')) renderDmUserList(allUsersCache);
-            if(currentDmNick) renderDmMessages(lastDmMsgs);
+    addServiceListener('core','notifications',nRef,nFn);
+}
+function attachOrderService(){
+    const oRef=ordersRef();
+    const oFn=(snap)=>{
+        const orders=snap.val()||{};
+        renderActiveOrders(orders); renderHomeWorker(orders); renderHomeStats_orders(orders);
+        if(curPage==='driverPage'||curPage==='deliveryPage') renderWorkerPage(orders);
+        if(curPage==='adminPage') renderAdminOrders(orders);
+    };
+    addServiceListener('orders','orders',oRef,oFn);
+}
+function attachChatService(){
+    const cRef=chatRef();
+    const cFn=(snap)=>{
+        const data=snap.val()||{};
+        const viewingChat=(curPage==='messages'&&document.querySelector('#msgPanel0.active'));
+        if(window._chatNotifInit){
+            Object.entries(data).forEach(([id,m])=>{
+                if(!m||window._chatSeenKeys[id]||!m.nick||m.nick===currentNick||viewingChat) return;
+                const preview=m.text?m.text:(m.msgType==='image'?'📷 Фото':(m.msgType==='voice'?'🎤 Голосовое':(m.msgType?'📎 Вложение':'')));
+                toast(`💬 ${escHtml(m.nick)}: ${escHtml(String(preview).slice(0,40))}`,'green');
+                const badge=qs('dmBadge'); if(badge){badge.textContent='•';badge.style.display='block';}
+            });
         }
-        dmInboxInit=true;
+        window._chatSeenKeys={}; Object.keys(data).forEach(k=>window._chatSeenKeys[k]=true); window._chatNotifInit=true;
+        if(viewingChat){const b=qs('dmBadge');if(b)b.style.display='none';} lastChatMsgs=data; if(viewingChat) renderChat(lastChatMsgs);
     };
-    onValue(dmInboxRef,dmInboxFn); listeners.dmInbox={ref:dmInboxRef,fn:dmInboxFn};
-
+    addServiceListener('messages','chat',cRef,cFn);
+    const typingRef=ref(db,'typing/chat');
+    const typingFn=snap=>{if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))updateChatLiveStatus(snap.val()||{});};
+    addServiceListener('messages','chatTyping',typingRef,typingFn);
+    const dmInboxRef=ref(db,'dms');
+    let dmInboxInit=false; const dmLastMsgIds={};
+    const dmInboxFn=snap=>{
+        const allDms=snap.val()||{}; updateDmConvoMeta(allDms);
+        Object.entries(allDms).forEach(([key,conv])=>{
+            if(!key.includes(currentNick)) return; const msgs=conv.messages||{}; const entries=Object.entries(msgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)); if(!entries.length)return;
+            const [latestId,latestMsg]=entries[entries.length-1]; if(!dmInboxInit){dmLastMsgIds[key]=latestId;return;}
+            const prevId=dmLastMsgIds[key]; if(latestId!==prevId&&latestMsg.nick!==currentNick){ dmLastMsgIds[key]=latestId; if(!(curPage==='messages'&&currentDmNick===latestMsg.nick)){
+                let t;if(latestMsg.msgType==='voice')t=`🎤 ${latestMsg.nick}: Голосовое сообщение`; else if(latestMsg.msgType==='video_circle')t=`⭕ ${latestMsg.nick}: Видеосообщение`; else if(latestMsg.msgType==='image')t=`🖼 ${latestMsg.nick}: Фото`; else if(latestMsg.msgType==='video')t=`🎬 ${latestMsg.nick}: Видео`; else t=`💬 ${latestMsg.nick}: ${(latestMsg.text||'').slice(0,55)}`;
+                showNotifPopup(t,latestMsg.time||nowTime()); sendPushNotification('Капани 💬',t,'messages');
+                const b=qs('dmBadge');if(b){b.textContent='';b.style.display='block';}
+            }} else if(latestId!==prevId) dmLastMsgIds[key]=latestId;
+        });
+        if(curPage==='messages'){if(document.querySelector('#msgPanel1.active'))renderDmUserList(allUsersCache);if(currentDmNick)renderDmMessages(lastDmMsgs);} dmInboxInit=true;
+    };
+    addServiceListener('messages','dmInbox',dmInboxRef,dmInboxFn);
     const rsRef=ref(db,'readState');
-    const rsFn=(snap)=>{
-        chatReadStates={};
-        const v=snap.val()||{};
-        Object.entries(v).forEach(([n,o])=>{if(o&&typeof o.chat==='number')chatReadStates[n]=o.chat;});
-        if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);
-        if(curPage==='tasks') renderTasks();
-    };
-    onValue(rsRef,rsFn);listeners.readState={ref:rsRef,fn:rsFn};
+    const rsFn=snap=>{chatReadStates={};Object.entries(snap.val()||{}).forEach(([n,o])=>{if(o&&typeof o.chat==='number')chatReadStates[n]=o.chat;});if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))renderChat(lastChatMsgs);if(curPage==='tasks')renderTasks();};
+    addServiceListener('messages','readState',rsRef,rsFn);
+}
+function enterService(page){
+    const service = page==='messages'?'messages':page==='market'?'market':page==='home'?'home':(['driverPage','deliveryPage'].includes(page)?'orders':page==='adminPage'?'admin':page==='ratings'?'ratings':(['businesses','bizDetail','bizOwnerPanel'].includes(page)?'business':page==='dutyPage'?'duty':null));
+    if(!service) return;
+    if(service==='home'||service==='orders') attachOrderService();
+    if(service==='messages'){ loadAllUsersCache().then(()=>{ if(curPage==='messages') renderDmUserList(allUsersCache); }).catch(e=>console.warn('[Kapani] users cache:',e)); attachChatService(); }
+    if(service==='market'){ const r=marketRef(); addServiceListener('market','market',r,s=>{if(curPage==='market')renderMarket(s.val()||{});}); }
+    if(service==='ratings'){ loadAllUsersCache().then(u=>{if(curPage==='ratings')renderLeaderboard(u);}).catch(e=>console.warn('[Kapani] ratings users:',e)); }
+    if(service==='admin'){ loadAllUsersCache().then(u=>{if(curPage==='adminPage'){renderAdminUsers(u);renderAdminUserSelect(u);renderUnverifiedAccounts();}}).catch(e=>console.warn('[Kapani] admin users:',e)); const aRef=appsRef(); addServiceListener('admin','apps',aRef,s=>{if(curPage==='adminPage')renderAdminApps(s.val()||{});}); attachOrderService(); }
+    if(service==='business'){ const r=bizRef(); addServiceListener('business','businesses',r,s=>{allBusinessesCache=s.val()||{};window.allBusinessesCache=allBusinessesCache;if(curPage==='businesses')renderBusinesses();if(curPage==='bizDetail')renderBizDetail();if(curPage==='bizOwnerPanel')renderBizOwnerPanel();}); }
+    if(service==='duty'){ startCallsListener(); }
+}
+function leaveService(page){
+    const mapping={messages:'messages',market:'market',home:'home',driverPage:'orders',deliveryPage:'orders',adminPage:'admin',ratings:'ratings',businesses:'business',bizDetail:'business',bizOwnerPanel:'business',dutyPage:'duty'};
+    const service=mapping[page]; if(service) removeAllServiceListeners(service);
+    if(page==='messages'){
+        if(dmListeners.current){try{off(dmListeners.current.ref,'value',dmListeners.current.fn);}catch(e){} dmListeners.current=null;}
+        if(dmListeners.read){try{off(dmListeners.read.ref,'value',dmListeners.read.fn);}catch(e){} dmListeners.read=null;}
+        if(dmTypingUnsub){try{dmTypingUnsub();}catch(e){} dmTypingUnsub=null;}
+        currentDmNick=null;
+    }
+    if(page==='dutyPage') stopCallsListener();
+}
+function attachListeners(){
+    attachUserListener();
+    attachNotificationsListener();
 }
 
 // ─── HEADER ───────────────────────────────
@@ -3684,7 +3816,8 @@ function updateHeader(u) {
     const isDuty = hasMunicipalJob(u,'КСБ')||hasMunicipalJob(u,'Полицейский')||u.job==='КСБ'||u.job==='Полицейский'||currentNick===ADMIN;
     window._isDutyOfficer = isDuty;
     const dutyBtn=qs('dutyQuickBtn'); if(dutyBtn) dutyBtn.style.display=isDuty?'block':'none';
-    if(isDuty) startCallsListener();
+    // Кнопка панели больницы — только для врача
+    const hospBtn=qs('hospitalQuickBtn'); if(hospBtn) hospBtn.style.display=hasMunicipalJob(u,'Врач')?'block':'none';
 }
 
 // ─── ВЫЗОВЫ (КСБ / Полиция) ───────────────
@@ -3695,7 +3828,7 @@ function startCallsListener(){
     if(_callsListenerStarted) return;
     _callsListenerStarted = true;
     const cRef = ref(db,'calls');
-    onValue(cRef, (snap)=>{
+    const cb = (snap)=>{
         const data = snap.val() || {};
         // Найти новые активные вызовы (по сравнению с прошлым снимком)
         if(_callsSeen){
@@ -3713,7 +3846,8 @@ function startCallsListener(){
         const badge = qs('dutyCallsBadge');
         if(badge){ badge.textContent = active.length>0?active.length:''; badge.style.display = active.length>0?'inline-block':'none'; }
         if(curPage==='dutyPage') renderDutyCalls(data);
-    });
+    };
+    addServiceListener('duty','calls',cRef,cb);
 }
 function renderDutyCalls(data){
     const host = qs('dutyCalls'); if(!host) return;
@@ -3730,7 +3864,7 @@ function renderDutyCalls(data){
             </div>
             <div style="font-size:13px;margin-bottom:4px;"><b>📍 Адрес:</b> ${escHtml(c.address||'—')}</div>
             <div style="font-size:13px;margin-bottom:8px;white-space:pre-wrap;"><b>📝</b> ${escHtml(c.desc||'')}</div>
-            ${c.photo?`<img src="${escHtml(c.photo)}" onclick="openImgViewer('${jsEsc(c.photo)}')" style="width:100%;border-radius:12px;margin-bottom:8px;max-height:240px;object-fit:cover;cursor:pointer;">`:''}
+            ${c.photo?`<img loading="lazy" decoding="async" src="${escHtml(c.photo)}" onclick="openImgViewer('${jsEsc(c.photo)}')" style="width:100%;border-radius:12px;margin-bottom:8px;max-height:240px;object-fit:cover;cursor:pointer;">`:''}
             <button class="btn btn-primary btn-sm" onclick="closeDutyCall('${jsEsc(id)}')">✅ Закрыть вызов</button>
         </div>
     `).join('');
@@ -3743,6 +3877,14 @@ function updateHeader_balance(u){if(!u)return;qs('hBal').textContent=(u.balance|
 
 window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const u=snap.val();if(hasMunicipalJob(u,'Водитель'))navTo('driverPage');else if(hasMunicipalJob(u,'Доставщик'))navTo('deliveryPage');else if(hasMunicipalJob(u,JOB_JANITOR))navTo('janitorPage');});};
 function updateBadge(count){const badge=qs('notifyBadge');badge.textContent=count>0?(count>9?'9+':count):'';badge.style.display=count>0?'block':'none';}
+function stopCallsListener(){
+    if(!_callsListenerStarted) return;
+    const item=serviceListeners.duty?.calls;
+    if(item){ try{off(item.ref,'value',item.fn);}catch(e){} }
+    removeAllServiceListeners('duty');
+    _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
+}
+
 
 // ─── HOME STATS ───────────────────────────
 let _usersCount=0,_ordersCount=0,_myBalance=0;
@@ -3818,14 +3960,14 @@ async function requestPushPermission(){
 async function tryRegisterFcm(){
     if(!FCM_VAPID_KEY||!currentNick)return;
     try{
-        const ok=await messagingIsSupported();
-        if(!ok)return;
-        messagingInstance=getMessaging(app);
+        const pack = await ensureMessaging();
+        if(!pack.messaging) return;
+        const { getToken, onMessage } = pack.mod;
         const reg=await getSwReg();
         if(!reg) return;
-        const token=await getToken(messagingInstance,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
+        const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
         if(token)await update(userRef(currentNick),{fcmToken:token,fcmUpdatedAt:Date.now()});
-        onMessage(messagingInstance,(payload)=>{const t=payload.notification?.title||'Капани';const b=payload.notification?.body||'';if(b)toast('🔔 '+b,'green');});
+        onMessage(pack.messaging,(payload)=>{const t=payload.notification?.title||'Капани';const b=payload.notification?.body||'';if(b)toast('🔔 '+b,'green');});
     }catch(e){console.warn('FCM',e);}
 }
 async function sendPushNotification(title,body,cat){
@@ -4267,6 +4409,7 @@ async function renderWorkerPage(orders){
 // ─── DELIVERY MAP ─────────────────────────
 let deliveryMapObj=null;
 async function initDeliveryMap(order){
+    await window.kapaniLoadLeaflet();
     const listEl=qs('deliveryList'); if(!listEl) return;
     let mapContainer=qs('deliveryMapContainer');
     if(!mapContainer){mapContainer=document.createElement('div');mapContainer.id='deliveryMapContainer';mapContainer.className='tracking-card';mapContainer.style.marginTop='12px';mapContainer.innerHTML=`<div class="tracking-live"><span class="pulse"></span>📍 Клиент</div><div id="deliveryMap" style="width:100%;height:260px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border);"></div><div id="deliveryMapInfo" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>`;listEl.appendChild(mapContainer);}
@@ -4776,14 +4919,15 @@ window.handleMktPhoto=async function(e){const file=e.target.files[0];if(!file)re
 
 // ─── SHOP MAP ─────────────────────────────
 function createShopMarker(lat,lng){return L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(34,211,165,.6);">📍</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})});}
-function initShopMapIfNeeded(){
+async function initShopMapIfNeeded(){
+    await window.kapaniLoadLeaflet();
     if(shopMapObj){shopMapObj.invalidateSize();return;}
     shopMapObj=L.map('shopMap',{center:[KAPANI_LAT,KAPANI_LNG],zoom:15});
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(shopMapObj);
     shopMapObj.on('click',function(e){const{lat,lng}=e.latlng;shopAddrCoords={lat,lng};if(shopMarker)shopMapObj.removeLayer(shopMarker);shopMarker=createShopMarker(lat,lng).addTo(shopMapObj).bindPopup('📍 Адрес').openPopup();reverseGeocode(lat,lng).then(name=>{qs('sAddr').value=name;});});
 }
-window.toggleShopMap=function(){const el=qs('shopMap'),toggleBtn=qs('shopMapToggleBtn'),willShow=!el.classList.contains('visible');el.classList.toggle('visible',willShow);if(toggleBtn)toggleBtn.textContent=willShow?'🗺 Скрыть карту':'🗺 Выбрать на карте';if(!willShow)return;requestAnimationFrame(()=>requestAnimationFrame(()=>{initShopMapIfNeeded();shopMapObj.invalidateSize();toast('🗺 Кликните для выбора','gold');}));};
-window.detectShopLocation=function(){if(!navigator.geolocation)return toast('❌ Геолокация недоступна','red');const el=qs('shopMap'),toggleBtn=qs('shopMapToggleBtn');if(!el.classList.contains('visible')){el.classList.add('visible');if(toggleBtn)toggleBtn.textContent='🗺 Скрыть карту';}requestAnimationFrame(()=>requestAnimationFrame(()=>{initShopMapIfNeeded();shopMapObj.invalidateSize();navigator.geolocation.getCurrentPosition(function(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude;shopAddrCoords={lat,lng};if(shopMarker)shopMapObj.removeLayer(shopMarker);shopMarker=createShopMarker(lat,lng).addTo(shopMapObj).bindPopup('📍 Я').openPopup();shopMapObj.setView([lat,lng],16);reverseGeocode(lat,lng).then(name=>{qs('sAddr').value=name;});toast('📍 Определено','green');},function(){toast('❌ Нет геолокации','red');},{enableHighAccuracy:true,timeout:8000});}));};
+window.toggleShopMap=function(){const el=qs('shopMap'),toggleBtn=qs('shopMapToggleBtn'),willShow=!el.classList.contains('visible');el.classList.toggle('visible',willShow);if(toggleBtn)toggleBtn.textContent=willShow?'🗺 Скрыть карту':'🗺 Выбрать на карте';if(!willShow)return;requestAnimationFrame(()=>requestAnimationFrame(async()=>{try{await initShopMapIfNeeded();shopMapObj.invalidateSize();toast('🗺 Кликните для выбора','gold');}catch(e){toast('❌ Не удалось загрузить карту','red');}}));};
+window.detectShopLocation=function(){if(!navigator.geolocation)return toast('❌ Геолокация недоступна','red');const el=qs('shopMap'),toggleBtn=qs('shopMapToggleBtn');if(!el.classList.contains('visible')){el.classList.add('visible');if(toggleBtn)toggleBtn.textContent='🗺 Скрыть карту';}requestAnimationFrame(()=>requestAnimationFrame(async()=>{try{await initShopMapIfNeeded();shopMapObj.invalidateSize();}catch(e){toast('❌ Не удалось загрузить карту','red');return;}navigator.geolocation.getCurrentPosition(function(pos){const lat=pos.coords.latitude,lng=pos.coords.longitude;shopAddrCoords={lat,lng};if(shopMarker)shopMapObj.removeLayer(shopMarker);shopMarker=createShopMarker(lat,lng).addTo(shopMapObj).bindPopup('📍 Я').openPopup();shopMapObj.setView([lat,lng],16);reverseGeocode(lat,lng).then(name=>{qs('sAddr').value=name;});toast('📍 Определено','green');},function(){toast('❌ Нет геолокации','red');},{enableHighAccuracy:true,timeout:8000});}));};
 
 // ─── SHOP ─────────────────────────────────
 window.recalcShop=function(){
@@ -4853,7 +4997,7 @@ window.buyShop=async function(){
 };
 
 // ─── TAXI MAP ─────────────────────────────
-window.initTaxiMap=function(){if(taxiMap){taxiMap.invalidateSize();return;}const el=qs('taxiMap');if(!el)return;requestAnimationFrame(()=>requestAnimationFrame(()=>{taxiMap=L.map('taxiMap',{center:[KAPANI_LAT,KAPANI_LNG],zoom:15});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(taxiMap);taxiMap.on('click',onMapClick);}));};
+window.initTaxiMap=async function(){await window.kapaniLoadLeaflet();if(taxiMap){taxiMap.invalidateSize();return;}const el=qs('taxiMap');if(!el)return;requestAnimationFrame(()=>requestAnimationFrame(()=>{taxiMap=L.map('taxiMap',{center:[KAPANI_LAT,KAPANI_LNG],zoom:15});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(taxiMap);taxiMap.on('click',onMapClick);}));};
 function onMapClick(e){if(!selectingPoint)return;const{lat,lng}=e.latlng;if(selectingPoint==='from'){setFromPoint(lat,lng);reverseGeocode(lat,lng).then(name=>{qs('tFrom').value=name;});}else{setToPoint(lat,lng);reverseGeocode(lat,lng).then(name=>{qs('tTo').value=name;});}selectingPoint=null;qs('btnFromMap').classList.remove('selecting');qs('btnToMap').classList.remove('selecting');}
 function setFromPoint(lat,lng){fromCoords={lat,lng};if(fromMarker)taxiMap.removeLayer(fromMarker);fromMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(taxiMap).bindPopup('📍 Откуда');updateTaxiCalc();}
 function setToPoint(lat,lng){toCoords={lat,lng};if(toMarker)taxiMap.removeLayer(toMarker);toMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#fbbf24;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(taxiMap).bindPopup('🏁 Куда');updateTaxiCalc();}
@@ -4984,6 +5128,7 @@ let driverTrackMapObj=null,clientMarkerOnDriverMap=null,driverOwnMarker=null,cur
 window.startSharingLocation=function(){if(!navigator.geolocation)return toast('❌ Геолокация недоступна','red');if(locationWatchId!==null)return;qs('driverShareLocBtn').style.display='none';qs('driverStopLocBtn').style.display='block';locationWatchId=navigator.geolocation.watchPosition(async pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude;if(currentTrackOrderId){await update(orderRef(currentTrackOrderId),{driverLat:lat,driverLng:lng});}if(driverTrackMapObj){if(!driverOwnMarker){driverOwnMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:18px;height:18px;border-radius:50%;border:3px solid white;">🛵</div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(driverTrackMapObj);}else driverOwnMarker.setLatLng([lat,lng]);}},()=>toast('❌ Геолокация недоступна','red'),{enableHighAccuracy:true,maximumAge:5000,timeout:10000});toast('📍 Трансляция началась','green');};
 window.stopSharingLocation=function(){if(locationWatchId!==null){navigator.geolocation.clearWatch(locationWatchId);locationWatchId=null;}const shareBtn=qs('driverShareLocBtn'),stopBtn=qs('driverStopLocBtn');if(shareBtn)shareBtn.style.display='block';if(stopBtn)stopBtn.style.display='none';toast('⏹ Остановлено','gold');};
 async function initDriverTrackMap(orderId,clientLat,clientLng,destLat,destLng){
+    await window.kapaniLoadLeaflet();
     currentTrackOrderId=orderId;const card=qs('driverTrackCard');if(!card)return;card.style.display='block';
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     const mapEl=qs('driverTrackMap');if(!mapEl)return;
@@ -4999,6 +5144,7 @@ async function initDriverTrackMap(orderId,clientLat,clientLng,destLat,destLng){
     if(bounds.length>=2)driverTrackMapObj.fitBounds(bounds,{padding:[40,40]});else if(bounds.length===1)driverTrackMapObj.setView(bounds[0],15);
 }
 async function initClientTrackingMap(orderId){
+    await window.kapaniLoadLeaflet();
     const mapEl=qs('trackingMap');if(!mapEl)return;
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     if(clientTrackingMap){try{clientTrackingMap.remove();}catch(e){}clientTrackingMap=null;driverMarkerOnClientMap=null;}
@@ -5559,7 +5705,7 @@ function renderPendingPhotos(ctx){
     if(!items.length){el.classList.remove('open');el.innerHTML='';return;}
     el.classList.add('open');
     el.innerHTML=items.map(item=>`<div class="media-queue-item" data-id="${item.id}">
-        <img class="media-queue-thumb" src="${escHtml(item.dataUrl)}" onclick="openImgViewer('${escHtml(item.dataUrl).replace(/'/g,"&#39;")}')">
+        <img loading="lazy" decoding="async" class="media-queue-thumb" src="${escHtml(item.dataUrl)}" onclick="openImgViewer('${escHtml(item.dataUrl).replace(/'/g,"&#39;")}')">
         <div class="media-queue-body">
             <textarea placeholder="Подпись..." oninput="updatePendingCaption('${ctx}', '${item.id}', this.value)">${escHtml(item.caption||'')}</textarea>
             <div class="media-queue-actions">
@@ -5859,7 +6005,7 @@ function buildWallEmojiIfNeeded(){
 function wallPostBodyHtml(p){
     let body='';
     if(p.text)body+=`<div style="font-size:14px;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;">${escHtml(p.text)}</div>`;
-    if(p.msgType==='image'&&p.mediaData)body+=`<img src="${escHtml(p.mediaData)}" style="max-width:100%;border-radius:12px;margin-top:8px;cursor:pointer;" onclick="event.stopPropagation();openImgViewer('${jsEsc(p.mediaData)}')">`;
+    if(p.msgType==='image'&&p.mediaData)body+=`<img loading="lazy" decoding="async" src="${escHtml(p.mediaData)}" style="max-width:100%;border-radius:12px;margin-top:8px;cursor:pointer;" onclick="event.stopPropagation();openImgViewer('${jsEsc(p.mediaData)}')">`;
     if(p.msgType==='video'&&p.mediaData)body+=`<video src="${escHtml(p.mediaData)}" controls playsinline webkit-playsinline style="max-width:100%;border-radius:12px;margin-top:8px;"></video>`;
     if(p.msgType==='video_circle'&&p.mediaData){
         const tf = (p.cameraFacing || 'user') === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
@@ -6601,7 +6747,7 @@ function marketCard(l,isMine, isArchived=false){
     const archivedBadge=isArchived?`<span class="market-status-sold" style="margin-left:8px;">🕓 Скрыто</span>`:'';
     const pinnedBadge=isListingPinned(l)?(l.pinnedLabel==='ХИТ ПРОДАЖ!'?'<span class="market-status-pin" style="background:var(--gold-dim);color:var(--gold);">🔥 ХИТ ПРОДАЖ!</span>':'<span class="market-status-pin">⭐ Лидер продаж!</span>'):'';
     const statusBadge=l.status==='sold'&&!isService?'<span class="market-status-sold">Продано</span>':(l.status!=='active'&&!isWork&&!isService?'<span class="market-status-pending">Ожидание</span>':'');
-    return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'" onclick="openImgViewer('${jsEsc(l.photo)}')">`:''}
+    return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img loading="lazy" decoding="async" class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'" onclick="openImgViewer('${jsEsc(l.photo)}')">`:''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:6px;flex-wrap:wrap;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${pinnedBadge}${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div></div>
         <div class="market-price">${priceLine(l)}</div>${l.desc?`<div class="market-desc">${escHtml(l.desc)}</div>`:''}
         <div class="market-seller" style="cursor:pointer;" onclick="openUserProfile('${escHtml(l.seller)}')">
@@ -6853,7 +6999,7 @@ window.sendApp=async function(){
     if(hasMunicipalJob(u, target)) return toast('⚠️ Вы уже работаете на этой должности','gold');
     if(!await canTakeAnotherJob(u, currentNick)) return toast(`⚠️ Лимит работ: ${getJobLimit(u)}. Увольтесь с одной работы или оформите подписку.`,'gold');
     const kveScore = (u.kveScore !== undefined && u.kveScore !== null) ? Number(u.kveScore) : null;
-    const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95};
+    const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90};
     const required=KVE_REQUIREMENTS[target]||0;
     if(kveScore===null){
         return toast('📝 У вас ещё нет результата КВЭ. Дождитесь выставления балла мэрией.','gold');
@@ -6943,7 +7089,7 @@ async function renderJanitorPage(){
     if(!hist)return;
     const sSnap=await get(janitorSubsRef());
     const subs=Object.values(sSnap.val()||{}).filter(x=>x.worker===currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    hist.innerHTML=subs.length===0?'<div style="color:var(--muted);font-size:13px;">Пока нет отправленных отчётов</div>':subs.map(s=>`<div class="work-order" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;"><b>🧹 ${escHtml(s.date||todayKey())}</b><span style="font-size:11px;color:${s.status==='approved'?'#22c55e':s.status==='rejected'?'var(--red)':'var(--gold)'};font-weight:900;">${s.status==='approved'?'Одобрено'+(s.reward?` +${s.reward}₽`:''):s.status==='rejected'?'Отклонено':'На проверке'}</span></div>${s.photo?`<img class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}${s.comment?`<div style="font-size:13px;white-space:pre-wrap;">${escHtml(s.comment)}</div>`:''}</div>`).join('');
+    hist.innerHTML=subs.length===0?'<div style="color:var(--muted);font-size:13px;">Пока нет отправленных отчётов</div>':subs.map(s=>`<div class="work-order" style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px;"><b>🧹 ${escHtml(s.date||todayKey())}</b><span style="font-size:11px;color:${s.status==='approved'?'#22c55e':s.status==='rejected'?'var(--red)':'var(--gold)'};font-weight:900;">${s.status==='approved'?'Одобрено'+(s.reward?` +${s.reward}₽`:''):s.status==='rejected'?'Отклонено':'На проверке'}</span></div>${s.photo?`<img loading="lazy" decoding="async" class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}${s.comment?`<div style="font-size:13px;white-space:pre-wrap;">${escHtml(s.comment)}</div>`:''}</div>`).join('');
 }
 window.handleJanitorProof=async function(e){
     const file=e.target.files[0];if(!file)return;
@@ -6978,7 +7124,7 @@ window.submitJanitorDone=async function(){
 };
 
 // ─── KVE EXAM ─────────────────────────────
-const KVE_JOB_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95};
+const KVE_JOB_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90,'Помощник врача':80};
 function getKveJobAccess(score){
     return Object.entries(KVE_JOB_REQUIREMENTS).filter(([,req])=>score>=req).map(([job])=>job);
 }
@@ -7113,6 +7259,15 @@ function renderAdminUserSelect(users){
         return `<option value="${n}">${label}</option>`;
     }).join('');
     if(cur)sel.value=cur;
+    const forceHireSel=qs('adminForceHireTarget');
+    if(forceHireSel){
+        const curFH=forceHireSel.value;
+        forceHireSel.innerHTML=Object.entries(users).map(([n,u])=>{
+            const label = (u.displayName&&u.displayName.trim()) ? `${u.displayName.trim()} (@${n})` : n;
+            return `<option value="${n}">${label}</option>`;
+        }).join('');
+        if(curFH)forceHireSel.value=curFH;
+    }
     // Also populate kveTarget select
     const kveSel=qs('kveTarget');
     if(kveSel){
@@ -7143,7 +7298,7 @@ function renderAdminJanitorSubmissions(subs){
                 </div>
                 <div style="font-size:11px;font-weight:900;color:var(--gold);">⏳ На проверке</div>
             </div>
-            ${s.photo?`<img class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}
+            ${s.photo?`<img loading="lazy" decoding="async" class="submission-photo" src="${escHtml(s.photo)}" onclick="openImgViewer('${jsEsc(s.photo)}')">`:''}
             ${s.comment?`<div style="font-size:13px;color:var(--text);white-space:pre-wrap;">${escHtml(s.comment)}</div>`:''}
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(s.worker)}')">💬 Чат</button>
@@ -7283,6 +7438,44 @@ window.reviewAtmRequest = async function(id, status){
     }
     toast(status === 'approved' ? '✅ Заявка принята' : '❌ Заявка отклонена', status === 'approved' ? 'green' : 'red');
     renderAdminAtmRequests();
+};
+
+let _forceHireBusy = false;
+window.adminForceHire = async function(){
+    if(currentNick !== ADMIN) return toast('❌ Только для мэра','red');
+    if(_forceHireBusy) return;
+    const target = qs('adminForceHireTarget')?.value;
+    const job = qs('adminForceHireJob')?.value;
+    const statusEl = qs('adminForceHireStatus');
+    if(!target || !job){ if(statusEl) statusEl.textContent='⚠️ Выберите жителя и должность'; return; }
+    if(!confirm(`Назначить ${target} на должность «${job}» в обход требований КВЭ?`)) return;
+    _forceHireBusy = true;
+    try {
+        const snap = await get(userRef(target));
+        if(!snap.exists()){ if(statusEl) statusEl.textContent='❌ Житель не найден'; return; }
+        const u = snap.val() || {};
+        if(!await canTakeAnotherJob(u, target)){
+            if(statusEl) statusEl.innerHTML = `<span style="color:var(--red);">❌ Лимит работ (${getJobLimit(u)}) для ${target}</span>`;
+            return;
+        }
+        // KVE CHECK = BYPASS — this is the one and only path in the app that
+        // skips the KVE requirement. Regular applications (sendApp/approveApp)
+        // continue to enforce it as before.
+        const fresh = (await get(userRef(target))).val() || u;
+        const emps = collectEmploymentsFromData(fresh, target);
+        const newEmp = { id: `muni_${job}`, type: 'municipal', role: job };
+        const patch = { job, vehicle:'', employments:[...emps.filter(e=>e.id!==newEmp.id), newEmp], displayJob: fresh.displayJob || job };
+        if(job===JOB_JANITOR){ Object.assign(patch, {janitorTaskDate:todayKey(), janitorSubmissionId:'', janitorSubmissionStatus:'ready', janitorProof:'', janitorComment:''}); }
+        else { Object.assign(patch, {janitorTaskDate:'', janitorSubmissionId:'', janitorSubmissionStatus:'', janitorProof:'', janitorComment:''}); }
+        await update(userRef(target), patch);
+        const logId = genId();
+        await set(ref(db, `adminForceHireLog/${logId}`), { id: logId, admin: currentNick, targetNick: target, job, bypassKve: true, createdAt: Date.now() });
+        await pushNotification(target, `🏛 Мэрия назначила вас на должность: ${job}`, 'system');
+        if(statusEl) statusEl.innerHTML = `<span style="color:var(--primary);">✅ ${displayNick(fresh)||target} назначен(а) на «${job}» (без проверки КВЭ)</span>`;
+        toast(`🏛 ${target} → ${job}`,'green');
+        console.log('admin forced hire', target, job);
+    } catch(e){ console.error('[adminForceHire]', e); if(statusEl) statusEl.textContent='❌ Ошибка назначения'; }
+    finally { _forceHireBusy = false; }
 };
 
 window.approveApp=async function(id,ok){
@@ -7642,6 +7835,9 @@ window.publishNews = async function(){
         time: nowTime()
     };
     await set(newsItemRef(id), newsItem);
+    // ── Notify residents about the new post (reuses existing notifRef +
+    //    FCM/service-worker plumbing — no parallel notification system) ──
+    notifyAllUsersOfNews(newsItem).catch(e=>console.error('[news notify]', e));
     toast('📰 Новость опубликована!', 'green');
     qs('newsTitle').value = '';
     qs('newsContent').value = '';
@@ -7657,6 +7853,26 @@ window.publishNews = async function(){
         _publishNewsBusy = false;
     }
 };
+// ── News notifications (Part 6): internal notification for every resident +
+// best-effort remote push via an existing Cloud Function, if one is deployed
+// on the backend (falls back silently to the in-app notification otherwise —
+// that one always works, since it's plain Realtime Database writes). ──
+async function notifyAllUsersOfNews(newsItem){
+    const usersSnap = await get(ref(db,'users'));
+    const users = usersSnap.val() || {};
+    const text = `📰 Новая новость в Капани\n${newsItem.title}`;
+    const jobs = Object.keys(users)
+        .filter(nick => nick !== newsItem.author) // author doesn't need a notification about their own post
+        .map(nick => push(notifRef(nick), { text, time: nowTime(), cat:'news', newsId: newsItem.id }).catch(()=>{}));
+    await Promise.allSettled(jobs);
+    try {
+        await callFunctionWithFallback('sendNewsPush', { newsId:newsItem.id, title:'📰 Новая новость в Капани', body:newsItem.title, scope:newsItem.scope }, async()=>{
+            // No server-side push function deployed — in-app notification above
+            // already reached everyone, so this is a non-fatal no-op fallback.
+        });
+    } catch(e){ console.warn('[news push]', e && e.message); }
+    console.log('news notification sent', newsItem.id);
+}
 window.deleteNews = async function(id){
     if(!confirm('Удалить эту новость?')) return;
     const snap = await get(newsItemRef(id));
@@ -7668,6 +7884,11 @@ window.deleteNews = async function(id){
     }
     await remove(newsItemRef(id));
     toast('🗑 Новость удалена', 'gold');
+    renderNews();
+};
+let _newsRenderLimit = { village: 10, lands: 10 };
+window.loadMoreNews = function(scope){
+    _newsRenderLimit[scope] = (_newsRenderLimit[scope]||10) + 10;
     renderNews();
 };
 window.renderNews = async function(){
@@ -7689,13 +7910,15 @@ window.renderNews = async function(){
             village: sorted.filter(item => (item.scope || 'village') === 'village'),
             lands: sorted.filter(item => item.scope === 'lands')
         };
-        const renderList = (list, scope) => {
+        const renderList = (fullList, scope) => {
             const el = panels[scope];
             if(!el) return;
-            if(!list.length) {
+            if(!fullList.length) {
                 el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Пока нет новостей</div>';
                 return;
             }
+            const limit = _newsRenderLimit[scope] || 10;
+            const list = fullList.slice(0, limit);
             el.innerHTML = list.map(item => {
                 const catInfo = NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general;
                 const canDelete = item.author === currentNick || currentNick === ADMIN;
@@ -7709,7 +7932,7 @@ window.renderNews = async function(){
                         ${canDelete ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);" onclick="deleteNews('${jsEsc(item.id)}')">🗑</button>` : `<div style="margin-left:auto;"></div>`}
                     </div>
                     <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
-                    ${item.imageUrl ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
+                    ${item.imageUrl ? `<img loading="lazy" decoding="async" src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
                     ${item.videoUrl ? `<div style="margin-bottom:10px;cursor:pointer;" onclick="openVideoViewer('${jsEsc(item.videoUrl)}')"><video style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);background:#000;" muted playsinline preload="metadata"><source src="${escHtml(item.videoUrl)}#t=0.1"></video></div>` : ''}
                     <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
                     <div style="margin-top:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -7717,7 +7940,7 @@ window.renderNews = async function(){
                         <button type="button" class="btn btn-primary btn-sm news-discuss-btn" onclick="openNewsDiscussion('${jsEsc(item.id)}')">Открыть обсуждение</button>
                     </div>
                 </div>`;
-            }).join('');
+            }).join('') + (fullList.length > limit ? `<button class="btn btn-ghost" style="width:100%;margin-top:4px;" onclick="loadMoreNews('${scope}')">Показать ещё (${fullList.length - limit})</button>` : '');
         };
         renderList(byScope.village, 'village');
         renderList(byScope.lands, 'lands');
@@ -7751,7 +7974,7 @@ window.openNewsDiscussion = async function(id){
                 <span class="news-scope-badge">${escHtml(item.date || '')} · ${escHtml(item.time || '')}</span>
             </div>
             <div style="font-weight:900;font-size:18px;margin:10px 0 8px;">${escHtml(item.title || '')}</div>
-            ${item.imageUrl ? `<img src="${escHtml(item.imageUrl)}" style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
+            ${item.imageUrl ? `<img loading="lazy" decoding="async" src="${escHtml(item.imageUrl)}" style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
             ${item.videoUrl ? `<div style="margin-bottom:10px;cursor:pointer;" onclick="openVideoViewer('${jsEsc(item.videoUrl)}')"><video style="width:100%;max-height:260px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);background:#000;" muted playsinline preload="metadata"><source src="${escHtml(item.videoUrl)}#t=0.1"></video></div>` : ''}
             <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content || '')}</div>
             <div style="margin-top:10px;font-size:11px;color:var(--muted);">
@@ -7870,51 +8093,41 @@ window.onNewsInputTyping = function(){ /* intentionally quiet */ };
 
 const bnMap={home:0,messages:1,market:2,tasks:3,bank:4,news:5,subscription:6,profile:7,janitorPage:8,businesses:9,bizDetail:9,bizOwnerPanel:9,rentBuildings:10,events:0,eventDetail:0,kveExam:11,deputySession:0,deliveryOrderPage:0};
 window.navTo=function(id){
+    const previousPage=curPage;
+    if(previousPage && previousPage!==id) leaveService(previousPage);
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
     for(let i=0;i<12;i++){const b=qs('bn'+i);if(b)b.classList.toggle('sel',bnMap[id]===i);}
-    // iOS safety: force-unlock body scroll on every navigation (otherwise a stuck modal kills all taps on iPhone)
-    unlockBodyScroll(true);
-    window.scrollTo(0,0);
-    // iOS repaint fix: after toggling .active, force a layout flush so WebKit
-    // registers the new paint layer as interactive immediately. Without this,
-    // taps on the newly-shown section are swallowed (stale GPU layer).
-    if(el){ requestAnimationFrame(()=>{ void el.offsetHeight; el.style.pointerEvents=''; }); }
-    if(id==='ratings') get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
+    unlockBodyScroll(true); window.scrollTo(0,0);
+    if(el){requestAnimationFrame(()=>{void el.offsetHeight;el.style.pointerEvents='';});}
+    enterService(id);
+    if(id==='ratings') loadAllUsersCache().then(u=>{if(curPage==='ratings')renderLeaderboard(u);});
     if(id==='adminPage') renderAdmin();
     if(id==='kveExam') renderKveSection();
     if(id==='jobs') renderKveSection();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
-    if(id==='messages'){
-        // Show loaders immediately on first open
-        const chatHost = qs('chatMessages');
-        if(chatHost && !chatHost.innerHTML.trim()) chatHost.innerHTML = loadingHtml('Загрузка чата...');
-        const dmHost = qs('dmMessages');
-        if(dmHost && currentDmNick && !dmHost.innerHTML.trim()) dmHost.innerHTML = loadingHtml('Загрузка сообщений...');
-        chatLoading = true;
-        get(chatRef()).then(s=>{ chatLoading = false; renderChat(s.val()||{}); });
-    }
-    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded(); }
-    if(id==='market') { renderDebtNotice('marketDebtNotice', allUsersCache[currentNick] || {}); get(marketRef()).then(s=>renderMarket(s.val()||{})); }
-    if(id==='bank') {renderRecentTransfers();renderFinancialStats();renderSavingsDisplay();}
+    if(id==='messages'){ const chatHost=qs('chatMessages');if(chatHost&&!chatHost.innerHTML.trim())chatHost.innerHTML=loadingHtml('Загрузка чата...');const dmHost=qs('dmMessages');if(dmHost&&currentDmNick&&!dmHost.innerHTML.trim())dmHost.innerHTML=loadingHtml('Загрузка сообщений...');chatLoading=true;get(chatRef()).then(s=>{chatLoading=false;renderChat(s.val()||{});}); }
+    if(id==='profile'){get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded();}
+    if(id==='market') renderDebtNotice('marketDebtNotice',allUsersCache[currentNick]||{});
+    if(id==='bank'){renderRecentTransfers();renderFinancialStats();renderSavingsDisplay();}
     if(id==='subscription') renderSubscription();
-    if(id==='home') { renderHomeBizOrders(); }
+    if(id==='home') renderHomeBizOrders();
     if(id==='rentBuildings') renderRentBuildings();
     if(id==='tasks') renderTasks();
-    if(id==='jobs') renderJobAppStatus();
-    if(id==='news') { currentNewsTab = currentNewsTab || 'village'; renderNews(); }
-    if(id==='newsDiscussion') { const el=qs('newsDiscussionMessages'); if(el) renderNewsDiscussionMessages(currentNewsMsgs); }
-    if(id==='taxi') { renderDebtNotice('taxiDebtNotice', allUsersCache[currentNick] || {}); setTimeout(()=>window.initTaxiMap(),100); }
+    if(id==='jobs'){renderJobAppStatus();renderHospitalJobsCard();}
+    if(id==='hospital') renderHospital();
+    if(id==='hospitalPanel') renderHospitalPanel();
+    if(id==='news'){currentNewsTab=currentNewsTab||'village';renderNews();}
+    if(id==='newsDiscussion'){const e=qs('newsDiscussionMessages');if(e)renderNewsDiscussionMessages(currentNewsMsgs);}
+    if(id==='taxi'){renderDebtNotice('taxiDebtNotice',allUsersCache[currentNick]||{});Promise.resolve(window.initTaxiMap?.()).catch(e=>toast('❌ Не удалось загрузить карту','red'));}
     if(id==='driverPage') setTimeout(()=>{if(driverTrackMapObj)driverTrackMapObj.invalidateSize();},450);
     if(id==='janitorPage') renderJanitorPage();
     if(id==='businesses') renderBusinesses();
     if(id==='bizOwnerPanel') renderBizOwnerPanel();
-    if(id==='kveExam') {} // static content
-    if(id==='deputySession') { renderDeputyProposals(); }
-    if(id==='dutyPage') { startCallsListener(); renderDutyCalls(_lastCalls); }
-    if(id==='deliveryOrderPage') { renderMyDeliveryOrders(); if(typeof renderDeliveryOrderOptions==='function') renderDeliveryOrderOptions(true); else updateDeliverySourceHint(); }
+    if(id==='deputySession') renderDeputyProposals();
+    if(id==='dutyPage'){startCallsListener();renderDutyCalls(_lastCalls);}
+    if(id==='deliveryOrderPage'){renderMyDeliveryOrders();if(typeof renderDeliveryOrderOptions==='function')renderDeliveryOrderOptions(true);else updateDeliverySourceHint();}
     if(id==='events') renderEventsSection();
-    if(id==='eventDetail') {} // handled by openEventDetail
     if(id==='gameSpySection') initSpyGame();
     if(id==='gameMafiaSection') initMafiaGame();
     if(id==='gameMatch3Section') initMatch3();
@@ -7925,9 +8138,7 @@ window.navTo=function(id){
     if(id==='gameReactionSection') initReactionGame();
     if(id==='game2048Section') init2048Game();
     if(id==='gameSnakeSection') initSnakeGame();
-    if(id==='profile') { get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{}));updatePushSettingsUI();get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));buildWallEmojiIfNeeded(); }
 };
-
 // ══════════════════════════════════════════════════════════════════
 // 🎮 БИБЛИОТЕКА ИГР
 // ══════════════════════════════════════════════════════════════════
@@ -10041,7 +10252,7 @@ async function renderBusinesses(){
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     ${ownedBizs.map(b => `
                         <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;">
-                            ${b.icon ? `<img src="${escHtml(b.icon)}" style="width:44px;height:44px;border-radius:14px;object-fit:cover;border:2px solid var(--primary);">` : '<div style="width:44px;height:44px;border-radius:14px;background:var(--surface2);border:2px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;">🏪</div>'}
+                            ${b.icon ? `<img loading="lazy" decoding="async" src="${escHtml(b.icon)}" style="width:44px;height:44px;border-radius:14px;object-fit:cover;border:2px solid var(--primary);">` : '<div style="width:44px;height:44px;border-radius:14px;background:var(--surface2);border:2px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:18px;">🏪</div>'}
                             <div style="flex:1;min-width:0;">
                                 <div style="font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(b.name)}</div>
                                 <div style="font-size:12px;color:var(--primary);font-weight:700;">💰 ${(b.balance||0).toLocaleString()} ₽</div>
@@ -10066,7 +10277,7 @@ async function renderBusinesses(){
             ${b.banner ? `<img class="biz-card-img" src="${escHtml(b.banner)}" loading="lazy">` : '<div class="biz-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;">🏪</div>'}
             <div class="biz-card-body">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                    ${b.icon ? `<img src="${escHtml(b.icon)}" style="width:28px;height:28px;border-radius:8px;object-fit:cover;border:1px solid var(--border);">` : ''}
+                    ${b.icon ? `<img loading="lazy" decoding="async" src="${escHtml(b.icon)}" style="width:28px;height:28px;border-radius:8px;object-fit:cover;border:1px solid var(--border);">` : ''}
                     <div class="biz-card-name">${escHtml(b.name)}</div>
                 </div>
                 <div class="biz-card-cat">${escHtml(b.category||'')}</div>
@@ -10098,7 +10309,7 @@ window.openBizDetail = async function(bizId){
     if(headerEl){
         headerEl.innerHTML = `
         <div id="bizDetailBgWrap" style="position:relative;border-radius:var(--r);overflow:hidden;">
-            ${b.banner ? `<img class="biz-detail-banner" src="${escHtml(b.banner)}" onclick="openImgViewer('${jsEsc(b.banner)}')">` : '<div class="biz-detail-banner" style="display:flex;align-items:center;justify-content:center;font-size:60px;">🏪</div>'}
+            ${b.banner ? `<img loading="lazy" decoding="async" class="biz-detail-banner" src="${escHtml(b.banner)}" onclick="openImgViewer('${jsEsc(b.banner)}')">` : '<div class="biz-detail-banner" style="display:flex;align-items:center;justify-content:center;font-size:60px;">🏪</div>'}
             <div id="bizDetailBgEffect" style="position:absolute;inset:0;pointer-events:none;z-index:1;"></div>
         </div>
         ${b.icon ? `<img class="biz-detail-icon" src="${escHtml(b.icon)}" onclick="openImgViewer('${jsEsc(b.icon)}')">` : '<div class="biz-detail-icon" style="display:flex;align-items:center;justify-content:center;font-size:28px;background:var(--surface2);">🏪</div>'}`;
@@ -13196,6 +13407,567 @@ window.completeCustomDelivery = async function(orderId) {
     renderDeliveryCustomOrders();
 };
 
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Hospital Core (refs, constants, identity helpers)
+// ══════════════════════════════════════════════════════════════════
+const HOSPITAL_LOCATION = 'Лёхин шалаш';
+const hospitalServicesRef       = ()   => ref(db, 'hospital/services');
+const hospitalServiceRef        = (id) => ref(db, `hospital/services/${id}`);
+const hospitalAppointmentsRef   = ()   => ref(db, 'hospital/appointments');
+const hospitalAppointmentRef    = (id) => ref(db, `hospital/appointments/${id}`);
+const hospitalAssistantAppsRef  = ()   => ref(db, 'hospital/assistantApplications');
+const hospitalAssistantAppRef   = (id) => ref(db, `hospital/assistantApplications/${id}`);
+const hospitalAssistantSalaryRef= ()   => ref(db, 'hospital/assistantSalary');
+
+function hospitalFindByRole(role){
+    const entries = Object.entries(allUsersCache || {});
+    const found = entries.find(([nick,u]) => u && hasMunicipalJob(u, role));
+    return found ? { nick: found[0], user: found[1] } : null;
+}
+function getHospitalDoctor(){ return hospitalFindByRole('Врач'); }
+function getHospitalAssistant(){ return hospitalFindByRole('Помощник врача'); }
+function isHospitalDoctor(nick){
+    const u = allUsersCache[nick || currentNick];
+    return !!u && hasMunicipalJob(u, 'Врач');
+}
+function splitDisplayName(u, nick){
+    const dn = (displayNick(u) || nick || '').trim();
+    const parts = dn.split(/\s+/).filter(Boolean);
+    return { first: parts[0] || nick || '', last: parts.slice(1).join(' ') || '' };
+}
+const HOSPITAL_STATUS_LABELS = {
+    pending:                { label:'⏳ Ожидает подтверждения врача',        cls:'gold'  },
+    accepted:               { label:'✅ Подтверждено врачом',                 cls:'green' },
+    rejected:               { label:'❌ Отклонено врачом',                    cls:'red'   },
+    cancelled:              { label:'🚫 Отменено',                            cls:'red'   },
+    awaiting_confirmation:  { label:'🕐 Ожидает подтверждения завершения',    cls:'gold'  },
+    completed:              { label:'✅ Приём завершён',                      cls:'green' },
+    paid:                   { label:'💳 Оплачено',                            cls:'green' }
+};
+function hospitalStatusBadge(appt){
+    const s = HOSPITAL_STATUS_LABELS[appt.status] || {label:appt.status, cls:'gold'};
+    return `<div class="status-badge ${s.cls==='green'?'badge-active':'badge-wait'}" style="${s.cls==='red'?'color:var(--red);':''}">${s.label}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — UI: patient-facing page
+// ══════════════════════════════════════════════════════════════════
+async function renderHospital(){
+    const doc = getHospitalDoctor();
+    const asst = getHospitalAssistant();
+    const docCard = qs('hospitalDoctorCard');
+    if(docCard){
+        if(doc){
+            const dn = displayNick(doc.user) || doc.nick;
+            docCard.innerHTML = `<div class="item-row"><div><div style="font-weight:900;">👨‍⚕️ ${escHtml(dn)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(doc.nick)}</div></div></div>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px;">${asst ? `🩺 Помощник врача: ${escHtml(displayNick(asst.user)||asst.nick)}` : '🩺 Помощник врача не назначен.'}</div>`;
+        } else {
+            docCard.innerHTML = `<div style="color:var(--muted);font-size:13px;">👨‍⚕️ Сейчас врач не назначен.</div>`;
+        }
+    }
+    try {
+        const svcSnap = await get(hospitalServicesRef());
+        renderHospitalServicesList(svcSnap.val() || {}, doc);
+        const apptSnap = await get(hospitalAppointmentsRef());
+        renderHospitalMyAppointments(apptSnap.val() || {});
+    } catch(e){ console.error('[hospital render]', e); }
+}
+function renderHospitalServicesList(services, doc){
+    const el = qs('hospitalServicesList'); if(!el) return;
+    const list = Object.values(services).filter(s=>s.active!==false);
+    if(!doc){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Врач ещё не назначен — запись недоступна.</div>'; return; }
+    if(!list.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Врач пока не добавил услуги.</div>'; return; }
+    el.innerHTML = list.map(s=>`<div class="item-row" style="flex-direction:column;align-items:stretch;">
+        <div style="font-weight:900;">${escHtml(s.name)}</div>
+        <div style="font-size:12px;color:var(--muted);margin:4px 0;">${escHtml(s.desc||'')}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:var(--primary);font-weight:900;">${(s.price||0).toLocaleString()} ₽</span>
+            <button class="btn btn-primary btn-sm" onclick="openHospitalBooking('${s.id}')">Записаться</button>
+        </div>
+    </div>`).join('');
+}
+function renderHospitalMyAppointments(appts){
+    const el = qs('hospitalMyAppointments'); if(!el) return;
+    const mine = Object.values(appts).filter(a=>a.clientNick===currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(!mine.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Нет записей</div>'; return; }
+    el.innerHTML = mine.map(a=>{
+        let actions = '';
+        if(a.status==='pending' || a.status==='accepted'){
+            actions += `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelHospitalAppointment('${a.id}')">❌ Отменить запись</button>`;
+        }
+        if(a.status==='awaiting_confirmation' && !a.clientConfirmed){
+            actions += `<button class="btn btn-primary btn-sm" onclick="clientConfirmHospitalAppointment('${a.id}')">✅ Всё завершено</button>`;
+        }
+        return `<div class="work-order" style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;">
+                <b>🩺 ${escHtml(a.serviceName)}</b>${hospitalStatusBadge(a)}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">📅 ${escHtml(a.date)} 🕐 ${escHtml(a.time)} · ${(a.price||0).toLocaleString()} ₽</div>
+            ${actions?`<div style="display:flex;gap:8px;flex-wrap:wrap;">${actions}</div>`:''}
+        </div>`;
+    }).join('');
+}
+
+// ── Booking (record creation) ──────────────────────────────────────
+let _hospBookingServiceId = null;
+window.openHospitalBooking = function(serviceId){
+    _hospBookingServiceId = serviceId;
+    const card = qs('hospitalBookingCard'); if(!card) return;
+    get(hospitalServiceRef(serviceId)).then(snap=>{
+        const s = snap.val();
+        if(!s) return toast('❌ Услуга не найдена','red');
+        const infoEl = qs('hospitalBookingServiceInfo');
+        if(infoEl) infoEl.innerHTML = `<b>${escHtml(s.name)}</b> — ${(s.price||0).toLocaleString()} ₽<br>${escHtml(s.desc||'')}`;
+        const dateInp = qs('hospitalBookDate'); if(dateInp){ dateInp.min = todayKey(); dateInp.value = todayKey(); }
+        card.style.display = 'block';
+        card.scrollIntoView({behavior:'smooth', block:'center'});
+    });
+};
+window.cancelHospitalBookingForm = function(){
+    _hospBookingServiceId = null;
+    const card = qs('hospitalBookingCard'); if(card) card.style.display='none';
+};
+let _hospBookingBusy = false;
+window.confirmHospitalBooking = async function(){
+    if(_hospBookingBusy) return;
+    if(!_hospBookingServiceId) return toast('⚠️ Услуга не выбрана','gold');
+    const date = qs('hospitalBookDate')?.value;
+    const time = qs('hospitalBookTime')?.value;
+    if(!date || !time) return toast('⚠️ Укажите дату и время','gold');
+    _hospBookingBusy = true;
+    try {
+        const doc = getHospitalDoctor();
+        if(!doc) { toast('❌ Врач не назначен','red'); return; }
+        const svcSnap = await get(hospitalServiceRef(_hospBookingServiceId));
+        const s = svcSnap.val();
+        if(!s || s.active===false) { toast('❌ Услуга недоступна','red'); return; }
+        const uSnap = await get(userRef(currentNick));
+        const u = uSnap.val() || {};
+        const {first, last} = splitDisplayName(u, currentNick);
+        const id = genId();
+        const appt = {
+            id, clientNick: currentNick, clientName: first, clientSurname: last,
+            doctorNick: doc.nick, serviceId: s.id, serviceName: s.name, serviceDescription: s.desc||'',
+            price: s.price||0, date, time, status:'pending',
+            doctorConfirmed:false, clientConfirmed:false, paymentStatus:'unpaid', createdAt: Date.now()
+        };
+        await set(hospitalAppointmentRef(id), appt);
+        await pushNotification(doc.nick, `🏥 Новая запись: ${first} ${last} — ${s.name} (${date} ${time})`, 'system');
+        await pushNotification(currentNick, `⏳ Заявка на приём отправлена врачу`, 'system');
+        toast('✅ Запись отправлена врачу','green');
+        cancelHospitalBookingForm();
+        renderHospital();
+        console.log('hospital appointment created', id);
+    } catch(e){ console.error(e); toast('❌ Не удалось создать запись','red'); }
+    finally { _hospBookingBusy = false; }
+};
+
+// ── Client-side actions: cancel / confirm completion ────────────────
+let _hospActionBusy = false;
+window.cancelHospitalAppointment = async function(id){
+    if(_hospActionBusy) return;
+    if(!confirm('Вы уверены, что хотите отменить запись?')) return;
+    _hospActionBusy = true;
+    try {
+        const snap = await get(hospitalAppointmentRef(id));
+        const a = snap.val();
+        if(!a) { toast('❌ Запись не найдена','red'); return; }
+        if(a.clientNick !== currentNick) { toast('❌ Это не ваша запись','red'); return; }
+        if(!['pending','accepted'].includes(a.status)) { toast('⚠️ Эту запись уже нельзя отменить','gold'); return; }
+        await update(hospitalAppointmentRef(id), { status:'cancelled', cancelledAt: Date.now(), cancelledBy: currentNick });
+        await pushNotification(a.doctorNick, `❌ Клиент отменил запись: ${a.serviceName} (${a.date} ${a.time})`, 'system');
+        toast('🚫 Запись отменена','gold');
+        renderHospital();
+        console.log('hospital appointment cancelled', id);
+    } catch(e){ console.error(e); toast('❌ Ошибка отмены','red'); }
+    finally { _hospActionBusy = false; }
+};
+window.clientConfirmHospitalAppointment = async function(id){
+    if(_hospActionBusy) return;
+    _hospActionBusy = true;
+    try {
+        const snap = await get(hospitalAppointmentRef(id));
+        const a = snap.val();
+        if(!a) { toast('❌ Запись не найдена','red'); return; }
+        if(a.clientNick !== currentNick) { toast('❌ Это не ваша запись','red'); return; }
+        if(a.status !== 'awaiting_confirmation') { toast('⚠️ Нельзя подтвердить сейчас','gold'); return; }
+        await update(hospitalAppointmentRef(id), { clientConfirmed: true, clientConfirmedAt: Date.now() });
+        toast('✅ Подтверждено','green');
+        await tryFinalizeHospitalPayment(id);
+        renderHospital();
+    } catch(e){ console.error(e); toast('❌ Ошибка','red'); }
+    finally { _hospActionBusy = false; }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Payments (atomic, double-payment safe)
+// ══════════════════════════════════════════════════════════════════
+async function tryFinalizeHospitalPayment(id){
+    try {
+        const snap = await get(hospitalAppointmentRef(id));
+        const a = snap.val();
+        if(!a) return;
+        if(!(a.doctorConfirmed && a.clientConfirmed)) return;
+        if(a.paymentStatus === 'paid') return;
+        // Atomic lock on paymentStatus prevents double-click / double-tab / reload races
+        const txResult = await runTransaction(ref(db, `hospital/appointments/${id}/paymentStatus`), (cur) => {
+            if(cur === 'paid' || cur === 'processing') return; // abort transaction, no change
+            return 'processing';
+        });
+        if(!txResult.committed || txResult.snapshot.val() !== 'processing') return;
+
+        const freshSnap = await get(hospitalAppointmentRef(id));
+        const appt = freshSnap.val();
+        if(!appt || appt.paymentStatus !== 'processing') return;
+
+        const clientSnap = await get(userRef(appt.clientNick));
+        const doctorSnap = await get(userRef(appt.doctorNick));
+        const client = clientSnap.val();
+        const doctor = doctorSnap.val();
+        if(!client || !doctor){ await update(hospitalAppointmentRef(id), { paymentStatus:'unpaid' }); return; }
+
+        const price = Number(appt.price)||0;
+        if((client.balance||0) < price){
+            await update(hospitalAppointmentRef(id), { paymentStatus:'unpaid' });
+            await pushNotification(appt.clientNick, `⚠️ Недостаточно средств для оплаты приёма «${appt.serviceName}» (${price}₽). Пополните баланс.`, 'money');
+            return;
+        }
+        await update(userRef(appt.clientNick), { balance: (client.balance||0) - price });
+        await update(userRef(appt.doctorNick), { balance: (doctor.balance||0) + price });
+        await logTx(appt.clientNick, { type:'out', who: appt.doctorNick, amt: price, desc: `Оплата приёма: ${appt.serviceName}` });
+        await logTx(appt.doctorNick, { type:'in', who: appt.clientNick, amt: price, desc: `Оплата приёма: ${appt.serviceName}` });
+        await update(hospitalAppointmentRef(id), { paymentStatus:'paid', status:'paid', paidAt: Date.now() });
+        await pushNotification(appt.clientNick, `💳 Оплата приёма «${appt.serviceName}» проведена: ${price}₽`, 'money');
+        await pushNotification(appt.doctorNick, `💰 Получена оплата за приём «${appt.serviceName}»: ${price}₽ от ${appt.clientNick}`, 'money');
+        console.log('hospital payment completed', id);
+    } catch(e){ console.error('[hospital payment]', e); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Doctor Panel: appointments
+// ══════════════════════════════════════════════════════════════════
+async function renderHospitalPanel(){
+    const isDoc = isHospitalDoctor(currentNick);
+    const notice = qs('hospitalPanelNoAccess');
+    const panel = qs('hospitalPanel');
+    if(notice) notice.style.display = isDoc ? 'none' : 'block';
+    if(panel) panel.querySelectorAll(':scope > .card:not(#hospitalPanelNoAccess)').forEach(c=>c.style.display = isDoc ? '' : 'none');
+    if(!isDoc) return;
+    try {
+        const [apptSnap, svcSnap, appsSnap, salarySnap] = await Promise.all([
+            get(hospitalAppointmentsRef()), get(hospitalServicesRef()), get(hospitalAssistantAppsRef()), get(hospitalAssistantSalaryRef())
+        ]);
+        renderHospitalPanelAppointments(apptSnap.val()||{});
+        renderHospitalPanelServices(svcSnap.val()||{});
+        renderHospitalPanelAssistant(appsSnap.val()||{}, salarySnap.val()||0);
+        renderHospitalPanelFinance(Object.values(apptSnap.val()||{}));
+    } catch(e){ console.error('[hospital panel render]', e); }
+}
+function renderHospitalPanelAppointments(appts){
+    const el = qs('hospitalPanelAppointments'); if(!el) return;
+    const mine = Object.values(appts).filter(a=>a.doctorNick===currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    if(!mine.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет записей</div>'; return; }
+    const today = todayKey();
+    const groups = {today:[], upcoming:[], completed:[], other:[]};
+    mine.forEach(a=>{
+        if(a.status==='paid'||a.status==='completed') groups.completed.push(a);
+        else if(a.status==='rejected'||a.status==='cancelled') groups.other.push(a);
+        else if(a.date===today) groups.today.push(a);
+        else groups.upcoming.push(a);
+    });
+    const renderCard = (a) => {
+        let actions='';
+        if(a.status==='pending') actions = `<button class="btn btn-primary btn-sm" onclick="doctorAcceptAppointment('${a.id}')">✅ Принять</button><button class="btn btn-red btn-sm" onclick="doctorRejectAppointment('${a.id}')">❌ Отказать</button>`;
+        else if(a.status==='accepted') actions = `<button class="btn btn-primary btn-sm" onclick="doctorCompleteAppointment('${a.id}')">✅ Приём завершён</button>`;
+        else if(a.status==='awaiting_confirmation') actions = `<div style="font-size:12px;color:var(--gold);">Ожидает подтверждения клиента</div>`;
+        return `<div class="work-order" style="margin-bottom:10px;">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;">
+                <b>👤 ${escHtml(a.clientName)} ${escHtml(a.clientSurname)}</b>${hospitalStatusBadge(a)}
+            </div>
+            <div style="font-size:12px;color:var(--muted);">@${escHtml(a.clientNick)}</div>
+            <div style="font-size:13px;font-weight:800;margin:6px 0;">🩺 ${escHtml(a.serviceName)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📅 ${escHtml(a.date)} 🕐 ${escHtml(a.time)} · ${(a.price||0).toLocaleString()} ₽</div>
+            ${actions?`<div style="display:flex;gap:8px;flex-wrap:wrap;">${actions}</div>`:''}
+        </div>`;
+    };
+    let html='';
+    if(groups.today.length) html += `<div style="font-size:11px;font-weight:900;color:var(--primary);margin-bottom:6px;">СЕГОДНЯ</div>` + groups.today.map(renderCard).join('');
+    if(groups.upcoming.length) html += `<div style="font-size:11px;font-weight:900;color:var(--muted);margin:10px 0 6px;">БУДУЩИЕ</div>` + groups.upcoming.map(renderCard).join('');
+    if(groups.completed.length) html += `<div style="font-size:11px;font-weight:900;color:var(--muted);margin:10px 0 6px;">ЗАВЕРШЁННЫЕ</div>` + groups.completed.slice(0,15).map(renderCard).join('');
+    if(groups.other.length) html += `<div style="font-size:11px;font-weight:900;color:var(--muted);margin:10px 0 6px;">ОТКЛОНЁННЫЕ/ОТМЕНЁННЫЕ</div>` + groups.other.slice(0,10).map(renderCard).join('');
+    el.innerHTML = html;
+}
+let _hospDoctorBusy = false;
+async function hospitalDoctorSetStatus(id, newStatus, notifyTextFn, extraPatch){
+    if(_hospDoctorBusy) return;
+    if(!isHospitalDoctor(currentNick)) { toast('❌ Только для врача','red'); return; }
+    _hospDoctorBusy = true;
+    try {
+        const snap = await get(hospitalAppointmentRef(id));
+        const a = snap.val();
+        if(!a) { toast('❌ Запись не найдена','red'); return; }
+        if(a.doctorNick !== currentNick) { toast('❌ Это не ваш пациент','red'); return; }
+        const allowedFrom = { accepted:['pending'], rejected:['pending'], awaiting_confirmation:['accepted'] };
+        if(!allowedFrom[newStatus].includes(a.status)) { toast('⚠️ Недопустимый переход статуса','gold'); return; }
+        const patch = Object.assign({ status:newStatus, updatedAt: Date.now() }, extraPatch||{});
+        await update(hospitalAppointmentRef(id), patch);
+        await pushNotification(a.clientNick, notifyTextFn(a), 'system');
+        toast('✅ Обновлено','green');
+        console.log('hospital appointment', newStatus, id);
+        renderHospitalPanel();
+    } catch(e){ console.error(e); toast('❌ Ошибка','red'); }
+    finally { _hospDoctorBusy = false; }
+}
+window.doctorAcceptAppointment = function(id){
+    return hospitalDoctorSetStatus(id, 'accepted', a => `✅ Врач подтвердил запись: ${a.serviceName} (${a.date} ${a.time})`);
+};
+window.doctorRejectAppointment = function(id){
+    return hospitalDoctorSetStatus(id, 'rejected', a => `❌ Врач отклонил запись: ${a.serviceName} (${a.date} ${a.time})`);
+};
+window.doctorCompleteAppointment = function(id){
+    return hospitalDoctorSetStatus(id, 'awaiting_confirmation', a => `Врач отметил приём «${a.serviceName}» как завершённый. Подтвердите завершение в разделе «🏥 Больница».`, {doctorConfirmed:true, doctorConfirmedAt: Date.now()});
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Doctor Panel: services CRUD
+// ══════════════════════════════════════════════════════════════════
+function renderHospitalPanelServices(services){
+    const el = qs('hospitalPanelServices'); if(!el) return;
+    const list = Object.values(services);
+    if(!list.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px;">Пока нет услуг</div>'; return; }
+    el.innerHTML = list.map(s=>`<div class="item-row">
+        <div><div style="font-weight:800;">${escHtml(s.name)} ${s.active===false?'<span style="color:var(--muted);font-size:11px;">(отключена)</span>':''}</div><div style="font-size:12px;color:var(--muted);">${escHtml(s.desc||'')} · ${(s.price||0).toLocaleString()} ₽</div></div>
+        <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" onclick="editHospitalService('${s.id}')">✏️</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleHospitalService('${s.id}')">${s.active===false?'▶️':'⏸'}</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteHospitalService('${s.id}')">🗑</button>
+        </div>
+    </div>`).join('');
+}
+window.addHospitalService = async function(){
+    if(!isHospitalDoctor(currentNick)) { toast('❌ Только для врача','red'); return; }
+    const name = (qs('hospServiceName')?.value||'').trim();
+    const desc = (qs('hospServiceDesc')?.value||'').trim();
+    const price = parseInt(qs('hospServicePrice')?.value,10);
+    if(!name) { toast('⚠️ Укажите название услуги','gold'); return; }
+    if(!price || price<=0) { toast('⚠️ Укажите цену','gold'); return; }
+    const id = genId();
+    await set(hospitalServiceRef(id), { id, name, desc, price, active:true, createdBy: currentNick, createdAt: Date.now() });
+    if(qs('hospServiceName')) qs('hospServiceName').value='';
+    if(qs('hospServiceDesc')) qs('hospServiceDesc').value='';
+    if(qs('hospServicePrice')) qs('hospServicePrice').value='';
+    toast('✅ Услуга добавлена','green');
+    renderHospitalPanel();
+};
+window.editHospitalService = async function(id){
+    if(!isHospitalDoctor(currentNick)) return;
+    const snap = await get(hospitalServiceRef(id));
+    const s = snap.val(); if(!s) return;
+    const name = prompt('Название услуги:', s.name); if(name===null) return;
+    const desc = prompt('Описание:', s.desc||''); if(desc===null) return;
+    const priceStr = prompt('Цена ₽:', s.price); if(priceStr===null) return;
+    const price = parseInt(priceStr,10);
+    if(!name.trim() || !price || price<=0) { toast('⚠️ Некорректные данные','gold'); return; }
+    await update(hospitalServiceRef(id), { name:name.trim(), desc:desc.trim(), price });
+    toast('✅ Услуга обновлена','green');
+    renderHospitalPanel();
+};
+window.toggleHospitalService = async function(id){
+    if(!isHospitalDoctor(currentNick)) return;
+    const snap = await get(hospitalServiceRef(id));
+    const s = snap.val(); if(!s) return;
+    await update(hospitalServiceRef(id), { active: !(s.active!==false) });
+    renderHospitalPanel();
+};
+window.deleteHospitalService = async function(id){
+    if(!isHospitalDoctor(currentNick)) return;
+    if(!confirm('Удалить услугу?')) return;
+    await remove(hospitalServiceRef(id));
+    toast('🗑 Услуга удалена','gold');
+    renderHospitalPanel();
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Assistant hiring & salary
+// ══════════════════════════════════════════════════════════════════
+window.applyForHospitalAssistant = async function(){
+    const uSnap = await get(userRef(currentNick));
+    const u = uSnap.val()||{};
+    if(hasMunicipalJob(u,'Помощник врача')) { toast('⚠️ Вы уже помощник врача','gold'); return; }
+    const score = (u.kveScore!==undefined && u.kveScore!==null) ? Number(u.kveScore) : null;
+    const required = KVE_JOB_REQUIREMENTS['Помощник врача']||80;
+    if(score===null) { toast('📝 У вас ещё нет балла КВЭ','gold'); return; }
+    if(score < required) { toast(`❌ Нужен балл КВЭ ${required}. Ваш балл: ${score}.`,'red'); return; }
+    if(getHospitalAssistant()) { toast('❌ Должность помощника врача уже занята.','red'); return; }
+    const doc = getHospitalDoctor();
+    if(!doc) { toast('❌ Врач не назначен, заявка невозможна','red'); return; }
+    const appsSnap = await get(hospitalAssistantAppsRef());
+    const apps = appsSnap.val()||{};
+    const already = Object.values(apps).some(a=>a.from===currentNick && a.status==='pending');
+    if(already) { toast('⚠️ Заявка уже отправлена','gold'); return; }
+    const id = genId();
+    await set(hospitalAssistantAppRef(id), { id, from:currentNick, kveScore:score, status:'pending', createdAt: Date.now() });
+    await pushNotification(doc.nick, `🩺 Новая заявка на должность помощника врача: ${currentNick} (КВЭ ${score})`, 'system');
+    toast('⏳ Заявка отправлена врачу','green');
+    renderHospitalJobsCard();
+};
+function renderHospitalPanelAssistant(apps, salary){
+    const asst = getHospitalAssistant();
+    const el = qs('hospitalPanelAssistant'); if(!el) return;
+    let html = '';
+    if(asst){
+        html += `<div class="item-row"><div><div style="font-weight:900;">🩺 ${escHtml(displayNick(asst.user)||asst.nick)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(asst.nick)}</div></div></div>
+        <div style="margin-top:10px;">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Зарплата (₽)</div>
+            <input type="number" id="hospAssistantSalaryInput" min="0" step="1" value="${Number(salary)||0}">
+            <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="saveHospitalAssistantSalary()">💾 Сохранить зарплату</button>
+            <button class="btn btn-gold btn-sm" style="margin-top:8px;margin-left:8px;" onclick="payHospitalAssistantSalary()">💰 Выдать зарплату</button>
+        </div>`;
+    } else {
+        html += `<div style="color:var(--muted);font-size:13px;">🩺 Помощник врача не назначен.</div>`;
+    }
+    el.innerHTML = html;
+    const pending = Object.entries(apps).filter(([,a])=>a.status==='pending');
+    const appsEl = qs('hospitalPanelAssistantApps');
+    if(appsEl){
+        appsEl.innerHTML = pending.length ? pending.map(([id,a])=>{
+            const u = allUsersCache[a.from]||{};
+            return `<div class="item-row"><div><div style="font-weight:800;">👤 ${escHtml(displayNick(u)||a.from)}</div><div style="font-size:12px;color:var(--muted);">@${escHtml(a.from)} · КВЭ: ${a.kveScore}</div></div>
+            <div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="acceptHospitalAssistantApp('${id}')">Принять</button><button class="btn btn-red btn-sm" onclick="rejectHospitalAssistantApp('${id}')">Отклонить</button></div></div>`;
+        }).join('') : '<div style="color:var(--muted);font-size:13px;">Нет заявок</div>';
+    }
+}
+let _hospAssistantBusy = false;
+window.acceptHospitalAssistantApp = async function(id){
+    if(_hospAssistantBusy) return;
+    if(!isHospitalDoctor(currentNick)) { toast('❌ Только для врача','red'); return; }
+    _hospAssistantBusy = true;
+    try {
+        if(getHospitalAssistant()) { toast('❌ Должность помощника врача уже занята.','red'); return; }
+        const snap = await get(hospitalAssistantAppRef(id));
+        const a = snap.val();
+        if(!a || a.status!=='pending') { toast('⚠️ Заявка недоступна','gold'); return; }
+        const uSnap = await get(userRef(a.from));
+        const u = uSnap.val()||{};
+        if(!await canTakeAnotherJob(u, a.from)) { toast(`❌ Лимит работ для ${a.from}`,'red'); return; }
+        const emps = collectEmploymentsFromData(u, a.from);
+        const newEmp = { id: 'muni_Помощник врача', type: 'municipal', role: 'Помощник врача' };
+        const patch = { job:'Помощник врача', employments:[...emps.filter(e=>e.id!==newEmp.id), newEmp], displayJob: u.displayJob || 'Помощник врача' };
+        await update(userRef(a.from), patch);
+        await update(hospitalAssistantAppRef(id), { status:'accepted', reviewedAt: Date.now() });
+        await pushNotification(a.from, `✅ Вы приняты на должность помощника врача`, 'system');
+        toast('✅ Помощник назначен','green');
+        console.log('assistant hired', a.from);
+        renderHospitalPanel();
+    } catch(e){ console.error(e); toast('❌ Ошибка','red'); }
+    finally { _hospAssistantBusy = false; }
+};
+window.rejectHospitalAssistantApp = async function(id){
+    if(!isHospitalDoctor(currentNick)) return;
+    await update(hospitalAssistantAppRef(id), { status:'rejected', reviewedAt: Date.now() });
+    const snap = await get(hospitalAssistantAppRef(id));
+    const a = snap.val();
+    if(a) await pushNotification(a.from, `❌ Заявка на должность помощника врача отклонена`, 'system');
+    toast('❌ Отклонено','red');
+    console.log('assistant rejected', a && a.from);
+    renderHospitalPanel();
+};
+window.saveHospitalAssistantSalary = async function(){
+    if(!isHospitalDoctor(currentNick)) return;
+    const val = parseInt(qs('hospAssistantSalaryInput')?.value,10);
+    if(isNaN(val) || val<0) { toast('⚠️ Некорректная сумма','gold'); return; }
+    await set(hospitalAssistantSalaryRef(), val);
+    toast('💾 Зарплата сохранена','green');
+};
+let _hospSalaryBusy = false;
+window.payHospitalAssistantSalary = async function(){
+    if(_hospSalaryBusy) return;
+    if(!isHospitalDoctor(currentNick)) return;
+    const asst = getHospitalAssistant();
+    if(!asst) { toast('❌ Помощник не назначен','red'); return; }
+    const salarySnap = await get(hospitalAssistantSalaryRef());
+    const amount = Number(salarySnap.val())||0;
+    if(amount<=0) { toast('⚠️ Укажите зарплату перед выплатой','gold'); return; }
+    if(!confirm(`Выдать зарплату ${amount}₽ помощнику ${asst.nick}?`)) return;
+    _hospSalaryBusy = true;
+    try {
+        const docSnap = await get(userRef(currentNick));
+        const doc = docSnap.val()||{};
+        if((doc.balance||0) < amount) { toast('❌ Недостаточно средств','red'); return; }
+        const asstSnap = await get(userRef(asst.nick));
+        const asstUser = asstSnap.val()||{};
+        await update(userRef(currentNick), { balance: (doc.balance||0) - amount });
+        await update(userRef(asst.nick), { balance: (asstUser.balance||0) + amount });
+        await logTx(currentNick, { type:'out', who: asst.nick, amt: amount, desc:'Зарплата помощнику врача' });
+        await logTx(asst.nick, { type:'in', who: currentNick, amt: amount, desc:'Зарплата от врача' });
+        await pushNotification(asst.nick, `💰 Получена зарплата ${amount}₽ от врача`, 'money');
+        toast('✅ Зарплата выплачена','green');
+        console.log('doctor salary paid', asst.nick, amount);
+        renderHospitalPanel();
+    } catch(e){ console.error(e); toast('❌ Ошибка выплаты','red'); }
+    finally { _hospSalaryBusy = false; }
+};
+
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Doctor Panel: finance & stats
+// ══════════════════════════════════════════════════════════════════
+function renderHospitalPanelFinance(appts){
+    const el = qs('hospitalPanelFinance'); if(!el) return;
+    const paid = appts.filter(a=>a.doctorNick===currentNick && a.paymentStatus==='paid');
+    const total = paid.reduce((s,a)=>s+(a.price||0),0);
+    const now = Date.now();
+    const weekAgo = now - 7*24*60*60*1000;
+    const monthAgo = now - 30*24*60*60*1000;
+    const todayStr = todayKey();
+    const todayCount = appts.filter(a=>a.doctorNick===currentNick && a.date===todayStr && a.status!=='rejected' && a.status!=='cancelled').length;
+    const weekSum = paid.filter(a=>(a.paidAt||0)>=weekAgo).reduce((s,a)=>s+(a.price||0),0);
+    const monthSum = paid.filter(a=>(a.paidAt||0)>=monthAgo).reduce((s,a)=>s+(a.price||0),0);
+    const clients = new Set(paid.map(a=>a.clientNick)).size;
+    const svcCounts = {};
+    paid.forEach(a=>{ svcCounts[a.serviceName] = (svcCounts[a.serviceName]||0)+1; });
+    const topSvc = Object.entries(svcCounts).sort((a,b)=>b[1]-a[1])[0];
+    el.innerHTML = `<div style="font-size:13px;line-height:2;">
+        💰 Всего заработано: <b style="color:var(--primary);">${total.toLocaleString()} ₽</b><br>
+        📅 За неделю: <b>${weekSum.toLocaleString()} ₽</b> · За месяц: <b>${monthSum.toLocaleString()} ₽</b><br>
+        🧾 Приёмов оплачено: <b>${paid.length}</b> · Приёмов сегодня: <b>${todayCount}</b> · Клиентов: <b>${clients}</b><br>
+        ${topSvc?`⭐ Популярная услуга: <b>${escHtml(topSvc[0])}</b> (${topSvc[1]})`:''}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// 🏥 HOSPITAL — Jobs page integration ("О профессиях" / assistant apply)
+// ══════════════════════════════════════════════════════════════════
+function renderHospitalJobsCard(){
+    const el = qs('hospitalJobsInfo'); if(!el) return;
+    const doc = getHospitalDoctor();
+    const asst = getHospitalAssistant();
+    const u = allUsersCache[currentNick] || {};
+    const score = (u.kveScore!==undefined && u.kveScore!==null) ? Number(u.kveScore) : null;
+    const isAsst = hasMunicipalJob(u, 'Помощник врача');
+    const required = KVE_JOB_REQUIREMENTS['Помощник врача']||80;
+    let asstAction = '';
+    if(isAsst){
+        asstAction = '<div style="color:var(--primary);font-size:12px;font-weight:800;">✅ Вы — помощник врача</div>';
+    } else if(!doc){
+        asstAction = '<div style="color:var(--muted);font-size:12px;">Врач ещё не назначен</div>';
+    } else if(asst){
+        asstAction = '<div style="color:var(--muted);font-size:12px;">❌ Должность помощника врача уже занята.</div>';
+    } else if(score===null){
+        asstAction = '<div style="color:var(--muted);font-size:12px;">📝 Нужен балл КВЭ</div>';
+    } else if(score < required){
+        asstAction = `<div style="color:var(--muted);font-size:12px;">🔒 Нужен балл КВЭ ${required} (у вас ${score})</div>`;
+    } else {
+        asstAction = '<button class="btn btn-primary btn-sm" onclick="applyForHospitalAssistant()">Подать заявку</button>';
+    }
+    el.innerHTML = `<div style="font-size:13px;">
+        <div style="margin-bottom:8px;">👨‍⚕️ Врач: ${doc?`<b>${escHtml(displayNick(doc.user)||doc.nick)}</b>`:'<span style="color:var(--muted);">не назначен</span>'}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div>🩺 Помощник врача: ${asst?`<b>${escHtml(displayNick(asst.user)||asst.nick)}</b>`:'<span style="color:var(--muted);">свободно</span>'}</div>
+        </div>
+        <div style="margin-top:8px;">${asstAction}</div>
+    </div>`;
+}
+
 // Inline HTML handlers execute in the window scope, while this file is an ES module.
 // Expose the few function declarations that are referenced directly by inline attributes.
 window.renderOnlineDuelLobby = renderOnlineDuelLobby;
@@ -13207,6 +13979,7 @@ try {
   window.db = db;
   window.ADMIN = ADMIN;
   window.JOB_JANITOR = JOB_JANITOR;
+  window.MIN_BALANCE_ALLOWED = MIN_BALANCE_ALLOWED;
   window.qs = qs;
   window.toast = toast;
   window.escHtml = escHtml;
@@ -13218,14 +13991,23 @@ try {
   window.KVE_JOB_REQUIREMENTS = KVE_JOB_REQUIREMENTS;
   window.findUserByPublicName = findUserByPublicName;
   window.logTx = logTx;
+  window.txLogRef = txLogRef;
+  window.fullDateTimeStr = fullDateTimeStr;
   window.bizItemRef = bizItemRef;
   window.JANITOR_TASK_TEXT = JANITOR_TASK_TEXT;
+  // Shared Firebase primitives — additive modules must reuse these instead of
+  // importing their own copy of the Firebase SDK (was: a second, differently
+  // versioned firebase-database.js fetched and initialized independently).
+  window.dbRef = ref; window.dbGet = get; window.dbSet = set; window.dbUpdate = update;
+  window.dbRemove = remove; window.dbPush = push; window.dbOnValue = onValue; window.dbOff = off;
+  window.runTransaction = runTransaction;
   if (typeof renderAdmin === 'function') window.renderAdmin = renderAdmin;
   if (typeof renderJanitorPage === 'function') window.renderJanitorPage = renderJanitorPage;
   // currentNick: direct reference is sufficient — defineProperty caused call stack overflow
   // when any code accessed window.currentNick inside the getter chain.
   // The main app module sets currentNick as a let variable; Kapani Pack reads it via closure.
   window._getCurrentNick = () => currentNick;
+  _resolveKapaniReady();
 } catch(e) { console.error('[Kapani exports]', e); }
 
 </script>
@@ -13425,6 +14207,7 @@ try {
   const clearBlockingLayers = () => {
     ['loadingOverlay','notifPopup'].forEach(id => {
       const el = document.getElementById(id);
+      if(el && el.classList.contains('show')) return; // currently visible — leave pointer-events alone
       if(el && getComputedStyle(el).display === 'none'){
         el.style.pointerEvents = 'none';
       }
@@ -13596,28 +14379,33 @@ try {
      Self-contained additive module. Uses globals defined above.
      ═════════════════════════════════════════════════════════════════ -->
 <script type="module">
-import { getDatabase, ref, get, set, update, remove, push, onValue, off } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
-
-// Wait until main app initializes
-function ready(cb){
-  const startedAt = Date.now();
-  const timeoutMs = 15000;
-  function attempt(){
-    if(window.db && typeof window.qs === 'function' && typeof window._getCurrentNick === 'function'){
-      cb();
-      return;
-    }
-    if(Date.now() - startedAt >= timeoutMs){
-      console.error('[Kapani Pack] Основной клиентский модуль не предоставил API за 15 секунд');
-      return;
-    }
-    setTimeout(attempt, 250);
+// Reuses the main module's already-initialized Firebase primitives instead of
+// importing a second copy of the SDK (previously: a separate, differently
+// versioned firebase-database.js fetched and initialized independently —
+// duplicate network request + duplicate SDK instance for no benefit).
+// Waits on the deterministic window.KAPANI_READY promise instead of polling
+// window.db every 250ms.
+async function ready(cb){
+  if(window.KAPANI_READY && typeof window.KAPANI_READY.then === 'function'){
+    await window.KAPANI_READY;
+  } else {
+    // Extremely defensive fallback if the bootstrap promise is somehow missing.
+    await new Promise(res => {
+      const start = Date.now();
+      (function poll(){
+        if(window.db && typeof window.qs === 'function' && typeof window._getCurrentNick === 'function') return res();
+        if(Date.now() - start >= 15000){ console.error('[Kapani Pack] Основной клиентский модуль не предоставил API за 15 секунд'); return res(); }
+        setTimeout(poll, 250);
+      })();
+    });
   }
-  attempt();
+  cb();
 }
 
 ready(function(){
   const db = window.db;
+  const ref = window.dbRef, get = window.dbGet, set = window.dbSet, update = window.dbUpdate,
+        remove = window.dbRemove, push = window.dbPush, onValue = window.dbOnValue, off = window.dbOff;
   const ADMIN = window.ADMIN || 'Кайон';
   const qs = window.qs;
   const toast = window.toast || ((m)=>alert(m));
@@ -13633,6 +14421,12 @@ ready(function(){
     try { const s = await get(userRef(name)); return s.exists() ? { nick: name, ...s.val() } : null; } catch(e){ return null; }
   });
   const logTx = window.logTx || (async()=>{});
+  const txLogRef = window.txLogRef || ((nick)=>ref(db,`users/${nick}/txlog`));
+  // Pack v2 must not depend on a module-scoped helper from the main ES module.
+  // Keep a local, self-contained timestamp helper with the same output shape.
+  const packFullDateTimeStr = (typeof window.fullDateTimeStr === 'function')
+    ? window.fullDateTimeStr
+    : (()=>{ const d=new Date(); return { date:d.toLocaleDateString('ru'), time:d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}), ts:d.toISOString() }; });
   const bizItemRef = window.bizItemRef || ((id)=>ref(db, `businesses/${id}`));
   const JOB_JANITOR = window.JOB_JANITOR || 'Уборщик';
 
@@ -14329,13 +15123,23 @@ ready(function(){
     // Validate before locking the button.
     const nameInput = (qs('dutyFineNick')?.value||'').trim();
     const reason = (qs('dutyFineReason')?.value||'').trim();
-    const amt = parseInt(qs('dutyFineAmt')?.value, 10);
+    const amtRaw = String(qs('dutyFineAmt')?.value || '').trim();
+    const amt = /^\d+$/.test(amtRaw) ? Number(amtRaw) : NaN;
     if(!nameInput) return toast('⚠️ Укажите имя нарушителя','gold');
     if(!reason) return toast('⚠️ Укажите причину штрафа','gold');
-    if(!amt || amt<=0 || isNaN(amt)) return toast('⚠️ Укажите корректную сумму','gold');
+    if(!Number.isSafeInteger(amt) || amt<=0) return toast('⚠️ Укажите корректную сумму','gold');
 
     _submitDutyFineBusy = true;
     if(fineBtn){ fineBtn.disabled = true; fineBtn.textContent='⏳ Выписываем…'; }
+    // Belt-and-suspenders: no matter what happens below (including an error that
+    // somehow escapes the try/catch, or a Firebase call that hangs without ever
+    // resolving/rejecting), the button must never stay stuck longer than this.
+    const fineSafetyTimer = setTimeout(()=>{
+      // Keep the logical lock until the in-flight Firebase operation reaches finally.
+      // This prevents a hung request from being followed by a second deduction.
+      const b = qs('dutyFineSubmitBtn');
+      if(b){ b.disabled = true; b.textContent = '⏳ Операция всё ещё выполняется…'; }
+    }, 20000);
 
     try {
       const meSnap = await get(userRef(myNick));
@@ -14348,32 +15152,39 @@ ready(function(){
 
       const issuerRole = isKsb ? 'КСБ' : (isPolice ? 'Полиция' : 'Мэрия');
       let target = null;
+      let targetNick = null;
       const cache = (window.allUsersCache && Object.keys(window.allUsersCache).length)
           ? window.allUsersCache : allUsersCache;
       const q = nameInput.toLowerCase();
 
+      // IMPORTANT: the Firebase object key is the canonical nick.
+      // Never let u.nick overwrite that key (the previous `{nick,...u}` did exactly that
+      // and could turn a valid cached user into a lookup like users/<stale nick>).
       for(const [nick, u] of Object.entries(cache || {})){
         const dn = String((u && u.displayName) || (u && u.nick) || nick).trim().toLowerCase();
-        if(dn === q || String(nick).toLowerCase() === q){ target={nick,...u}; break; }
+        if(dn === q || String(nick).toLowerCase() === q){ target={...u}; targetNick=nick; break; }
       }
 
       if(!target){
         const allSnap = await get(ref(db,'users'));
         const allU = allSnap.val() || {};
+        // Reuse the freshly fetched directory for the rest of the session.
+        allUsersCache = allU;
+        window.allUsersCache = allUsersCache;
         for(const [nick, u] of Object.entries(allU)){
           const dn = String((u && u.displayName) || (u && u.nick) || nick).trim().toLowerCase();
-          if(dn === q || String(nick).toLowerCase() === q){ target={nick,...u}; break; }
+          if(dn === q || String(nick).toLowerCase() === q){ target={...u}; targetNick=nick; break; }
         }
       }
 
-      if(!target) throw new Error('Житель с таким именем не найден');
-      const tnick = target.nick;
+      if(!target || !targetNick) throw new Error('Житель с таким именем не найден');
+      const tnick = targetNick;
       if(tnick === myNick) throw new Error('Нельзя оштрафовать самого себя');
 
-      const tSnap = await get(userRef(tnick));
-      if(!tSnap.exists()) throw new Error('Пользователь не найден');
+      const fineSnap = await get(userRef(tnick));
+      if(!fineSnap.exists()) throw new Error('Пользователь не найден');
 
-      const tUser = tSnap.val() || {};
+      const tUser = fineSnap.val() || {};
       const fineDisplayNick = (u, fallback) => {
         const dn = u && u.displayName != null ? String(u.displayName).trim() : '';
         const nk = u && u.nick != null ? String(u.nick).trim() : '';
@@ -14381,17 +15192,47 @@ ready(function(){
       };
       const targetLabel = fineDisplayNick(tUser, tnick);
       const myLabel = fineDisplayNick(me, myNick);
-      const newBalance = Number(tUser.balance || 0) - amt;
-
-      // Critical operations: complete them before any notification attempt.
-      await update(userRef(tnick), { balance: newBalance });
-      await push(txLogRef(tnick), {
+      if(!Number.isSafeInteger(amt) || amt <= 0) throw new Error('Некорректная сумма штрафа');
+      const fineTxRef = push(txLogRef(tnick));
+      const fineTxId = fineTxRef.key;
+      const txEntry = {
           type:'out',
           who:`${issuerRole} (${myLabel})`,
           amt,
           desc:`Штраф: ${reason}`,
-          ...fullDateTimeStr()
+          ...(packFullDateTimeStr())
+      };
+      const txResult = await runTransaction(userRef(tnick), current => {
+          if(current === null) throw new Error('Пользователь не найден');
+          const currentBalance = Number(current.balance || 0);
+          if(!Number.isFinite(currentBalance)) throw new Error('Некорректный баланс нарушителя');
+          const nextBalance = currentBalance - amt;
+          if(!Number.isFinite(nextBalance)) throw new Error('Некорректное списание');
+          if(nextBalance <= Number(window.MIN_BALANCE_ALLOWED ?? -Infinity)) throw new Error('Нельзя выписать штраф: баланс достигнет критического лимита');
+          const next = { ...current, balance: nextBalance, txlog: { ...(current.txlog || {}) } };
+          if(!next.txlog[fineTxId]) next.txlog[fineTxId] = txEntry;
+          return next;
       });
+      if(!txResult.committed) throw new Error('Firebase не подтвердил списание');
+
+      // Update the local cache immediately as well. The target user's own
+      // `users/<currentNick>` realtime listener will update their header/balance
+      // without a page reload; this cache update also keeps any already-open
+      // profile/rating/business UI from showing the old balance until its next read.
+      try {
+        const committedUser = txResult.snapshot && txResult.snapshot.val ? txResult.snapshot.val() : null;
+        if(committedUser){
+          allUsersCache[tnick] = committedUser;
+          window.allUsersCache = allUsersCache;
+          if(window._visitorProfileNick === tnick && typeof renderVisitorProfilePage === 'function'){
+            Promise.resolve(renderVisitorProfilePage(tnick)).catch(()=>{});
+          }
+          const modalOpen = qs('userProfileModal')?.classList.contains('open');
+          if(modalOpen && viewingProfileNick === tnick && typeof window.openUserProfile === 'function'){
+            Promise.resolve(window.openUserProfile(tnick)).catch(()=>{});
+          }
+        }
+      } catch(cacheErr) { console.warn('[submitDutyFine] local cache refresh:', cacheErr); }
 
       // Notifications are best-effort. A broken/slow notification write must
       // never make the fine itself look like it is still processing.
@@ -14415,9 +15256,16 @@ ready(function(){
       toast('❌ Не удалось выписать штраф: '+((e&&e.message)||'ошибка'),'red');
     } finally {
       _submitDutyFineBusy = false;
-      if(fineBtn && fineBtn.isConnected){
-        fineBtn.disabled = false;
-        fineBtn.textContent='💸 Выписать штраф';
+      clearTimeout(fineSafetyTimer);
+      // Re-query fresh rather than trusting the closure-captured `fineBtn` —
+      // this is the master fix for the button getting stuck on "Выписываем…":
+      // the old code silently skipped resetting the button whenever
+      // fineBtn.isConnected was falsy for any reason. Always reset the
+      // *current* element in the DOM, unconditionally.
+      const btnNow = qs('dutyFineSubmitBtn');
+      if(btnNow){
+        btnNow.disabled = false;
+        btnNow.textContent='💸 Выписать штраф';
       }
     }
   };
