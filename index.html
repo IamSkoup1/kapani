@@ -1713,7 +1713,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div class="card" style="margin:0 0 14px;padding:16px;background:rgba(34,211,165,.05);border-color:rgba(34,211,165,.25);">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;">
                 <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;">💰 Счёт заданий</div><div id="taskBalanceDisplay" style="font-size:25px;font-weight:900;color:var(--primary);">0 ₽</div></div>
-                <div style="font-size:11px;color:var(--muted);text-align:right;max-width:180px;line-height:1.4;">Деньги поступают только за выполнение заданий.</div>
+                <div style="font-size:11px;color:var(--muted);text-align:right;max-width:180px;line-height:1.4;">Деньги поступают только за выполнение заданий. Минимальный вывод — 500 рублей.</div>
             </div>
             <div style="display:flex;gap:8px;align-items:center;">
                 <input type="number" id="taskWithdrawAmt" min="500" step="1" placeholder="Сумма вывода (от 500 ₽)" style="margin:0;">
@@ -2456,7 +2456,7 @@ window.kapaniLoadLeaflet = (function(){
     navTo('bizOwnerPanel');
 };
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp, runTransaction }
+import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp, runTransaction, query, orderByChild, equalTo }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // Messaging / Functions / Storage are initialized only when their functionality is actually used.
@@ -4660,7 +4660,7 @@ window.handleAvatarUpload=async function(e){
     await update(userRef(currentNick),{avatar:dataUrl});
     toggleAvatarMedia(qs('uAv'), qs('uAvVideo'), dataUrl);
     toggleAvatarMedia(qs('hAv'), qs('hAvVideo'), dataUrl);
-    if(!u.rewardedAvatar){await update(userRef(currentNick),{rewardedAvatar:true,balance:(u.balance||0)+REWARD_CUSTOM_AVATAR});await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_CUSTOM_AVATAR,desc:'Поставили свою аватарку'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽ за аватарку!`,'gold');}
+    if(!u.rewardedAvatar){await update(userRef(currentNick),{rewardedAvatar:true,taskBalance:Math.max(0,Number(u.taskBalance||0))+REWARD_CUSTOM_AVATAR});await logTx(currentNick,{type:'in',who:'Задания',amt:REWARD_CUSTOM_AVATAR,desc:'Одноразовое задание: своя аватарка'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽ на счёт заданий!`,'gold');}
     else toast('✅ Аватарка обновлена','green');
 };
 
@@ -4951,7 +4951,7 @@ window.saveProfileCustomization=async function(){
     closeProfileCustomizer();
 };
 
-window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.balance=(u.balance||0)+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_CUSTOM_AVATAR,desc:'Бонус за установку своей аватарки'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
+window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.taskBalance=Math.max(0,Number(u.taskBalance||0))+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Задания',amt:REWARD_CUSTOM_AVATAR,desc:'Одноразовое задание: своя аватарка'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽ на счёт заданий!`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
 window.changeDisplayName=async function(){
     const oldNick = currentNick;
     const snap = await get(userRef(oldNick));
@@ -5263,9 +5263,9 @@ window.orderTaxi=async function(){
         
         if (result.success) {
             if(!u.rewardedTaxi){
-                await update(userRef(currentNick),{rewardedTaxi:true,balance:(u.balance||0)+80});
-                await logTx(currentNick,{type:'in',who:'Награда',amt:80,desc:'Бонус за первый заказ такси'});
-                toast('🎁 +80 ₽ за первый заказ такси','gold');
+                await update(userRef(currentNick),{rewardedTaxi:true,taskBalance:Math.max(0,Number(u.taskBalance||0))+80});
+                await logTx(currentNick,{type:'in',who:'Задания',amt:80,desc:'Одноразовое задание: первый заказ такси'});
+                toast('🎁 +80 ₽ на счёт заданий за первый заказ такси','gold');
             }
             
             const priceText = discountPercent > 0 ? `${finalPrice}₽ (скидка ${discountPercent}%)` : `${finalPrice}₽`;
@@ -6348,9 +6348,9 @@ function renderWallFeed(data){
 }
 async function applyFirstWallReward(u){
     if(u.rewardedWall)return;
-    await update(userRef(currentNick),{rewardedWall:true,balance:(u.balance||0)+REWARD_FIRST_WALL});
-    await logTx(currentNick,{type:'in',who:'Награда',amt:REWARD_FIRST_WALL,desc:'Бонус за первый пост в ленте'});
-    toast(`🎁 +${REWARD_FIRST_WALL} ₽ за первый пост!`,'gold');
+    await update(userRef(currentNick),{rewardedWall:true,taskBalance:Math.max(0,Number(u.taskBalance||0))+REWARD_FIRST_WALL});
+    await logTx(currentNick,{type:'in',who:'Задания',amt:REWARD_FIRST_WALL,desc:'Одноразовое задание: первый пост в ленте'});
+    toast(`🎁 +${REWARD_FIRST_WALL} ₽ на счёт заданий за первый пост!`,'gold');
 }
 async function pushWallPostMedia(msgType,mediaData){
     const text=(qs('wallInput')?.value||'').trim();
@@ -6811,41 +6811,84 @@ window.withdrawTaskBalance = async function(){
 };
 
 window.renderTasks = async function(){
-    const el = qs('tasksList'); if(!el) return;
+    const el = qs('tasksList'); if(!el || !currentNick) return;
+    const renderStartedAt = performance.now();
     try{
         const today = todayKey();
         const claimedKey = `dailyClaimed_${today}`;
-        const [uSnap, ordersSnap, marketSnap, chatSnap, wallSnap, txSnap, passportSnap, licenseSnap, deliveryCustomSnap] = await Promise.all([
-            get(userRef(currentNick)), get(ordersRef()), get(marketRef()), get(chatRef()), get(wallRef(currentNick)), get(txLogRef(currentNick)),
-            get(ref(db,`passports/${currentNick}`)).catch(()=>null),
-            get(ref(db,`licenses/${currentNick}`)).catch(()=>null),
-            get(deliveryCustomOrdersRef()).catch(()=>null)
-        ]);
-        const u = uSnap.val() || {};
-        const claimed = u[claimedKey] || [];
-        const ordersVal = ordersSnap.val()||{};
-        const marketVal = marketSnap.val()||{};
-        const chatVal = chatSnap.val()||{};
-        const wallVal = wallSnap.val()||{};
-        const txVal = txSnap.val()||{};
-        window._taskDeliveryCustomOrders = deliveryCustomSnap?.val ? (deliveryCustomSnap.val() || {}) : {};
-        // Collect DM messages sent today across all convos
+
+        // The core user listener keeps this object fresh, but fall back to a single
+        // user read when the cache is not ready yet.
+        let u = allUsersCache?.[currentNick] || null;
+        if(!u){
+            const uSnap = await get(userRef(currentNick));
+            u = uSnap.val() || {};
+        }
+        const claimed = Array.isArray(u[claimedKey]) ? u[claimedKey] : [];
+        const dailyTasks = getDailyTasksForToday() || [];
+        const primeActive = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
+        const primeDailyTasks = primeActive ? (getPrimeDailyTasksForToday() || []) : [];
+
+        // One-time task state can be determined from the user's profile for most
+        // tasks. Only marketplace/taxi data is needed to infer legacy completed
+        // tasks that were done before their reward flag was persisted.
+        const oneTimeNeedsMarket = !u.rewardedListing;
+        const oneTimeNeedsOrders = !u.rewardedTaxi;
+        const needsChat = dailyTasks.some(t=>t.id==='chat') || primeDailyTasks.some(t=>t.id==='prime_chat5');
+        const needsWall = dailyTasks.some(t=>t.id==='wall');
+        const needsTransfer = dailyTasks.some(t=>t.id==='transfer') || primeDailyTasks.some(t=>t.id==='prime_transfer_big');
+        const needsShop = dailyTasks.some(t=>t.id==='shop') || primeDailyTasks.some(t=>t.id==='prime_shop_big');
+        const needsTaxi = dailyTasks.some(t=>t.id==='taxi_req') || primeDailyTasks.some(t=>t.id==='prime_taxi2') || oneTimeNeedsOrders;
+        const needsMarket = dailyTasks.some(t=>t.id==='market_browse') || primeDailyTasks.some(t=>t.id==='prime_listing') || oneTimeNeedsMarket;
+        const needsDm = dailyTasks.some(t=>t.id==='dm') || primeDailyTasks.some(t=>t.id==='prime_dm3');
+        const needsDeliveryCustom = needsShop;
+
+        const reads = [];
+        if(needsTaxi || needsShop) reads.push(get(query(ordersRef(), orderByChild('client'), equalTo(currentNick))).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(needsMarket) reads.push(get(query(marketRef(), orderByChild('seller'), equalTo(currentNick))).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(needsChat) reads.push(get(query(chatRef(), orderByChild('nick'), equalTo(currentNick))).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(needsWall) reads.push(get(wallRef(currentNick)).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(needsTransfer) reads.push(get(txLogRef(currentNick)).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(needsDm) reads.push(get(ref(db,'dms')).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(needsDeliveryCustom) reads.push(get(query(deliveryCustomOrdersRef(), orderByChild('client'), equalTo(currentNick))).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(!u.rewardedPassport) reads.push(get(ref(db,`passports/${currentNick}`)).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+        if(!u.rewardedAllLicenses) reads.push(get(ref(db,`licenses/${currentNick}`)).catch(()=>null));
+        else reads.push(Promise.resolve(null));
+
+        const [ordersSnap,marketSnap,chatSnap,wallSnap,txSnap,dmAllSnap,deliveryCustomSnap,passportSnap,licenseSnap] = await Promise.all(reads);
+        const ordersVal = ordersSnap?.val ? (ordersSnap.val() || {}) : {};
+        const marketVal = marketSnap?.val ? (marketSnap.val() || {}) : {};
+        const chatVal = chatSnap?.val ? (chatSnap.val() || {}) : {};
+        const wallVal = wallSnap?.val ? (wallSnap.val() || {}) : {};
+        const txVal = txSnap?.val ? (txSnap.val() || {}) : {};
+        const deliveryCustomVal = deliveryCustomSnap?.val ? (deliveryCustomSnap.val() || {}) : {};
+        window._taskDeliveryCustomOrders = deliveryCustomVal;
+
         let dmTodayMsgs = [];
-        try {
-            const dmAllSnap = await get(ref(db,'dms'));
-            const allDms = dmAllSnap.val()||{};
+        if(needsDm){
+            const allDms = dmAllSnap?.val ? (dmAllSnap.val() || {}) : {};
             Object.entries(allDms).forEach(([key,conv])=>{
                 if(!key.includes(currentNick)) return;
-                Object.values(conv.messages||{}).forEach(m=>{ if(m.nick===currentNick) dmTodayMsgs.push(m); });
+                Object.values(conv.messages||{}).forEach(m=>{
+                    if(m.nick===currentNick && localDateKey(m.createdAt||0)===today) dmTodayMsgs.push(m);
+                });
             });
-        } catch(e){}
+        }
 
-        // One-time tasks
+        // One-time tasks. Legacy completion checks use the filtered datasets above.
         const hasListing = Object.values(marketVal).some(l=>l.seller===currentNick);
         const hasTaxi = Object.values(ordersVal).some(o=>o.client===currentNick&&o.type==='taxi');
-        const passportData = (passportSnap && passportSnap.exists && passportSnap.exists()) ? passportSnap.val() : (u.passport || null);
+        const passportData = passportSnap?.exists && passportSnap.exists() ? passportSnap.val() : (u.passport || null);
         const hasPassport = !!(passportData && (passportData.firstName || passportData.lastName));
-        const licensesData = (licenseSnap && licenseSnap.exists && licenseSnap.exists()) ? licenseSnap.val() : (u.licenses || {});
+        const licensesData = licenseSnap?.exists && licenseSnap.exists() ? licenseSnap.val() : (u.licenses || {});
         const hasAllLicenses = !!(licensesData && licensesData.bike && licensesData.scooter);
         const oneTimeTasks = [
             { key:'rewardedAvatar',   title:'🖼 Своя аватарка',          desc:'Поставьте не стандартную аватарку профиля.',   reward:REWARD_CUSTOM_AVATAR, done:!!u.rewardedAvatar },
@@ -6858,27 +6901,16 @@ window.renderTasks = async function(){
             { key:'rewardedAllLicenses', title:'🪪 Сдать на все категории прав', desc:'Получите права на велосипед и скутер у мэра.', reward:90,             done:!!u.rewardedAllLicenses||hasAllLicenses },
         ];
 
-        // Daily rotating tasks
-        const dailyTasks = getDailyTasksForToday();
         const dailyRows = await Promise.all(dailyTasks.map(async task=>{
             const conditionMet = await checkDailyTaskCondition(task.id, u, ordersVal, marketVal, chatVal, wallVal, dmTodayMsgs, txVal);
-            const alreadyClaimed = claimed.includes(task.id);
-            return { ...task, conditionMet, alreadyClaimed };
+            return { ...task, conditionMet, alreadyClaimed: claimed.includes(task.id) };
         }));
-
-        // Prime-only daily tasks
-        const isSubActivePrime = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-        const hasPrimeTasks = u.subscription === 'prime' && isSubActivePrime;
-        const primeDailyTasks = hasPrimeTasks ? getPrimeDailyTasksForToday() : [];
         const primeDailyRows = await Promise.all(primeDailyTasks.map(async task=>{
             const conditionMet = await checkPrimeDailyTaskCondition(task.id, u, ordersVal, marketVal, chatVal, wallVal, dmTodayMsgs, txVal);
-            const alreadyClaimed = claimed.includes(task.id);
-            return { ...task, conditionMet, alreadyClaimed };
+            return { ...task, conditionMet, alreadyClaimed: claimed.includes(task.id) };
         }));
 
         function oneTimeRow(t){
-            // Auto-claim if done but not yet rewarded (for job and market purchase)
-            const canClaim = t.done && !t.done_originally;
             return `<div class="task-item">
                 <div class="task-main">
                     <div class="task-name">${escHtml(t.title)}</div>
@@ -6889,94 +6921,47 @@ window.renderTasks = async function(){
             </div>`;
         }
         function dailyRow(t){
-            const { conditionMet, alreadyClaimed } = t;
             let stateHtml;
-            if(alreadyClaimed){
-                stateHtml = `<div class="task-state done">✅ Получено</div>`;
-            } else if(conditionMet){
-                stateHtml = `<button class="btn btn-primary btn-sm" style="font-size:11px;padding:7px 12px;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
-            } else {
-                stateHtml = `<div class="task-state todo">В процессе</div>`;
-            }
-            return `<div class="task-item">
-                <div class="task-main">
-                    <div class="task-name">${escHtml(t.title)}</div>
-                    <div class="task-desc">${escHtml(t.desc)}</div>
-                    <div class="task-reward">+${t.reward} ₽</div>
-                </div>
-                ${stateHtml}
-            </div>`;
+            if(t.alreadyClaimed) stateHtml = `<div class="task-state done">✅ Получено</div>`;
+            else if(t.conditionMet) stateHtml = `<button class="btn btn-primary btn-sm" style="font-size:11px;padding:7px 12px;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
+            else stateHtml = `<div class="task-state todo">В процессе</div>`;
+            return `<div class="task-item"><div class="task-main"><div class="task-name">${escHtml(t.title)}</div><div class="task-desc">${escHtml(t.desc)}</div><div class="task-reward">+${t.reward} ₽</div></div>${stateHtml}</div>`;
         }
-
         function primeDailyRow(t){
-            const { conditionMet, alreadyClaimed } = t;
             let stateHtml;
-            if(alreadyClaimed){
-                stateHtml = `<div class="task-state done">✅ Получено</div>`;
-            } else if(conditionMet){
-                stateHtml = `<button class="btn btn-sm" style="font-size:11px;padding:7px 12px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);font-weight:900;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
-            } else {
-                stateHtml = `<div class="task-state todo">В процессе</div>`;
-            }
-            return `<div class="task-item" style="border-color:rgba(240,196,25,.35);background:linear-gradient(120deg,rgba(240,196,25,.08),rgba(255,110,196,.06),rgba(120,115,245,.06));">
-                <div class="task-main">
-                    <div class="task-name">${escHtml(t.title)}</div>
-                    <div class="task-desc">${escHtml(t.desc)}</div>
-                    <div class="task-reward" style="color:#f0c419;">+${t.reward} ₽</div>
-                </div>
-                ${stateHtml}
-            </div>`;
+            if(t.alreadyClaimed) stateHtml = `<div class="task-state done">✅ Получено</div>`;
+            else if(t.conditionMet) stateHtml = `<button class="btn btn-sm" style="font-size:11px;padding:7px 12px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);font-weight:900;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
+            else stateHtml = `<div class="task-state todo">В процессе</div>`;
+            return `<div class="task-item" style="border-color:rgba(240,196,25,.35);background:linear-gradient(120deg,rgba(240,196,25,.08),rgba(255,110,196,.06),rgba(120,115,245,.06));"><div class="task-main"><div class="task-name">${escHtml(t.title)}</div><div class="task-desc">${escHtml(t.desc)}</div><div class="task-reward" style="color:#f0c419;">+${t.reward} ₽</div></div>${stateHtml}</div>`;
         }
 
-        // Auto-reward completed one-time tasks into the dedicated task account.
-        if(!isMigrantUser(u)){
-            for(const t of oneTimeTasks){
-                if(t.done && !u[t.key]){
-                    try{
-                        const result = await runTransaction(userRef(currentNick), current => {
-                            if(current === null || isMigrantUser(current) || current[t.key]) return;
-                            const taskBalance = Math.max(0, Number(current.taskBalance || 0));
-                            return { ...current, [t.key]: true, taskBalance: taskBalance + Math.max(0, Number(t.reward)||0) };
-                        });
-                        if(result && result.committed){
-                            try {
-                                const committed = result.snapshot?.val ? result.snapshot.val() : null;
-                                if(committed){
-                                    allUsersCache[currentNick] = committed;
-                                    window.allUsersCache = allUsersCache;
-                                    const taskBalanceEl = qs('taskBalanceDisplay');
-                                    if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(committed.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
-                                    if(typeof updateHeader === 'function') updateHeader(committed);
-                                    if(typeof updateHeader_balance === 'function') updateHeader_balance(committed);
-                                }
-                            } catch(e){ console.warn('[tasks] immediate one-time UI update:', e); }
-                            await logTx(currentNick,{type:'in',who:'Задания',amt:t.reward,desc:`Одноразовое задание: ${t.title}`});
-                            await pushNotification(currentNick,`🎁 +${t.reward}₽ — ${t.title}`,'money');
-                            toast(`🎁 +${t.reward} ₽ — ${t.title}`,'gold');
-                        }
-                    }catch(e){ console.warn('[task auto reward]',e); }
-                }
-            }
-        }
-        const latestTaskSnap = await get(userRef(currentNick));
-        const latestTaskUser = latestTaskSnap.val() || {};
+        // Render first; legacy one-time rewards are reconciled afterwards so they
+        // never block the task screen on serial transactions/logging.
         const taskBalanceEl = qs('taskBalanceDisplay');
-        if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(latestTaskUser.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
+        if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(u.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
+        el.innerHTML = `${primeDailyRows.length ? `<div class="task-group" style="margin-top:0;"><div class="task-group-title" style="color:var(--gold);">👑 Kapani Prime — эксклюзивные задания</div>${primeDailyRows.map(primeDailyRow).join('')}</div>` : ''}<div class="task-group"><div class="task-group-title">📅 Ежедневные (обновляются каждый день)</div>${dailyRows.map(dailyRow).join('')}</div><div class="task-group" style="margin-top:0;"><div class="task-group-title">⭐ Одноразовые</div>${oneTimeTasks.map(oneTimeRow).join('')}</div>`;
 
-        el.innerHTML = `
-            ${hasPrimeTasks ? `
-            <div class="task-group" style="margin-top:0;">
-                <div class="task-group-title" style="color:var(--gold);">👑 Kapani Prime — эксклюзивные задания</div>
-                ${primeDailyRows.map(primeDailyRow).join('')}
-            </div>` : ''}
-            <div class="task-group">
-                <div class="task-group-title">📅 Ежедневные (обновляются каждый день)</div>
-                ${dailyRows.map(dailyRow).join('')}
-            </div>
-            <div class="task-group" style="margin-top:0;">
-                <div class="task-group-title">⭐ Одноразовые</div>
-                ${oneTimeTasks.map(oneTimeRow).join('')}
-            </div>`;
+        if(!isMigrantUser(u)){
+            const pendingRewards = oneTimeTasks.filter(t=>t.done && !u[t.key]);
+            if(pendingRewards.length){
+                // Reconcile old/completed one-time tasks in the background.
+                Promise.all(pendingRewards.map(async t=>{
+                    try{
+                        const ok = await creditTaskRewardOnce(t.key, t.reward, `Одноразовое задание: ${t.title}`);
+                        return ok;
+                    }catch(e){ console.warn('[task auto reward]',e); return false; }
+                })).then(results=>{
+                    if(results.some(Boolean)){
+                        const cached = allUsersCache?.[currentNick];
+                        const elBal = qs('taskBalanceDisplay');
+                        if(elBal && cached) elBal.textContent = `${Math.max(0, Number(cached.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
+                    }
+                }).catch(e=>console.warn('[task auto reward batch]',e));
+            }
+        }
+
+        // No extra get(user) here: the core user listener updates taskBalance immediately.
+        if(typeof console !== 'undefined' && console.debug) console.debug(`[Kapani tasks] rendered in ${Math.round(performance.now()-renderStartedAt)}ms`);
     }catch(e){
         console.error(e);
         el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Не удалось загрузить задания</div>';
@@ -7217,9 +7202,9 @@ window.publishListing=async function(){
     });
     
     if(!u.rewardedListing){
-        await update(userRef(currentNick),{rewardedListing:true,balance:(u.balance||0)+60});
-        await logTx(currentNick,{type:'in',who:'Награда',amt:60,desc:'Бонус за первое объявление'});
-        toast('🎁 +60 ₽ за первое объявление','gold');
+        await update(userRef(currentNick),{rewardedListing:true,taskBalance:Math.max(0,Number(u.taskBalance||0))+60});
+        await logTx(currentNick,{type:'in',who:'Задания',amt:60,desc:'Одноразовое задание: первое объявление'});
+        toast('🎁 +60 ₽ на счёт заданий за первое объявление','gold');
     }
     qs('mktTitle').value='';qs('mktDesc').value='';qs('mktPrice').value='';if(qs('mktNegotiable'))qs('mktNegotiable').checked=false;if(qs('mktSalaryHint'))qs('mktSalaryHint').value='';
     qs('mktPhoto').value='';qs('mktPhotoPreview').style.display='none';window._mktPhotoData=null;toggleMktPriceFields();toast('✅ Опубликовано!','green');switchMarketTab(0);
@@ -7263,7 +7248,11 @@ window.confirmPurchase=async function(id){
         await logTx(l.buyer,{type:'out',who:l.seller,amt:pay,desc:`Куплено${isService?' услуга':' объявление'} «${l.title}»`});
         if(fee>0) await logTx(l.buyer,{type:'out',who:'Комиссия',amt:fee,desc:`Комиссия 2% за покупку «${l.title}»`});
         await logTx(l.seller,{type:'in',who:l.buyer,amt:pay,desc:`Продано${isService?' услуга':' объявление'} «${l.title}»`});
-        if(!bSnap.val().rewardedMarket) await update(userRef(l.buyer),{rewardedMarket:true});
+        if(!bSnap.val().rewardedMarket){
+            await update(userRef(l.buyer),{rewardedMarket:true,taskBalance:Math.max(0,Number(bSnap.val().taskBalance||0))+90});
+            await logTx(l.buyer,{type:'in',who:'Задания',amt:90,desc:'Одноразовое задание: покупка на маркетплейсе'});
+            await pushNotification(l.buyer,'🎁 +90 ₽ на счёт заданий за покупку на маркетплейсе','money');
+        }
     }
     // Service listings stay active forever — just reset buyer
     if(isService){
@@ -8518,18 +8507,29 @@ function stopTaskLiveListeners(){
 function startTaskLiveListeners(){
     stopTaskLiveListeners();
     if(!currentNick || curPage!=='tasks') return;
-    // Core user listener already covers users/<currentNick>; task listeners are page-scoped.
-    const targets=[ordersRef(),marketRef(),chatRef(),wallRef(currentNick),txLogRef(currentNick),ref(db,'dms'),ref(db,`passports/${currentNick}`),ref(db,`licenses/${currentNick}`)];
+    // Only subscribe to data that can affect today's task set. Large global
+    // branches are filtered by the current user's nick where possible.
+    const u = allUsersCache?.[currentNick] || {};
+    const daily = getDailyTasksForToday() || [];
+    const prime = (u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? (getPrimeDailyTasksForToday() || []) : [];
+    const ids = new Set([...daily,...prime].map(t=>t.id));
+    const targets=[];
+    if(ids.has('taxi_req') || ids.has('shop') || ids.has('prime_taxi2') || ids.has('prime_shop_big') || !u.rewardedTaxi)
+        targets.push(query(ordersRef(), orderByChild('client'), equalTo(currentNick)));
+    if(ids.has('prime_listing') || !u.rewardedListing)
+        targets.push(query(marketRef(), orderByChild('seller'), equalTo(currentNick)));
+    if(ids.has('chat') || ids.has('prime_chat5'))
+        targets.push(query(chatRef(), orderByChild('nick'), equalTo(currentNick)));
+    if(ids.has('wall')) targets.push(wallRef(currentNick));
+    if(ids.has('transfer') || ids.has('prime_transfer_big')) targets.push(txLogRef(currentNick));
+    if(ids.has('shop')) targets.push(query(deliveryCustomOrdersRef(), orderByChild('client'), equalTo(currentNick)));
+    if(!targets.length){ scheduleTaskLiveRefresh(); return; }
     targets.forEach(target=>{
-        const fn=()=>{
-            if(curPage==='tasks') scheduleTaskLiveRefresh();
-            else {
-                clearTimeout(_taskLiveTimer);
-                _taskLiveTimer=setTimeout(()=>{ try{ renderTasks(); }catch(e){} },180);
-            }
-        };
+        const fn=()=>scheduleTaskLiveRefresh();
         try{onValue(target,fn);_taskLiveUnsubs.push(()=>off(target,'value',fn));}catch(e){console.warn('[Kapani] task listener:',e);}
     });
+    // The user's own listener handles taskBalance and reward flags.
+    scheduleTaskLiveRefresh();
 }
 window.navTo=function(id){
     const previousPage=curPage;
@@ -8560,7 +8560,7 @@ window.navTo=function(id){
     if(id==='subscription') renderSubscription();
     if(id==='home') renderHomeBizOrders();
     if(id==='rentBuildings') renderRentBuildings();
-    if(id==='tasks'){ renderTasks(); }
+    if(id==='tasks'){ /* task service schedules the initial render */ }
     if(id==='jobs'){renderJobAppStatus();renderHospitalJobsCard();}
     if(id==='hospital') renderHospital();
     if(id==='hospitalPanel') renderHospitalPanel();
