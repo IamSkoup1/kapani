@@ -1214,15 +1214,15 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <div class="card" style="padding:16px;">
                 <button class="dm-back" onclick="closeDmChat()">← Назад</button>
                 <div class="dm-header-row">
-                    <div class="av-wrap-sm" id="dmChatAvWrap" style="cursor:pointer;" onclick="openUserProfile(currentDmNick||'')">
+                    <div class="av-wrap-sm" id="dmChatAvWrap" style="cursor:pointer;" onclick="openCurrentDmProfile()">
                         <img id="dmChatAv" src="" style="width:38px;height:38px;border-radius:11px;object-fit:cover;"><video id="dmChatAvVideo" style="width:38px;height:38px;border-radius:11px;object-fit:cover;display:none;position:absolute;inset:0;" muted autoplay loop playsinline></video>
                         <div class="online-dot"></div>
                     </div>
-                    <div style="flex:1;cursor:pointer;" onclick="openUserProfile(currentDmNick||'')">
+                    <div style="flex:1;cursor:pointer;" onclick="openCurrentDmProfile()">
                         <div style="font-weight:900;font-size:15px;" id="dmChatName"></div>
                         <div style="font-size:11px;color:var(--muted);" id="dmChatJob"></div>
                     </div>
-                    <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:8px 12px;" onclick="openUserProfile(currentDmNick||'')">👤</button>
+                    <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:8px 12px;" onclick="openCurrentDmProfile()">👤</button>
                 </div>
                 <div style="text-align:center;margin:12px 0;">
                     <button class="jump-date-text" onclick="openJumpToDate('dm')" data-chat-context="dm" title="Перейти к дате" type="button">📅 Перейти к дате</button>
@@ -2657,6 +2657,11 @@ let chatReadStates = {};
 
 // currentDmNick is accessed directly — no defineProperty needed (it caused call stack overflow)
 window._getDmNick = () => currentDmNick;
+window.openCurrentDmProfile = function(){
+    const nick = currentDmNick || window._getDmNick?.();
+    if(!nick) return toast('⚠️ Профиль чата ещё не загрузился','gold');
+    return window.openUserProfile(nick);
+};
 
 // ─── GLOBAL ERROR HANDLER ───────────────────
 window.addEventListener('error', (event) => {
@@ -3605,16 +3610,16 @@ window.logout = function() {
 
 // ─── REAL-TIME LISTENERS ──────────────────
 const serviceListeners = Object.create(null);
-function addServiceListener(service, key, targetRef, callback){
+function addServiceListener(service, key, targetRef, callback, cancelCallback){
     if(!serviceListeners[service]) serviceListeners[service]=Object.create(null);
     removeServiceListener(service,key);
-    onValue(targetRef, callback);
-    serviceListeners[service][key]={ref:targetRef,fn:callback};
+    const unsub = onValue(targetRef, callback, cancelCallback || (err=>console.warn(`[Kapani ${service}/${key}] listener`, err?.message || err)));
+    serviceListeners[service][key]={ref:targetRef,fn:callback,unsub};
     return serviceListeners[service][key];
 }
 function removeServiceListener(service,key){
     const item=serviceListeners[service]?.[key];
-    if(item){ try{ off(item.ref,'value',item.fn); }catch(e){} delete serviceListeners[service][key]; }
+    if(item){ try{ if(item.unsub) item.unsub(); else off(item.ref,'value',item.fn); }catch(e){} delete serviceListeners[service][key]; }
 }
 function removeAllServiceListeners(service){
     const bucket=serviceListeners[service];
@@ -4198,7 +4203,7 @@ function getFirstPushPromptKey(){ return currentNick ? `kp_first_push_prompt_${c
 function wasFirstPushPromptHandled(){ try{return localStorage.getItem(getFirstPushPromptKey())==='1';}catch(e){return false;} }
 function markFirstPushPromptHandled(){ try{localStorage.setItem(getFirstPushPromptKey(),'1');}catch(e){} }
 function closeFirstPushPrompt(){ const m=qs('firstPushPrompt'); if(m)m.remove(); }
-async function finishFirstPushPrompt(allow){
+window.finishFirstPushPrompt = async function(allow){
     // Mark immediately: regardless of choice, this account must never see this
     // first-login prompt again.
     markFirstPushPromptHandled();
@@ -6102,7 +6107,22 @@ window.switchMsgTab=function(i){
         const host = qs('chatMessages');
         if(host && !host.innerHTML.trim()){ host.innerHTML = loadingHtml('Загрузка чата...'); }
         chatLoading = true;
-        get(chatRef()).then(snap=>{ chatLoading = false; renderChat(snap.val()||{}); });
+        const chatLoadStarted=Date.now();
+        get(chatRef()).then(snap=>{
+            chatLoading = false;
+            Promise.resolve(renderChat(snap.val()||{})).catch(err=>console.warn('[Kapani chat render]',err));
+        }).catch(err=>{
+            chatLoading = false;
+            const host=qs('chatMessages');
+            if(host) host.innerHTML='<div style="color:var(--muted);text-align:center;padding:24px 12px;">❌ Не удалось загрузить чат. Проверьте соединение и попробуйте снова.</div>';
+            console.warn('[Kapani chat load]',err);
+        });
+        setTimeout(()=>{
+            if(!chatLoading || Date.now()-chatLoadStarted < 9000) return;
+            chatLoading=false;
+            const host=qs('chatMessages');
+            if(host && host.innerHTML.includes('Загрузка чата')) host.innerHTML='<div style="color:var(--muted);text-align:center;padding:24px 12px;">⏱️ Чат загружается слишком долго. Откройте раздел ещё раз.</div>';
+        },9200);
         try{set(ref(db,`readState/${currentNick}/chat`),Date.now());}catch(e){}
     }
     if(i===1){renderDmContactList(allUsersCache, false); if(!Object.keys(allUsersCache).length) get(ref(db,'users')).then(snap=>renderDmUserList(snap.val()||{}));}
@@ -6110,74 +6130,149 @@ window.switchMsgTab=function(i){
 window.renderDmUserList=function(users){ renderDmContactList(users, false); };
 window.renderPinnedDmList=function(users){ renderDmContactList(users, true); };
 window.openDmChat=async function(nick){
-    currentDmNick=nick;dmPeerReadTs=0;
-    const snap=await get(userRef(nick));const u=snap.exists()?snap.val():{nick,avatar:'',job:'Житель'};const online=isUserOnline(u);
-    toggleAvatarMedia(qs('dmChatAv'), qs('dmChatAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
-    qs('dmChatName').textContent=displayNick(u)||u.nick;updateDmLiveStatus(u, null);
-    const avWrap=qs('dmChatAvWrap');if(avWrap)avWrap.classList.toggle('online',online);
-    
-    // Apply avatar frame for chat header
-    const chatHeaderAv = qs('dmChatAvWrap');
-    if(chatHeaderAv) {
-        // Remove existing frame
-        const existingFrame = chatHeaderAv.querySelector('.avatar-frame');
-        if(existingFrame) existingFrame.remove();
-        
-        // Add new frame if user has subscription and frame
-        const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
-        const isActive = expiry && expiry > new Date();
-        if(isActive && u.avatarFrame) {
-            const frameEl = document.createElement('div');
-            frameEl.className = 'avatar-frame';
-            frameEl.style.cssText = 'position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;';
-            
-            if(u.avatarFrame === 'gold') frameEl.classList.add('avatar-frame-gold');
-            else if(u.avatarFrame === 'rainbow') frameEl.classList.add('avatar-frame-rainbow');
-            else if(u.avatarFrame === 'pulse') frameEl.classList.add('avatar-frame-pulse');
-            else if(u.avatarFrame === 'glow') frameEl.classList.add('avatar-frame-glow');
-            else if(u.avatarFrame === 'neon') frameEl.classList.add('avatar-frame-neon');
-            else if(u.avatarFrame === 'fire') frameEl.classList.add('avatar-frame-fire');
-            else if(u.avatarFrame === 'crystal') frameEl.classList.add('avatar-frame-crystal');
-            else if(u.avatarFrame === 'ice') frameEl.classList.add('avatar-frame-ice');
-            else if(u.avatarFrame === 'rose') frameEl.classList.add('avatar-frame-rose');
-            else if(u.avatarFrame === 'plasma') frameEl.classList.add('avatar-frame-plasma');
-            else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
-            else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
-            else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
-            else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
-            
-            chatHeaderAv.appendChild(frameEl);
-        }
+    if(!currentNick || !nick) return;
+
+    // Every open gets its own generation. Late Firebase callbacks from a
+    // previous chat are ignored and can no longer replace the new chat.
+    const openSeq = (window._dmOpenSeq = (window._dmOpenSeq || 0) + 1);
+    currentDmNick = nick;
+    dmPeerReadTs = 0;
+
+    const listView = qs('dmListView');
+    const chatView = qs('dmChatView');
+    const messagesEl = qs('dmMessages');
+    const headerName = qs('dmChatName');
+    const avWrap = qs('dmChatAvWrap');
+
+    // Stop previous listeners before starting a new conversation.
+    if(dmListeners.current?.unsub){ try{ dmListeners.current.unsub(); }catch(e){} }
+    else if(dmListeners.current){ try{ off(dmListeners.current.ref,'value',dmListeners.current.fn); }catch(e){} }
+    dmListeners.current = null;
+    if(dmListeners.read?.unsub){ try{ dmListeners.read.unsub(); }catch(e){} }
+    else if(dmListeners.read){ try{ off(dmListeners.read.ref,'value',dmListeners.read.fn); }catch(e){} }
+    dmListeners.read = null;
+    if(dmTypingUnsub){ try{ dmTypingUnsub(); }catch(e){} dmTypingUnsub = null; }
+
+    if(listView) listView.style.display='none';
+    if(chatView) chatView.style.display='block';
+    if(messagesEl){
+        messagesEl.dataset.sig='';
+        messagesEl.innerHTML = loadingHtml('Загрузка сообщений...');
     }
-    
-    qs('dmListView').style.display='none';qs('dmChatView').style.display='block';
     dmLoading = true;
-    qs('dmMessages').innerHTML = loadingHtml('Загрузка сообщений...');
-    if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);}
-    if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
-    const key=dmKey(currentNick,nick);const dmR=dmRef(key);
-    const dmFn=(snap2)=>{dmLoading=false; lastDmMsgs=snap2.val()||{};if(currentDmNick===nick)renderDmMessages(lastDmMsgs);};
-    onValue(dmR,dmFn);dmListeners.current={ref:dmR,fn:dmFn};
-    try{await set(ref(db,`dms/${key}/lastRead/${currentNick}`),Date.now());}catch(e){}
-    const peerReadRef=ref(db,`dms/${key}/lastRead/${nick}`);
-    const readFn=(rs)=>{dmPeerReadTs=rs.exists()?(rs.val()||0):0;if(currentDmNick===nick)renderDmMessages(lastDmMsgs);};
-    onValue(peerReadRef,readFn);dmListeners.read={ref:peerReadRef,fn:readFn};
-    if(dmTypingUnsub){ dmTypingUnsub(); dmTypingUnsub = null; }
-    const typingRef = typingDmRef(key, nick);
-    const typingCb = (ts) => {
-        const typingVal = ts.val() || null;
-        const freshUser = allUsersCache[nick] || u;
-        updateDmLiveStatus(freshUser, typingVal);
-    };
-    onValue(typingRef, typingCb);
-    dmTypingUnsub = () => off(typingRef, 'value', typingCb);
+
+    try{
+        const snap = await get(userRef(nick));
+        if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
+        const u = snap.exists() ? (snap.val() || {}) : {nick,avatar:'',job:'Житель'};
+        const online = isUserOnline(u);
+
+        toggleAvatarMedia(qs('dmChatAv'), qs('dmChatAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
+        if(headerName) headerName.textContent = displayNick(u)||u.nick;
+        updateDmLiveStatus(u, null);
+        if(avWrap) avWrap.classList.toggle('online',online);
+
+        // Apply avatar frame for chat header.
+        if(avWrap){
+            avWrap.querySelectorAll('.avatar-frame').forEach(el=>el.remove());
+            const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
+            const isActive = expiry && expiry > new Date();
+            if(isActive && u.avatarFrame){
+                const frameEl = document.createElement('div');
+                frameEl.className = 'avatar-frame';
+                frameEl.style.cssText = 'position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;';
+                const frameMap = {
+                    gold:'avatar-frame-gold', rainbow:'avatar-frame-rainbow', pulse:'avatar-frame-pulse',
+                    glow:'avatar-frame-glow', neon:'avatar-frame-neon', fire:'avatar-frame-fire',
+                    crystal:'avatar-frame-crystal', ice:'avatar-frame-ice', rose:'avatar-frame-rose',
+                    plasma:'avatar-frame-plasma', thunder:'avatar-frame-thunder', hologram:'avatar-frame-hologram',
+                    dragon:'avatar-frame-dragon', prime:'avatar-frame-prime'
+                };
+                if(frameMap[u.avatarFrame]) frameEl.classList.add(frameMap[u.avatarFrame]);
+                avWrap.appendChild(frameEl);
+            }
+        }
+
+        const key = dmKey(currentNick,nick);
+        const dmR = dmRef(key);
+        const dmFn = (snap2) => {
+            if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
+            dmLoading = false;
+            lastDmMsgs = snap2.val() || {};
+            const host = qs('dmMessages');
+            if(host) host.removeAttribute('data-dm-load-error');
+            Promise.resolve(renderDmMessages(lastDmMsgs)).catch(err=>{
+                console.error('[Kapani DM render]',err);
+                dmLoading = false;
+                if(host && currentDmNick === nick) host.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px 12px;">Не удалось отобразить сообщения. Нажмите «Назад» и откройте чат снова.</div>';
+            });
+        };
+        const dmCancel = (err) => {
+            if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
+            dmLoading = false;
+            const host = qs('dmMessages');
+            if(host) host.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px 12px;">❌ Не удалось загрузить сообщения. Проверьте соединение и откройте чат ещё раз.</div>';
+            console.warn('[Kapani DM listener]', err?.message || err);
+        };
+        const unsub = onValue(dmR, dmFn, dmCancel);
+        dmListeners.current = {ref:dmR, fn:dmFn, unsub};
+
+        // Safety timeout: a Firebase listener that never synchronizes must not
+        // leave the user on an endless spinner forever.
+        const timeoutId = setTimeout(()=>{
+            if(openSeq !== window._dmOpenSeq || currentDmNick !== nick || !dmLoading) return;
+            dmLoading = false;
+            try{ unsub(); }catch(e){}
+            if(dmListeners.current?.unsub === unsub) dmListeners.current = null;
+            const host = qs('dmMessages');
+            if(host) host.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px 12px;">⏱️ Чат загружается слишком долго. Проверьте интернет и откройте его снова.</div>';
+        }, 12000);
+        dmListeners.current.timeoutId = timeoutId;
+
+        try{ await set(ref(db,`dms/${key}/lastRead/${currentNick}`),Date.now()); }catch(e){ console.warn('[Kapani DM lastRead]', e); }
+
+        const peerReadRef = ref(db,`dms/${key}/lastRead/${nick}`);
+        const readFn = (rs) => {
+            if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
+            dmPeerReadTs = rs.exists() ? (rs.val()||0) : 0;
+            Promise.resolve(renderDmMessages(lastDmMsgs)).catch(err=>console.warn('[Kapani DM read render]',err));
+        };
+        const readCancel = err => console.warn('[Kapani DM read listener]', err?.message || err);
+        const readUnsub = onValue(peerReadRef,readFn,readCancel);
+        dmListeners.read = {ref:peerReadRef,fn:readFn,unsub:readUnsub};
+
+        const typingRef = typingDmRef(key,nick);
+        const typingCb = (ts) => {
+            if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
+            const typingVal = ts.val() || null;
+            const freshUser = allUsersCache[nick] || u;
+            updateDmLiveStatus(freshUser, typingVal);
+        };
+        const typingUnsub = onValue(typingRef,typingCb,err=>console.warn('[Kapani DM typing]',err?.message || err));
+        dmTypingUnsub = () => { try{typingUnsub();}catch(e){} };
+    }catch(err){
+        if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
+        dmLoading = false;
+        console.error('[Kapani openDmChat]', err);
+        if(messagesEl) messagesEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px 12px;">❌ Не удалось открыть чат. Проверьте соединение и попробуйте снова.</div>';
+    }
 };
 window.closeDmChat=function(){
-    if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);dmListeners.current=null;}
-    if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);dmListeners.read=null;}
-    if(dmTypingUnsub){ dmTypingUnsub(); dmTypingUnsub = null; }
+    window._dmOpenSeq = (window._dmOpenSeq || 0) + 1;
+    if(dmListeners.current){
+        try{ if(dmListeners.current.timeoutId) clearTimeout(dmListeners.current.timeoutId); }catch(e){}
+        try{ if(dmListeners.current.unsub) dmListeners.current.unsub(); else off(dmListeners.current.ref,'value',dmListeners.current.fn); }catch(e){}
+        dmListeners.current=null;
+    }
+    if(dmListeners.read){
+        try{ if(dmListeners.read.unsub) dmListeners.read.unsub(); else off(dmListeners.read.ref,'value',dmListeners.read.fn); }catch(e){}
+        dmListeners.read=null;
+    }
+    if(dmTypingUnsub){ try{ dmTypingUnsub(); }catch(e){} dmTypingUnsub = null; }
     setDmTypingState('idle');
-    currentDmNick=null;dmPeerReadTs=0;qs('dmChatView').style.display='none';qs('dmListView').style.display='block';
+    currentDmNick=null;dmPeerReadTs=0;dmLoading=false;
+    const mv=qs('dmChatView'),lv=qs('dmListView');
+    if(mv) mv.style.display='none'; if(lv) lv.style.display='block';
 };
 window.sendDm=async function(){
     const inp=qs('dmInput');const text=inp.value.trim();if(!text||!currentDmNick)return;
@@ -12601,6 +12696,7 @@ window.renderDmMessages = async function(msgs){
     _dmRenderPending = true;
     
     requestAnimationFrame(async () => {
+        try {
         const scroll = preserveScrollState(el);
         const entries = Object.entries(lastDmMsgs).sort((a,b)=>(a[1]?.createdAt||0)-(b[1]?.createdAt||0)).slice(-80);
         const sig = entries.map(([id,m])=>`${id}:${m.createdAt||0}:${m.text||''}:${m.msgType||''}:${m.mediaData?1:0}:${m.edited?1:0}`).join('|') + '|peer:' + String(dmPeerReadTs || 0);
@@ -12698,7 +12794,13 @@ window.renderDmMessages = async function(msgs){
         }).join('');
         el.innerHTML = html;
         restoreScrollState(el, scroll);
-        _dmRenderPending = false;
+        } catch(err) {
+            console.error('[Kapani renderDmMessages]', err);
+            if(el) el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px 12px;">❌ Не удалось отобразить сообщения.</div>';
+        } finally {
+            _dmRenderPending = false;
+            _dmRenderTimeout = null;
+        }
     });
 };
 window.deleteDm = async function(msgId){
