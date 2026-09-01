@@ -1468,7 +1468,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <div style="font-size:32px;">⭐</div>
             <div>
                 <div style="font-size:20px;font-weight:900;color:var(--gold);">Kapani Plus</div>
-                <div style="font-size:14px;color:var(--gold);font-weight:700;">399 ₽/неделя</div>
+                <div style="font-size:14px;color:var(--gold);font-weight:700;">299 ₽/неделя</div>
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
@@ -1482,7 +1482,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         </div>
         <button class="btn btn-gold" onclick="buySubscription('plus')" id="btnBuyPlus">Оформить Plus</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('plus')">
-            <span>🎁</span> Подарить Plus (399₽)
+            <span>🎁</span> Подарить Plus (299₽)
         </button>
     </div>
 
@@ -1492,7 +1492,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <div style="font-size:32px;">💎</div>
             <div>
                 <div style="font-size:20px;font-weight:900;color:var(--primary);">Kapani Ultra</div>
-                <div style="font-size:14px;color:var(--primary);font-weight:700;">1199 ₽/неделя</div>
+                <div style="font-size:14px;color:var(--primary);font-weight:700;">899 ₽/неделя</div>
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
@@ -1510,7 +1510,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         </div>
         <button class="btn btn-primary" onclick="buySubscription('ultra')" id="btnBuyUltra">Оформить Ultra</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('ultra')">
-            <span>🎁</span> Подарить Ultra (1199₽)
+            <span>🎁</span> Подарить Ultra (899₽)
         </button>
     </div>
 
@@ -1520,7 +1520,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <div style="font-size:32px;">👑</div>
             <div>
                 <div style="font-size:20px;" class="text-rainbow-prime">Kapani Prime</div>
-                <div style="font-size:14px;color:#f0c419;font-weight:700;">1999 ₽/неделя</div>
+                <div style="font-size:14px;color:#f0c419;font-weight:700;">1499 ₽/неделя</div>
             </div>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;">
@@ -1540,7 +1540,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         </div>
         <button class="btn btn-primary" style="background:var(--gold-dim);color:var(--gold);" onclick="buySubscription('prime')" id="btnBuyPrime">Оформить Prime</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openGiftSubscriptionModal('prime')">
-            <span>🎁</span> Подарить Prime (1999₽)
+            <span>🎁</span> Подарить Prime (1499₽)
         </button>
     </div>
     
@@ -1986,6 +1986,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <div class="card"><div class="card-title">🏪 Заявки на открытие бизнеса</div><div id="adminBizApps"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card"><div class="card-title">🗑 Заявки на закрытие бизнеса</div><div id="adminBizDeleteReqs"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card"><div class="card-title">💵 Заявки банкомата</div><div id="adminAtmRequests"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
+    <div class="card" id="kapaniScooterAppsCard" style="border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.04);"><div class="card-title" style="color:var(--gold);">🛵 Заявки на права на скутер</div><div id="kapaniScooterApps"><div style="color:var(--muted);font-size:13px;">Загрузка…</div></div></div>
     <div class="card">
         <div class="card-title">💳 Управление балансом</div>
         <select id="adminTarget" style="margin-bottom:8px;"></select>
@@ -2070,6 +2071,9 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div style="font-weight:900;font-size:20px;">🏘️ Аренда зданий</div>
         <button class="btn btn-gold btn-sm" onclick="navTo('adminPage')" style="display:none;" id="rentAdminJumpBtn">👑 Мэрия</button>
+    </div>
+    <div class="card" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.05);">
+        <div style="font-size:13px;color:var(--text);line-height:1.65;">Аренда зданий нужна для того, чтобы открывать на этих местах свой бизнес и переделывать место под себя. То есть чтобы, например, открыть бизнес в беседке, придётся также платить аренду этой самой беседки. При попытке обойти это с вас будут списываться штрафы</div>
     </div>
     <div class="card" id="myRentedBuildingCard" style="display:none;"></div>
     <div id="rentBuildingsList"><div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Загрузка...</div></div>
@@ -2446,7 +2450,7 @@ window.kapaniLoadLeaflet = (function(){
 <script type="module">
     const CONFIG = globalThis.KAPANI_CONFIG;
     if (!CONFIG) throw new Error("Kapani config.js не загружен");
-    const CURRENT_SUBSCRIPTION_PRICES = { plus: 399, ultra: 1199, prime: 1999 };
+    const CURRENT_SUBSCRIPTION_PRICES = { plus: 299, ultra: 899, prime: 1499 };
     function getSubscriptionPrice(type){
         return CURRENT_SUBSCRIPTION_PRICES[type] ?? Number(CONFIG.subscriptions?.[type]?.price || 0);
     }
@@ -3269,7 +3273,10 @@ async function processBusinessWeeklyFees(nick, u, opts = {}){
         await logTx(nick, { type: 'out', who: b.name || 'Бизнес', amt: fee, desc: `Абонентская плата бизнеса «${b.name}» (${weeks} нед.)` });
         if(opts.notify !== false) await pushNotification(nick, `🏪 Списано ${fee}₽ за ${weeks} нед. наличия бизнеса «${b.name}»`, 'money');
     }
-    if(charged > 0) await update(userRef(nick), { balance });
+    if(charged > 0){
+        await update(userRef(nick), { balance });
+        await window.addMunicipalTreasury?.(charged, `Абонентская плата бизнеса от ${nick}`, {sourceNick:nick,sourceType:'business_weekly_fee'});
+    }
 }
 async function processSavingsInterest(nick, u, opts = {}){
     const savings = Number(u.savingsBalance || 0);
@@ -3342,6 +3349,17 @@ async function processEconomyChargesForUser(nick, opts = {}) {
             return next;
         });
         if(!result || !result.committed) return u;
+
+        let treasuryTotal=0;
+        let treasuryMain=Number(u.balance||0);
+        const treasurySavings=Number(u.savingsBalance||0);
+        for(let i=1;i<=weeks;i++){
+            const taxBase=Math.max(0,treasuryMain)+Math.max(0,treasurySavings);
+            const wealthTax=taxBase>0?Math.round(taxBase*getWealthTaxRate(taxBase)):0;
+            treasuryTotal+=ECONOMY_ACCOUNT_WEEKLY_FEE+wealthTax;
+            treasuryMain-=ECONOMY_ACCOUNT_WEEKLY_FEE+wealthTax;
+        }
+        if(treasuryTotal>0) await window.addMunicipalTreasury?.(treasuryTotal, `Налоги и абонентская плата: ${nick}`, {sourceNick:nick,sourceType:'tax_and_account_fee'});
 
         const updated = result.snapshot.val() || {};
         if(opts.notify !== false){
@@ -3441,6 +3459,67 @@ async function logTx(nick, entry){
         }
     }
 }
+
+// ─── MUNICIPAL TREASURY ─────────────────────────────
+const MUNICIPAL_TREASURY_PATH = 'municipalTreasury';
+function municipalTreasuryRef(){ return ref(db, MUNICIPAL_TREASURY_PATH); }
+async function addMunicipalTreasury(amount, reason, meta = {}){
+    const value=Math.round(Number(amount)||0); if(value<=0) return false;
+    try{
+        const tx=await runTransaction(municipalTreasuryRef(),current=>{
+            const state=(current&&typeof current==='object')?current:{balance:Number(current)||0};
+            const balance=Number.isFinite(Number(state.balance))?Number(state.balance):0;
+            return {...state,balance:balance+value,updatedAt:Date.now()};
+        });
+        if(!tx?.committed) return false;
+        try{ await push(ref(db,`${MUNICIPAL_TREASURY_PATH}/history`),{type:'in',amount:value,reason:reason||'Поступление в казну',sourceNick:meta.sourceNick||null,sourceType:meta.sourceType||null,date:new Date().toLocaleDateString('ru'),time:nowTime(),ts:Date.now()}); }catch(e){console.warn('[municipalTreasury history]',e);}
+        try{ if(currentNick===ADMIN&&typeof window.renderMunicipalTreasury==='function') window.renderMunicipalTreasury(); }catch(e){}
+        return true;
+    }catch(e){ console.error('[municipalTreasury add]',e); return false; }
+}
+window.addMunicipalTreasury=addMunicipalTreasury;
+
+window.clearMunicipalTreasuryHistory=async function(){
+    if(currentNick!==ADMIN) return toast('🚫 Только Кайон может очищать историю казны','red');
+    const ok=confirm('Очистить всю историю операций казны? Баланс казны при этом не изменится.');
+    if(!ok) return;
+    try{
+        await remove(ref(db,`${MUNICIPAL_TREASURY_PATH}/history`));
+        toast('✅ История операций казны очищена','green');
+        if(typeof window.renderMunicipalTreasury==='function') await window.renderMunicipalTreasury();
+    }catch(e){
+        console.error('[municipalTreasury clear history]',e);
+        toast('❌ Не удалось очистить историю: '+(e?.message||'ошибка Firebase'),'red');
+    }
+};
+
+window.withdrawMunicipalTreasury=async function(){
+    if(currentNick!==ADMIN) return toast('🚫 Только Кайон может выводить деньги из казны','red');
+    const amount=Math.floor(Number(prompt('Сколько ₽ вывести из казны на аккаунт Кайона?','0')||0));
+    if(!Number.isSafeInteger(amount)||amount<=0) return toast('⚠️ Укажите корректную сумму','gold');
+    let reserved=false;
+    try{
+        const reserve=await runTransaction(municipalTreasuryRef(),current=>{
+            const state=(current&&typeof current==='object')?current:{balance:Number(current)||0};
+            const balance=Number(state.balance||0); if(balance<amount)return;
+            return {...state,balance:balance-amount,updatedAt:Date.now()};
+        });
+        if(!reserve?.committed) return toast('❌ В казне недостаточно средств','red');
+        reserved=true;
+        const mayorSnap=await get(userRef(ADMIN)); if(!mayorSnap.exists()) throw new Error('Аккаунт Кайона не найден');
+        const mayor=mayorSnap.val()||{}; const nextBalance=Number(mayor.balance||0)+amount;
+        await update(userRef(ADMIN),{balance:nextBalance});
+        try{ await push(ref(db,`${MUNICIPAL_TREASURY_PATH}/history`),{type:'out',amount,reason:'Вывод казны мэром на личный аккаунт',sourceNick:ADMIN,sourceType:'mayor_withdrawal',date:new Date().toLocaleDateString('ru'),time:nowTime(),ts:Date.now()}); }catch(e){console.warn('[municipalTreasury withdrawal history]',e);}
+        try { await logTx(ADMIN,{type:'in',who:'Казна мэрии',amt:amount,desc:'Вывод средств из казны мэром'}); } catch(logErr){ console.warn('[municipalTreasury mayor txlog]',logErr); }
+        allUsersCache[ADMIN]={...mayor,balance:nextBalance}; window.allUsersCache=allUsersCache; updateHeader_balance({...mayor,balance:nextBalance});
+        if(typeof window.renderMunicipalTreasury==='function') window.renderMunicipalTreasury();
+        toast(`✅ ${amount.toLocaleString('ru-RU')} ₽ выведено из казны`,'green');
+    }catch(e){
+        console.error('[municipalTreasury withdraw]',e);
+        if(reserved){try{await runTransaction(municipalTreasuryRef(),current=>{const state=(current&&typeof current==='object')?current:{balance:Number(current)||0};return {...state,balance:Number(state.balance||0)+amount,updatedAt:Date.now()};});}catch(re){console.error('[municipalTreasury refund]',re);}}
+        toast('❌ Не удалось вывести средства из казны: '+(e.message||'ошибка'),'red');
+    }
+};
 
 // ─── AUTH ─────────────────────────────────
 window.handleAuth = async function() {
@@ -5664,6 +5743,7 @@ window.doTransfer = async function(){
             if(!result.commissionCharged){
                 await chargeCommissionAndLog(currentNick, commission, `Комиссия ${Math.round(commissionRate*100)}% за перевод пользователю ${to}`);
             }
+            if(commission>0) await window.addMunicipalTreasury?.(commission, `Банковская комиссия ${Math.round(commissionRate*100)}% за перевод ${currentNick} → ${to}`, {sourceNick:currentNick,sourceType:'bank_commission'});
             await pushNotification(to,`💰 Перевод ${amt}₽ от ${displayNick(fromUser)}`,'money');
             qs('bTo').value='';qs('bAmt').value='';
             toast(`💸 ${amt}₽ → ${displayNick(toUserData)} (комиссия ${commission}₽)`,'green');
@@ -5674,6 +5754,7 @@ window.doTransfer = async function(){
             try {
                 const fb = await fallbackTransferMoney({ toUid: to, amount: amt, commission, commissionRate, total, description: `Перевод пользователю ${to}` });
                 if(fb && fb.success){
+                    if(commission>0) await window.addMunicipalTreasury?.(commission, `Банковская комиссия ${Math.round(commissionRate*100)}% за перевод ${currentNick} → ${to}`, {sourceNick:currentNick,sourceType:'bank_commission'});
                     await pushNotification(to,`💰 Перевод ${amt}₽ от ${displayNick(fromUser)}`,'money');
                     qs('bTo').value='';qs('bAmt').value='';
                     toast(`💸 ${amt}₽ → ${displayNick(toUserData)} (комиссия ${commission}₽)`,'green');
@@ -7416,7 +7497,7 @@ window.withdrawApp=async function(){
 };
 function getMunicipalJobSalaryLabel(role){
     const labels={
-        'Уборщик':'1500 ₽/неделю',
+        'Уборщик':'1700 ₽/неделю',
         'Журналист':'2800 ₽/неделю',
         'КСБ':'4000 ₽/неделю',
         'Депутат':'5000 ₽/неделю',
@@ -7745,6 +7826,7 @@ async function renderAdmin(){
     if(typeof populateRaceDayUserSelect === 'function') populateRaceDayUserSelect();
     renderAdminDeputyProposals();
     renderAdminAtmRequests();
+    try { if(typeof window.renderMunicipalTreasury === 'function') window.renderMunicipalTreasury(); } catch(e) {}
 }
 
 async function renderAdminDeputyProposals() {
@@ -7966,6 +8048,7 @@ window.adminFineWorker=async function(){
             if (Object.keys(patch).length > 0) {
                 await update(userRef(target), patch);
             }
+            await window.addMunicipalTreasury?.(amt, `Штраф от мэрии: ${reason}`, {sourceNick:target,sourceType:'fine'});
             
             await pushNotification(target,`💸 Штраф ${amt}₽ от мэрии. Причина: ${reason}`,'money');
             qs('adminFineAmt').value='';if(qs('adminFineReason'))qs('adminFineReason').value='';
@@ -13319,6 +13402,7 @@ window.buySubscription = async function(type){
         subscriptionExpiry: expiry.toISOString(),
         subscriptionStart: startDate
     });
+    await window.addMunicipalTreasury?.(price, `Оплата подписки ${name} от ${currentNick}`, {sourceNick:currentNick,sourceType:'subscription'});
     
     // Log transaction
     await logTx(currentNick, {
@@ -13479,6 +13563,7 @@ window.sendGiftSubscription = async function(){
         subscriptionGiftedBy: currentNick,
         subscriptionGiftedAt: now.toISOString()
     });
+    await window.addMunicipalTreasury?.(price, `Подаренная подписка ${name} от ${currentNick}`, {sourceNick:currentNick,sourceType:'subscription_gift'});
     
     // Log transactions
     await logTx(currentNick, {
@@ -15435,6 +15520,7 @@ ready(function(){
       const tsnap = await get(userRef(r.target)); if(!tsnap.exists()) return toast('❌ Нет жителя','red');
       const u = tsnap.val();
       await update(userRef(r.target), { balance: (u.balance||0) - r.amount });
+      await window.addMunicipalTreasury?.(r.amount, `Штраф от полиции: ${r.reason||''}`, {sourceNick:r.target,sourceType:'fine'});
       if(typeof window.logTx === 'function') await window.logTx(r.target, { type:'out', who:'Мэрия (полиция)', amt:r.amount, desc:'Штраф: '+(r.reason||'') });
       await pushNotification(r.target, `💸 Штраф от мэрии: ${r.amount}₽ — ${r.reason||''}`,'money');
     } else if(r.type === 'delete'){
@@ -15777,6 +15863,7 @@ ready(function(){
       // Запись операции — отдельным update, чтобы она не могла блокировать
       // списание баланса из-за старых/битых полей в объекте пользователя.
       await set(ref(db, `users/${tnick}/txlog/${fineTxId}`), txEntry);
+      await window.addMunicipalTreasury?.(amt, `Штраф: ${reason}`, {sourceNick:tnick,sourceType:'fine'});
 
       // Update the local cache immediately as well. The target user's own
       // `users/<currentNick>` realtime listener will update their header/balance
@@ -16025,20 +16112,31 @@ ready(function(){
         <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(nick)}')">💬 Связаться</button><button class="btn btn-primary btn-sm" onclick="kapaniReviewScooter('${jsEsc(nick)}',true)">✅ Одобрить</button><button class="btn btn-red btn-sm" onclick="kapaniReviewScooter('${jsEsc(nick)}',false)">❌ Отказать</button></div>
       </div>`).join(''):'<div style="color:var(--muted);font-size:13px;">Заявок нет</div>';
     }
+    let _scooterReviewBusy = {};
     window.kapaniReviewScooter=async function(nick,approve){
       if(current()!==ADMIN) return toast('🚫 Только мэр','red');
-      const result=await runTransaction(userRef(nick),u=>{
-        if(!u) return;
-        const app=u.scooterLicenseApplication||{};
-        if(app.status!=='pending') return;
-        const next={...u,scooterLicenseApplication:{...app,status:approve?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:ADMIN}};
-        if(approve){ next.licenses={...(u.licenses||{}),scooter:true,scooterIssuedAt:Date.now()}; }
-        return next;
-      });
-      if(!result?.committed) return toast('❌ Заявка уже обработана или пользователь не найден','red');
-      await pushNotification(nick,approve?'🛵 Права на скутер одобрены мэрией.':'❌ Мэрия отказала в выдаче прав на скутер. Деньги не возвращаются.','system');
-      toast(approve?'✅ Права одобрены':'❌ Заявка отклонена',approve?'green':'gold');
-      renderAdminScooterApplications();
+      nick=String(nick||'').trim();
+      if(!nick) return toast('❌ Не указан пользователь','red');
+      if(_scooterReviewBusy[nick]) return toast('⏳ Заявка уже обрабатывается…','gold');
+      _scooterReviewBusy[nick]=true;
+      try{
+        const freshSnap=await get(userRef(nick));
+        if(!freshSnap.exists()) return toast('❌ Пользователь не найден','red');
+        const freshUser=freshSnap.val()||{};
+        if((freshUser.scooterLicenseApplication||{}).status!=='pending') return toast('⚠️ Заявка уже обработана','gold');
+        const result=await runTransaction(userRef(nick),u=>{
+          const base=(u==null)?freshUser:u; const app=base.scooterLicenseApplication||{};
+          if(app.status!=='pending') return;
+          const now=Date.now(); const next={...base,scooterLicenseApplication:{...app,status:approve?'approved':'rejected',reviewedAt:now,reviewedBy:ADMIN}};
+          if(approve) next.licenses={...(base.licenses||{}),scooter:true,scooterIssuedAt:now};
+          return next;
+        });
+        if(!result?.committed){ const after=(await get(userRef(nick))).val()||{}; const st=after.scooterLicenseApplication?.status; return toast(st&&st!=='pending'?'⚠️ Заявка уже обработана':'❌ Не удалось обработать заявку. Попробуйте ещё раз','red'); }
+        await pushNotification(nick,approve?'🛵 Права на скутер одобрены мэрией.':'❌ Мэрия отказала в выдаче прав на скутер. Деньги не возвращаются.','system');
+        toast(approve?'✅ Права выданы':'❌ В выдаче прав отказано',approve?'green':'red');
+        renderAdminScooterApplications(); renderRightsCard();
+      }catch(e){ console.error('[kapaniReviewScooter]',e); toast('❌ Не удалось обработать заявку: '+(e?.message||'ошибка Firebase'),'red'); }
+      finally{ delete _scooterReviewBusy[nick]; }
     };
 
     // ────────────────────────────────────────────────────────────────
@@ -16235,6 +16333,8 @@ ready(function(){
         });
         if(!result?.committed)return;
         const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        const hitState=nu.casino?.blackjack;
+        if(hitState?.status==='finished' && Number(hitState.payout||0)===0) await window.addMunicipalTreasury?.(Number(hitState.stake||0), `Проигрыш в блекджек: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
         window._blackjackActionBusy=false;
         await renderCasinoBalances(nu); await renderBlackjack();
       }finally{window._blackjackActionBusy=false;}
@@ -16255,6 +16355,7 @@ ready(function(){
         if(!result?.committed)return;
         const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
         const st=nu.casino?.blackjack; const payout=Number(st?.payout||0);
+        if(payout<=0) await window.addMunicipalTreasury?.(Number(st?.stake||0), `Проигрыш в блекджек: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
         if(payout>0) await window.logTx?.(current(),{type:'in',who:'Казино · Блекджек',amt:payout,desc:st.resultText||'Выплата за блекджек'});
         window._blackjackActionBusy=false;
         await renderCasinoBalances(nu); await renderBlackjack();
@@ -16316,6 +16417,7 @@ ready(function(){
         const nu=tx.snapshot.val();allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
         const input=qs('slotsStake');if(input)input.value='';
         await window.logTx?.(current(),{type:'out',who:'Казино · Слоты',amt:stake,desc:'Ставка в игровых слотах'});
+        if(payout<=0) await window.addMunicipalTreasury?.(stake, `Проигрыш в слотах: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
         if(payout>0)await window.logTx?.(current(),{type:'in',who:'Казино · Слоты',amt:payout,desc:`Выигрыш в слотах (${mult}×)`});
         window._slotsBusy=false;await renderCasinoBalances(nu);await renderSlots();
         toast(payout>0?`🎰 ${reels.join(' · ')} — выплата ${payout.toLocaleString('ru-RU')} ₽`:`🎰 ${reels.join(' · ')} — проигрыш ${stake.toLocaleString('ru-RU')} ₽`,payout>0?'green':'red');
@@ -16340,6 +16442,7 @@ ready(function(){
       const nu=(await get(userRef(current()))).val()||{};allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
       // Логи — вторичные: не должны оставлять кнопку игры заблокированной,
       // если запись истории тормозит или временно падает.
+      if(payout<=0) await window.addMunicipalTreasury?.(stake, `Проигрыш в ${label.toLowerCase()}: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
       const logs=[
         window.logTx?.(current(),{type:'out',who:`Казино · ${label}`,amt:stake,desc:`Ставка в ${label.toLowerCase()}`}),
         payout>0 ? window.logTx?.(current(),{type:'in',who:`Казино · ${label}`,amt:payout,desc:`Выигрыш в ${label.toLowerCase()}`}) : null
@@ -16384,8 +16487,26 @@ ready(function(){
     // ────────────────────────────────────────────────────────────────
     // Admin UI injection + navigation integration
     // ────────────────────────────────────────────────────────────────
+    async function renderMunicipalTreasury(){
+      const card=qs('kapaniTreasuryCard'); if(!card || current()!==ADMIN) return;
+      try{
+        const snap=await get(ref(db,'municipalTreasury')); const state=snap.val()||{}; const balance=Number(state.balance||0);
+        const balEl=qs('kapaniTreasuryBalance'); if(balEl) balEl.textContent=`${balance.toLocaleString('ru-RU')} ₽`;
+        const hEl=qs('kapaniTreasuryHistory');
+        if(hEl){ const hs=await get(ref(db,'municipalTreasury/history')); const entries=Object.values(hs.val()||{}).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,8); hEl.innerHTML=entries.length?entries.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px;"><div style="min-width:0;"><div style="font-weight:800;">${escHtml(x.reason||'Поступление')}</div><div style="color:var(--muted);margin-top:2px;">${escHtml(x.date||'')} · ${escHtml(x.time||'')}</div></div><b style="white-space:nowrap;color:${x.type==='out'?'var(--red)':'var(--primary)'};">${x.type==='out'?'−':'+'}${Number(x.amount||0).toLocaleString('ru-RU')} ₽</b></div>`).join(''):'<div style="color:var(--muted);font-size:12px;">Операций пока нет</div>'; }
+      }catch(e){ console.warn('[municipalTreasury render]',e); }
+    }
+    window.renderMunicipalTreasury=renderMunicipalTreasury;
+
     function injectEconomyAdminUI(){
       const page=qs('adminPage'); if(!page || current()!==ADMIN) return;
+      if(!qs('kapaniTreasuryCard')){
+        const c=document.createElement('div');c.className='card';c.id='kapaniTreasuryCard'; c.style.cssText='border-color:rgba(251,191,36,.35);background:linear-gradient(145deg,rgba(251,191,36,.10),rgba(34,211,165,.04));';
+        c.innerHTML='<div class="card-title" style="color:var(--gold);">💰 Казна мэрии</div><div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:10px;">Сюда поступают банковские комиссии, налоги, абонентские платы, штрафы и проигрыши в казино.</div><div style="font-size:28px;font-weight:900;color:var(--gold);margin-bottom:10px;" id="kapaniTreasuryBalance">0 ₽</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-gold" onclick="withdrawMunicipalTreasury()">💸 Вывести казну на аккаунт Кайона</button><button class="btn btn-red btn-sm" onclick="clearMunicipalTreasuryHistory()">🗑 Очистить историю</button></div><div style="font-size:11px;color:var(--muted);margin-top:12px;margin-bottom:4px;">Последние операции</div><div id="kapaniTreasuryHistory"></div>';
+        page.insertBefore(c,page.firstElementChild?.nextElementSibling||page.firstChild);
+      }
+      renderMunicipalTreasury();
+      if(!window.__kapaniTreasuryListener){ const tRef=ref(db,'municipalTreasury'); const fn=()=>{if(current()===ADMIN&&qs('kapaniTreasuryCard'))renderMunicipalTreasury();}; onValue(tRef,fn); window.__kapaniTreasuryListener={ref:tRef,fn}; }
       if(!qs('kapaniScooterApps')){
         const c=document.createElement('div');c.className='card';c.id='kapaniScooterAppsCard';c.innerHTML='<div class="card-title" style="color:var(--gold);">🛵 Заявки на права на скутер</div><div id="kapaniScooterApps">Загрузка…</div>';page.appendChild(c);
       }
