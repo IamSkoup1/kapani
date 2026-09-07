@@ -7,6 +7,201 @@ admin.initializeApp();
 const db = getDatabase();
 const firestore = getFirestore();
 
+// ─────────────────────────────────────────────────────────────
+// Kapani server-side Web Push / FCM
+// ─────────────────────────────────────────────────────────────
+const crypto = require('crypto');
+
+function hashNotificationToken(token) {
+    return crypto.createHash('sha256').update(String(token)).digest('hex');
+}
+function cleanText(value, maxLen = 1000) {
+    return String(value ?? '').replace(/[\u0000-\u001F\u007F]/g, ' ').trim().slice(0, maxLen);
+}
+const ALLOWED_NOTIFICATION_CATS = new Set([
+    'system','money','messages','taxi_orders','delivery_orders','market','news'
+]);
+const DEFAULT_PUSH_URLS = {
+    messages:'./index.html?kapaniPush=messages',
+    money:'./index.html?kapaniPush=bank',
+    taxi_orders:'./index.html?kapaniPush=driverPage',
+    delivery_orders:'./index.html?kapaniPush=deliveryOrderPage',
+    market:'./index.html?kapaniPush=market',
+    news:'./index.html?kapaniPush=news',
+    system:'./index.html?kapaniPush=profile'
+};
+function pushData({title,body,category,url,notificationId}) {
+    const cat=ALLOWED_NOTIFICATION_CATS.has(category)?category:'system';
+    return {
+        title:cleanText(title||'Капани',120),
+        body:cleanText(body||'',1000),
+        category:cat,
+        url:cleanText(url||DEFAULT_PUSH_URLS[cat],500),
+        notificationId:cleanText(notificationId||crypto.randomUUID(),120)
+    };
+}
+async function sendPushToUser(nick,payload) {
+    const cleanNick=cleanText(nick,120);
+    if(!cleanNick) return {sent:0,removed:0};
+    const [settingsSnap,tokensSnap]=await Promise.all([
+        db.ref(`users/${cleanNick}/pushSettings`).get(),
+        db.ref(`users/${cleanNick}/notificationTokens`).get()
+    ]);
+    const settings=settingsSnap.val()||{};
+    if(settings.enabled===false) return {sent:0,removed:0,disabled:true};
+    const category=payload.category||'system';
+    if(settings[category]===false) return {sent:0,removed:0,disabled:true};
+
+    const tokenMap=tokensSnap.val()||{};
+    const tokenRows=Object.entries(tokenMap)
+        .filter(([,row])=>row&&row.token)
+        .map(([id,row])=>({id,token:String(row.token)}));
+    if(!tokenRows.length) return {sent:0,removed:0};
+
+    const data=pushData(payload);
+    const messages=tokenRows.map(row=>({
+        token:row.token,
+        data,
+        webpush:{headers:{Urgency:'high'}}
+    }));
+    const response=await admin.messaging().sendEach(messages);
+
+    const stale=[];
+    response.responses.forEach((r,i)=>{
+        if(r.success) return;
+        const code=r.error?.code||'';
+        if(code.includes('registration-token-not-registered') ||
+           code.includes('invalid-registration-token') ||
+           code.includes('messaging/registration-token-not-registered') ||
+           code.includes('messaging/invalid-registration-token')) stale.push(tokenRows[i].id);
+    });
+    if(stale.length){
+        const updates={};
+        stale.forEach(id=>updates[`users/${cleanNick}/notificationTokens/${id}`]=null);
+        try{await db.ref().update(updates);}catch(e){console.warn('[Kapani Push] stale-token cleanup:',e);}
+    }
+    return {sent:response.successCount||0,failed:response.failureCount||0,removed:stale.length};
+}
+async function createNotificationServerSide(nick,text,category='system',extra={}) {
+    const cleanNick=cleanText(nick,120);
+    if(!cleanNick) throw new Error('Получатель уведомления не указан');
+    const cat=ALLOWED_NOTIFICATION_CATS.has(category)?category:'system';
+    const id=db.ref(`users/${cleanNick}/notifications`).push().key;
+    const item={
+        text:cleanText(text,1000),
+        time:getTime(),
+        cat,
+        createdAt:Date.now(),
+        read:false
+    };
+    if(extra.newsId)item.newsId=cleanText(extra.newsId,120);
+    if(extra.type)item.type=cleanText(extra.type,80);
+    if(extra.duelId)item.duelId=cleanText(extra.duelId,120);
+    await db.ref(`users/${cleanNick}/notifications/${id}`).set(item);
+    const push=await sendPushToUser(cleanNick,{
+        title:extra.title||'Капани',
+        body:item.text,
+        category:cat,
+        url:extra.url,
+        notificationId:id
+    });
+    return {id,push};
+}
+// Existing custom Kapani auth stores the password hash in the user's profile.
+// It is used only as a proof for these notification operations; FCM/Admin
+// credentials never reach the frontend.
+function verifyActorProof(actorNick,actorProof,userData){
+    const nick=cleanText(actorNick,120);
+    const proof=cleanText(actorProof,500);
+    const stored=String(userData?.passwordHash||'');
+    return Boolean(nick&&proof&&stored&&proof===stored);
+}
+exports.registerNotificationToken=onCall({region:'europe-west1', cors:true},async(request)=>{
+    const {actorNick,actorProof,token,platform,userAgent}=request.data||{};
+    if(!actorNick||!actorProof||!token) throw new HttpsError('invalid-argument','Не хватает данных для регистрации Push');
+    const nick=cleanText(actorNick,120);
+    const userSnap=await db.ref(`users/${nick}`).get();
+    if(!userSnap.exists()||!verifyActorProof(nick,actorProof,userSnap.val()))
+        throw new HttpsError('permission-denied','Не удалось подтвердить пользователя');
+    const cleanToken=String(token).trim();
+    const tokenId=hashNotificationToken(cleanToken);
+    await db.ref(`users/${nick}/notificationTokens/${tokenId}`).set({
+        token:cleanToken,
+        platform:cleanText(platform||'web',30),
+        userAgent:cleanText(userAgent||'',500),
+        updatedAt:Date.now()
+    });
+    return {success:true,tokenId};
+});
+
+exports.unregisterNotificationToken=onCall({region:'europe-west1', cors:true},async(request)=>{
+    const {actorNick,actorProof,token}=request.data||{};
+    if(!actorNick||!actorProof||!token)
+        throw new HttpsError('invalid-argument','Не хватает данных для отключения Push');
+    const nick=cleanText(actorNick,120);
+    const userSnap=await db.ref(`users/${nick}`).get();
+    if(!userSnap.exists()||!verifyActorProof(nick,actorProof,userSnap.val()))
+        throw new HttpsError('permission-denied','Не удалось подтвердить пользователя');
+    const tokenId=hashNotificationToken(String(token).trim());
+    await db.ref(`users/${nick}/notificationTokens/${tokenId}`).remove();
+    return {success:true,tokenId};
+});
+exports.updateNotificationPreferences=onCall({region:'europe-west1', cors:true},async(request)=>{
+    const {actorNick,actorProof,settings}=request.data||{};
+    if(!actorNick||!actorProof||!settings||typeof settings!=='object')
+        throw new HttpsError('invalid-argument','Некорректные настройки уведомлений');
+    const nick=cleanText(actorNick,120);
+    const userSnap=await db.ref(`users/${nick}`).get();
+    if(!userSnap.exists()||!verifyActorProof(nick,actorProof,userSnap.val()))
+        throw new HttpsError('permission-denied','Не удалось подтвердить пользователя');
+    const next={enabled:settings.enabled!==false};
+    for(const cat of ALLOWED_NOTIFICATION_CATS){
+        if(cat==='system') continue;
+        if(Object.prototype.hasOwnProperty.call(settings,cat)) next[cat]=settings[cat]!==false;
+    }
+    await db.ref(`users/${nick}/pushSettings`).set(next);
+    return {success:true};
+});
+exports.sendKapaniNotification=onCall({region:'europe-west1', cors:true},async(request)=>{
+    const {actorNick,actorProof,recipientNick,text,category,title,url,newsId,type,duelId}=request.data||{};
+    if(!actorNick||!actorProof||!recipientNick||!text)
+        throw new HttpsError('invalid-argument','Некорректные параметры уведомления');
+    const actor=cleanText(actorNick,120);
+    const actorSnap=await db.ref(`users/${actor}`).get();
+    if(!actorSnap.exists()||!verifyActorProof(actor,actorProof,actorSnap.val()))
+        throw new HttpsError('permission-denied','Не удалось подтвердить пользователя');
+    return await createNotificationServerSide(recipientNick,text,category||'system',{title,url,newsId,type,duelId});
+});
+
+exports.sendGlobalChatPush=onCall({region:'europe-west1', cors:true},async(request)=>{
+    const {actorNick,actorProof,text,messageId}=request.data||{};
+    if(!actorNick||!actorProof||!text)
+        throw new HttpsError('invalid-argument','Некорректные параметры чат-Push');
+    const actor=cleanText(actorNick,120);
+    const actorSnap=await db.ref(`users/${actor}`).get();
+    if(!actorSnap.exists()||!verifyActorProof(actor,actorProof,actorSnap.val()))
+        throw new HttpsError('permission-denied','Не удалось подтвердить пользователя');
+
+    const usersSnap=await db.ref('users').get();
+    const users=usersSnap.val()||{};
+    const notificationId=`chat-${cleanText(messageId||crypto.randomUUID(),120)}`;
+    const body=cleanText(text,1000);
+    const recipients=Object.keys(users).filter(nick=>nick&&nick!==actor);
+    const results=await Promise.all(recipients.map(nick=>sendPushToUser(nick,{
+        title:'Капани 💬',
+        body,
+        category:'messages',
+        url:'./index.html?kapaniPush=messages',
+        notificationId
+    }).catch(error=>({sent:0,failed:1,error:String(error?.message||error)}))));
+    return {
+        success:true,
+        recipients:recipients.length,
+        sent:results.reduce((sum,r)=>sum+(r?.sent||0),0),
+        failed:results.reduce((sum,r)=>sum+(r?.failed||0),0)
+    };
+});
+
 const ADMIN_UID = 'Денис'; // UID администратора (должен совпадать с ником в базе)
 
 // Проверка, что пользователь является администратором
@@ -16,7 +211,7 @@ function isAdmin(context) {
 }
 
 // Cloud Function для перевода денег между пользователями
-exports.transferMoney = onCall(async (request) => {
+exports.transferMoney = onCall({ region:'europe-west1', cors:true }, async (request) => {
     const { toUid, amount, description } = request.data;
     const fromUid = request.auth?.uid;
 
@@ -98,6 +293,11 @@ exports.transferMoney = onCall(async (request) => {
             return user;
         });
 
+        await createNotificationServerSide(toUid, `💸 ${fromUid} перевёл вам ${amount}₽`, 'money', {
+            title: '💰 Новый перевод',
+            url: './index.html?kapaniPush=bank'
+        });
+
         return { success: true, message: 'Перевод выполнен успешно' };
 
     } catch (error) {
@@ -107,7 +307,7 @@ exports.transferMoney = onCall(async (request) => {
 });
 
 // Cloud Function для админских операций с балансом
-exports.adminAdjustBalance = onCall(async (request) => {
+exports.adminAdjustBalance = onCall({ region:'europe-west1', cors:true }, async (request) => {
     const { uid, amount, type, description } = request.data;
 
     // Проверка администратора
@@ -146,6 +346,12 @@ exports.adminAdjustBalance = onCall(async (request) => {
             ts
         });
 
+        await createNotificationServerSide(
+            uid,
+            amount >= 0 ? `💰 Мэрия зачислила вам ${absAmount}₽` : `💸 Мэрия списала с вас ${absAmount}₽`,
+            amount >= 0 ? 'money' : 'system'
+        );
+
         return { success: true, newBalance };
 
     } catch (error) {
@@ -155,7 +361,7 @@ exports.adminAdjustBalance = onCall(async (request) => {
 });
 
 // Cloud Function для создания заказа (такси/доставка)
-exports.createOrder = onCall(async (request) => {
+exports.createOrder = onCall({ region:'europe-west1', cors:true }, async (request) => {
     const { type, info, price, address, distanceKm, clientLat, clientLng, destLat, destLng, originalPrice, discountApplied } = request.data;
     const clientUid = request.auth?.uid;
 
@@ -216,7 +422,7 @@ exports.createOrder = onCall(async (request) => {
 });
 
 // Cloud Function для оплаты заказа
-exports.payOrder = onCall(async (request) => {
+exports.payOrder = onCall({ region:'europe-west1', cors:true }, async (request) => {
     const { orderId } = request.data;
     const clientUid = request.auth?.uid;
 
@@ -296,7 +502,7 @@ exports.payOrder = onCall(async (request) => {
 });
 
 // Cloud Function для отмены заказа
-exports.cancelOrder = onCall(async (request) => {
+exports.cancelOrder = onCall({ region:'europe-west1', cors:true }, async (request) => {
     const { orderId } = request.data;
     const clientUid = request.auth?.uid;
 
@@ -345,11 +551,11 @@ exports.cancelOrder = onCall(async (request) => {
 
         // Уведомляем работника если есть
         if (order.worker) {
-            await db.ref(`users/${order.worker}/notifications`).push({
-                text: `⚠️ ${clientUid} отменил заказ`,
-                time: getTime(),
-                cat: order.type === 'taxi' ? 'taxi_orders' : 'delivery_orders'
-            });
+            await createNotificationServerSide(
+                order.worker,
+                `⚠️ ${clientUid} отменил заказ`,
+                order.type === 'taxi' ? 'taxi_orders' : 'delivery_orders'
+            );
         }
 
         // Удаляем заказ
@@ -364,7 +570,7 @@ exports.cancelOrder = onCall(async (request) => {
 });
 
 // Cloud Function для принятия заказа работником
-exports.takeOrder = onCall(async (request) => {
+exports.takeOrder = onCall({ region:'europe-west1', cors:true }, async (request) => {
     const { orderId } = request.data;
     const workerUid = request.auth?.uid;
 

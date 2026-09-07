@@ -2,7 +2,6 @@
   "rules": {
     ".read": false,
     ".write": false,
-    
     "users": {
       "$uid": {
         ".read": "auth != null && (auth.uid == $uid || auth.token.admin == true)",
@@ -63,10 +62,17 @@
         "pinnedChats": {
           ".read": "auth.uid == $uid",
           ".write": "auth.uid == $uid"
+        },
+        "notificationTokens": {
+          ".read": false,
+          ".write": false
+        },
+        "pushSettings": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": false
         }
       }
     },
-    
     "orders": {
       ".read": "auth != null",
       ".write": "false",
@@ -74,12 +80,10 @@
         ".write": "false"
       }
     },
-    
     "chat": {
       ".read": "auth != null",
       ".write": "auth != null"
     },
-    
     "dms": {
       "$key": {
         ".read": "auth != null && $key.contains(auth.uid)",
@@ -96,7 +100,6 @@
         }
       }
     },
-    
     "market": {
       ".read": "auth != null",
       ".write": "auth != null",
@@ -106,7 +109,6 @@
         }
       }
     },
-    
     "walls": {
       "$nick": {
         ".read": "auth != null",
@@ -116,19 +118,16 @@
         }
       }
     },
-    
     "apps": {
       ".read": "auth != null",
       ".write": "auth.token.admin == true"
     },
-    
     "notifications": {
       "$uid": {
         ".read": "auth.uid == $uid",
         ".write": "false"
       }
     },
-    
     "janitor_submissions": {
       ".read": "auth != null",
       ".write": "auth != null",
