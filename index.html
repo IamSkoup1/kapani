@@ -10,7 +10,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Капани">
 <meta name="description" content="Официальное приложение Капани">
-<link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./image.png">
 <link rel="icon" type="image/png" href="./image.png">
 <title>Капани - официальный сайт</title>
@@ -76,25 +75,20 @@
 <link rel="preconnect" href="https://unpkg.com">
 <style>
 :root {
-    --kapani-safe-top:env(safe-area-inset-top,0px);
-    --kapani-safe-bottom:env(safe-area-inset-bottom,0px);
-    --kapani-header-content-height:64px;
-    --kapani-header-height:calc(var(--kapani-header-content-height) + var(--kapani-safe-top));
-    --kapani-viewport-height:100dvh;
     --bg:#0c1117;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
     --border:rgba(255,255,255,0.09);--primary:#22d3a5;--pri-dim:rgba(34,211,165,0.14);
     --gold:#fbbf24;--gold-dim:rgba(251,191,36,0.14);--red:#f87171;--red-dim:rgba(248,113,113,0.14);
     --text:#e2e8f0;--muted:#64748b;--shadow:0 8px 40px rgba(0,0,0,0.5);--r:22px;--r-sm:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Nunito','Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:calc(80px + var(--kapani-safe-bottom));overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+body{font-family:'Nunito','Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:80px;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .bottom-nav{-webkit-backface-visibility:hidden;backface-visibility:hidden;}
 button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(34,211,165,.07) 0%,transparent 70%),
                radial-gradient(ellipse 50% 50% at 85% 75%,rgba(251,191,36,.06) 0%,transparent 70%);}
 .container{width:100%;max-width:490px;padding:0 12px;position:relative;z-index:1;}
-.g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:var(--kapani-header-height);display:flex;align-items:center;justify-content:space-between;padding:var(--kapani-safe-top) 18px 0;z-index:900;}
+.g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:900;}
 .h-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
 .h-avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);transition:.2s;}
 .h-avatar:hover{transform:scale(1.08);}
@@ -109,14 +103,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm{position:relative;display:block;flex-shrink:0;align-self:flex-start;}
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;padding:6px 0 calc(10px + var(--kapani-safe-bottom));z-index:900;overflow:hidden;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;padding:6px 0 10px;z-index:900;overflow:hidden;}
 .bn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--muted);font-size:7px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.15px;padding:4px 2px;position:relative;line-height:1.1;flex:1;min-width:0;}
 .bn-item[style*="display:none"]{display:none!important;flex:0!important;padding:0!important;min-width:0!important;}
 .bn-item .ico{font-size:22px;transition:.2s;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
 .bn-item.sel .ico{transform:scale(1.15);}
 .bn-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
-.page-wrap{padding-top:calc(76px + var(--kapani-safe-top));padding-bottom:var(--kapani-safe-bottom);}
+.page-wrap{padding-top:76px;padding-bottom:env(safe-area-inset-bottom,0px);}
 .section{display:none;animation:fadeUp .35s ease-out;}
 .section.active{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
@@ -259,7 +253,7 @@ select option{background:#1a2332;}
 .notif-time{font-size:10px;color:var(--muted);white-space:nowrap;margin-top:2px;}
 .notif-del{color:var(--red);font-size:16px;opacity:.5;transition:.2s;padding-left:4px;}
 .notif-item:hover .notif-del{opacity:1;}
-#notifPopup{position:fixed;top:calc(var(--kapani-header-height) + 8px);left:50%;transform:translateX(-50%);max-width:460px;width:calc(100% - 24px);background:rgba(17,24,32,.97);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:14px 18px;z-index:9990;display:none;box-shadow:var(--shadow);}
+#notifPopup{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);max-width:460px;width:calc(100% - 24px);background:rgba(17,24,32,.97);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:16px;padding:14px 18px;z-index:9990;display:none;box-shadow:var(--shadow);}
 #notifPopup.show{display:flex;align-items:center;gap:12px;animation:slideDown .35s cubic-bezier(.22,.68,0,1.2);}
 @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-24px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 .np-icon{font-size:24px;flex-shrink:0;}
@@ -2512,7 +2506,6 @@ const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
 const REWARD_CUSTOM_AVATAR = CONFIG.rewards.customAvatar;
 const REWARD_FIRST_WALL = CONFIG.rewards.firstWall;
 const FCM_VAPID_KEY = CONFIG.fcmVapidKey;
-const PUSH_BRIDGE_URL = String(CONFIG.pushBridgeUrl || "").trim();
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -3787,6 +3780,7 @@ function attachNotificationsListener(){
                     else if(t.includes('📦')||t.includes('достав')) pushCat='delivery_orders';
                     else if(t.includes('🛍')||t.includes('🤝')||t.includes('купил')) pushCat='market';
                 }
+                sendPushNotification('Капани',t,pushCat);
             }
         }
         lastNotifCount=arr.length; notifInit=true;
@@ -3832,7 +3826,7 @@ function attachChatService(){
             const [latestId,latestMsg]=entries[entries.length-1]; if(!dmInboxInit){dmLastMsgIds[key]=latestId;return;}
             const prevId=dmLastMsgIds[key]; if(latestId!==prevId&&latestMsg.nick!==currentNick){ dmLastMsgIds[key]=latestId; if(!(curPage==='messages'&&currentDmNick===latestMsg.nick)){
                 let t;if(latestMsg.msgType==='voice')t=`🎤 ${latestMsg.nick}: Голосовое сообщение`; else if(latestMsg.msgType==='video_circle')t=`⭕ ${latestMsg.nick}: Видеосообщение`; else if(latestMsg.msgType==='image')t=`🖼 ${latestMsg.nick}: Фото`; else if(latestMsg.msgType==='video')t=`🎬 ${latestMsg.nick}: Видео`; else t=`💬 ${latestMsg.nick}: ${(latestMsg.text||'').slice(0,55)}`;
-                showNotifPopup(t,latestMsg.time||nowTime());
+                showNotifPopup(t,latestMsg.time||nowTime()); sendPushNotification('Капани 💬',t,'messages');
                 const b=qs('dmBadge');if(b){b.textContent='';b.style.display='block';}
             }} else if(latestId!==prevId) dmLastMsgIds[key]=latestId;
         });
@@ -4168,12 +4162,9 @@ async function getSwReg(){
     if(location.protocol === 'file:') return null;
     if(!('serviceWorker' in navigator)) return null;
     try {
-        const base = document.baseURI || location.href;
-        const swUrl = new URL('./firebase-messaging-sw.js', base);
-        const swScope = new URL('./', base).pathname;
-        _swReg = await navigator.serviceWorker.register(swUrl.href,{scope:swScope,updateViaCache:'none'});
+        const swUrl = new URL('firebase-messaging-sw.js', location.href).href;
+        _swReg = await navigator.serviceWorker.register(swUrl, { scope: './' });
         try { await navigator.serviceWorker.ready; } catch(e) {}
-        try { await _swReg.update(); } catch(e) {}
         return _swReg;
     } catch(err){console.warn('SW register failed:',err);return null;}
 }
@@ -4195,10 +4186,7 @@ async function requestNotificationPermission(){
     }
 }
 async function requestPushPermission(){
-    if(!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)){
-        toast('❌ Этот браузер не поддерживает Web Push','red');
-        return false;
-    }
+    if(!('Notification' in window)) return false;
     // iOS Safari < 16.4: No web push support unless added to home screen
     if(isIOSDevice() && !isIOSPWA()){
         const majorVer = parseInt((navigator.userAgent.match(/OS (\d+)_/)||[])[1]||'0', 10);
@@ -4216,96 +4204,33 @@ async function requestPushPermission(){
     if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);await getSwReg();await tryRegisterFcm();toast('🔔 Push-уведомления включены!','green');return true;}
     return false;
 }
-async function hashFcmToken(token){
-    try{
-        if(window.crypto?.subtle){
-            const bytes = new TextEncoder().encode(String(token));
-            const digest = await crypto.subtle.digest('SHA-256', bytes);
-            return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
-        }
-    }catch(e){}
-    return String(token).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,120) || ('token_'+Date.now());
-}
-const _localPushShownIds = new Set();
-
 async function tryRegisterFcm(){
-    if(!currentNick)return;
+    if(!FCM_VAPID_KEY||!currentNick)return;
     try{
         const pack = await ensureMessaging();
         if(!pack.messaging) return;
         const { getToken, onMessage } = pack.mod;
         const reg=await getSwReg();
         if(!reg) return;
-
-        const tokenOptions={serviceWorkerRegistration:reg};
-        if(FCM_VAPID_KEY) tokenOptions.vapidKey=FCM_VAPID_KEY;
-
-        const token=await getToken(pack.messaging,tokenOptions);
-        if(!token) return;
-
-        const now=Date.now();
-        const tokenId=await hashFcmToken(token);
-        await update(userRef(currentNick),{fcmToken:token,fcmUpdatedAt:now});
-
-        try{
-            await update(ref(db,`users/${currentNick}/fcmTokens/${tokenId}`),{
-                token,
-                updatedAt:now,
-                platform:isIOSDevice()?(isIOSPWA()?'ios-pwa':'ios-safari'):'web',
-                userAgent:String(navigator.userAgent||'').slice(0,300)
-            });
-        }catch(e){
-            console.warn('[FCM] multi-token storage unavailable; legacy token kept',e);
-        }
-
-        if(!window.__kapaniFcmOnMessageBound){
-            window.__kapaniFcmOnMessageBound=true;
-            onMessage(pack.messaging,(payload)=>{
-                window.__lastKapaniFcmPayload=payload;
-                const data=payload?.data||{};
-                const n=payload?.notification||{};
-                const notificationId=String(data.notificationId||'');
-                if(notificationId && _localPushShownIds.has(notificationId)){
-                    _localPushShownIds.delete(notificationId);
-                    return;
-                }
-                if(document.visibilityState!=='visible') return;
-                const body=String(data.body||data.text||n.body||'');
-                if(body) toast('🔔 '+body,'green');
-            });
-        }
-    }catch(e){console.warn('[FCM]',e);}
+        const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
+        if(token)await update(userRef(currentNick),{fcmToken:token,fcmUpdatedAt:Date.now()});
+        onMessage(pack.messaging,(payload)=>{const t=payload.notification?.title||'Капани';const b=payload.notification?.body||'';if(b)toast('🔔 '+b,'green');});
+    }catch(e){console.warn('FCM',e);}
 }
-function bindPushRefresh(){
-    const refresh=()=>{
-        if(document.visibilityState==='visible' && currentNick && ('Notification' in window) && Notification.permission==='granted'){
-            try { tryRegisterFcm(); } catch(e) {}
-        }
-    };
-    document.addEventListener('visibilitychange',refresh,{passive:true});
-    window.addEventListener('pageshow',refresh,{passive:true});
-}
-bindPushRefresh();
-
 async function sendPushNotification(title,body,cat){
-    // Foreground/local fallback: keep the existing Kapani behaviour when the
-    // app is actually visible. Background/closed delivery is handled by FCM
-    // through the Service Worker, so this never creates a second system push
-    // while the page is hidden.
-    if(document.visibilityState !== 'visible') return false;
-    if(!('Notification' in window) || Notification.permission !== 'granted') return false;
-    if(isIOSDevice() && !isIOSPWA()) return false;
-    if(!isPushCatEnabled(cat || 'system')) return false;
+    cat=cat||'system';
+    if(!('Notification' in window)||Notification.permission!=='granted') return;
+    if(!isPushCatEnabled(cat)) return;
+    // iOS Safari PWA: only send if installed as PWA
+    if(isIOSDevice() && !isIOSPWA()) return;
     try{
-        const reg=await getSwReg();
-        const opts={body:String(body||''),icon:'./image.png',badge:'./image.png',tag:'kapani-'+String(cat||'system')};
-        if(reg && typeof reg.showNotification==='function'){
-            await reg.showNotification(String(title||'Капани'),opts);
-            return true;
+        const reg = await getSwReg();
+        if(reg && typeof reg.showNotification === 'function'){
+            await reg.showNotification(title,{body,icon:'https://cdn-icons-png.flaticon.com/512/149/149071.png',badge:'https://cdn-icons-png.flaticon.com/512/149/149071.png',vibrate:[200,80,200],tag:'kapani-'+cat,renotify:true});
+            return;
         }
-    }catch(e){ console.warn('[Kapani local push]',e); }
-    try{ new Notification(String(title||'Капани'),{body:String(body||''),icon:'./image.png',tag:'kapani-'+String(cat||'system')}); return true; }catch(e){}
-    return false;
+    }catch(e){}
+    try{new Notification(title,{body,icon:'https://cdn-icons-png.flaticon.com/512/149/149071.png',tag:'kapani-'+cat});}catch(e){}
 }
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
 function updatePushSettingsUI(){
@@ -4370,7 +4295,7 @@ window.finishFirstPushPrompt = async function(allow){
     // This is an in-app notification explaining where the setting lives.
     // It is written independently from browser permission, so declining the
     // browser prompt never blocks the informational notification.
-    try{ await pushNotification(currentNick,'🔔 Уведомления всегда можно включить в профиле','system',{push:false}); }catch(e){}
+    try{ await pushNotification(currentNick,'🔔 Уведомления всегда можно включить в профиле','system'); }catch(e){}
 }
 function showFirstPushPrompt(){
     if(!currentNick || wasFirstPushPromptHandled() || qs('firstPushPrompt')) return;
@@ -4390,34 +4315,34 @@ function showFirstPushPrompt(){
 }
 
 // ─── NOTIFICATIONS ────────────────────────
-async function triggerExternalPushBridge(nick, notificationId){
-    if(!PUSH_BRIDGE_URL || !nick || !notificationId) return;
+async function pushNotification(nick,text,cat='system'){
     try{
-        // Fire-and-forget: notification is already stored in RTDB. The Worker
-        // re-reads that exact record and sends FCM from a trusted environment.
-        fetch(PUSH_BRIDGE_URL.replace(/\/$/,'') + '/push', {
-            method:'POST',
-            headers:{'content-type':'application/json'},
-            body:JSON.stringify({nick:String(nick),notificationId:String(notificationId)})
-        }).catch(()=>{});
-    }catch(e){}
-}
-async function pushNotification(nick,text,cat='system',options={}){
-    const payload={text,time:nowTime(),cat,createdAt:Date.now()};
-    if(options && options.push === false) payload.push=false;
-    const createdRef = await push(notifRef(nick),payload);
-    if(createdRef?.key && !(options && options.push === false)){
-        triggerExternalPushBridge(nick,createdRef.key);
+        const notificationRef = push(notifRef(nick));
+        const notificationId = notificationRef.key;
+
+        await set(notificationRef,{
+            text,
+            time:nowTime(),
+            cat,
+            createdAt:Date.now(),
+            pushBridgeProcessedAt:null
+        });
+
+        const bridgeUrl = globalThis.KAPANI_CONFIG?.pushBridgeUrl;
+        if(bridgeUrl && notificationId){
+            fetch(`${bridgeUrl}/push`,{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({
+                    nick,
+                    notificationId
+                })
+            }).catch(e=>console.warn('[Push Bridge]',e));
+        }
+    }catch(e){
+        console.error('[pushNotification]',e);
+        throw e;
     }
-    if(nick === currentNick && !(options && options.push === false) && createdRef?.key){
-        const id=String(createdRef.key);
-        _localPushShownIds.add(id);
-        setTimeout(()=>_localPushShownIds.delete(id),10000);
-        try{
-            if(document.visibilityState==='visible' && isPushOn() && isPushCatEnabled(cat)) toast('🔔 '+String(text||''),'green');
-        }catch(e){}
-    }
-    return createdRef;
 }
 window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
 window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
@@ -5480,6 +5405,7 @@ window.takeOrder=async function(id){
             const isDriver=u.job==='Водитель';
             const notifText=isDriver?`🛵 Водитель ${currentNick} принял заказ! Транспорт: ${u.vehicle||'?'}`:`📦 Курьер ${currentNick} принял заказ!`;
             await pushNotification(o.client,notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
+            sendPushNotification('Капани 📦',notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
             toast('✅ Заказ принят!','green');
             if(o.type==='taxi'&&isDriver) navTo('driverPage');
             if(o.type==='shop'&&hasMunicipalJob(u,'Доставщик')) navTo('deliveryPage');
@@ -14719,9 +14645,6 @@ try {
 
   if(iOS) document.documentElement.classList.add('ios-device');
   if(isSafari) document.documentElement.classList.add('safari-browser');
-  if((window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches){
-    document.documentElement.classList.add('ios-pwa');
-  }
 
   // ─── CSS PATCHES ─────────────────────────────
   const style = document.createElement('style');
@@ -14845,46 +14768,8 @@ try {
     .ios-device body::before {
       position: absolute !important;
     }
-    .ios-device .g-header {
-      height: var(--kapani-header-height) !important;
-      padding-top: var(--kapani-safe-top) !important;
-      padding-right: 18px !important;
-      padding-bottom: 0 !important;
-      padding-left: 18px !important;
-      left: 0 !important;
-      right: 0 !important;
-      margin: 0 auto !important;
-      max-width: 490px !important;
-    }
     .ios-device .bottom-nav {
-      padding-top: 6px !important;
-      padding-right: 0 !important;
-      padding-bottom: calc(10px + var(--kapani-safe-bottom)) !important;
-      padding-left: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      margin: 0 auto !important;
-      transform: none !important;
-      max-width: 490px !important;
-      bottom: 0 !important;
-    }
-    .ios-device .page-wrap {
-      padding-top: calc(76px + var(--kapani-safe-top)) !important;
-      padding-bottom: calc(80px + var(--kapani-safe-bottom)) !important;
-    }
-    .ios-device #notifPopup {
-      top: calc(var(--kapani-header-height) + 8px) !important;
-      max-width: 460px;
-    }
-
-    .ios-device [id$="Modal"] {
-      padding-top: calc(16px + var(--kapani-safe-top)) !important;
-      padding-right: 16px !important;
-      padding-bottom: calc(16px + var(--kapani-safe-bottom)) !important;
-      padding-left: 16px !important;
-    }
-    .ios-device [id$="Modal"] > div {
-      max-height: min(92vh, calc(var(--kapani-viewport-height) - var(--kapani-safe-top) - var(--kapani-safe-bottom) - 24px)) !important;
+      padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
     }
 
     /* ── Prevent double-tap zoom everywhere ── */
@@ -14936,14 +14821,6 @@ try {
     .ios-device #messages.section.active .msg-panel.active {
       pointer-events: auto !important;
     }
-    .ios-device.ios-keyboard-open .bottom-nav {
-      bottom: calc(-96px - var(--kapani-safe-bottom)) !important;
-      pointer-events: none !important;
-      opacity: 0 !important;
-    }
-    .ios-device.ios-keyboard-open {
-      scroll-behavior: auto !important;
-    }
   `;
   document.head.appendChild(style);
 
@@ -14986,26 +14863,21 @@ try {
     };
   }
 
-  // ─── FIX iOS VIEWPORT / KEYBOARD / SAFE-AREA ─────────────────────
-  const updateIOSViewport = () => {
-    const vv = window.visualViewport;
-    const vh = Math.max(1, Math.round(vv?.height || window.innerHeight || 0));
-    document.documentElement.style.setProperty('--kapani-viewport-height', `${vh}px`);
-    const keyboardOpen = !!vv && (window.innerHeight - vv.height) > 120;
-    document.documentElement.classList.toggle('ios-keyboard-open', keyboardOpen);
-
-    const modal = document.getElementById('userProfileModal');
-    if(modal && modal.classList.contains('open')){
-      const sheet = modal.querySelector('.user-profile-sheet');
-      if(sheet) sheet.style.maxHeight = Math.max(220, Math.floor(vh * 0.9)) + 'px';
-    }
-  };
-  updateIOSViewport();
+  // ─── FIX iOS SCROLL LOCK EDGE CASE ──────────────────────────────
+  // When modals are closed while keyboard is open, scrollY can be wrong
+  // Listen for visual viewport changes and update scroll lock
   if(window.visualViewport && iOS){
-    window.visualViewport.addEventListener('resize', updateIOSViewport, {passive:true});
-    window.visualViewport.addEventListener('scroll', updateIOSViewport, {passive:true});
-    window.addEventListener('resize', updateIOSViewport, {passive:true});
-    window.addEventListener('orientationchange', ()=>setTimeout(updateIOSViewport,120), {passive:true});
+    window.visualViewport.addEventListener('resize', () => {
+      // If modal is open and keyboard shown/hidden, reposition modal
+      const modal = document.getElementById('userProfileModal');
+      if(modal && modal.classList.contains('open')){
+        const sheet = modal.querySelector('.user-profile-sheet');
+        if(sheet){
+          const vh = window.visualViewport.height;
+          sheet.style.maxHeight = Math.floor(vh * 0.9) + 'px';
+        }
+      }
+    });
   }
 
   // Message edit/delete buttons are now always visible (see .msg-actions CSS rule)
