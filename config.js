@@ -13,7 +13,7 @@ const KAPANI_CONFIG = Object.freeze({
     fcmVapidKey: "BC1AzcGAzB3u2dDNjMCLtnmOmPx46AXipHPu9rO2et_tyZQFNRBBVr7DQvlZvVYmyIvhoOz1xmneASJtvzcZivc",
     // Бесплатный внешний сервер push-отправки (Cloudflare Worker).
     // После развёртывания укажи сюда URL Worker; пока пусто — FCM в приложении продолжает работать как раньше.
-    pushBridgeUrl: "",
+    pushBridgeUrl: "https://kapani-free-push.kapani.workers.dev",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
