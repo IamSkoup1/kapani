@@ -10,7 +10,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Капани">
 <meta name="description" content="Официальное приложение Капани">
-<link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./image.png">
 <link rel="icon" type="image/png" href="./image.png">
 <title>Капани - официальный сайт</title>
@@ -82,14 +81,14 @@
     --text:#e2e8f0;--muted:#64748b;--shadow:0 8px 40px rgba(0,0,0,0.5);--r:22px;--r-sm:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Nunito','Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:calc(80px + env(safe-area-inset-bottom,0px));overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+body{font-family:'Nunito','Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding-bottom:80px;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .bottom-nav{-webkit-backface-visibility:hidden;backface-visibility:hidden;}
 button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(34,211,165,.07) 0%,transparent 70%),
                radial-gradient(ellipse 50% 50% at 85% 75%,rgba(251,191,36,.06) 0%,transparent 70%);}
-.container{width:100%;max-width:490px;padding:0 12px;position:relative;z-index:1;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));}
-.g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:calc(64px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,0px) max(18px,env(safe-area-inset-left,0px)) 0 max(18px,env(safe-area-inset-right,0px));z-index:900;}
+.container{width:100%;max-width:490px;padding:0 12px;position:relative;z-index:1;}
+.g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:900;}
 .h-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
 .h-avatar{width:40px;height:40px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);transition:.2s;}
 .h-avatar:hover{transform:scale(1.08);}
@@ -104,14 +103,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm{position:relative;display:block;flex-shrink:0;align-self:flex-start;}
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;padding:6px max(0px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(0px,env(safe-area-inset-right,0px));min-height:calc(56px + env(safe-area-inset-bottom,0px));z-index:900;overflow:hidden;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;padding:6px 0 10px;z-index:900;overflow:hidden;}
 .bn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--muted);font-size:7px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.15px;padding:4px 2px;position:relative;line-height:1.1;flex:1;min-width:0;}
 .bn-item[style*="display:none"]{display:none!important;flex:0!important;padding:0!important;min-width:0!important;}
 .bn-item .ico{font-size:22px;transition:.2s;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
 .bn-item.sel .ico{transform:scale(1.15);}
 .bn-badge{position:absolute;top:0;right:8px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:1px 5px;min-width:15px;text-align:center;display:none;}
-.page-wrap{padding-top:calc(76px + env(safe-area-inset-top,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);}
+.page-wrap{padding-top:76px;padding-bottom:env(safe-area-inset-bottom,0px);}
 .section{display:none;animation:fadeUp .35s ease-out;}
 .section.active{display:block;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
@@ -774,19 +773,6 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     -webkit-tap-highlight-color:transparent;
 }
 /* Fix Safari iOS double-tap and scroll issues */
-
-@supports (padding-top: env(safe-area-inset-top)) {
-    .g-header { padding-top:env(safe-area-inset-top); height:calc(64px + env(safe-area-inset-top)); }
-    .page-wrap { padding-top:calc(76px + env(safe-area-inset-top)); }
-    .bottom-nav { padding-bottom:calc(10px + env(safe-area-inset-bottom)); min-height:calc(56px + env(safe-area-inset-bottom)); }
-}
-@media (orientation:landscape) and (max-width:900px){
-    .g-header,.bottom-nav,.page-wrap{
-        padding-left:max(12px,env(safe-area-inset-left,0px));
-        padding-right:max(12px,env(safe-area-inset-right,0px));
-    }
-}
-
 @supports (-webkit-touch-callout:none){
     /* iOS: prevent auto-zoom on input focus (requires font-size >= 16px) */
     input,select{font-size:max(16px,1em);}
@@ -3655,8 +3641,6 @@ function startApp() {
               updateHeader(u);
               updateFrozenOverlay(u);
               updateHeader_balance(u);
-            window.__kapaniActorProof=String(u.passwordHash||'');
-            if('Notification' in window && Notification.permission==='granted') Promise.resolve().then(()=>tryRegisterFcm()).then(()=>syncPushSettingsToServer()).catch(()=>{});
               renderHomeStats_users(allUsersCache);
           }
           if(loStatus) loStatus.textContent='Запускаем интерфейс…';
@@ -3669,14 +3653,6 @@ function startApp() {
           if(loBar) loBar.style.cssText='width:100%;transition:width .2s ease;';
           hideLoadingSafe();
           setTimeout(()=>showFirstPushPrompt(), 600);
-           setTimeout(()=>{
-               try{
-                   const qp=new URLSearchParams(location.search);
-                   const target=qp.get('kapaniPush');
-                   const allowed={profile:'profile',messages:'messages',bank:'bank',driverPage:'driverPage',deliveryOrderPage:'deliveryOrderPage',market:'market',news:'news',duel:'gameDuelSection'};
-                   if(target&&allowed[target]&&typeof window.navTo==='function') window.navTo(allowed[target]);
-               }catch(e){}
-           },250);
           const defer = window.requestIdleCallback || ((cb)=>setTimeout(cb, 0));
           defer(()=>{
               try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:',e); }
@@ -3699,9 +3675,7 @@ function revealApp(){
     try { navTo('home'); } catch(e) { console.error('[Kapani] home navigation:',e); }
 }
 
-window.logout = async function() {
-    const oldNick=currentNick;
-    const oldProof=window.__kapaniActorProof||'';
+window.logout = function() {
     try { if(typeof stopTaskLiveListeners==='function') stopTaskLiveListeners(); } catch(e) {}
     stopAllActivity();
     leaveAllServiceServices();
@@ -3710,9 +3684,6 @@ window.logout = async function() {
     if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
     listeners={};dmListeners={};
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
-    try{ await unregisterCurrentFcmToken(oldNick,oldProof); }catch(e){}
-    try{ sessionStorage.removeItem('kapani_fcm_token'); }catch(e){}
-    window.__kapaniActorProof='';
     localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; syncCurrentNick(); location.reload();
 };
 
@@ -3809,6 +3780,7 @@ function attachNotificationsListener(){
                     else if(t.includes('📦')||t.includes('достав')) pushCat='delivery_orders';
                     else if(t.includes('🛍')||t.includes('🤝')||t.includes('купил')) pushCat='market';
                 }
+                sendPushNotification('Капани',t,pushCat);
             }
         }
         lastNotifCount=arr.length; notifInit=true;
@@ -3854,7 +3826,7 @@ function attachChatService(){
             const [latestId,latestMsg]=entries[entries.length-1]; if(!dmInboxInit){dmLastMsgIds[key]=latestId;return;}
             const prevId=dmLastMsgIds[key]; if(latestId!==prevId&&latestMsg.nick!==currentNick){ dmLastMsgIds[key]=latestId; if(!(curPage==='messages'&&currentDmNick===latestMsg.nick)){
                 let t;if(latestMsg.msgType==='voice')t=`🎤 ${latestMsg.nick}: Голосовое сообщение`; else if(latestMsg.msgType==='video_circle')t=`⭕ ${latestMsg.nick}: Видеосообщение`; else if(latestMsg.msgType==='image')t=`🖼 ${latestMsg.nick}: Фото`; else if(latestMsg.msgType==='video')t=`🎬 ${latestMsg.nick}: Видео`; else t=`💬 ${latestMsg.nick}: ${(latestMsg.text||'').slice(0,55)}`;
-                showNotifPopup(t,latestMsg.time||nowTime());
+                showNotifPopup(t,latestMsg.time||nowTime()); sendPushNotification('Капани 💬',t,'messages');
                 const b=qs('dmBadge');if(b){b.textContent='';b.style.display='block';}
             }} else if(latestId!==prevId) dmLastMsgIds[key]=latestId;
         });
@@ -4185,126 +4157,81 @@ function isIOSDevice(){
 function isIOSPWA(){
     return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
 }
-async function requestNotificationPermission(){
-    if(!('Notification' in window)) return 'unsupported';
-    if(Notification.permission==='granted') return 'granted';
-    if(Notification.permission==='denied') return 'denied';
-    try{return await Notification.requestPermission();}catch(e){return 'denied';}
-}
-function pushPageForCategory(cat){
-    return ({
-        messages:'./index.html?kapaniPush=messages',
-        money:'./index.html?kapaniPush=bank',
-        taxi_orders:'./index.html?kapaniPush=driverPage',
-        delivery_orders:'./index.html?kapaniPush=deliveryOrderPage',
-        market:'./index.html?kapaniPush=market',
-        news:'./index.html?kapaniPush=news',
-        system:'./index.html?kapaniPush=profile'
-    })[cat] || './index.html?kapaniPush=profile';
-}
-async function callPushFunction(name,data){
-    const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
-    return (await httpsCallable(await ensureFunctions(),name)(data))?.data;
-}
-async function loadActorProof(){
-    if(window.__kapaniActorProof || !currentNick) return window.__kapaniActorProof||'';
-    try{
-        const snap=await get(userRef(currentNick));
-        window.__kapaniActorProof=String(snap.val()?.passwordHash||'');
-    }catch(e){console.warn('[Kapani Push] proof load failed:',e);}
-    return window.__kapaniActorProof||'';
-}
-async function unregisterCurrentFcmToken(oldNick,oldProof){
-    try{
-        if(!oldNick||!oldProof||!FCM_VAPID_KEY||String(FCM_VAPID_KEY).startsWith('REPLACE_WITH_')) return;
-        const pack=await ensureMessaging();
-        if(!pack.messaging) return;
-        const reg=await getSwReg();
-        if(!reg) return;
-        const token=await pack.mod.getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
-        if(!token) return;
-        await callPushFunction('unregisterNotificationToken',{actorNick:oldNick,actorProof:oldProof,token});
-    }catch(e){console.warn('[Kapani Push] token unregister:',e);}
-}
 async function getSwReg(){
     if(_swReg) return _swReg;
-    if(location.protocol==='file:' || !('serviceWorker' in navigator)) return null;
-    try{
-        const swUrl=new URL('firebase-messaging-sw.js',location.href).href;
-        _swReg=await navigator.serviceWorker.register(swUrl,{scope:'./',updateViaCache:'none'});
-        try{await _swReg.update();}catch(e){}
-        try{await navigator.serviceWorker.ready;}catch(e){}
+    if(location.protocol === 'file:') return null;
+    if(!('serviceWorker' in navigator)) return null;
+    try {
+        const swUrl = new URL('firebase-messaging-sw.js', location.href).href;
+        _swReg = await navigator.serviceWorker.register(swUrl, { scope: './' });
+        try { await navigator.serviceWorker.ready; } catch(e) {}
         return _swReg;
-    }catch(e){console.warn('[Kapani Push] SW registration failed:',e);return null;}
+    } catch(err){console.warn('SW register failed:',err);return null;}
 }
-async function tryRegisterFcm(){
-    if(!FCM_VAPID_KEY || String(FCM_VAPID_KEY).startsWith('REPLACE_WITH_') || !currentNick) return false;
-    try{
-        const pack=await ensureMessaging();
-        if(!pack.messaging) return false;
-        const reg=await getSwReg();
-        if(!reg) return false;
-        const token=await pack.mod.getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
-        if(!token) return false;
-        const proof=await loadActorProof();
-        if(!proof) return false;
-        await callPushFunction('registerNotificationToken',{
-            actorNick:currentNick,actorProof:proof,token,
-            platform:isIOSDevice()?'ios-web':'web',
-            userAgent:(navigator.userAgent||'').slice(0,500)
+async function requestNotificationPermission(){
+    // Cross-browser permission request — handles old Safari callback API and modern Promise API
+    if(!('Notification' in window)) return 'unsupported';
+    if(Notification.permission === 'granted') return 'granted';
+    if(Notification.permission === 'denied') return 'denied';
+    try {
+        // Modern browsers: returns a Promise
+        const result = await Notification.requestPermission();
+        return result;
+    } catch(e) {
+        // Older Safari: requestPermission only supports callback
+        return new Promise(resolve => {
+            try { Notification.requestPermission(resolve); }
+            catch(e2) { resolve('denied'); }
         });
-        if(!window.__kapaniForegroundMessageBound){
-            window.__kapaniForegroundMessageBound=true;
-            pack.mod.onMessage(pack.messaging,(payload)=>{
-                const d=payload?.data||{};
-                const text=d.body||payload.notification?.body||'';
-                if(text) showNotifPopup('🔔 '+text,nowTime());
-            });
-        }
-        return true;
-    }catch(e){console.warn('[Kapani Push] FCM registration failed:',e);return false;}
-}
-async function syncPushSettingsToServer(){
-    if(!currentNick) return;
-    const proof=await loadActorProof();
-    if(!proof) return;
-    try{
-        await callPushFunction('updateNotificationPreferences',{
-            actorNick:currentNick,actorProof:proof,settings:getPushPrefs()
-        });
-    }catch(e){console.warn('[Kapani Push] settings sync failed:',e);}
+    }
 }
 async function requestPushPermission(){
-    if(!('Notification' in window)){toast('❌ Этот браузер не поддерживает Push-уведомления','red');return false;}
-    if(isIOSDevice()&&!isIOSPWA()){
-        toast('📲 На iPhone/iPad: Safari → Поделиться → «На экран “Домой”», затем откройте Капани с иконки и включите Push.','gold');
+    if(!('Notification' in window)) return false;
+    // iOS Safari < 16.4: No web push support unless added to home screen
+    if(isIOSDevice() && !isIOSPWA()){
+        const majorVer = parseInt((navigator.userAgent.match(/OS (\d+)_/)||[])[1]||'0', 10);
+        if(majorVer < 16){
+            toast('📲 iOS не поддерживает уведомления в браузере. Добавьте сайт на главный экран.','gold');
+            return false;
+        }
+        // iOS 16.4+: only works as installed PWA
+        toast('📲 Для уведомлений добавьте сайт на главный экран iPhone (Поделиться → На экран «Домой»)','gold');
         return false;
     }
+    if(Notification.permission==='granted'){await tryRegisterFcm();return true;}
     if(Notification.permission==='denied') return false;
-    const result=await requestNotificationPermission();
-    if(result!=='granted') return false;
-    const p=getPushPrefs();p.enabled=true;savePushPrefs(p);
-    await getSwReg();await tryRegisterFcm();await syncPushSettingsToServer();
-    toast('🔔 Push-уведомления включены!','green');
-    return true;
+    const result = await requestNotificationPermission();
+    if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);await getSwReg();await tryRegisterFcm();toast('🔔 Push-уведомления включены!','green');return true;}
+    return false;
 }
-async function pushNotification(nick,text,cat='system',extra={}){
+async function tryRegisterFcm(){
+    if(!FCM_VAPID_KEY||!currentNick)return;
     try{
-        const proof=await loadActorProof();
-        if(!proof) return {success:false,skipped:true,reason:'no-actor-proof'};
-        return await callPushFunction('sendKapaniNotification',{
-            actorNick:currentNick,actorProof:proof,recipientNick:nick,text,category:cat,
-            title:extra.title||'Капани',
-            url:extra.url||pushPageForCategory(cat),
-            newsId:extra.newsId,type:extra.type,duelId:extra.duelId
-        });
-    }catch(error){
-        console.warn('[Kapani Push] notification delivery failed:',error);
-        return {success:false,skipped:true,reason:String(error?.message||error)};
-    }
+        const pack = await ensureMessaging();
+        if(!pack.messaging) return;
+        const { getToken, onMessage } = pack.mod;
+        const reg=await getSwReg();
+        if(!reg) return;
+        const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
+        if(token)await update(userRef(currentNick),{fcmToken:token,fcmUpdatedAt:Date.now()});
+        onMessage(pack.messaging,(payload)=>{const t=payload.notification?.title||'Капани';const b=payload.notification?.body||'';if(b)toast('🔔 '+b,'green');});
+    }catch(e){console.warn('FCM',e);}
 }
-// Compatibility bridge: no local system notification is generated here.
-async function sendPushNotification(title,body,cat){return {serverDriven:true,title,body,cat};}
+async function sendPushNotification(title,body,cat){
+    cat=cat||'system';
+    if(!('Notification' in window)||Notification.permission!=='granted') return;
+    if(!isPushCatEnabled(cat)) return;
+    // iOS Safari PWA: only send if installed as PWA
+    if(isIOSDevice() && !isIOSPWA()) return;
+    try{
+        const reg = await getSwReg();
+        if(reg && typeof reg.showNotification === 'function'){
+            await reg.showNotification(title,{body,icon:'https://cdn-icons-png.flaticon.com/512/149/149071.png',badge:'https://cdn-icons-png.flaticon.com/512/149/149071.png',vibrate:[200,80,200],tag:'kapani-'+cat,renotify:true});
+            return;
+        }
+    }catch(e){}
+    try{new Notification(title,{body,icon:'https://cdn-icons-png.flaticon.com/512/149/149071.png',tag:'kapani-'+cat});}catch(e){}
+}
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
@@ -4312,15 +4239,12 @@ function updatePushSettingsUI(){
     // iOS device in browser (not PWA) — show special message
     if(isIOSDevice() && !isIOSPWA()){
         if(btn){
-            btn.textContent='📲 Установить на экран «Домой»';
-            btn.disabled=false; btn.className='btn btn-gold';
-            btn.onclick=()=>toast('Safari → Поделиться → «На экран “Домой”» → откройте Капани с иконки → включите Push в профиле.','gold');
+            btn.textContent='📲 Добавьте на экран «Домой»';
+            btn.disabled=false;
+            btn.className='btn btn-gold';
+            btn.onclick=()=>toast('Откройте Safari → Поделиться → «На экран «Домой»» — затем откройте приложение оттуда для уведомлений','gold');
         }
-        if(statusTxt){
-            statusTxt.textContent='На iPhone/iPad Web Push работает для установленной PWA. Сначала добавьте Капани на главный экран.';
-            statusTxt.style.display='block';
-        }
-        container.style.display='block';
+        container.style.display='none';
         return;
     }
     const perm=('Notification' in window)?Notification.permission:'unsupported';
@@ -4335,7 +4259,6 @@ function updatePushSettingsUI(){
         {id:'taxi_orders',label:'🛵 Такси',desc:'Заказы такси'},
         {id:'delivery_orders',label:'📦 Доставка',desc:'Заказы доставки'},
         {id:'market',label:'🛍 Маркет',desc:'Сделки'},
-        {id:'news',label:'📰 Новости',desc:'Новости Капани'},
         {id:'system',label:'⚙️ Система',desc:'Мэрия, должности'}
     ];
     container.style.display='block';
@@ -4351,7 +4274,8 @@ window.handlePushBtn=async function(){
     if(Notification.permission==='denied'){toast('⚠️ Заблокировано — разрешите в настройках браузера → Уведомления','gold');return;}
     const ok=await requestPushPermission();if(ok)updatePushSettingsUI();
 };
-window.toggleMasterPush=function(){const p=getPushPrefs();p.enabled=p.enabled!==false?false:true;savePushPrefs(p);syncPushSettingsToServer();toast(p.enabled?'🔔 Включены':'🔕 Выключены',p.enabled?'green':'gold');updatePushSettingsUI();}; window.togglePushCat=function(cat){const p=getPushPrefs();p[cat]=p[cat]===false?true:false;savePushPrefs(p);syncPushSettingsToServer();updatePushSettingsUI();toast((p[cat]!==false?'🔔 ':'🔕 ')+'Обновлено','green');};
+window.toggleMasterPush=function(){const p=getPushPrefs();p.enabled=p.enabled!==false?false:true;savePushPrefs(p);toast(p.enabled?'🔔 Включены':'🔕 Выключены',p.enabled?'green':'gold');updatePushSettingsUI();};
+window.togglePushCat=function(cat){const p=getPushPrefs();p[cat]=p[cat]===false?true:false;savePushPrefs(p);updatePushSettingsUI();toast((p[cat]!==false?'🔔 ':'🔕 ')+'Обновлено','green');};
 
 // ─── FIRST LOGIN PUSH PROMPT ─────────────────
 function getFirstPushPromptKey(){ return currentNick ? `kp_first_push_prompt_${currentNick}` : 'kp_first_push_prompt'; }
@@ -4371,7 +4295,7 @@ window.finishFirstPushPrompt = async function(allow){
     // This is an in-app notification explaining where the setting lives.
     // It is written independently from browser permission, so declining the
     // browser prompt never blocks the informational notification.
-    // Information is shown by the prompt itself; no client-generated notification is created.
+    try{ await pushNotification(currentNick,'🔔 Уведомления всегда можно включить в профиле','system'); }catch(e){}
 }
 function showFirstPushPrompt(){
     if(!currentNick || wasFirstPushPromptHandled() || qs('firstPushPrompt')) return;
@@ -4391,6 +4315,7 @@ function showFirstPushPrompt(){
 }
 
 // ─── NOTIFICATIONS ────────────────────────
+async function pushNotification(nick,text,cat='system'){await push(notifRef(nick),{text,time:nowTime(),cat});}
 window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
 window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
 function renderNotifications(notifs){
@@ -6118,20 +6043,7 @@ async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     if(msgType) msg.msgType=msgType;
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
-    const messageRef=await push(chatRef(),msg);
-    try{
-        const proof=await loadActorProof();
-        if(proof){
-            const preview=text ? `💬 ${currentNick}: ${text.length>80?text.slice(0,77)+'...':text}`
-                : (msgType==='image'?`🖼 ${currentNick}: Фото`
-                : msgType==='voice'?`🎤 ${currentNick}: Голосовое сообщение`
-                : msgType==='video'?`🎬 ${currentNick}: Видео`
-                : `📎 ${currentNick}: Вложение`);
-            callPushFunction('sendGlobalChatPush',{
-                actorNick:currentNick,actorProof:proof,text:preview,messageId:messageRef?.key
-            }).catch(e=>console.warn('[Kapani Push] global chat:',e));
-        }
-    }catch(e){console.warn('[Kapani Push] global chat prep:',e);}
+    await push(chatRef(),msg);
 }
 
 // ─── DM MESSENGER ─────────────────────────
@@ -8422,15 +8334,20 @@ window.publishNews = async function(){
 // on the backend (falls back silently to the in-app notification otherwise —
 // that one always works, since it's plain Realtime Database writes). ──
 async function notifyAllUsersOfNews(newsItem){
-    const usersSnap=await get(ref(db,'users'));
-    const users=usersSnap.val()||{};
-    const text=`📰 Новая новость в Капани\n${newsItem.title}`;
-    const jobs=Object.keys(users).filter(nick=>nick!==newsItem.author).map(nick=>
-        pushNotification(nick,text,'news',{title:'📰 Новая новость в Капани',
-            url:`./index.html?kapaniPush=news&newsId=${encodeURIComponent(newsItem.id)}`,
-            newsId:newsItem.id}).catch(()=>{})
-    );
+    const usersSnap = await get(ref(db,'users'));
+    const users = usersSnap.val() || {};
+    const text = `📰 Новая новость в Капани\n${newsItem.title}`;
+    const jobs = Object.keys(users)
+        .filter(nick => nick !== newsItem.author) // author doesn't need a notification about their own post
+        .map(nick => push(notifRef(nick), { text, time: nowTime(), cat:'news', newsId: newsItem.id }).catch(()=>{}));
     await Promise.allSettled(jobs);
+    try {
+        await callFunctionWithFallback('sendNewsPush', { newsId:newsItem.id, title:'📰 Новая новость в Капани', body:newsItem.title, scope:newsItem.scope }, async()=>{
+            // No server-side push function deployed — in-app notification above
+            // already reached everyone, so this is a non-fatal no-op fallback.
+        });
+    } catch(e){ console.warn('[news push]', e && e.message); }
+    console.log('news notification sent', newsItem.id);
 }
 window.deleteNews = async function(id){
     if(!confirm('Удалить эту новость?')) return;
@@ -9431,7 +9348,7 @@ window.sendOnlineDuelInvite=async function(){
   onlineDuelId=duelRef2.key;
   await set(duelRef2,{challenger:currentNick,opponent,stake,mode:onlineDuelMode,status:'waiting',createdAt:Date.now(),challengerMove:null,opponentMove:null,board:null,turn:1});
   // Notify opponent
-  await pushNotification(opponent,`⚔️ ${currentNick} вызывает тебя на дуэль! Ставка: ${stake}₽`,'system',{title:'⚔️ Вызов на дуэль',url:'./index.html?kapaniPush=duel',duelId:onlineDuelId,type:'duel_invite'});
+  await push(ref(db,`notifications/${opponent}`),{type:'duel_invite',from:currentNick,duelId:onlineDuelId,text:`⚔️ ${currentNick} вызывает тебя на дуэль! Ставка: ${stake}₽`,ts:Date.now(),read:false});
   document.getElementById('onlineDuelStatus').textContent='⏳ Ожидаем соперника...';
   document.getElementById('onlineDuelStatus').style.color='var(--gold)';
   // Listen for opponent accept
@@ -9462,7 +9379,7 @@ window.declineOnlineDuel=async function(duelId){
   await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
   await logTx(d.challenger,{type:'in',who:'Дуэли',amt:d.stake,desc:`Вызов отклонён ${currentNick}`});
   await update(onlineDuelRef(duelId),{status:'declined'});
-  await pushNotification(d.challenger,`❌ ${currentNick} отклонил вызов. Ставка возвращена.`,'system',{title:'❌ Дуэль отклонена',url:'./index.html?kapaniPush=duel',type:'duel_declined',duelId});
+  await push(ref(db,`notifications/${d.challenger}`),{type:'duel_declined',from:currentNick,text:`❌ ${currentNick} отклонил вызов. Ставка возвращена.`,ts:Date.now(),read:false});
   toast('❌ Вызов отклонён','red');
   renderOnlineDuelLobby();
 };
