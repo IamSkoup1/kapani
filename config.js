@@ -10,7 +10,7 @@ const KAPANI_CONFIG = Object.freeze({
         messagingSenderId: "250125043268",
         appId: "1:250125043268:web:fd82172b96e326b2001e11"
     },
-    fcmVapidKey: "REPLACE_WITH_FIREBASE_WEB_PUSH_CERTIFICATE_KEY",
+    fcmVapidKey: "",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },

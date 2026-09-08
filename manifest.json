@@ -6,7 +6,7 @@
   "display": "standalone",
   "background_color": "#0c1117",
   "theme_color": "#22d3a5",
-  "orientation": "any",
+  "orientation": "portrait",
   "scope": "./",
   "icons": [
     {
@@ -22,15 +22,6 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": [
-    "social",
-    "lifestyle"
-  ],
-  "lang": "ru",
-  "id": "./",
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
-  "prefer_related_applications": false
+  "categories": ["social", "lifestyle"],
+  "lang": "ru"
 }
