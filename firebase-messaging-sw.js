@@ -1,42 +1,21 @@
-```javascript
 /* Firebase Messaging SW — UTF-8.
  * Лежит рядом с index.html
  */
 
 const SW_VERSION = 'kapani-fcm-2026-09-08-v3';
 
-/**
- * Главный URL приложения.
- *
- * ВАЖНО:
- * Не используем ./index.html как fallback.
- * Для сайта Капани canonical URL — /kapani
- */
 const KAPANI_APP_PATH = '/kapani';
 
-/**
- * Нормализует URL уведомления.
- *
- * Поддерживает:
- *   /kapani
- *   /kapani/
- *   /kapani?...
- *   полный https://...
- *
- * Если пришёл пустой/битый URL — открываем /kapani.
- */
 function resolveNotificationUrl(requestedUrl) {
   try {
     const raw = String(requestedUrl || '').trim();
 
-    // Пустой URL -> основной адрес Капани.
     if (!raw) {
       return new URL(KAPANI_APP_PATH, self.location.origin).href;
     }
 
     const url = new URL(raw, self.location.origin);
 
-    // Чужой origin не используем для перехода из уведомления.
     if (url.origin !== self.location.origin) {
       return new URL(KAPANI_APP_PATH, self.location.origin).href;
     }
@@ -47,12 +26,10 @@ function resolveNotificationUrl(requestedUrl) {
   }
 }
 
-/**
- * Определяем, является ли URL страницей Капани.
- */
 function isKapaniUrl(url) {
   try {
     const parsed = new URL(url, self.location.origin);
+
     return (
       parsed.origin === self.location.origin &&
       (
@@ -66,11 +43,6 @@ function isKapaniUrl(url) {
   }
 }
 
-/* ─────────────────────────────────────────────
- * SERVICE WORKER LIFECYCLE
- * ─────────────────────────────────────────────
- */
-
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
 });
@@ -78,11 +50,6 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
-
-/* ─────────────────────────────────────────────
- * FIREBASE MESSAGING
- * ─────────────────────────────────────────────
- */
 
 try {
   importScripts(
@@ -97,7 +64,6 @@ try {
 }
 
 try {
-  // Единая конфигурация Firebase для сайта и Service Worker.
   importScripts('./config.js');
 
   if (!self.KAPANI_CONFIG || !self.KAPANI_CONFIG.firebase) {
@@ -110,14 +76,16 @@ try {
 
   const messaging = firebase.messaging();
 
-  messaging.onBackgroundMessage((payload) => {
+  // ИСПРАВЛЕНО: callback теперь async,
+  // потому что внутри используется await.
+  messaging.onBackgroundMessage(async (payload) => {
     try {
       const notification = payload?.notification || {};
       const data = payload?.data || {};
 
       /*
        * Если Firebase уже получил notification payload,
-       * повторно уведомление не создаём.
+       * повторно уведомление не показываем.
        */
       if (Object.keys(notification).length > 0) {
         return;
@@ -131,15 +99,6 @@ try {
         return;
       }
 
-      /*
-       * Самое важное исправление:
-       *
-       * раньше:
-       *   data.url || './index.html'
-       *
-       * теперь:
-       *   data.url || '/kapani'
-       */
       const targetUrl = resolveNotificationUrl(data.url);
 
       await self.registration.showNotification(title, {
@@ -163,12 +122,8 @@ try {
 
         data: {
           ...data,
-
-          // Уже нормализованный адрес для notificationclick.
           url: targetUrl,
-
           category,
-
           swVersion: SW_VERSION
         }
       });
@@ -188,20 +143,10 @@ try {
   );
 }
 
-/* ─────────────────────────────────────────────
- * NOTIFICATION CLICK
- * ─────────────────────────────────────────────
- */
-
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   const data = event.notification?.data || {};
-
-  /*
-   * Больше никогда не используем './index.html'
-   * как fallback.
-   */
   const targetUrl = resolveNotificationUrl(data.url);
 
   event.waitUntil(
@@ -212,12 +157,6 @@ self.addEventListener('notificationclick', (event) => {
           includeUncontrolled: true
         });
 
-        /*
-         * 1. Сначала ищем уже открытый Капани.
-         *
-         * Если он есть — используем существующую вкладку,
-         * чтобы не плодить новые окна.
-         */
         for (const client of windowClients) {
           if (!client.url) {
             continue;
@@ -228,11 +167,6 @@ self.addEventListener('notificationclick', (event) => {
           }
 
           try {
-            /*
-             * Если уведомление содержит конкретный URL
-             * внутри Капани — переходим на него.
-             * Иначе остаёмся на /kapani.
-             */
             if (client.url !== targetUrl && 'navigate' in client) {
               await client.navigate(targetUrl);
             }
@@ -255,12 +189,6 @@ self.addEventListener('notificationclick', (event) => {
           return client;
         }
 
-        /*
-         * 2. Иногда открыто окно сайта, но URL сейчас другой
-         *    (например, браузер уже находится на index.html).
-         *
-         * Его тоже стараемся переиспользовать.
-         */
         for (const client of windowClients) {
           if (!client.url) {
             continue;
@@ -275,13 +203,9 @@ self.addEventListener('notificationclick', (event) => {
 
             return client;
           } catch (_) {
-            // Переходим к openWindow ниже.
           }
         }
 
-        /*
-         * 3. Если открытого окна нет — создаём новое.
-         */
         if (self.clients.openWindow) {
           return self.clients.openWindow(targetUrl);
         }
@@ -294,10 +218,6 @@ self.addEventListener('notificationclick', (event) => {
           error
         );
 
-        /*
-         * Даже при ошибке используем правильный URL,
-         * а не старый index.html.
-         */
         try {
           if (self.clients.openWindow) {
             return self.clients.openWindow(
@@ -319,4 +239,3 @@ self.addEventListener('notificationclick', (event) => {
     })()
   );
 });
-```
