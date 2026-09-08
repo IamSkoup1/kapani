@@ -2,7 +2,7 @@
 // Используется приложением и Service Worker через importScripts().
 const KAPANI_CONFIG = Object.freeze({
     firebase: {
-        apiKey: "AIzaSyCtMtRrKHsfyI4zb9CDuM6HiE56T7H1Ehw",
+        apiKey: "AIzaSyCDfMUZ-6-GWrw8yCWOoU07g6aappDtwxA",
         authDomain: "kapanisite.firebaseapp.com",
         databaseURL: "https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app",
         projectId: "kapanisite",
