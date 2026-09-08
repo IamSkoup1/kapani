@@ -4225,6 +4225,8 @@ async function hashFcmToken(token){
     }catch(e){}
     return String(token).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,120) || ('token_'+Date.now());
 }
+const _localPushShownIds = new Set();
+
 async function tryRegisterFcm(){
     if(!currentNick)return;
     try{
@@ -4257,12 +4259,51 @@ async function tryRegisterFcm(){
 
         if(!window.__kapaniFcmOnMessageBound){
             window.__kapaniFcmOnMessageBound=true;
-            onMessage(pack.messaging,(payload)=>{ window.__lastKapaniFcmPayload=payload; });
+            onMessage(pack.messaging,(payload)=>{
+                window.__lastKapaniFcmPayload=payload;
+                const data=payload?.data||{};
+                const n=payload?.notification||{};
+                const notificationId=String(data.notificationId||'');
+                if(notificationId && _localPushShownIds.has(notificationId)){
+                    _localPushShownIds.delete(notificationId);
+                    return;
+                }
+                if(document.visibilityState!=='visible') return;
+                const body=String(data.body||data.text||n.body||'');
+                if(body) toast('🔔 '+body,'green');
+            });
         }
     }catch(e){console.warn('[FCM]',e);}
 }
+function bindPushRefresh(){
+    const refresh=()=>{
+        if(document.visibilityState==='visible' && currentNick && ('Notification' in window) && Notification.permission==='granted'){
+            try { tryRegisterFcm(); } catch(e) {}
+        }
+    };
+    document.addEventListener('visibilitychange',refresh,{passive:true});
+    window.addEventListener('pageshow',refresh,{passive:true});
+}
+bindPushRefresh();
+
 async function sendPushNotification(title,body,cat){
-    // Compatibility shim: real push delivery is now server-side.
+    // Foreground/local fallback: keep the existing Kapani behaviour when the
+    // app is actually visible. Background/closed delivery is handled by FCM
+    // through the Service Worker, so this never creates a second system push
+    // while the page is hidden.
+    if(document.visibilityState !== 'visible') return false;
+    if(!('Notification' in window) || Notification.permission !== 'granted') return false;
+    if(isIOSDevice() && !isIOSPWA()) return false;
+    if(!isPushCatEnabled(cat || 'system')) return false;
+    try{
+        const reg=await getSwReg();
+        const opts={body:String(body||''),icon:'./image.png',badge:'./image.png',tag:'kapani-'+String(cat||'system')};
+        if(reg && typeof reg.showNotification==='function'){
+            await reg.showNotification(String(title||'Капани'),opts);
+            return true;
+        }
+    }catch(e){ console.warn('[Kapani local push]',e); }
+    try{ new Notification(String(title||'Капани'),{body:String(body||''),icon:'./image.png',tag:'kapani-'+String(cat||'system')}); return true; }catch(e){}
     return false;
 }
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
@@ -4351,7 +4392,16 @@ function showFirstPushPrompt(){
 async function pushNotification(nick,text,cat='system',options={}){
     const payload={text,time:nowTime(),cat};
     if(options && options.push === false) payload.push=false;
-    await push(notifRef(nick),payload);
+    const createdRef = await push(notifRef(nick),payload);
+    if(nick === currentNick && !(options && options.push === false) && createdRef?.key){
+        const id=String(createdRef.key);
+        _localPushShownIds.add(id);
+        setTimeout(()=>_localPushShownIds.delete(id),10000);
+        try{
+            if(document.visibilityState==='visible' && isPushOn() && isPushCatEnabled(cat)) toast('🔔 '+String(text||''),'green');
+        }catch(e){}
+    }
+    return createdRef;
 }
 window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
 window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
