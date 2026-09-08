@@ -1,56 +1,50 @@
-# Kapani Push + iOS safe-area patch
+# KAPANI — Push-уведомления при закрытом сайте
 
-## Что заменено
-- `index.html` — существующий Kapani HTML с точечными изменениями FCM/iOS/PWA.
-- `firebase-messaging-sw.js` — фоновый FCM handler, notification click/focus, обновление SW.
-- `functions/index.js` — добавлен только серверный RTDB trigger `pushNotificationCreated` и helper `sendPushToUser()`; существующие функции сохранены.
-- `manifest.json` — исходный manifest проекта без изменения PWA-логики.
-- `config.js` — исходный конфиг проекта без подстановки выдуманного VAPID-ключа.
-- `functions/package.json` — исходный package.json проекта.
+## Что уже сделано
+- Все существующие `users/{nick}/notifications/{notificationId}` автоматически отправляются через FCM.
+- Используется отдельный `firebase-messaging-sw.js` для background/closed push.
+- Добавлена поддержка нескольких устройств пользователя через `fcmTokens`.
+- Невалидные/устаревшие FCM-токены автоматически удаляются.
+- Клик по системному уведомлению возвращает в Kapani и старается использовать уже открытое окно.
+- Для iOS учитывается режим установленной PWA (Add to Home Screen / standalone) и safe-area.
+- Существующая структура уведомлений Firebase Realtime Database не меняется.
 
-## Важно перед deploy
-В предоставленном `config.js` поле `fcmVapidKey` пустое. Клиент теперь не блокирует регистрацию FCM из-за этого и вызывает `getToken()` без явного VAPID key, поэтому Firebase может использовать свой default VAPID key. Для максимальной совместимости с браузерами можно позже указать публичный Web Push certificate key из Firebase Console в `fcmVapidKey`; секретные ключи туда помещать нельзя.
+## Единственный обязательный шаг перед нормальным кросс-браузерным Web Push
+В Firebase Console:
+1. Project settings → Cloud Messaging.
+2. Web configuration → Web Push certificates.
+3. Нажать **Generate key pair**.
+4. Скопировать **Public key**.
+5. В `config.js` заменить значение `fcmVapidKey: ""` на этот public key.
 
-## Web-файлы
-Положите в тот же web-root, где находятся текущие `index.html`, `image.png` и остальные файлы Kapani, сохранив эти имена:
-- `index.html`
-- `firebase-messaging-sw.js`
-- `config.js`
-- `manifest.json`
+Firebase рекомендует задавать собственный VAPID key; без него SDK использует default key, но некоторые push-сервисы (включая Chrome Push Service) требуют не-default ключ. 
 
-`manifest.json` должен оставаться рядом с `index.html`, а `firebase-messaging-sw.js` и `config.js` — также доступны из web-root.
-
-## Cloud Functions
-В каталоге `functions/` используйте:
-- `index.js`
-- `package.json`
-
-Установите зависимости обычным способом проекта и разверните минимум новую функцию:
+## Деплой Cloud Functions
+Из папки проекта:
 
 ```bash
 cd functions
 npm install
-cd ..
 firebase deploy --only functions:pushNotificationCreated
 ```
 
-Если ваша текущая схема деплоя всегда публикует все Functions сразу, можно использовать обычный deploy текущего каталога Functions; код остальных функций в этом пакете не удалён.
+Или полный деплой Functions:
 
-## Что делает новая Push-цепочка
-Существующий вызов Kapani `pushNotification(...)` продолжает создавать внутреннее уведомление в `users/{nick}/notifications/...`. Новый RTDB trigger видит создание этой записи и отправляет data-only FCM на сохранённый токен/токены пользователя. Это позволяет доставлять push, даже когда страница закрыта.
+```bash
+npm install
+firebase deploy --only functions
+```
 
-Legacy `users/{nick}.fcmToken` сохранён для обратной совместимости. Дополнительно клиент пытается хранить несколько устройств в `users/{nick}/fcmTokens/{tokenId}`; если правила RTDB не разрешают эту дополнительную ветку, legacy token всё равно остаётся рабочим.
+## Важно
+Сайт должен работать по HTTPS. Для iPhone уведомления Web Push работают для установленной PWA, а разрешение нужно дать самой PWA.
 
-## iOS
-Push на iPhone рассчитан на установленный PWA (`display-mode: standalone` / `navigator.standalone`). В обычной вкладке Safari показывается инструкция добавить Kapani на экран «Домой».
+## Проверка
+1. Открыть Kapani по HTTPS.
+2. Включить уведомления.
+3. Убедиться, что в базе у пользователя появился `fcmToken` и/или `fcmTokens`.
+4. Закрыть сайт/вкладку или отправить PWA в фон.
+5. Создать любое обычное Kapani-уведомление через существующий `pushNotification(...)`.
+6. Cloud Function `pushNotificationCreated` должна отправить FCM, а Service Worker — показать системное уведомление.
 
-Safe-area исправления учитывают `env(safe-area-inset-top)` и `env(safe-area-inset-bottom)`, fixed header/bottom-nav, модальные окна и клавиатуру через `visualViewport`.
-
-## Проверено статически
-- JS syntax: PASS
-- Manifest/package JSON parse: PASS
-- 8 inline script blocks in `index.html`: PASS
-- Service Worker background-notification smoke test: PASS
-- Service Worker notification click/focus smoke test: PASS
-
-Реальный end-to-end push на физическом iPhone/Android и в развернутом Firebase-проекте из этого окружения выполнить нельзя; после deploy нужен фактический device/browser test.
+## Ограничение окружения
+Из этого чата я не могу выполнить деплой в твой Firebase-проект без доступа к твоему Firebase CLI/аккаунту. Код, Service Worker и Cloud Function подготовлены; после добавления VAPID public key нужен один деплой функции.

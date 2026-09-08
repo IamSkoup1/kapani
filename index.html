@@ -2512,6 +2512,7 @@ const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
 const REWARD_CUSTOM_AVATAR = CONFIG.rewards.customAvatar;
 const REWARD_FIRST_WALL = CONFIG.rewards.firstWall;
 const FCM_VAPID_KEY = CONFIG.fcmVapidKey;
+const PUSH_BRIDGE_URL = String(CONFIG.pushBridgeUrl || "").trim();
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -4389,10 +4390,25 @@ function showFirstPushPrompt(){
 }
 
 // ─── NOTIFICATIONS ────────────────────────
+async function triggerExternalPushBridge(nick, notificationId){
+    if(!PUSH_BRIDGE_URL || !nick || !notificationId) return;
+    try{
+        // Fire-and-forget: notification is already stored in RTDB. The Worker
+        // re-reads that exact record and sends FCM from a trusted environment.
+        fetch(PUSH_BRIDGE_URL.replace(/\/$/,'') + '/push', {
+            method:'POST',
+            headers:{'content-type':'application/json'},
+            body:JSON.stringify({nick:String(nick),notificationId:String(notificationId)})
+        }).catch(()=>{});
+    }catch(e){}
+}
 async function pushNotification(nick,text,cat='system',options={}){
-    const payload={text,time:nowTime(),cat};
+    const payload={text,time:nowTime(),cat,createdAt:Date.now()};
     if(options && options.push === false) payload.push=false;
     const createdRef = await push(notifRef(nick),payload);
+    if(createdRef?.key && !(options && options.push === false)){
+        triggerExternalPushBridge(nick,createdRef.key);
+    }
     if(nick === currentNick && !(options && options.push === false) && createdRef?.key){
         const id=String(createdRef.key);
         _localPushShownIds.add(id);
