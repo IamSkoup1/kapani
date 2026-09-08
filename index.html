@@ -3643,28 +3643,23 @@ window.withdrawMunicipalTreasury=async function(){
     if(!Number.isSafeInteger(amount)||amount<=0) return toast('⚠️ Укажите корректную сумму','gold');
     let reserved=false;
     try{
-        let reserve;
-        try{
-            reserve=await runTransaction(municipalTreasuryRef(),current=>{
-                const state=(current&&typeof current==='object')?current:{balance:current};
-                const balance=parseMoneyValue(state.balance,NaN);
-                if(!Number.isFinite(balance) || balance < amount) return;
-                return {...state,balance:Math.round((balance-amount)*100)/100,updatedAt:Date.now()};
-            });
-        }catch(txErr){
-            console.error('[municipalTreasury withdraw] reserve transaction failed',txErr);
-            const msg=txErr?.message||'ошибка Firebase';
-            return toast('❌ Не удалось зарезервировать средства казны: '+msg,'red');
-        }
+        const reserve=await runTransaction(municipalTreasuryRef(),current=>{
+            const state=(current&&typeof current==='object')?current:{balance:current};
+            const balance=parseMoneyValue(state.balance,0);
+            if(!Number.isFinite(balance) || balance < amount) return;
+            return {...state,balance:Math.round(balance-amount),updatedAt:Date.now()};
+        });
         if(!reserve?.committed){
-            const latest=await get(municipalTreasuryRef());
-            const raw=latest.val();
-            const state=(raw&&typeof raw==='object')?raw:{balance:raw};
-            const available=parseMoneyValue(state.balance,0);
-            console.warn('[municipalTreasury withdraw] transaction not committed',{requested:amount,available,raw});
-            return available >= amount
-                ? toast('❌ Firebase не подтвердил списание казны. Повторите операцию.','red')
-                : toast(`❌ В казне недостаточно средств. Доступно: ${available.toLocaleString('ru-RU')} ₽`,'red');
+            try{
+                const latest=await get(municipalTreasuryRef());
+                const raw=latest.val();
+                const state=(raw&&typeof raw==='object')?raw:{balance:raw};
+                const available=parseMoneyValue(state.balance,0);
+                console.warn('[municipalTreasury withdraw] insufficient after normalization',{requested:amount,available,raw});
+                return toast(`❌ В казне недостаточно средств. Доступно: ${available.toLocaleString('ru-RU')} ₽`,'red');
+            }catch(readErr){
+                return toast('❌ В казне недостаточно средств','red');
+            }
         }
         reserved=true;
 
@@ -3686,7 +3681,7 @@ window.withdrawMunicipalTreasury=async function(){
         toast(`✅ ${amount.toLocaleString('ru-RU')} ₽ выведено из казны`,'green');
     }catch(e){
         console.error('[municipalTreasury withdraw]',e);
-        if(reserved){try{await runTransaction(municipalTreasuryRef(),current=>{const state=(current&&typeof current==='object')?current:{balance:current};const balance=parseMoneyValue(state.balance,0);return {...state,balance:Math.round((balance+amount)*100)/100,updatedAt:Date.now()};});}catch(re){console.error('[municipalTreasury refund]',re);}}
+        if(reserved){try{await runTransaction(municipalTreasuryRef(),current=>{const state=(current&&typeof current==='object')?current:{balance:current};return {...state,balance:parseMoneyValue(state.balance,0)+amount,updatedAt:Date.now()};});}catch(re){console.error('[municipalTreasury refund]',re);}}
         toast('❌ Не удалось вывести средства из казны: '+(e.message||'ошибка'),'red');
     }
 };
@@ -14861,7 +14856,6 @@ try {
   window.logTx = logTx;
   window.txLogRef = txLogRef;
   window.fullDateTimeStr = fullDateTimeStr;
-  window.parseMoneyValue = parseMoneyValue;
   window.bizItemRef = bizItemRef;
   window.JANITOR_TASK_TEXT = JANITOR_TASK_TEXT;
   // Shared Firebase primitives — additive modules must reuse these instead of
@@ -16253,27 +16247,7 @@ ready(function(){
 
     const db = window.db;
     const ref = window.dbRef, get = window.dbGet, set = window.dbSet, update = window.dbUpdate,
-          push = window.dbPush, remove = window.dbRemove, onValue = window.dbOnValue, off = window.dbOff,
-          runTransaction = window.runTransaction;
-
-    function parseMoneyValue(value, fallback = 0){
-      if(typeof value === 'number') return Number.isFinite(value) ? value : fallback;
-      if(value === null || value === undefined) return fallback;
-      let s = String(value).trim();
-      if(!s) return fallback;
-      s = s.replace(/\u00A0/g,'').replace(/\s/g,'').replace(/₽/g,'');
-      const comma = s.lastIndexOf(',');
-      const dot = s.lastIndexOf('.');
-      if(comma >= 0 && dot >= 0){
-        s = comma > dot ? s.replace(/\./g,'').replace(',', '.') : s.replace(/,/g,'');
-      }else if(comma >= 0){
-        s = (s.length - comma - 1 === 3) ? s.replace(/,/g,'') : s.replace(',', '.');
-      }else if(dot >= 0 && s.length - dot - 1 === 3){
-        s = s.replace(/\./g,'');
-      }
-      const n = Number(s);
-      return Number.isFinite(n) ? n : fallback;
-    }
+          push = window.dbPush, remove = window.dbRemove, runTransaction = window.runTransaction;
     const qs = window.qs;
     const toast = window.toast || ((m)=>alert(m));
     const ADMIN = window.ADMIN || 'Кайон';
