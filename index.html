@@ -1037,12 +1037,12 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <div class="card">
         <div class="card-title">Вход / Регистрация</div>
         <input id="lgNick" type="text" placeholder="Ваше отображаемое имя" autocomplete="username" required minlength="2" maxlength="40" onkeydown="if(event.key==='Enter'){event.preventDefault();qs('lgPass').focus();}">
-        <input id="lgInvitedBy" type="text" placeholder="Кто вас пригласил? (необязательно)" autocomplete="off" maxlength="40" style="margin-top:4px;" onkeydown="if(event.key===\'Enter\'){event.preventDefault();qs(\'lgPass\').focus();}">
-        <div style="font-size:11px;color:var(--muted);margin:-2px 2px 6px;line-height:1.4;">Если вас пригласил Рекламщик, укажите его ник или отображаемое имя. Поле учитывается только при новой регистрации.</div>
         <div style="position:relative;">
             <input id="lgPass" type="password" placeholder="Пароль" autocomplete="current-password" required minlength="4" maxlength="60" style="padding-right:46px;" onkeydown="if(event.key==='Enter'){event.preventDefault();handleAuth();}">
             <button type="button" class="btn btn-ghost btn-sm" onclick="toggleAuthPasswordVisibility()" aria-label="Показать или скрыть пароль" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:auto;padding:6px 10px;font-size:13px;">👁</button>
         </div>
+        <input id="lgInviter" type="text" placeholder="Кто вас пригласил? (необязательно)" autocomplete="off" maxlength="40" onkeydown="if(event.key==='Enter'){event.preventDefault();handleAuth();}">
+        <div style="font-size:11px;color:var(--muted);line-height:1.45;margin-top:2px;">Для нового аккаунта можно указать отображаемое имя рекламщика, который вас пригласил.</div>
         <button class="btn btn-primary" id="authBtn" onclick="handleAuth()" style="margin-top:6px" aria-label="Войти или создать аккаунт">Войти / Создать аккаунт</button>
         <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:14px">Вход — по отображаемому имени и паролю.<br>Если такого имени ещё нет, аккаунт создастся автоматически с указанным паролем.<br>Переводы и поиск — по отображаемому имени.</div>
     </div>
@@ -1679,15 +1679,14 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <option value="КСБ">🛡 КСБ (служба безопасности)</option>
             <option value="Депутат">🏛 Депутат</option>
             <option value="Полицейский">👮 Полицейский</option>
-            <option value="Врач">🏥 Врач</option>
             <option value="Рекламщик">📢 Рекламщик</option>
+            <option value="Врач">🏥 Врач</option>
         </select>
         <textarea id="jAppText" placeholder="Расскажите о себе и почему должны принять именно вас на эту работу..." style="min-height:80px;margin-top:8px;"></textarea>
         <button class="btn btn-primary" onclick="sendApp()">Подать заявку</button>
         <button class="btn btn-red" id="quitJobBtn" style="display:none;margin-top:8px;" onclick="quitJob()">Уволиться</button>
         <div id="myAppStatus" style="margin-top:12px;"></div>
     </div>
-    <div id="advertiserWorkCard" style="display:none;"></div>
     <div class="card">
         <div class="card-title">📜 О профессиях</div>
         <div style="font-size:13px;color:var(--muted);line-height:2;">
@@ -1698,8 +1697,8 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <b style="color:var(--text)">🛡 КСБ (Капанёвская служба безопасности)</b> — обеспечивает порядок, имеет доступ к выписыванию штрафов жителям и приоритетный доступ к чату с Кайоном. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">4000 рублей/неделю</b><br>
             <b style="color:var(--text)">🏛 Депутат</b> — представляет интересы жителей, отправляет предложения и запросы в мэрию. Запросы рассматриваются, отклоняются или одобряются мэрией. <b style="color:var(--primary)">Нужный балл КВЭ: 95.</b> Зарплата: <b style="color:var(--gold)">5000 рублей/неделю</b><br>
             <b style="color:var(--text)">👮 Полицейский</b> — следит за порядком, может создавать запросы в мэрию на штраф нарушителя или удаление аккаунта. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">3400 рублей/неделю</b><br>
+            <b style="color:var(--text)">📢 Рекламщик</b> — продвигает сайт Капани и приводит новых пользователей. <b style="color:var(--primary)">Нужный балл КВЭ: 50.</b> Зарплата: <b style="color:var(--gold)">3900 рублей/неделю + 500 рублей за каждого пользователя сверх 4</b>. Минимальный результат — 4 новых пользователя за неделю.<br>
             <b style="color:var(--text)">🏥 Врач</b> — принимает пациентов в больнице (Лёхин шалаш), сам создаёт и оценивает услуги. Доход — оплата приёмов пациентами. <b style="color:var(--primary)">Нужный балл КВЭ: 90.</b> Зарплата: <b style="color:var(--gold)">в зависимости от приёмов</b><br>
-            <b style="color:var(--text)">📢 Рекламщик</b> — продвигает сайт Капани и приводит новых пользователей. <b style="color:var(--primary)">Нужный балл КВЭ: 50.</b> Зарплата: <b style="color:var(--gold)">3900 ₽/неделю + 500 ₽ за каждого сверх 4 приглашённых</b><br>
             <b style="color:var(--text)">🩺 Помощник врача</b> — ассистирует врачу в больнице. Только одна должность одновременно, заявка подаётся в разделе «🏥 Больница» ниже. <b style="color:var(--primary)">Нужный балл КВЭ: 80.</b> Зарплата: <b style="color:var(--gold)">назначается врачом</b>.
         </div>
     </div>
@@ -1981,8 +1980,8 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <option value="КСБ">🛡 КСБ</option>
             <option value="Депутат">🏛 Депутат</option>
             <option value="Полицейский">👮 Полицейский</option>
-            <option value="Врач">🏥 Врач</option>
             <option value="Рекламщик">📢 Рекламщик</option>
+            <option value="Врач">🏥 Врач</option>
         </select>
         <button class="btn btn-gold" onclick="adminForceHire()">🏛 Назначить (bypass КВЭ)</button>
         <div id="adminForceHireStatus" style="margin-top:8px;font-size:12px;"></div>
@@ -2016,7 +2015,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <div style="font-size:20px;font-weight:900;color:var(--primary);" id="kveScorePreview">—</div>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">
-            Проходной на сайт: 32 · Уборщик: 40 · Доставщик: 53 · Водитель: 60 · Журналист: 71 · КСБ: 90 · Депутат: 95
+            Проходной на сайт: 32 · Уборщик: 40 · Доставщик: 53 · Водитель: 60 · Журналист: 71 · Рекламщик: 50 · КСБ: 90 · Депутат: 95
         </div>
         <button class="btn btn-primary" onclick="adminSetKveScore()">📝 Выставить балл КВЭ</button>
         <div id="kveAdminStatus" style="margin-top:10px;font-size:13px;color:var(--muted);"></div>
@@ -2216,6 +2215,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <div class="item-row" style="justify-content:space-between;"><span>🏛 Депутат</span><b style="color:var(--primary)">95 баллов</b></div>
             <div class="item-row" style="justify-content:space-between;"><span>🏥 Врач</span><b style="color:var(--primary)">90 баллов</b></div>
             <div class="item-row" style="justify-content:space-between;"><span>🩺 Помощник врача</span><b style="color:var(--primary)">80 баллов</b></div>
+            <div class="item-row" style="justify-content:space-between;"><span>📢 Рекламщик</span><b style="color:var(--primary)">50 баллов</b></div>
             <div class="item-row" style="background:var(--pri-dim);border-color:rgba(34,211,165,.3);justify-content:space-between;"><span style="color:var(--primary);font-weight:900;">Минимум (остаться на сайте)</span><b style="color:var(--gold)">32 балла</b></div>
         </div>
     </div>
@@ -2506,6 +2506,11 @@ window.KAPANI_READY = new Promise(res => { _resolveKapaniReady = res; });
 window.kapaniReady = function(){ return window.KAPANI_READY; };
 const JOB_JANITOR = CONFIG.jobs.janitor;
 const JOB_JOURNALIST = "Журналист";
+const JOB_ADVERTISER = "Рекламщик";
+const ADVERTISER_KVE_REQUIRED = 50;
+const ADVERTISER_WEEKLY_BASE_SALARY = 3900;
+const ADVERTISER_WEEKLY_MIN_REFERRALS = 4;
+const ADVERTISER_EXTRA_REFERRAL_BONUS = 500;
 const JANITOR_TASK_TEXT = CONFIG.jobs.janitorTaskText;
 const MIN_BALANCE_ALLOWED = CONFIG.finance.minBalanceAllowed;
 const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
@@ -2522,150 +2527,6 @@ const ECONOMY_MARKET_PIN_DURATION_MS = ECONOMY_WEEK_MS;
 const ECONOMY_BUSINESS_PROMOTE_PRICE = 600;
 const ECONOMY_BUSINESS_PROMOTE_DURATION_MS = ECONOMY_WEEK_MS;
 const ECONOMY_BUSINESS_WEEKLY_FEE = 500;
-
-// ─── ADVERTISER / REFERRAL ECONOMY ───────────────────────────────
-const JOB_ADVERTISER = 'Рекламщик';
-const ADVERTISER_KVE_REQUIRED = 50;
-const ADVERTISER_WEEKLY_BASE = 3900;
-const ADVERTISER_WEEKLY_MIN = 4;
-const ADVERTISER_WEEKLY_BONUS = 500;
-const ADVERTISER_WEEKLY_DATA_FIELD = 'advertiserWeekly';
-const ADVERTISER_PAID_WEEKS_FIELD = 'advertiserSalaryPaidWeeks';
-
-function normalizeMoneyValue(value, fallback = 0){
-    if(typeof value === 'number') return Number.isFinite(value) ? value : fallback;
-    if(value === null || value === undefined) return fallback;
-    let s = String(value).trim().replace(/\u00a0/g,'').replace(/\s+/g,'');
-    if(!s) return fallback;
-    const hasComma = s.includes(','); const hasDot = s.includes('.');
-    if(hasComma && hasDot){
-        if(s.lastIndexOf(',') > s.lastIndexOf('.')) s=s.replace(/\./g,'').replace(',','.');
-        else s=s.replace(/,/g,'');
-    } else if(hasComma){
-        const parts=s.split(',');
-        s=(parts.length===2 && parts[1].length<=2) ? s.replace(',','.') : s.replace(/,/g,'');
-    }
-    s=s.replace(/[^0-9.-]/g,'');
-    const n=Number(s);
-    return Number.isFinite(n) ? n : fallback;
-}
-
-function normalizeMunicipalTreasuryState(raw){
-    if(raw && typeof raw === 'object' && !Array.isArray(raw)){
-        return {...raw, balance: Math.round(normalizeMoneyValue(raw.balance, 0))};
-    }
-    return {balance: Math.round(normalizeMoneyValue(raw, 0))};
-}
-
-function advertiserWeekSalary(count){
-    const n=Math.max(0,Math.floor(normalizeMoneyValue(count,0)));
-    return n>=ADVERTISER_WEEKLY_MIN
-        ? ADVERTISER_WEEKLY_BASE + (n-ADVERTISER_WEEKLY_MIN)*ADVERTISER_WEEKLY_BONUS
-        : 0;
-}
-
-function safeFirebaseKey(value){
-    return String(value||'').replace(/[.#$\[\]\/]/g,'_');
-}
-
-async function findAdvertiserByInput(input){
-    const q=normalizePublicName(input);
-    if(!q) return null;
-    const inspect = (users) => {
-        for(const [nick,u0] of Object.entries(users||{})){
-            const u={...(u0||{}),nick:u0?.nick||nick};
-            if(normalizePublicName(nick)===q || normalizePublicName(displayNick(u))===q){
-                if(hasMunicipalJob(u,JOB_ADVERTISER)) return u;
-                return null;
-            }
-        }
-        return null;
-    };
-    let found=inspect(allUsersCache);
-    if(found) return found;
-    const snap=await get(ref(db,'users'));
-    return inspect(snap.val()||{});
-}
-
-async function creditAdvertiserReferral(advertiserNick, invitedNick, invitedDisplayName, opts={}){
-    if(!advertiserNick || !invitedNick || advertiserNick===invitedNick) return false;
-    const week=getWeekKey(new Date());
-    const inviteeKey=safeFirebaseKey(invitedNick);
-    let creditedThisCall=false;
-    const result=await runTransaction(userRef(advertiserNick), current=>{
-        if(!current) return;
-        if(!hasMunicipalJob({...current,nick:current.nick||advertiserNick},JOB_ADVERTISER)) return;
-        const weekly={...(current[ADVERTISER_WEEKLY_DATA_FIELD]||{})};
-        const prev=(weekly[week] && typeof weekly[week]==='object') ? weekly[week] : {};
-        const invitees={...(prev.invitees||{})};
-        if(invitees[inviteeKey]){
-            creditedThisCall=false;
-            return current;
-        }
-        invitees[inviteeKey]={nick:invitedNick,displayName:String(invitedDisplayName||invitedNick).slice(0,60),ts:Date.now()};
-        creditedThisCall=true;
-        weekly[week]={...prev,count:Object.keys(invitees).length,invitees,updatedAt:Date.now()};
-        return {...current,[ADVERTISER_WEEKLY_DATA_FIELD]:weekly,lastAdvertiserReferralAt:Date.now()};
-    });
-    if(!result?.committed || !creditedThisCall) return false;
-    const saved=result.snapshot.val()||{};
-    const count=Math.max(0,Math.floor(normalizeMoneyValue(saved?.[ADVERTISER_WEEKLY_DATA_FIELD]?.[week]?.count,0)));
-    if(opts.notify!==false){
-        try{
-            await pushNotification(advertiserNick,`🎯 Новый приглашённый: ${String(invitedDisplayName||invitedNick).slice(0,60)} зарегистрировался по вашему приглашению. За неделю: ${count}/${ADVERTISER_WEEKLY_MIN}.`,'system');
-        }catch(e){ console.warn('[Kapani] advertiser referral notification:',e); }
-    }
-    return true;
-}
-
-async function processAdvertiserWeeklySalary(nick,u,opts={}){
-    if(!nick || !u) return u;
-    const weekly=u[ADVERTISER_WEEKLY_DATA_FIELD];
-    if(!weekly || typeof weekly!=='object') return u;
-    const currentWeek=getWeekKey(new Date());
-    const keys=Object.keys(weekly).sort();
-    if(!keys.length) return u;
-    let latest=u;
-    for(const week of keys){
-        if(week===currentWeek) continue;
-        const data=weekly[week];
-        if(!data || typeof data!=='object') continue;
-        const paidMap=(latest[ADVERTISER_PAID_WEEKS_FIELD]&&typeof latest[ADVERTISER_PAID_WEEKS_FIELD]==='object')?latest[ADVERTISER_PAID_WEEKS_FIELD]:{};
-        if(paidMap[week]) continue;
-        const tx=await runTransaction(userRef(nick),current=>{
-            if(!current) return;
-            const currentPaid=(current[ADVERTISER_PAID_WEEKS_FIELD]&&typeof current[ADVERTISER_PAID_WEEKS_FIELD]==='object')?{...current[ADVERTISER_PAID_WEEKS_FIELD]}:{};
-            if(currentPaid[week]) return;
-            const currentWeekly=current[ADVERTISER_WEEKLY_DATA_FIELD]?.[week];
-            if(!currentWeekly) return;
-            const finalCount=Math.max(0,Math.floor(normalizeMoneyValue(currentWeekly.count,0)));
-            const finalAmount=advertiserWeekSalary(finalCount);
-            currentPaid[week]={paidAt:Date.now(),count:finalCount,amount:finalAmount,qualified:finalAmount>0};
-            const next={...current,[ADVERTISER_PAID_WEEKS_FIELD]:currentPaid};
-            if(finalAmount>0){
-                const nextBalance=Math.round(normalizeMoneyValue(current.balance,0))+finalAmount;
-                if(!Number.isSafeInteger(nextBalance)) return;
-                next.balance=nextBalance;
-            }
-            return next;
-        });
-        if(!tx?.committed) continue;
-        latest=tx.snapshot.val()||latest;
-        const finalData=latest?.[ADVERTISER_WEEKLY_DATA_FIELD]?.[week]||data;
-        const finalCount=Math.max(0,Math.floor(normalizeMoneyValue(finalData.count,0)));
-        const finalAmount=advertiserWeekSalary(finalCount);
-        try{
-            if(finalAmount>0){
-                await logTx(nick,{type:'in',who:'Мэрия',amt:finalAmount,desc:`Зарплата рекламщика за неделю ${week}: ${finalCount} приглашённых`});
-                if(opts.notify!==false) await pushNotification(nick,`📢 Зарплата рекламщика за неделю ${week}: +${finalAmount.toLocaleString('ru-RU')} ₽. Приглашено: ${finalCount}.`,'money');
-            }else if(opts.notify!==false){
-                await pushNotification(nick,`📢 За неделю ${week} приглашено ${finalCount}. Минимум для зарплаты — ${ADVERTISER_WEEKLY_MIN}. Выплата не начислена.`,'money');
-            }
-        }catch(e){ console.warn('[Kapani] advertiser salary post-processing:',e); }
-    }
-    return latest;
-}
-
 const ECONOMY_SAVINGS_RATE_TIERS = [
     { max: 999.99, rate: 0.07, label: '7%' },
     { max: 10000, rate: 0.10, label: '10%' },
@@ -3548,10 +3409,9 @@ async function ensureEconomyFresh(opts = {}){
     if(result){
         const snap = await get(userRef(currentNick));
         const u = snap.val() || result;
-        const afterFees=await processBusinessWeeklyFees(currentNick, u, opts);
-        const freshForSalary=(await get(userRef(currentNick))).val() || afterFees || u;
-        const afterSalary=await processAdvertiserWeeklySalary(currentNick,freshForSalary,opts);
-        await processSavingsInterest(currentNick, afterSalary || freshForSalary, opts);
+        await processBusinessWeeklyFees(currentNick, u, opts); // Теперь достучится до оригинальной функции!
+        await processSavingsInterest(currentNick, u, opts);
+        await processAdvertiserWeeklySalary(currentNick).catch(e=>console.warn('[advertiser payroll]',e));
     }
     return result;
 } // <--- А ЭТА СКОБКА ЗАКРЫВАЕТ ensureEconomyFresh
@@ -3612,15 +3472,145 @@ async function logTx(nick, entry){
     }
 }
 
+// ─── MONEY / ADVERTISER HELPERS ─────────────────────────────────
+function parseMoneyValue(value, fallback = 0){
+    if(typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+    if(value === null || value === undefined) return fallback;
+    let s = String(value).trim();
+    if(!s) return fallback;
+    s = s.replace(/\u00A0/g,'').replace(/\s/g,'').replace(/₽/g,'');
+    let normalized = s;
+    const comma = normalized.lastIndexOf(',');
+    const dot = normalized.lastIndexOf('.');
+    if(comma >= 0 && dot >= 0){
+        if(comma > dot) normalized = normalized.replace(/\./g,'').replace(',', '.');
+        else normalized = normalized.replace(/,/g,'');
+    }else if(comma >= 0){
+        const tail = normalized.length - comma - 1;
+        normalized = tail === 3 ? normalized.replace(/,/g,'') : normalized.replace(',', '.');
+    }else if(dot >= 0){
+        const tail = normalized.length - dot - 1;
+        if(tail === 3) normalized = normalized.replace(/\./g,'');
+    }
+    const direct = Number(normalized);
+    if(Number.isFinite(direct)) return direct;
+    return fallback;
+}
+function advertiserWeekKey(ts = Date.now()){
+    const d = new Date(ts);
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.toLocaleDateString('sv-SE');
+}
+function shiftAdvertiserWeekKey(key, delta){
+    const d = new Date(`${String(key||'')}T00:00:00`);
+    if(Number.isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + Number(delta||0) * 7);
+    return d.toLocaleDateString('sv-SE');
+}
+async function processAdvertiserWeeklySalary(nick, uSnapshot){
+    if(!nick) return null;
+    const userSnap = uSnapshot ? { val:()=>uSnapshot, exists:()=>true } : await get(userRef(nick));
+    if(!userSnap.exists()) return null;
+    const u = userSnap.val() || {};
+    if(!hasMunicipalJob(u, JOB_ADVERTISER)) return u;
+
+    const currentWeek = advertiserWeekKey();
+    let paidThrough = String(u.advertiserSalaryPaidThroughWeek || '').trim();
+    if(!paidThrough){
+        await update(userRef(nick), { advertiserSalaryPaidThroughWeek: currentWeek, advertiserStartedWeek: u.advertiserStartedWeek || currentWeek });
+        return { ...u, advertiserSalaryPaidThroughWeek: currentWeek, advertiserStartedWeek: u.advertiserStartedWeek || currentWeek };
+    }
+    if(paidThrough >= currentWeek) return u;
+
+    const completedWeeks=[];
+    let cursor = shiftAdvertiserWeekKey(paidThrough, 1);
+    let guard=0;
+    while(cursor && cursor < currentWeek && guard++ < 104){
+        completedWeeks.push(cursor);
+        cursor = shiftAdvertiserWeekKey(cursor, 1);
+    }
+    if(!completedWeeks.length) return u;
+
+    let allUsers = {};
+    try{
+        const allUsersSnap = await get(ref(db,'users'));
+        allUsers = allUsersSnap.val() || {};
+    }catch(e){
+        console.warn('[advertiser weekly users read]', nick, e);
+        return null;
+    }
+
+    const weekRows = await Promise.all(completedWeeks.map(async week => {
+        try{
+            const referrals = {};
+            Object.entries(allUsers).forEach(([userNick,user])=>{
+                if(!user || userNick===nick) return;
+                if(String(user.invitedBy||'') !== nick) return;
+                if(String(user.referralWeekKey||'') !== week) return;
+                referrals[userNick] = { nick:userNick, displayName:displayNick(user) || userNick, createdAt:Number(user.referralCreatedAt||user.createdAt||0) };
+            });
+            const count = Object.keys(referrals).length;
+            // Persist the weekly aggregate under the advertiser's own user record.
+            try{
+                await set(ref(db, `users/${nick}/advertiserWeekly/${week}/count`), count);
+                await set(ref(db, `users/${nick}/advertiserWeekly/${week}/referrals`), referrals);
+            }catch(writeErr){
+                console.warn('[advertiser weekly aggregate write]', nick, week, writeErr);
+            }
+            const payout = count >= ADVERTISER_WEEKLY_MIN_REFERRALS
+                ? ADVERTISER_WEEKLY_BASE_SALARY + Math.max(0, count - ADVERTISER_WEEKLY_MIN_REFERRALS) * ADVERTISER_EXTRA_REFERRAL_BONUS
+                : 0;
+            return { week, count, payout };
+        }catch(e){
+            console.warn('[advertiser weekly calculate]', nick, week, e);
+            return { week, count:0, payout:0, readError:true };
+        }
+    }));
+    if(weekRows.some(row=>row.readError)) return null;
+    const totalPayout = weekRows.reduce((sum,row)=>sum + Number(row.payout||0), 0);
+
+    const tx = await runTransaction(userRef(nick), current => {
+        if(!current || !hasMunicipalJob(current, JOB_ADVERTISER)) return;
+        if(String(current.advertiserSalaryPaidThroughWeek || '').trim() !== paidThrough) return;
+        const currentBalance = parseMoneyValue(current.balance, 0);
+        if(totalPayout <= 0){
+            return { ...current, advertiserSalaryPaidThroughWeek: currentWeek };
+        }
+        return {
+            ...current,
+            balance: currentBalance + totalPayout,
+            advertiserSalaryPaidThroughWeek: currentWeek,
+            totalEarned: parseMoneyValue(current.totalEarned, 0) + totalPayout
+        };
+    });
+    if(!tx?.committed) return null;
+
+    for(const row of weekRows){
+        try{
+            if(row.payout > 0){
+                await logTx(nick,{type:'in',who:'Мэрия',amt:row.payout,desc:`Зарплата рекламщика за неделю ${row.week}: ${row.count} приглашённых`});
+                await pushNotification(nick, `📢 Зарплата рекламщика: +${row.payout.toLocaleString('ru-RU')} ₽ за неделю ${row.week}. Приглашено: ${row.count}`, 'money');
+            }else{
+                await pushNotification(nick, `📢 Итог недели ${row.week}: приглашено ${row.count}. Нужно минимум 4 — зарплата за эту неделю не начислена.`, 'system');
+            }
+        }catch(e){ console.warn('[advertiser weekly payout log/notification]', nick, row.week, e); }
+    }
+    return tx.snapshot?.val?.() || { ...u, advertiserSalaryPaidThroughWeek: currentWeek, balance: parseMoneyValue(u.balance,0)+totalPayout };
+}
+window.JOB_ADVERTISER = JOB_ADVERTISER;
+window.ADVERTISER_KVE_REQUIRED = ADVERTISER_KVE_REQUIRED;
+window.advertiserWeekKey = advertiserWeekKey;
+
 // ─── MUNICIPAL TREASURY ─────────────────────────────
 const MUNICIPAL_TREASURY_PATH = 'municipalTreasury';
 function municipalTreasuryRef(){ return ref(db, MUNICIPAL_TREASURY_PATH); }
 async function addMunicipalTreasury(amount, reason, meta = {}){
-    const value=Math.round(normalizeMoneyValue(amount,0)); if(value<=0) return false;
+    const value=Math.round(parseMoneyValue(amount, 0)); if(value<=0) return false;
     try{
         const tx=await runTransaction(municipalTreasuryRef(),current=>{
-            const state=normalizeMunicipalTreasuryState(current);
-            const balance=Math.round(normalizeMoneyValue(state.balance,0));
+            const state=(current&&typeof current==='object')?current:{balance:current};
+            const balance=parseMoneyValue(state.balance,0);
             return {...state,balance:balance+value,updatedAt:Date.now()};
         });
         if(!tx?.committed) return false;
@@ -3647,78 +3637,56 @@ window.clearMunicipalTreasuryHistory=async function(){
 
 window.withdrawMunicipalTreasury=async function(){
     if(currentNick!==ADMIN) return toast('🚫 Только Кайон может выводить деньги из казны','red');
-    const rawInput=String(prompt('Сколько ₽ вывести из казны на аккаунт Кайона?','0')||'').trim();
-    if(!/^\d+$/.test(rawInput)) return toast('⚠️ Укажите корректную целую сумму','gold');
-    const amount=Number(rawInput);
+    const rawAmount=String(prompt('Сколько ₽ вывести из казны на аккаунт Кайона?','0')||'').trim();
+    const parsedAmount=parseMoneyValue(rawAmount, NaN);
+    const amount=Math.floor(parsedAmount);
     if(!Number.isSafeInteger(amount)||amount<=0) return toast('⚠️ Укажите корректную сумму','gold');
-
     let reserved=false;
-    let credited=false;
     try{
-        const beforeSnap=await get(municipalTreasuryRef());
-        const beforeState=normalizeMunicipalTreasuryState(beforeSnap.val());
-        const available=Math.round(normalizeMoneyValue(beforeState.balance,0));
-        if(available < amount){
-            return toast(`❌ В казне недостаточно средств. Доступно: ${available.toLocaleString('ru-RU')} ₽`,'red');
+        let reserve;
+        try{
+            reserve=await runTransaction(municipalTreasuryRef(),current=>{
+                const state=(current&&typeof current==='object')?current:{balance:current};
+                const balance=parseMoneyValue(state.balance,NaN);
+                if(!Number.isFinite(balance) || balance < amount) return;
+                return {...state,balance:Math.round((balance-amount)*100)/100,updatedAt:Date.now()};
+            });
+        }catch(txErr){
+            console.error('[municipalTreasury withdraw] reserve transaction failed',txErr);
+            const msg=txErr?.message||'ошибка Firebase';
+            return toast('❌ Не удалось зарезервировать средства казны: '+msg,'red');
         }
-
-        const reserve=await runTransaction(municipalTreasuryRef(),current=>{
-            const state=normalizeMunicipalTreasuryState(current);
-            const balance=Math.round(normalizeMoneyValue(state.balance,0));
-            if(!Number.isSafeInteger(balance) || balance<amount) return;
-            return {...state,balance:balance-amount,updatedAt:Date.now()};
-        });
         if(!reserve?.committed){
-            const fresh=await get(municipalTreasuryRef()).catch(()=>null);
-            const freshState=normalizeMunicipalTreasuryState(fresh?.val());
-            const freshBalance=Math.round(normalizeMoneyValue(freshState.balance,0));
-            if(freshBalance<amount) return toast(`❌ В казне недостаточно средств. Доступно: ${freshBalance.toLocaleString('ru-RU')} ₽`,'red');
-            throw new Error('Firebase не подтвердил резервирование средств казны');
+            const latest=await get(municipalTreasuryRef());
+            const raw=latest.val();
+            const state=(raw&&typeof raw==='object')?raw:{balance:raw};
+            const available=parseMoneyValue(state.balance,0);
+            console.warn('[municipalTreasury withdraw] transaction not committed',{requested:amount,available,raw});
+            return available >= amount
+                ? toast('❌ Firebase не подтвердил списание казны. Повторите операцию.','red')
+                : toast(`❌ В казне недостаточно средств. Доступно: ${available.toLocaleString('ru-RU')} ₽`,'red');
         }
         reserved=true;
 
         const credit=await runTransaction(userRef(ADMIN),current=>{
             if(!current) return;
-            const currentBalance=Math.round(normalizeMoneyValue(current.balance,0));
-            const nextBalance=currentBalance+amount;
+            const balance=parseMoneyValue(current.balance,0);
+            const nextBalance=balance+amount;
             if(!Number.isSafeInteger(nextBalance)) return;
-            return {...current,balance:nextBalance};
+            return {...current,balance:nextBalance,totalEarned:parseMoneyValue(current.totalEarned,0)+amount};
         });
         if(!credit?.committed) throw new Error('Не удалось зачислить средства на аккаунт Кайона');
-        credited=true;
 
-        const operationId=genId();
-        try{
-            await push(ref(db,`${MUNICIPAL_TREASURY_PATH}/history`),{
-                id:operationId,type:'out',amount,reason:'Вывод казны мэром на личный аккаунт',
-                sourceNick:ADMIN,sourceType:'mayor_withdrawal',
-                date:new Date().toLocaleDateString('ru'),time:nowTime(),ts:Date.now()
-            });
-        }catch(e){ console.warn('[municipalTreasury withdrawal history]',e); }
-        try{
-            await logTx(ADMIN,{type:'in',who:'Казна мэрии',amt:amount,desc:'Вывод средств из казны мэром',operationId});
-        }catch(logErr){ console.warn('[municipalTreasury mayor txlog]',logErr); }
-        try{
-            await pushNotification(ADMIN,`💸 Из казны мэрии выведено +${amount.toLocaleString('ru-RU')} ₽. Средства зачислены на ваш баланс.`,'money');
-        }catch(notifErr){ console.warn('[municipalTreasury mayor notification]',notifErr); }
-
-        const committedMayor=credit.snapshot.val()||{};
-        allUsersCache[ADMIN]=committedMayor;
-        window.allUsersCache=allUsersCache;
-        updateHeader_balance(committedMayor);
+        const committedMayor=credit.snapshot?.val?.() || (await get(userRef(ADMIN))).val() || {};
+        try{ await push(ref(db,`${MUNICIPAL_TREASURY_PATH}/history`),{type:'out',amount,reason:'Вывод казны мэром на личный аккаунт',sourceNick:ADMIN,sourceType:'mayor_withdrawal',date:new Date().toLocaleDateString('ru'),time:nowTime(),ts:Date.now()}); }catch(e){console.warn('[municipalTreasury withdrawal history]',e);}
+        try { await logTx(ADMIN,{type:'in',who:'Казна мэрии',amt:amount,desc:'Вывод средств из казны мэром'}); } catch(logErr){ console.warn('[municipalTreasury mayor txlog]',logErr); }
+        try { await pushNotification(ADMIN, `💰 Из казны мэрии выведено ${amount.toLocaleString('ru-RU')} ₽ на ваш аккаунт`, 'money'); } catch(notifErr){ console.warn('[municipalTreasury notification]',notifErr); }
+        allUsersCache[ADMIN]=committedMayor; window.allUsersCache=allUsersCache; updateHeader_balance(committedMayor);
         if(typeof window.renderMunicipalTreasury==='function') window.renderMunicipalTreasury();
         toast(`✅ ${amount.toLocaleString('ru-RU')} ₽ выведено из казны`,'green');
     }catch(e){
         console.error('[municipalTreasury withdraw]',e);
-        if(reserved && !credited){
-            try{
-                await runTransaction(municipalTreasuryRef(),current=>{
-                    const state=normalizeMunicipalTreasuryState(current);
-                    const balance=Math.round(normalizeMoneyValue(state.balance,0));
-                    return {...state,balance:balance+amount,updatedAt:Date.now()};
-                });
-            }catch(re){ console.error('[municipalTreasury refund]',re); }
-        }
+        if(reserved){try{await runTransaction(municipalTreasuryRef(),current=>{const state=(current&&typeof current==='object')?current:{balance:current};const balance=parseMoneyValue(state.balance,0);return {...state,balance:Math.round((balance+amount)*100)/100,updatedAt:Date.now()};});}catch(re){console.error('[municipalTreasury refund]',re);}}
         toast('❌ Не удалось вывести средства из казны: '+(e.message||'ошибка'),'red');
     }
 };
@@ -3727,7 +3695,7 @@ window.withdrawMunicipalTreasury=async function(){
 window.handleAuth = async function() {
     const nameInput = (qs('lgNick').value || '').trim();
     const password = (qs('lgPass').value || '');
-    const invitedByInput = (qs('lgInvitedBy')?.value || '').trim();
+    const inviterInput = String(qs('lgInviter')?.value || '').trim();
     if(!nameInput) return toast('⚠️ Введите отображаемое имя','gold');
     if(password.length < 4) return toast('⚠️ Пароль должен быть не короче 4 символов','gold');
     const btn = qs('authBtn'); btn.disabled = true; btn.textContent = 'Подключение...';
@@ -3739,11 +3707,26 @@ window.handleAuth = async function() {
             const nick = await ensureUniqueNick(baseNick);
             const now = Date.now();
             const passwordHash = await hashPassword(password, nick);
-            let advertiser=null;
-            if(invitedByInput){
-                try{ advertiser=await findAdvertiserByInput(invitedByInput); }catch(e){ console.warn('[Kapani] referral lookup:',e); }
+
+            let advertiserReferrer = null;
+            if(inviterInput){
+                const candidate = await findUserByPublicName(inviterInput);
+                if(!candidate){
+                    resetBtn();
+                    return toast('❌ Рекламщик с таким именем не найден','red');
+                }
+                if(candidate.nick === nick){
+                    resetBtn();
+                    return toast('❌ Нельзя указать себя пригласившим','red');
+                }
+                if(!hasMunicipalJob(candidate, JOB_ADVERTISER)){
+                    resetBtn();
+                    return toast('❌ Указанный пользователь сейчас не работает рекламщиком','red');
+                }
+                advertiserReferrer = { nick:candidate.nick, displayName:displayNick(candidate) || candidate.nick };
             }
-            await set(userRef(nick), {
+
+            const userData = {
                 nick,
                 balance: 0,
                 job: 'Житель',
@@ -3763,22 +3746,26 @@ window.handleAuth = async function() {
                 employments: [],
                 totalEarned: 0,
                 accountVerified: false,
-                referredBy: advertiser?.nick || '',
-                referredAt: advertiser ? now : 0,
                 passwordHash,
-                passwordHashSalt: nick
-            });
-            await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
-            if(advertiser){
-                try{
-                    await creditAdvertiserReferral(advertiser.nick,nick,nameInput);
-                }catch(refErr){
-                    console.warn('[Kapani] referral credit:',refErr);
-                    try{ await pushNotification(ADMIN,`⚠️ Не удалось автоматически засчитать приглашение ${advertiser.nick} → ${nick}`,'system'); }catch(_e){}
-                }
-            }else if(invitedByInput){
-                toast('ℹ️ Указанный пригласивший не найден среди рекламщиков. Регистрация продолжена без зачёта приглашения.','gold');
+                passwordHashSalt: nick,
+                ...(advertiserReferrer ? {
+                    invitedBy: advertiserReferrer.nick,
+                    invitedByName: advertiserReferrer.displayName,
+                    referralWeekKey: advertiserWeekKey(now),
+                    referralCreatedAt: now
+                } : {})
+            };
+
+            // Referral metadata is stored on the newly-created user's own record.
+            // This preserves the existing Firebase user-write boundary; the advertiser's
+            // weekly aggregate is materialized later by the advertiser's economy cycle.
+            await set(userRef(nick), userData);
+            if(advertiserReferrer){
+                try {
+                    await pushNotification(advertiserReferrer.nick, `📢 Новый приглашённый: ${nameInput} зарегистрировался по вашей рекомендации`, 'system');
+                } catch(e){ console.warn('[advertiser referral notification]', e); }
             }
+            await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
             toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
             localStorage.setItem('kp_s', nick);
             sessionStorage.setItem('kp_s', nick);
@@ -4016,87 +4003,21 @@ function attachOrderService(){
     };
     addServiceListener('orders','orders',oRef,oFn);
 }
-function chatNotificationPreview(m){
-    if(!m) return '';
-    const raw=(m.text||m.caption||'').trim();
-    if(raw) return raw.replace(/\s+/g,' ').slice(0,120);
-    if(m.msgType==='image') return '📷 Фото';
-    if(m.msgType==='voice') return '🎤 Голосовое';
-    if(m.msgType==='video') return '🎬 Видео';
-    if(m.msgType==='video_circle') return '⭕ Видеосообщение';
-    return '📎 Вложение';
-}
-
-function shouldCreateChatNotification(messageId,m,preview){
-    const now=Date.now();
-    const key=`${m?.nick||''}|${String(preview||'').trim().toLowerCase()}`;
-    try{
-        const raw=JSON.parse(localStorage.getItem('kp_chat_notif_throttle')||'{}');
-        const ids=Array.isArray(raw.ids)?raw.ids.filter(x=>x && now-Number(x.ts||0)<120000):[];
-        if(ids.some(x=>x.id===messageId)) return false;
-        const recent=Array.isArray(raw.recent)?raw.recent.filter(ts=>now-Number(ts)<60000):[];
-        if(recent.length>=8) return false;
-        const lastByKey=(raw.lastByKey&&typeof raw.lastByKey==='object')?raw.lastByKey:{};
-        if(lastByKey[key] && now-Number(lastByKey[key])<30000) return false;
-        ids.push({id:messageId,ts:now});
-        if(ids.length>30) ids.splice(0,ids.length-30);
-        recent.push(now);
-        if(recent.length>12) recent.splice(0,recent.length-12);
-        lastByKey[key]=now;
-        Object.keys(lastByKey).forEach(k=>{if(now-Number(lastByKey[k]||0)>120000)delete lastByKey[k];});
-        localStorage.setItem('kp_chat_notif_throttle',JSON.stringify({ids,recent,lastByKey}));
-        return true;
-    }catch(e){
-        return true;
-    }
-}
-
-function attachGlobalChatNotificationListener(){
-    removeServiceListener('core','chatNotifications');
-    let initialized=false;
-    const seen={};
-    const cRef=chatRef();
-    const cFn=(snap)=>{
-        const data=snap.val()||{};
-        const viewingChat=(curPage==='messages'&&document.querySelector('#msgPanel0.active'));
-        if(initialized){
-            Object.entries(data).forEach(([id,m])=>{
-                if(!m||seen[id]||!m.nick||m.nick===currentNick) return;
-                const preview=chatNotificationPreview(m);
-                if(!preview) return;
-                const senderName=displayNick(allUsersCache[m.nick])||m.nick;
-                const notificationText=`💬 ${senderName} написал в общий чат: ${preview}`;
-                if(!viewingChat){
-                    toast(notificationText,'green');
-                    const badge=qs('dmBadge');
-                    if(badge){badge.textContent='•';badge.style.display='block';}
-                }
-                if(shouldCreateChatNotification(id,m,preview)){
-                    pushNotification(currentNick,notificationText,'messages').catch(e=>console.warn('[Kapani] chat notification:',e));
-                }
-            });
-        }
-        Object.keys(data).forEach(id=>seen[id]=true);
-        // Keep only recent message ids in memory so the long-lived global listener
-        // cannot grow without bound on busy deployments.
-        const ids=Object.keys(seen);
-        if(ids.length>250){
-            ids.sort((a,b)=>(data[a]?.createdAt||0)-(data[b]?.createdAt||0));
-            ids.slice(0,ids.length-250).forEach(id=>delete seen[id]);
-        }
-        initialized=true;
-    };
-    addServiceListener('core','chatNotifications',cRef,cFn);
-}
-
 function attachChatService(){
     const cRef=chatRef();
     const cFn=(snap)=>{
         const data=snap.val()||{};
         const viewingChat=(curPage==='messages'&&document.querySelector('#msgPanel0.active'));
-        if(viewingChat){const b=qs('dmBadge');if(b)b.style.display='none';}
-        lastChatMsgs=data;
-        if(viewingChat) renderChat(lastChatMsgs);
+        if(window._chatNotifInit){
+            Object.entries(data).forEach(([id,m])=>{
+                if(!m||window._chatSeenKeys[id]||!m.nick||m.nick===currentNick||viewingChat) return;
+                const preview=m.text?m.text:(m.msgType==='image'?'📷 Фото':(m.msgType==='voice'?'🎤 Голосовое':(m.msgType?'📎 Вложение':'')));
+                toast(`💬 ${escHtml(m.nick)}: ${escHtml(String(preview).slice(0,40))}`,'green');
+                const badge=qs('dmBadge'); if(badge){badge.textContent='•';badge.style.display='block';}
+            });
+        }
+        window._chatSeenKeys={}; Object.keys(data).forEach(k=>window._chatSeenKeys[k]=true); window._chatNotifInit=true;
+        if(viewingChat){const b=qs('dmBadge');if(b)b.style.display='none';} lastChatMsgs=data; if(viewingChat) renderChat(lastChatMsgs);
     };
     addServiceListener('messages','chat',cRef,cFn);
     const typingRef=ref(db,'typing/chat');
@@ -4153,7 +4074,6 @@ function leaveService(page){
 function attachListeners(){
     attachUserListener();
     attachNotificationsListener();
-    attachGlobalChatNotificationListener();
 }
 
 // ─── HEADER ───────────────────────────────
@@ -5958,6 +5878,9 @@ window.quitJob = async function(){
                 patch.janitorProof = '';
                 patch.janitorComment = '';
             }
+            if(targetEmp.role === JOB_ADVERTISER){
+                patch.advertiserSalaryPaidThroughWeek = advertiserWeekKey();
+            }
             const securityRoles = ['Полицейский','КСБ','Охранник'];
             if(securityRoles.includes(targetEmp.role) && remainingMuni.every(e => !securityRoles.includes(e.role))){
                 patch.securityBadge = null;
@@ -6349,6 +6272,35 @@ window.sendChat=async function(){
     try{ await sendChatMsg(text,null,null); }
     catch(e){ inp.value=text; toast('❌ Не удалось отправить сообщение','red'); }
 };
+const _chatNotifyDedupe = Object.create(null);
+function chatNotificationPreview(msg){
+    if(!msg) return '';
+    const txt=String(msg.text || msg.caption || '').trim();
+    if(txt) return txt.length>80 ? txt.slice(0,77)+'...' : txt;
+    if(msg.msgType==='image') return '📷 Фото';
+    if(msg.msgType==='voice') return '🎤 Голосовое сообщение';
+    if(msg.msgType==='video') return '🎬 Видео';
+    if(msg.msgType==='video_circle') return '⭕ Видеосообщение';
+    if(msg.mediaData) return '📎 Вложение';
+    return 'Новое сообщение';
+}
+async function notifyAllUsersOfChatMessage(msg){
+    if(!msg || !msg.nick || msg.nick===currentNick) return;
+    const preview=chatNotificationPreview(msg);
+    const fingerprint=`${msg.nick}|${preview}`;
+    const now=Date.now();
+    if(_chatNotifyDedupe[fingerprint] && now-_chatNotifyDedupe[fingerprint] < 30000) return;
+    _chatNotifyDedupe[fingerprint]=now;
+    const usersSnap=await get(ref(db,'users'));
+    const users=usersSnap.val()||{};
+    const sender=users[msg.nick] || allUsersCache[msg.nick] || {};
+    const senderName=displayNick(sender) || msg.nick;
+    const text=`💬 ${senderName} написал в общий чат: ${preview}`;
+    const jobs=Object.keys(users)
+        .filter(nick=>nick!==msg.nick)
+        .map(nick=>pushNotification(nick,text,'messages').catch(()=>{}));
+    await Promise.allSettled(jobs);
+}
 async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     const uSnap=await get(userRef(currentNick));const u=uSnap.val();
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
@@ -6357,7 +6309,9 @@ async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     if(msgType) msg.msgType=msgType;
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
-    await push(chatRef(),msg);
+    const pushed = await push(chatRef(),msg);
+    notifyAllUsersOfChatMessage(msg).catch(e=>console.warn('[chat notifications]',e));
+    return pushed;
 }
 
 // ─── DM MESSENGER ─────────────────────────
@@ -7780,7 +7734,7 @@ window.sendApp=async function(){
     if(hasMunicipalJob(u, target)) return toast('⚠️ Вы уже работаете на этой должности','gold');
     if(!await canTakeAnotherJob(u, currentNick)) return toast(`⚠️ Лимит работ: ${getJobLimit(u)}. Увольтесь с одной работы или оформите подписку.`,'gold');
     const kveScore = (u.kveScore !== undefined && u.kveScore !== null) ? Number(u.kveScore) : null;
-    const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90,'Помощник врача':80,[JOB_ADVERTISER]:ADVERTISER_KVE_REQUIRED};
+    const KVE_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90,'Помощник врача':80,'Рекламщик':50};
     const required=KVE_REQUIREMENTS[target]||0;
     if(kveScore===null){
         return toast('📝 У вас ещё нет результата КВЭ. Дождитесь выставления балла мэрией.','gold');
@@ -7818,37 +7772,10 @@ function getMunicipalJobSalaryLabel(role){
         'Полицейский':'3400 ₽/неделю',
         'Врач':'в зависимости от приёмов',
         'Помощник врача':'назначается врачом',
-        'Рекламщик':'3900 ₽/неделю + 500 ₽ за каждого сверх 4'
+        'Рекламщик':'3900 ₽/неделю + 500 ₽ за каждого пользователя сверх 4'
     };
     return labels[role] || (role==='Водитель'||role==='Доставщик' ? 'в зависимости от заказов' : '');
 }
-function renderAdvertiserWorkCard(u){
-    const el=qs('advertiserWorkCard');
-    if(!el) return;
-    const active=hasMunicipalJob(u,JOB_ADVERTISER);
-    if(!active){el.style.display='none';el.innerHTML='';return;}
-    const week=getWeekKey(new Date());
-    const data=u?.[ADVERTISER_WEEKLY_DATA_FIELD]?.[week]||{};
-    const count=Math.max(0,Math.floor(normalizeMoneyValue(data.count,0)));
-    const progress=Math.min(count,ADVERTISER_WEEKLY_MIN);
-    const estimated=advertiserWeekSalary(count);
-    const extra=Math.max(0,count-ADVERTISER_WEEKLY_MIN);
-    const display=displayNick(u)||u.nick||currentNick;
-    const payoutText=count>=ADVERTISER_WEEKLY_MIN
-        ? `✅ За неделю по текущему счётчику: ${estimated.toLocaleString('ru-RU')} ₽`
-        : `⏳ До минимальной зарплаты осталось ${ADVERTISER_WEEKLY_MIN-count} приглаш.`;
-    el.style.display='block';
-    el.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(251,191,36,.08),rgba(34,211,165,.05));border-color:rgba(251,191,36,.3);">
-        <div class="card-title" style="color:var(--gold);">📢 Работа рекламщика</div>
-        <div style="font-size:13px;line-height:1.55;"><b>${progress}/${ADVERTISER_WEEKLY_MIN}</b> приглашённых за неделю${extra>0?` · +${extra*ADVERTISER_WEEKLY_BONUS} ₽ бонуса`:''}</div>
-        <div style="height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin:9px 0 10px;">
-            <div style="height:100%;width:${Math.min(100,(count/ADVERTISER_WEEKLY_MIN)*100)}%;background:linear-gradient(90deg,var(--primary),var(--gold));border-radius:inherit;"></div>
-        </div>
-        <div style="font-size:12px;color:${count>=ADVERTISER_WEEKLY_MIN?'var(--primary)':'var(--gold)'};font-weight:900;">${payoutText}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:7px;">Новый пользователь должен указать при регистрации ваш ник или отображаемое имя: <b style="color:var(--text);">${escHtml(display)}</b>.</div>
-    </div>`;
-}
-
 
 window.renderJobAppStatus=async function(){
     const snap=await get(appsRef());
@@ -7858,7 +7785,6 @@ window.renderJobAppStatus=async function(){
     const jobsListEl=qs('myJobsList');
     const uSnap=await get(userRef(currentNick));
     const u=uSnap.val()||{};
-    renderAdvertiserWorkCard(u);
     if(jobsListEl){
         const emps=collectEmploymentsFromData(u, currentNick);
         const limit=getJobLimit(u);
@@ -7947,7 +7873,8 @@ window.submitJanitorDone=async function(){
 };
 
 // ─── KVE EXAM ─────────────────────────────
-const KVE_JOB_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90,'Помощник врача':80,[JOB_ADVERTISER]:ADVERTISER_KVE_REQUIRED};
+const KVE_JOB_REQUIREMENTS={'Водитель':60,'Доставщик':53,'Уборщик':40,'Журналист':71,'КСБ':90,'Депутат':95,'Врач':90,'Помощник врача':80,'Рекламщик':50};
+window.KVE_JOB_REQUIREMENTS = KVE_JOB_REQUIREMENTS;
 function getKveJobAccess(score){
     return Object.entries(KVE_JOB_REQUIREMENTS).filter(([,req])=>score>=req).map(([job])=>job);
 }
@@ -8289,6 +8216,7 @@ window.adminForceHire = async function(){
         const emps = collectEmploymentsFromData(fresh, target);
         const newEmp = { id: `muni_${job}`, type: 'municipal', role: job };
         const patch = { job, vehicle:'', employments:[...emps.filter(e=>e.id!==newEmp.id), newEmp], displayJob: fresh.displayJob || job };
+        if(job===JOB_ADVERTISER){ Object.assign(patch, { advertiserSalaryPaidThroughWeek: advertiserWeekKey(), advertiserStartedWeek: advertiserWeekKey() }); }
         if(job===JOB_JANITOR){ Object.assign(patch, {janitorTaskDate:todayKey(), janitorSubmissionId:'', janitorSubmissionStatus:'ready', janitorProof:'', janitorComment:''}); }
         else { Object.assign(patch, {janitorTaskDate:'', janitorSubmissionId:'', janitorSubmissionStatus:'', janitorProof:'', janitorComment:''}); }
         await update(userRef(target), patch);
@@ -8315,6 +8243,7 @@ window.approveApp=async function(id,ok){
         const emps = collectEmploymentsFromData(u, a.from);
         const newEmp = { id: `muni_${a.target}`, type: 'municipal', role: a.target };
         const patch={job:a.target,vehicle:'',employments:[...emps.filter(e=>e.id!==newEmp.id), newEmp], displayJob: u.displayJob || a.target};
+        if(a.target===JOB_ADVERTISER){Object.assign(patch,{advertiserSalaryPaidThroughWeek:advertiserWeekKey(),advertiserStartedWeek:advertiserWeekKey()});}
         if(a.target===JOB_JANITOR){Object.assign(patch,{janitorTaskDate:todayKey(),janitorSubmissionId:'',janitorSubmissionStatus:'ready',janitorProof:'',janitorComment:''});}
         else{Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''});}
         await update(userRef(a.from),patch);
@@ -8463,6 +8392,7 @@ window.adminFireWorker=async function(){
             if(!confirm(`Уволить ${target} со ВСЕХ муниципальных работ?`)) return;
             const newEmps = allEmps.filter(e=>e.type!=='municipal');
             const patch = { employments: newEmps, displayJob: newEmps[0]?.role || null, job:'Житель', vehicle:'' };
+            if(muniEmps.some(e => e.role === JOB_ADVERTISER)) patch.advertiserSalaryPaidThroughWeek = advertiserWeekKey();
             for(const e of muniEmps){
                 if(e.role===JOB_JANITOR){ Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''}); }
             }
@@ -8490,6 +8420,7 @@ window.adminFireWorker=async function(){
             job: (u.job === targetRole || targetRole) ? newMuniHead : u.job,
         };
         if(targetRole==='Водитель'||targetRole==='Доставщик') patch.vehicle='';
+        if(targetRole===JOB_ADVERTISER) patch.advertiserSalaryPaidThroughWeek = advertiserWeekKey();
         if(targetRole===JOB_JANITOR){ Object.assign(patch,{janitorTaskDate:'',janitorSubmissionId:'',janitorSubmissionStatus:'',janitorProof:'',janitorComment:''}); }
         await update(userRef(target), patch);
         await pushNotification(target,`🚪 Мэрия уволила вас с должности «${targetRole}»`,'system');
@@ -14926,12 +14857,11 @@ try {
   window.hasMunicipalJob = hasMunicipalJob;
   window.pushNotification = pushNotification;
   window.KVE_JOB_REQUIREMENTS = KVE_JOB_REQUIREMENTS;
-  window.KVE_REQUIREMENTS = KVE_JOB_REQUIREMENTS;
-  window.JOB_ADVERTISER = JOB_ADVERTISER;
   window.findUserByPublicName = findUserByPublicName;
   window.logTx = logTx;
   window.txLogRef = txLogRef;
   window.fullDateTimeStr = fullDateTimeStr;
+  window.parseMoneyValue = parseMoneyValue;
   window.bizItemRef = bizItemRef;
   window.JANITOR_TASK_TEXT = JANITOR_TASK_TEXT;
   // Shared Firebase primitives — additive modules must reuse these instead of
@@ -15386,11 +15316,13 @@ ready(function(){
     : (()=>{ const d=new Date(); return { date:d.toLocaleDateString('ru'), time:d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}), ts:d.toISOString() }; });
   const bizItemRef = window.bizItemRef || ((id)=>ref(db, `businesses/${id}`));
   const JOB_JANITOR = window.JOB_JANITOR || 'Уборщик';
+  const JOB_ADVERTISER = window.JOB_ADVERTISER || 'Рекламщик';
+  const ADVERTISER_KVE_REQUIRED = Number(window.ADVERTISER_KVE_REQUIRED || 50);
 
   // ── KVE: Полицейский = 80
   try {
-    if(window.KVE_JOB_REQUIREMENTS) window.KVE_JOB_REQUIREMENTS['Полицейский'] = 80;
-    if(window.KVE_REQUIREMENTS) window.KVE_REQUIREMENTS['Полицейский'] = 80;
+    if(window.KVE_JOB_REQUIREMENTS) { window.KVE_JOB_REQUIREMENTS['Полицейский'] = 80; window.KVE_JOB_REQUIREMENTS[JOB_ADVERTISER] = ADVERTISER_KVE_REQUIRED; }
+    if(window.KVE_REQUIREMENTS) { window.KVE_REQUIREMENTS['Полицейский'] = 80; window.KVE_REQUIREMENTS[JOB_ADVERTISER] = ADVERTISER_KVE_REQUIRED; }
   } catch(e) {}
 
   // ── Firebase paths for new features
@@ -15405,6 +15337,7 @@ ready(function(){
   function clearJobSideEffects(role, u){
     const patch = {};
     if(role === 'Водитель' || role === 'Доставщик') patch.vehicle = '';
+    if(role === JOB_ADVERTISER) patch.advertiserSalaryPaidThroughWeek = (window.advertiserWeekKey ? window.advertiserWeekKey() : new Date().toLocaleDateString('sv-SE'));
     if(role === JOB_JANITOR){
       patch.janitorTaskDate=''; patch.janitorSubmissionId='';
       patch.janitorSubmissionStatus=''; patch.janitorProof=''; patch.janitorComment='';
@@ -16320,7 +16253,27 @@ ready(function(){
 
     const db = window.db;
     const ref = window.dbRef, get = window.dbGet, set = window.dbSet, update = window.dbUpdate,
-          push = window.dbPush, remove = window.dbRemove, runTransaction = window.runTransaction;
+          push = window.dbPush, remove = window.dbRemove, onValue = window.dbOnValue, off = window.dbOff,
+          runTransaction = window.runTransaction;
+
+    function parseMoneyValue(value, fallback = 0){
+      if(typeof value === 'number') return Number.isFinite(value) ? value : fallback;
+      if(value === null || value === undefined) return fallback;
+      let s = String(value).trim();
+      if(!s) return fallback;
+      s = s.replace(/\u00A0/g,'').replace(/\s/g,'').replace(/₽/g,'');
+      const comma = s.lastIndexOf(',');
+      const dot = s.lastIndexOf('.');
+      if(comma >= 0 && dot >= 0){
+        s = comma > dot ? s.replace(/\./g,'').replace(',', '.') : s.replace(/,/g,'');
+      }else if(comma >= 0){
+        s = (s.length - comma - 1 === 3) ? s.replace(/,/g,'') : s.replace(',', '.');
+      }else if(dot >= 0 && s.length - dot - 1 === 3){
+        s = s.replace(/\./g,'');
+      }
+      const n = Number(s);
+      return Number.isFinite(n) ? n : fallback;
+    }
     const qs = window.qs;
     const toast = window.toast || ((m)=>alert(m));
     const ADMIN = window.ADMIN || 'Кайон';
@@ -16835,7 +16788,7 @@ ready(function(){
     async function renderMunicipalTreasury(){
       const card=qs('kapaniTreasuryCard'); if(!card || current()!==ADMIN) return;
       try{
-        const snap=await get(ref(db,'municipalTreasury')); const state=normalizeMunicipalTreasuryState(snap.val()); const balance=Math.round(normalizeMoneyValue(state.balance,0));
+        const snap=await get(ref(db,'municipalTreasury')); const rawState=snap.val(); const state=(rawState&&typeof rawState==='object')?rawState:{balance:rawState}; const balance=parseMoneyValue(state.balance,0);
         const balEl=qs('kapaniTreasuryBalance'); if(balEl) balEl.textContent=`${balance.toLocaleString('ru-RU')} ₽`;
         const hEl=qs('kapaniTreasuryHistory');
         if(hEl){ const hs=await get(ref(db,'municipalTreasury/history')); const entries=Object.values(hs.val()||{}).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,8); hEl.innerHTML=entries.length?entries.map(x=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px;"><div style="min-width:0;"><div style="font-weight:800;">${escHtml(x.reason||'Поступление')}</div><div style="color:var(--muted);margin-top:2px;">${escHtml(x.date||'')} · ${escHtml(x.time||'')}</div></div><b style="white-space:nowrap;color:${x.type==='out'?'var(--red)':'var(--primary)'};">${x.type==='out'?'−':'+'}${Number(x.amount||0).toLocaleString('ru-RU')} ₽</b></div>`).join(''):'<div style="color:var(--muted);font-size:12px;">Операций пока нет</div>'; }
