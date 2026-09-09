@@ -1,25 +1,19 @@
-# Kapani — уведомления общего чата
+# Kapani — notifications
 
-Новое сообщение в `/chat/{messageId}` обрабатывается `notifyOnChatMessage`. Функция создаёт обычную запись уведомления каждому пользователю, кроме автора.
+## Общий чат
 
-Дальше отправка push **не выполняется непосредственно из chat trigger**. Запись `users/{nick}/notifications/{notificationId}` автоматически попадает в универсальную очередь `notificationQueue` через `enqueueNotificationPush`.
+`/chat/{messageId}` обрабатывает `notifyOnChatMessage`. Функция создаёт canonical RTDB notification каждому пользователю, кроме автора.
 
-Очередь:
+Дальше работает единый контур:
 
-1. создаёт детерминированный job;
-2. захватывает job через RTDB transaction;
-3. читает актуальные FCM-токены и серверные push preferences;
-4. отправляет data-only FCM;
-5. помечает каждый токен как `sent`, `invalid`, `disabled` или `pending`;
-6. повторяет временно неудачные отправки через scheduler;
-7. удаляет невалидные токены.
+`chat message → users/{nick}/notifications/chat_{messageId} → enqueueNotificationPush → notificationQueue → FCM → Service Worker`
 
-Такой же контур используется для подарков подписки и остальных функций сайта, которые создают `users/{nick}/notifications/*` с `push !== false`.
+Если пользователь держит общий чат открытым, push job корректно помечается `skipped` по presence, а RTDB notification остаётся в истории.
 
-## Deploy
+## Новости
 
-```bash
-firebase deploy --only functions
-```
+Раньше fan-out новостей выполнялся из клиентской вкладки и был best-effort. Теперь публикация `news/{newsId}` запускает `notifyOnNewsCreated` на backend, поэтому закрытие страницы автора не мешает fan-out.
 
-`firebase-messaging-sw.js` должен быть размещён рядом с `index.html`. Для iOS Web Push пользователь должен запускать Kapani как установленный PWA.
+## Дуэли
+
+Legacy `/notifications/{nick}/{id}` для `duel_invite`/`duel_declined` сохраняется для совместимости игровой UI. Backend trigger `notifyOnLegacyDuelNotification` зеркалит их в `users/{nick}/notifications/legacy_{id}`, откуда они проходят обычную push queue.

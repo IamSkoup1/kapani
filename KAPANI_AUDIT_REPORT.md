@@ -2,14 +2,13 @@
 
 Дата: 2026-09-09
 
-## Изменённые файлы
-- `index.html` — основной клиентский слой и UI.
+## Push / notification scope
 
-## Проверенные, но не изменённые файлы
-- `functions/index.js` — Firebase Callable Functions.
-- `cloudflare-worker/worker.js` — прокси для FCM/RTDB.
-- `firebase-messaging-sw.js` — service worker уведомлений.
-- `manifest.json`, `firebase.json`, `wrangler.toml` и package-конфигурация.
+В этом патче изменены: `functions/index.js`, `index.html`, `firebase-messaging-sw.js`, `manifest.json`, `README.md`, `DEPLOY.md`, `README_CHAT_NOTIFICATIONS.md`, `KAPANI_ARCHITECTURE_FIX_REPORT.md`.
+
+Проверены без изменения: `firebase.json`, `functions/package.json`/lock, `cloudflare-worker/worker.js`, `wrangler.toml`, `config.js`, существующие RTDB/Firestore структуры. В архиве нет Firebase Rules-файлов, поэтому новые правила доступа не придумывались без миграции текущей auth-модели.
+
+Cloudflare Worker оставлен без изменений: исходник помечает его как legacy/deprecated push bridge и он не используется в текущей активной server-side FCM pipeline.
 
 ## Такси
 Исходный цикл был: GPS водителя → `update(orders/{id})` → общий listener заказов → повторная вставка tracking DOM → пересоздание Leaflet map/listener. Дополнительно tracking listener вызывал `setView()` при каждом обновлении координат.

@@ -2,7 +2,7 @@
  * Лежит рядом с index.html
  */
 
-const SW_VERSION = 'kapani-fcm-2026-09-08-v3';
+const SW_VERSION = 'kapani-fcm-2026-09-09-v4';
 
 /**
  * Главный URL приложения.
@@ -120,6 +120,7 @@ try {
 
   messaging.onBackgroundMessage(async (payload) => {
     try {
+      console.log('[Kapani SW] background message received', payload?.data?.notificationId || 'without-id');
       const notification = payload?.notification || {};
       const data = payload?.data || {};
 
@@ -131,8 +132,8 @@ try {
         return;
       }
 
-      const title = String(data.title || 'Капани');
-      const body = String(data.body || data.text || '');
+      const title = String(data.title || payload?.notification?.title || 'Капани');
+      const body = String(data.body || data.text || payload?.notification?.body || '');
       const category = String(data.category || 'system');
 
       if (!body) {
@@ -179,7 +180,8 @@ try {
 
           category,
 
-          swVersion: SW_VERSION
+          swVersion: SW_VERSION,
+          receivedAt: Date.now()
         }
       });
 

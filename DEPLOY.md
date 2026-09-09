@@ -1,8 +1,6 @@
 # Deploy Kapani
 
-## 1. Firebase Functions
-
-В `functions/package.json` установлен Node.js 20 — это текущий рекомендуемый поддерживаемый runtime для Cloud Functions.
+## Firebase Functions
 
 ```bash
 cd functions
@@ -11,33 +9,73 @@ cd ..
 firebase deploy --only functions
 ```
 
-## 2. Push architecture
+Должны быть deployed:
 
-Не требуется Cloudflare Push Bridge. Доставка идёт напрямую из Firebase Admin SDK в FCM через `enqueueNotificationPush` и `processNotificationQueue`.
+- `registerFcmToken`
+- `unregisterFcmToken`
+- `updatePushPreferences`
+- `getPushDiagnostics`
+- `enqueueNotificationPush`
+- `processNotificationQueue`
+- `notifyOnChatMessage`
+- `notifyOnLegacyDuelNotification`
+- `notifyOnNewsCreated`
+- остальные существующие Cloud Functions проекта
 
-Проверить в Firebase Console:
+## Client / Service Worker
 
-- `enqueueNotificationPush` создана;
-- `processNotificationQueue` создана как scheduled function;
-- `registerFcmToken` и `updatePushPreferences` доступны;
-- `notifyOnChatMessage` продолжает работать.
+На production domain рядом с `index.html` должны быть доступны:
 
-## 3. Client
+- `/kapani/index.html`
+- `/kapani/config.js`
+- `/kapani/firebase-messaging-sw.js`
+- `/kapani/manifest.json`
+- `/kapani/image.png`
 
-`index.html` регистрирует `firebase-messaging-sw.js`, получает FCM token и передаёт его в `registerFcmToken`. Настройки категорий синхронизируются через `updatePushPreferences`.
+FCM Web требует HTTPS. citeturn733441search7
 
-## 4. iOS
+## Firebase prerequisites
 
-На iPhone Web Push должен использоваться в установленном PWA. Обычная вкладка Safari не является рабочим вариантом для этой схемы.
+1. Authentication должен быть включён: Kapani создаёт Firebase custom-token сессию перед server-side `registerFcmToken`.
+2. Cloud Functions должны иметь доступ к Firebase Admin SDK.
+3. FCM API и Web Push credentials проекта должны оставаться на backend.
+4. Realtime Database должна быть доступна Functions в регионе `europe-west1`.
 
-## 5. Проверка
+## RTDB Rules
 
-После деплоя:
+В архиве отсутствуют исходные RTDB/Firestore rules. Functions работают через Admin SDK и не требуют client rules для `notificationQueue`/`fcmTokenIndex`. Не копируйте публичные RTDB rules из старого Worker-конфига в production без отдельного security-аудита.
 
-1. включить уведомления в Kapani;
-2. убедиться, что появился `users/{nick}/fcmTokens/{tokenId}`;
-3. создать тестовое уведомление;
-4. проверить `notificationQueue/{jobId}`: `sent`;
-5. закрыть вкладку Kapani и отправить ещё одно уведомление;
-6. убедиться, что браузер показывает системный push;
-7. проверить notification click.
+## Verification after deployment
+
+### 1. Token registration
+
+Откройте Kapani, разрешите Notifications и выполните:
+
+```js
+await window.getKapaniPushDiagnostics()
+```
+
+Ожидается:
+
+- `permission: "granted"`
+- `serviceWorkerRegistered: true`
+- `activeServiceWorker: true`
+- `fcmTokenExists: true`
+- `serverRegistered: true`
+- `serverTokenCount >= 1`
+
+### 2. End-to-end push
+
+Создайте новое notification событие. В `notificationQueue/{jobId}` ожидается `pending → processing → sent`.
+
+### 3. Closed-site test
+
+Полностью закройте вкладки/окна Kapani и отправьте новое сообщение другому пользователю. Системное уведомление должно приходить через FCM + Service Worker без открытого `index.html`.
+
+### 4. iOS
+
+На iPhone установите Kapani на Home Screen, разрешите Notifications и тестируйте из PWA. Apple документирует Web Push для Home Screen web apps на iOS/iPadOS 16.4+. citeturn733441search0turn733441search1
+
+### 5. Logs
+
+Ищите структурированные строки `[KapaniPush]` по `jobId`, `notificationId`, `user`, `tokenId`, `attempt`, `code`.

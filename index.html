@@ -4012,7 +4012,14 @@ function revealApp(){
     try { navTo('home'); } catch(e) { console.error('[Kapani] home navigation:',e); }
 }
 
-window.logout = function() {
+window.logout = async function() {
+    const logoutNick=currentNick;
+    try {
+        if(logoutNick && window._kapaniFcmTokenId) {
+            try { await callFunctionWithFallback('unregisterFcmToken',{tokenId:window._kapaniFcmTokenId, token:window._kapaniFcmToken||''},null); }
+            catch(e){ console.warn('[Kapani FCM] token unregister during logout failed:',e); }
+        }
+    } catch(e) {}
     try { if(typeof stopTaskLiveListeners==='function') stopTaskLiveListeners(); } catch(e) {}
     stopAllActivity();
     leaveAllServiceServices();
@@ -4021,6 +4028,8 @@ window.logout = function() {
     if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
     listeners={};dmListeners={};
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
+    try { if(authInstance?.currentUser) await authModule.signOut(authInstance); } catch(e){ console.warn('[Kapani auth] signOut:',e); }
+    try { localStorage.removeItem('kp_fcm_token_id'); } catch(e) {}
     localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; syncCurrentNick(); location.reload();
 };
 
@@ -4516,14 +4525,27 @@ function isIOSPWA(){
 }
 async function getSwReg(){
     if(_swReg) return _swReg;
-    if(location.protocol === 'file:') return null;
-    if(!('serviceWorker' in navigator)) return null;
+    if(location.protocol !== 'https:') {
+        window._kapaniPushState={...(window._kapaniPushState||{}),status:'https_required',error:'service_worker_requires_https'};
+        return null;
+    }
+    if(!('serviceWorker' in navigator)) {
+        window._kapaniPushState={...(window._kapaniPushState||{}),status:'unsupported',error:'service_worker_unsupported'};
+        return null;
+    }
     try {
-        const swUrl = new URL('firebase-messaging-sw.js', location.href).href;
-        _swReg = await navigator.serviceWorker.register(swUrl, { scope: './' });
-        try { await navigator.serviceWorker.ready; } catch(e) {}
+        const swUrl = new URL('./firebase-messaging-sw.js', location.href);
+        const appScope = new URL('./', location.href).pathname;
+        _swReg = await navigator.serviceWorker.register(swUrl.href, { scope:appScope });
+        await navigator.serviceWorker.ready;
+        if(!_swReg.active && !_swReg.waiting && !_swReg.installing) throw new Error('Service Worker registered without an active/installing worker');
+        window._kapaniPushState={...(window._kapaniPushState||{}),serviceWorkerRegistered:true,serviceWorkerScope:_swReg.scope};
         return _swReg;
-    } catch(err){console.warn('SW register failed:',err);return null;}
+    } catch(err){
+        window._kapaniPushState={...(window._kapaniPushState||{}),status:'sw_failed',error:String(err?.message||err)};
+        console.error('[Kapani FCM] Service Worker registration failed:',err);
+        return null;
+    }
 }
 async function requestNotificationPermission(){
     // Cross-browser permission request — handles old Safari callback API and modern Promise API
@@ -4558,52 +4580,116 @@ async function requestPushPermission(){
     if(Notification.permission==='granted'){await getSwReg();await tryRegisterFcm();return true;}
     if(Notification.permission==='denied') return false;
     const result = await requestNotificationPermission();
-    if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);await getSwReg();await tryRegisterFcm();toast('🔔 Push-уведомления включены!','green');return true;}
+    if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);const ok=await tryRegisterFcm();if(ok){toast('🔔 Push-уведомления включены!','green');return true;}toast('⚠️ Разрешение получено, но регистрация push на сервере не завершилась. Откройте профиль и повторите включение.','gold');return false;}
     return false;
 }
 async function tryRegisterFcm(){
-    if(!FCM_VAPID_KEY||!currentNick)return;
+    const resultState = window._kapaniPushState = window._kapaniPushState || {};
+    if(!FCM_VAPID_KEY || !currentNick){
+        resultState.status='not_ready';
+        resultState.error='missing_user_or_vapid_key';
+        return false;
+    }
     try{
-        const pack = await ensureMessaging();
-        if(!pack.messaging) return;
-        const { getToken, onMessage } = pack.mod;
-        const reg=await getSwReg();
-        if(!reg) return;
-        const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
-        if(token){
-            try{
-                const result=await callFunctionWithFallback('registerFcmToken',{token,userAgent:navigator.userAgent,prefs:getPushPrefs()},null);
-                window._kapaniFcmTokenId=result?.tokenId||null;
-                await syncPushPrefs();
-            }catch(serverError){
-                console.warn('[Kapani FCM] server token registration:',serverError);
-                // Legacy fallback keeps push available for existing pre-session accounts.
-                await update(userRef(currentNick),{fcmToken:token,fcmUpdatedAt:Date.now()});
-            }
+        const auth = await waitForFirebaseAuthUser(8000);
+        if(!auth){
+            resultState.status='auth_required';
+            resultState.error='firebase_auth_session_missing';
+            console.warn('[Kapani FCM] Protected token registration requires an authenticated Firebase session.');
+            return false;
         }
-        // Foreground UI is driven by the realtime notification listener.
-        // Keeping onMessage silent prevents a second toast/browser notification.
+
+        const pack = await ensureMessaging();
+        if(!pack.messaging){
+            resultState.status='unsupported';
+            resultState.error='firebase_messaging_unsupported';
+            return false;
+        }
+        const { getToken, onMessage } = pack.mod;
+        const reg = await getSwReg();
+        if(!reg){
+            resultState.status='sw_failed';
+            resultState.error='service_worker_registration_failed';
+            return false;
+        }
+
+        const token = await getToken(pack.messaging, { vapidKey:FCM_VAPID_KEY, serviceWorkerRegistration:reg });
+        if(!token){
+            resultState.status='token_missing';
+            resultState.error='fcm_get_token_returned_empty';
+            return false;
+        }
+
+        const tokenIdLocal = await sha256TokenId(token);
+        const serverResult = await callFunctionWithFallback('registerFcmToken', {
+            token,
+            userAgent:navigator.userAgent,
+            prefs:getPushPrefs()
+        }, null);
+        window._kapaniFcmToken = token;
+        window._kapaniFcmTokenId = serverResult?.tokenId || tokenIdLocal;
+        try{ localStorage.setItem('kp_fcm_token_id', window._kapaniFcmTokenId); }catch(e){}
+        resultState.status='registered';
+        resultState.tokenId=window._kapaniFcmTokenId;
+        resultState.lastTokenUpdate=Date.now();
+        resultState.error=null;
+        resultState.serverRegistered=true;
+        window._kapaniPushLastGoodAt=Date.now();
+        await syncPushPrefs();
+
+        // Foreground delivery remains driven by the realtime notification listener.
+        // onMessage is intentionally observational so one FCM event cannot produce
+        // both a foreground browser notification and the background notification.
         if(!window._kapaniFcmOnMessageBound){
-            onMessage(pack.messaging,()=>{});
+            onMessage(pack.messaging, (payload)=>{
+                resultState.lastForegroundMessageAt=Date.now();
+                resultState.lastForegroundNotificationId=String(payload?.data?.notificationId || '');
+                try{ console.debug('[Kapani FCM] foreground message received', resultState.lastForegroundNotificationId || 'without-id'); }catch(e){}
+            });
             window._kapaniFcmOnMessageBound=true;
         }
-    }catch(e){console.warn('FCM',e);}
+        return true;
+    }catch(e){
+        resultState.status='error';
+        resultState.error=String(e?.message || e);
+        console.error('[Kapani FCM] registration failed:',e);
+        return false;
+    }
 }
-async function sendPushNotification(title,body,cat){
-    cat=cat||'system';
-    if(!('Notification' in window)||Notification.permission!=='granted') return;
-    if(!isPushCatEnabled(cat)) return;
-    // iOS Safari PWA: only send if installed as PWA
-    if(isIOSDevice() && !isIOSPWA()) return;
-    try{
-        const reg = await getSwReg();
-        if(reg && typeof reg.showNotification === 'function'){
-            await reg.showNotification(title,{body,icon:'https://cdn-icons-png.flaticon.com/512/149/149071.png',badge:'https://cdn-icons-png.flaticon.com/512/149/149071.png',vibrate:[200,80,200],tag:'kapani-'+cat,renotify:true});
-            return;
+
+async function sha256TokenId(token){
+    const text=String(token||'');
+    if(window.crypto?.subtle){
+        const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+    }
+    return text.slice(0,32);
+}
+
+async function waitForFirebaseAuthUser(timeoutMs=8000){
+    const auth=await ensureAuth();
+    if(auth.currentUser) return auth.currentUser;
+    if(!authModule?.onAuthStateChanged) return null;
+    return await new Promise(resolve=>{
+        let settled=false;
+        let timer=null;
+        const finish=(user)=>{
+            if(settled) return;
+            settled=true;
+            if(timer) clearTimeout(timer);
+            try{ unsubscribe?.(); }catch(e){}
+            resolve(user||null);
+        };
+        let unsubscribe=null;
+        try{
+            unsubscribe=authModule.onAuthStateChanged(auth,user=>finish(user));
+            timer=setTimeout(()=>finish(auth.currentUser||null),timeoutMs);
+        }catch(e){
+            finish(null);
         }
-    }catch(e){}
-    try{new Notification(title,{body,icon:'https://cdn-icons-png.flaticon.com/512/149/149071.png',tag:'kapani-'+cat});}catch(e){}
+    });
 }
+
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
@@ -4631,11 +4717,51 @@ function updatePushSettingsUI(){
         {id:'taxi_orders',label:'🛵 Такси',desc:'Заказы такси'},
         {id:'delivery_orders',label:'📦 Доставка',desc:'Заказы доставки'},
         {id:'market',label:'🛍 Маркет',desc:'Сделки'},
+        {id:'news',label:'📰 Новости',desc:'Новые публикации'},
         {id:'system',label:'⚙️ Система',desc:'Мэрия, должности'}
     ];
     container.style.display='block';
     container.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:2px solid var(--border);margin-bottom:2px;"><div><div style="font-weight:900;font-size:14px;">🔔 Все уведомления</div><div style="font-size:11px;color:var(--muted);">Главный переключатель</div></div>${makeSw(masterOn,"toggleMasterPush()")}</div>`+cats.map(c=>{const catOn=masterOn&&getPushPrefs()[c.id]!==false;const rowOp=masterOn?'':'opacity:.45;pointer-events:none;';return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);${rowOp}"><div><div style="font-weight:800;font-size:13px;">${c.label}</div><div style="font-size:11px;color:var(--muted);">${c.desc}</div></div>${makeSw(catOn,"togglePushCat('"+c.id+"')")}</div>`;}).join('');
 }
+
+window.getKapaniPushDiagnostics = async function(){
+    const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
+    let reg = null;
+    let swError = null;
+    try { reg = await getSwReg(); } catch(e){ swError=String(e?.message||e); }
+    let token = null;
+    let tokenError = null;
+    try {
+        const pack = await ensureMessaging();
+        if(pack.messaging && reg) token = await pack.mod.getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
+    } catch(e){ tokenError=String(e?.message||e); }
+    let server = null;
+    let serverError = null;
+    try { server = await callFunctionWithFallback('getPushDiagnostics',{},null); }
+    catch(e){ serverError=String(e?.message||e); }
+    const result={
+        checkedAt:new Date().toISOString(),
+        permission,
+        isIOS:isIOSDevice(),
+        isIOSPWA:isIOSPWA(),
+        serviceWorkerRegistered:!!reg,
+        serviceWorkerScope:reg?.scope||null,
+        activeServiceWorker:!!reg?.active,
+        fcmTokenExists:!!token,
+        fcmTokenId:token?await sha256TokenId(token):null,
+        serverRegistered:!!server?.tokenCount,
+        serverTokenCount:Number(server?.tokenCount||0),
+        server,
+        swError,
+        tokenError,
+        serverError,
+        state:window._kapaniPushState||null,
+        lastGoodRegistrationAt:window._kapaniPushLastGoodAt||null
+    };
+    console.table?.(result);
+    return result;
+};
+
 window.handlePushBtn=async function(){
     // iOS Safari in browser: show install instructions
     if(isIOSDevice() && !isIOSPWA()){
@@ -4660,7 +4786,7 @@ window.finishFirstPushPrompt = async function(allow){
     markFirstPushPromptHandled();
     closeFirstPushPrompt();
     if(allow){
-        try{ await requestPushPermission(); }catch(e){ console.warn('[push first prompt]',e); }
+        try{ const ok=await requestPushPermission(); if(!ok) console.warn('[push first prompt] notification permission/token registration not completed'); }catch(e){ console.error('[push first prompt]',e); }
     } else {
         toast('🔕 Уведомления отключены. Их всегда можно включить в профиле.','gold');
     }
@@ -4671,7 +4797,7 @@ window.finishFirstPushPrompt = async function(allow){
 function showFirstPushPrompt(){
     if(!currentNick || wasFirstPushPromptHandled() || qs('firstPushPrompt')) return;
     if(!('Notification' in window)) { markFirstPushPromptHandled(); return; }
-    if(Notification.permission==='granted') { markFirstPushPromptHandled(); try{requestPushPermission();}catch(e){} return; }
+    if(Notification.permission==='granted') { markFirstPushPromptHandled(); void requestPushPermission().catch(e=>console.error('[push permission prompt]',e)); return; }
     const m=document.createElement('div');
     m.id='firstPushPrompt';
     m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;display:flex;align-items:flex-end;justify-content:center;padding:16px;';
@@ -4706,8 +4832,7 @@ async function pushNotification(nick,text,cat='system'){
             cat,
             createdAt:Date.now(),
             url:'/kapani/',
-            push:true,
-            pushBridgeProcessedAt:null
+            push:true
         });
 
         // FCM delivery is server-side: the notification-creation trigger enqueues
@@ -5713,7 +5838,7 @@ window.buyShop=async function(){
         
         if (result.success) {
             await pushNotification(currentNick,`📦 Заказ: ${items} — ${finalTotal}₽${discountPercent > 0 ? ` (скидка ${discountPercent}%)` : ''} (вкл. доставка 30₽)`);
-            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Доставщик'&&nick!==currentNick){await pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders');}}}catch(e){}
+            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Доставщик'&&nick!==currentNick){await pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders');}}}catch(e){console.error('[notification pipeline][delivery order]',e);}
             ['sB','sP','sL','sK'].forEach(i=>qs(i).value=0);qs('sAddr').value='';shopAddrCoords=null;if(shopMarker&&shopMapObj){shopMapObj.removeLayer(shopMarker);shopMarker=null;}recalcShop();
             toast(`📦 Заказ оформлен!${discountPercent > 0 ? ' Скидка ' + discountPercent + '% применена!' : ''}`,'green');
         }
@@ -5811,7 +5936,7 @@ window.orderTaxi=async function(){
             const priceText = discountPercent > 0 ? `${finalPrice}₽ (скидка ${discountPercent}%)` : `${finalPrice}₽`;
             await pushNotification(currentNick,`🛵 Такси: ${from} → ${to} — ${priceText}`,'taxi_orders');
             toast(`🛵 Такси вызвано!${discountPercent > 0 ? ` Скидка ${discountPercent}% применена!` : ''}`,'gold');
-            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Водитель'&&nick!==currentNick){await pushNotification(nick,`🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,'taxi_orders');}}}catch(e){}
+            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Водитель'&&nick!==currentNick){await pushNotification(nick,`🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,'taxi_orders');}}}catch(e){console.error('[notification pipeline][taxi order]',e);}
         }
     } catch (error) {
         console.error('Ошибка заказа такси:', error);
@@ -5838,7 +5963,6 @@ window.takeOrder=async function(id){
             const isDriver=hasMunicipalJob(u,'Водитель')||u.job==='Водитель';
             const notifText=isDriver?`🛵 Водитель ${currentNick} принял заказ! Транспорт: ${u.vehicle||'?'}`:`📦 Курьер ${currentNick} принял заказ!`;
             await pushNotification(o.client,notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
-            sendPushNotification('Капани 📦',notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
             toast('✅ Заказ принят!','green');
             if(o.type==='taxi'&&isDriver) navTo('driverPage');
             if(o.type==='shop'&&hasMunicipalJob(u,'Доставщик')) navTo('deliveryPage');
@@ -8089,7 +8213,7 @@ window.submitJanitorDone=async function(){
     const c=qs('janitorProofComment');if(c)c.value='';
     const fi=qs('janitorProofFile');if(fi)fi.value='';
     const doneBtn=qs('janitorDoneBtn');if(doneBtn)doneBtn.disabled=true;
-    try{await pushNotification(ADMIN,`🧹 Отчёт уборщика: ${currentNick}`,'system');}catch(e){}
+    try{await pushNotification(ADMIN,`🧹 Отчёт уборщика: ${currentNick}`,'system');}catch(e){console.error('[notification pipeline][cleaner report]',e);}
     toast('📨 Отчёт в мэрии','green');
 };
 
@@ -8860,21 +8984,11 @@ window.publishNews = async function(){
 // on the backend (falls back silently to the in-app notification otherwise —
 // that one always works, since it's plain Realtime Database writes). ──
 async function notifyAllUsersOfNews(newsItem){
-    const usersSnap = await get(ref(db,'users'));
-    const users = usersSnap.val() || {};
-    const text = `📰 Новая новость в Капани\n${newsItem.title}`;
-    const jobs = Object.keys(users)
-        .filter(nick => nick !== newsItem.author) // author doesn't need a notification about their own post
-        .map(nick => push(notifRef(nick), { text, time: nowTime(), cat:'news', newsId: newsItem.id }).catch(()=>{}));
-    await Promise.allSettled(jobs);
-    try {
-        await callFunctionWithFallback('sendNewsPush', { newsId:newsItem.id, title:'📰 Новая новость в Капани', body:newsItem.title, scope:newsItem.scope }, async()=>{
-            // No server-side push function deployed — in-app notification above
-            // already reached everyone, so this is a non-fatal no-op fallback.
-        });
-    } catch(e){ console.warn('[news push]', e && e.message); }
-    console.log('news notification sent', newsItem.id);
+    // Notification fan-out is server-side now, triggered by /news/{newsId}.
+    // This compatibility function intentionally performs no client-side fan-out.
+    return newsItem?.id || null;
 }
+
 window.deleteNews = async function(id){
     if(!confirm('Удалить эту новость?')) return;
     const snap = await get(newsItemRef(id));

@@ -17,7 +17,7 @@ const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
 
 function sanitizePushPreferences(incoming) {
     const source = incoming && typeof incoming === 'object' ? incoming : {};
-    const allowedCategories = ['messages', 'money', 'taxi_orders', 'delivery_orders', 'market', 'system'];
+    const allowedCategories = ['messages', 'money', 'taxi_orders', 'delivery_orders', 'market', 'news', 'system'];
     const prefs = { enabled: source.enabled !== false };
     for (const category of allowedCategories) {
         if (Object.prototype.hasOwnProperty.call(source, category)) prefs[category] = source[category] !== false;
@@ -407,7 +407,10 @@ exports.cancelOrder = onCall(async (request) => {
             await db.ref(`users/${order.worker}/notifications`).push({
                 text: `⚠️ ${clientUid} отменил заказ`,
                 time: getTime(),
-                cat: order.type === 'taxi' ? 'taxi_orders' : 'delivery_orders'
+                cat: order.type === 'taxi' ? 'taxi_orders' : 'delivery_orders',
+                createdAt: Date.now(),
+                push: true,
+                source: 'order_cancel'
             });
         }
 
@@ -577,6 +580,52 @@ exports.updatePushPreferences = onCall(async (request) => {
     return { success: true, prefs, tokenId: tokenId || null };
 });
 
+exports.unregisterFcmToken = onCall(async (request) => {
+    const uid = request.auth?.uid;
+    const tokenId = String(request.data?.tokenId || '').trim();
+    const token = String(request.data?.token || '').trim();
+    if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
+    if (!tokenId && !token) throw new HttpsError('invalid-argument', 'Не указан tokenId или token');
+
+    const resolvedTokenId = tokenId || tokenKey(token);
+    const tokenSnap = await db.ref(`users/${uid}/fcmTokens/${resolvedTokenId}`).get();
+    const legacySnap = await db.ref(`users/${uid}/fcmToken`).get();
+    const updates = {
+        [`users/${uid}/fcmTokens/${resolvedTokenId}`]: null,
+        [`fcmTokenIndex/${resolvedTokenId}`]: null
+    };
+    const storedToken = tokenSnap.exists() ? String(tokenSnap.val()?.token || tokenSnap.val() || '') : '';
+    const legacyMatches = legacySnap.exists() && (storedToken && String(legacySnap.val()) === storedToken);
+    if (legacyMatches || (!tokenSnap.exists() && token && String(legacySnap.val()) === token)) {
+        updates[`users/${uid}/fcmToken`] = null;
+        updates[`users/${uid}/fcmUpdatedAt`] = null;
+    }
+    if (!tokenSnap.exists() && !legacySnap.exists()) {
+        return { success: true, tokenId: resolvedTokenId, removed: false };
+    }
+    await db.ref().update(updates);
+    return { success: true, tokenId: resolvedTokenId, removed: true };
+});
+
+exports.getPushDiagnostics = onCall(async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
+    const snap = await db.ref(`users/${uid}`).get();
+    if (!snap.exists()) throw new HttpsError('not-found', 'Пользователь не найден');
+    const user = snap.val() || {};
+    const tokens = collectFcmTokens(user);
+    return {
+        ok: true,
+        user: uid,
+        tokenCount: tokens.length,
+        tokens: tokens.map((entry) => ({
+            tokenId: tokenKey(entry.token),
+            updatedAt: Number(user?.fcmTokens?.[tokenKey(entry.token)]?.updatedAt || user?.fcmUpdatedAt || 0) || null,
+            pushPrefs: entry.pushPrefs || user.pushPrefs || null
+        }))
+    };
+});
+
 function notificationCategoryEnabled(user, tokenEntry, category) {
     const prefs = tokenEntry?.pushPrefs && typeof tokenEntry.pushPrefs === 'object'
         ? tokenEntry.pushPrefs
@@ -603,28 +652,63 @@ function getNotificationPayload(notification) {
         url: String(notification?.url || KAPANI_CANONICAL_URL),
         createdAt: String(notification?.createdAt || Date.now()),
         source: String(notification?.source || ''),
-        sourceMessageId: String(notification?.sourceMessageId || '')
+        sourceMessageId: String(notification?.sourceMessageId || ''),
+        newsId: String(notification?.newsId || '')
     };
 }
 
-function isTransientFcmError(code) {
-    return /unavailable|internal|deadline|resource-exhausted|quota-exceeded|server-unavailable/i.test(String(code || ''));
+function pushLog(level, event, fields = {}) {
+    const safe = {};
+    for (const [key, value] of Object.entries(fields)) {
+        if (value === undefined || value === null) continue;
+        const text = typeof value === 'string' ? value : JSON.stringify(value);
+        safe[key] = text.length > 500 ? text.slice(0, 500) + '…' : text;
+    }
+    const line = `[KapaniPush] ${event} ${JSON.stringify(safe)}`;
+    if (level === 'error') console.error(line);
+    else if (level === 'warn') console.warn(line);
+    else console.log(line);
+}
+
+function fcmErrorCode(error) {
+    return String(error?.code || error?.errorInfo?.code || error?.message || 'unknown');
 }
 
 function isInvalidTokenError(code) {
-    return /registration-token-not-registered|invalid-registration-token|invalid-argument/i.test(String(code || ''));
+    return /registration-token-not-registered|invalid-registration-token/i.test(String(code || ''));
+}
+
+function isTransientFcmError(code) {
+    return /unavailable|internal|deadline|resource-exhausted|quota-exceeded|server-unavailable|too-many-requests|network|timeout/i.test(String(code || ''));
+}
+
+function isPermanentFcmError(code) {
+    return /sender-id-mismatch|third-party-auth-error|invalid-apns-credentials|invalid-argument|mismatched-credential/i.test(String(code || ''));
 }
 
 function nextRetryDelay(attempt) {
     const n = Math.max(1, Number(attempt || 1));
-    return Math.min(60 * 60 * 1000, 15 * 1000 * Math.pow(2, Math.min(n - 1, 7)));
+    const base = 15 * 1000;
+    const jitter = Math.floor(Math.random() * 5000);
+    return Math.min(60 * 60 * 1000, base * Math.pow(2, Math.min(n - 1, 7)) + jitter);
 }
 
 async function removeInvalidFcmToken(uid, tokenEntry) {
     const updates = {};
     const path = tokenEntry?.path;
+    const token = tokenEntry?.token;
     if (path) updates[`users/${uid}/${path}`] = null;
-    if (tokenEntry?.token) updates[`fcmTokenIndex/${tokenKey(tokenEntry.token)}`] = null;
+    if (token) {
+        const tokenId = tokenKey(token);
+        updates[`fcmTokenIndex/${tokenId}`] = null;
+        // Do not leave a stale legacy single-token pointer behind.
+        const legacyRef = db.ref(`users/${uid}/fcmToken`);
+        const snap = await legacyRef.get().catch(() => null);
+        if (snap?.exists() && String(snap.val()) === String(token)) {
+            updates[`users/${uid}/fcmToken`] = null;
+            updates[`users/${uid}/fcmUpdatedAt`] = null;
+        }
+    }
     if (Object.keys(updates).length) await db.ref().update(updates);
 }
 
@@ -634,12 +718,14 @@ async function acquireNotificationJob(jobId) {
     const now = Date.now();
     const result = await ref.transaction((job) => {
         if (!job) return job;
-        if (job.status === 'sent' || job.status === 'skipped' || job.status === 'dead') return;
-        if (Number(job.leaseUntil || 0) > now && job.lockId && job.lockId !== lockId) return;
+        if (['sent', 'skipped', 'dead'].includes(job.status)) return;
+        const leaseUntil = Number(job.leaseUntil || 0);
+        if ((job.status === 'processing' || job.status === 'sending') && leaseUntil > now && job.lockId && job.lockId !== lockId) return;
         return {
             ...job,
-            status: 'sending',
+            status: 'processing',
             lockId,
+            lockedAt: now,
             leaseUntil: now + 90 * 1000,
             workerStartedAt: now,
             updatedAt: now
@@ -648,15 +734,34 @@ async function acquireNotificationJob(jobId) {
     return result.committed ? { ref, job: result.snapshot.val(), lockId } : null;
 }
 
+async function finishNotificationJob(jobRef, lockId, patch) {
+    const result = await jobRef.transaction((job) => {
+        if (!job || job.lockId !== lockId) return;
+        return {
+            ...job,
+            ...patch,
+            lockId: null,
+            leaseUntil: null,
+            lockedAt: null,
+            updatedAt: Date.now()
+        };
+    });
+    return result.committed;
+}
+
 async function processNotificationJob(jobId) {
     const acquired = await acquireNotificationJob(jobId);
     if (!acquired) return;
 
     const { ref: jobRef, job, lockId } = acquired;
-    const now = Date.now();
+    const startedAt = Date.now();
     const nick = String(job.nick || '');
+    const notificationId = String(job.notificationId || job.notification?.notificationId || '');
+    pushLog('info', 'job_started', { jobId, notificationId, user: nick, attempt: Number(job.attempts || 0) + 1 });
+
     if (!nick || !job.notification) {
-        await jobRef.update({ status: 'dead', lastError: 'invalid_job', updatedAt: now });
+        await finishNotificationJob(jobRef, lockId, { status: 'dead', lastError: 'invalid_job', completedAt: startedAt });
+        pushLog('error', 'job_dead_invalid', { jobId, notificationId, user: nick });
         return;
     }
 
@@ -664,22 +769,28 @@ async function processNotificationJob(jobId) {
         const userSnap = await db.ref(`users/${nick}`).get();
         const user = userSnap.exists() ? (userSnap.val() || {}) : null;
         if (!user) {
-            await jobRef.update({ status: 'dead', lastError: 'user_not_found', updatedAt: now, leaseUntil: null });
+            await finishNotificationJob(jobRef, lockId, { status: 'dead', lastError: 'user_not_found', completedAt: Date.now() });
+            pushLog('error', 'job_dead_user_missing', { jobId, notificationId, user: nick });
             return;
         }
 
         const notification = job.notification;
         const category = String(notification.category || 'system');
-
-        if (!notificationCategoryEnabled(user, category)) {
-            await jobRef.update({ status: 'skipped', skipReason: 'user_preferences', completedAt: now, updatedAt: now, leaseUntil: null, lockId: null });
+        if (!notificationCategoryEnabled(user, null, category)) {
+            await finishNotificationJob(jobRef, lockId, {
+                status: 'skipped', skipReason: 'user_preferences', completedAt: Date.now()
+            });
+            pushLog('info', 'job_skipped_preferences', { jobId, notificationId, user: nick, category });
             return;
         }
 
         if (notification.source === 'general_chat') {
             const presenceSnap = await db.ref(`presence/${nick}/generalChatOpen`).get();
             if (presenceSnap.val() === true) {
-                await jobRef.update({ status: 'skipped', skipReason: 'general_chat_open', completedAt: now, updatedAt: now, leaseUntil: null, lockId: null });
+                await finishNotificationJob(jobRef, lockId, {
+                    status: 'skipped', skipReason: 'general_chat_open', completedAt: Date.now()
+                });
+                pushLog('info', 'job_skipped_chat_open', { jobId, notificationId, user: nick });
                 return;
             }
         }
@@ -687,35 +798,48 @@ async function processNotificationJob(jobId) {
         const tokenEntries = collectFcmTokens(user);
         if (!tokenEntries.length) {
             const attempts = Number(job.attempts || 0) + 1;
+            const now = Date.now();
             if (attempts >= 96) {
-                await jobRef.update({ status: 'dead', lastError: 'no_tokens', attempts, completedAt: now, updatedAt: now, leaseUntil: null, lockId: null });
+                await finishNotificationJob(jobRef, lockId, {
+                    status: 'dead', lastError: 'no_tokens', attempts, completedAt: now
+                });
+                pushLog('error', 'job_dead_no_tokens', { jobId, notificationId, user: nick, attempts });
             } else {
-                await jobRef.update({
+                await finishNotificationJob(jobRef, lockId, {
                     status: 'waiting_token', attempts,
                     nextAttemptAt: now + 15 * 60 * 1000,
-                    lastError: 'no_tokens', updatedAt: now, leaseUntil: null, lockId: null
+                    lastError: 'no_tokens'
                 });
+                pushLog('warn', 'job_waiting_token', { jobId, notificationId, user: nick, attempts });
             }
             return;
         }
 
         const tokenStatus = (job.tokenStatus && typeof job.tokenStatus === 'object') ? { ...job.tokenStatus } : {};
         const responsesToSend = [];
-        let enabledTokenCount = 0;
         for (const entry of tokenEntries) {
             const id = tokenKey(entry.token);
             const state = tokenStatus[id]?.state;
             if (state === 'sent' || state === 'invalid' || state === 'disabled') continue;
             if (!notificationCategoryEnabled(user, entry, category)) {
-                tokenStatus[id] = { state: 'disabled', attempts: Number(tokenStatus[id]?.attempts || 0), updatedAt: now };
+                tokenStatus[id] = {
+                    state: 'disabled', attempts: Number(tokenStatus[id]?.attempts || 0), updatedAt: Date.now()
+                };
                 continue;
             }
-            enabledTokenCount += 1;
             responsesToSend.push({ ...entry, id });
         }
 
         if (!responsesToSend.length) {
-            await jobRef.update({ status: enabledTokenCount ? 'sent' : 'skipped', skipReason: enabledTokenCount ? null : 'user_preferences', tokenStatus, sentAt: now, completedAt: now, updatedAt: now, nextAttemptAt: null, leaseUntil: null, lockId: null });
+            const hasSuccessfulToken = Object.values(tokenStatus).some(v => v?.state === 'sent');
+            await finishNotificationJob(jobRef, lockId, {
+                status: hasSuccessfulToken ? 'sent' : 'skipped',
+                skipReason: hasSuccessfulToken ? null : 'user_preferences',
+                tokenStatus,
+                sentAt: hasSuccessfulToken ? (job.sentAt || Date.now()) : null,
+                completedAt: Date.now(),
+                nextAttemptAt: null
+            });
             return;
         }
 
@@ -725,84 +849,149 @@ async function processNotificationJob(jobId) {
                 body: String(notification.body || ''),
                 text: String(notification.body || ''),
                 category,
-                notificationId: String(job.notificationId || notification.notificationId || jobId),
+                notificationId,
                 url: String(notification.url || KAPANI_CANONICAL_URL),
-                createdAt: String(notification.createdAt || now),
+                createdAt: String(notification.createdAt || Date.now()),
                 ...(notification.source ? { source: String(notification.source) } : {}),
-                ...(notification.sourceMessageId ? { sourceMessageId: String(notification.sourceMessageId) } : {})
+                ...(notification.sourceMessageId ? { sourceMessageId: String(notification.sourceMessageId) } : {}),
+                ...(notification.newsId ? { newsId: String(notification.newsId) } : {})
             },
             webpush: { headers: { Urgency: 'high' } },
             token: ''
         };
 
-        const tokenStatuses = { ...tokenStatus };
-        let successCount = 0;
         const attemptedAt = Date.now();
+        let successCount = 0;
+        let transientFailureCount = 0;
+        let permanentFailureCount = 0;
+        let invalidCount = 0;
+        let lastError = null;
+        const cleanupPromises = [];
 
         for (let offset = 0; offset < responsesToSend.length; offset += 500) {
             const batch = responsesToSend.slice(offset, offset + 500);
-            const response = await admin.messaging().sendEach(batch.map((entry) => ({
-                ...payload,
-                token: entry.token
-            })));
+            const response = await admin.messaging().sendEach(batch.map((entry) => ({ ...payload, token: entry.token })));
 
             response.responses.forEach((result, index) => {
                 const entry = batch[index];
-                const previousAttempts = Number(tokenStatuses[entry.id]?.attempts || 0);
-                const errorCode = result.success ? '' : String(result.error?.code || 'unknown');
+                const id = entry.id;
+                const previousAttempts = Number(tokenStatus[id]?.attempts || 0);
+                const errorCode = result.success ? '' : fcmErrorCode(result.error);
+                const attemptNumber = previousAttempts + 1;
+
+                pushLog(result.success ? 'info' : 'warn', 'token_result', {
+                    jobId, notificationId, user: nick, tokenId: id, attempt: attemptNumber,
+                    result: result.success ? 'accepted_by_fcm' : 'failed', code: errorCode
+                });
+
                 if (result.success) {
                     successCount += 1;
-                    tokenStatuses[entry.id] = { state: 'sent', attempts: previousAttempts + 1, updatedAt: attemptedAt };
+                    tokenStatus[id] = { state: 'sent', attempts: attemptNumber, updatedAt: attemptedAt };
                     return;
                 }
+
+                lastError = errorCode;
                 if (isInvalidTokenError(errorCode)) {
-                    tokenStatuses[entry.id] = { state: 'invalid', attempts: previousAttempts + 1, updatedAt: attemptedAt, error: errorCode };
-                    removeInvalidFcmToken(nick, entry).catch((cleanupError) => console.warn('[Kapani FCM cleanup]', cleanupError));
-                    return;
+                    invalidCount += 1;
+                    tokenStatus[id] = { state: 'invalid', attempts: attemptNumber, updatedAt: attemptedAt, error: errorCode };
+                    cleanupPromises.push(removeInvalidFcmToken(nick, entry).catch((cleanupError) => {
+                        pushLog('error', 'token_cleanup_failed', {
+                            jobId, notificationId, user: nick, tokenId: id, code: fcmErrorCode(cleanupError)
+                        });
+                    }));
+                } else if (isPermanentFcmError(errorCode)) {
+                    permanentFailureCount += 1;
+                    tokenStatus[id] = { state: 'failed', attempts: attemptNumber, updatedAt: attemptedAt, error: errorCode };
+                } else if (isTransientFcmError(errorCode) || !errorCode) {
+                    transientFailureCount += 1;
+                    tokenStatus[id] = { state: 'pending', attempts: attemptNumber, updatedAt: attemptedAt, error: errorCode || 'unknown' };
+                } else {
+                    // Unknown FCM errors are retried safely rather than being silently lost.
+                    transientFailureCount += 1;
+                    tokenStatus[id] = { state: 'pending', attempts: attemptNumber, updatedAt: attemptedAt, error: errorCode };
                 }
-                tokenStatuses[entry.id] = {
-                    state: 'pending', attempts: previousAttempts + 1,
-                    updatedAt: attemptedAt, error: errorCode
-                };
             });
         }
 
-        const unresolved = responsesToSend.filter((entry) => tokenStatuses[entry.id]?.state === 'pending');
+        await Promise.allSettled(cleanupPromises);
+        const unresolved = responsesToSend.filter((entry) => tokenStatusesNeedsRetry(tokenStatus[entry.id]));
+        const attempts = Number(job.attempts || 0) + (unresolved.length ? 1 : 0);
+        const now = Date.now();
+
         if (unresolved.length) {
-            const attempts = Number(job.attempts || 0) + 1;
             if (attempts >= 10) {
-                await jobRef.update({
-                    status: successCount > 0 ? 'partial' : 'dead', attempts,
-                    tokenStatus: tokenStatuses,
-                    lastError: 'max_attempts', completedAt: now,
-                    updatedAt: now, nextAttemptAt: null, leaseUntil: null, lockId: null
+                const status = successCount > 0 ? 'sent' : 'dead';
+                await finishNotificationJob(jobRef, lockId, {
+                    status,
+                    attempts,
+                    tokenStatus,
+                    sentCount: successCount,
+                    failedCount: permanentFailureCount,
+                    invalidCount,
+                    lastError: lastError || 'max_attempts',
+                    completedAt: now,
+                    nextAttemptAt: null
+                });
+                pushLog('error', 'job_finalized_after_retries', {
+                    jobId, notificationId, user: nick, status, attempts,
+                    successCount, transientFailureCount, permanentFailureCount, invalidCount
                 });
             } else {
-                await jobRef.update({
+                const retryAt = now + nextRetryDelay(attempts);
+                await finishNotificationJob(jobRef, lockId, {
                     status: 'retry', attempts,
-                    tokenStatus: tokenStatuses,
-                    nextAttemptAt: now + nextRetryDelay(attempts),
-                    lastError: 'fcm_delivery_failed', updatedAt: now, leaseUntil: null, lockId: null
+                    tokenStatus,
+                    sentCount: successCount,
+                    failedCount: permanentFailureCount,
+                    invalidCount,
+                    lastError: lastError || 'fcm_delivery_failed',
+                    nextAttemptAt: retryAt
+                });
+                pushLog('warn', 'job_retry_scheduled', {
+                    jobId, notificationId, user: nick, attempts,
+                    nextAttemptAt: retryAt,
+                    successCount, transientFailureCount, permanentFailureCount, invalidCount
                 });
             }
             return;
         }
 
-        await jobRef.update({
-            status: 'sent', tokenStatus: tokenStatuses, sentCount: successCount,
-            completedAt: now, updatedAt: now, nextAttemptAt: null, leaseUntil: null, lockId: null
+        await finishNotificationJob(jobRef, lockId, {
+            status: successCount > 0 ? 'sent' : 'dead',
+            tokenStatus,
+            sentCount: successCount,
+            failedCount: permanentFailureCount,
+            invalidCount,
+            lastError: successCount > 0 ? null : (lastError || 'all_tokens_failed'),
+            sentAt: successCount > 0 ? now : null,
+            completedAt: now,
+            nextAttemptAt: null
+        });
+        pushLog(successCount > 0 ? 'info' : 'error', 'job_completed', {
+            jobId, notificationId, user: nick, status: successCount > 0 ? 'sent' : 'dead',
+            successCount, transientFailureCount, permanentFailureCount, invalidCount,
+            durationMs: now - startedAt
         });
     } catch (error) {
         const attempts = Number(job.attempts || 0) + 1;
-        console.error('[Kapani notification queue]', jobId, error);
+        const errorCode = fcmErrorCode(error);
+        const now = Date.now();
+        pushLog('error', 'job_exception', { jobId, notificationId, user: nick, attempt: attempts, code: errorCode });
         if (attempts >= 10) {
-            await jobRef.update({ status: 'dead', attempts, lastError: String(error?.message || error), updatedAt: Date.now(), nextAttemptAt: null, leaseUntil: null, lockId: null });
+            await finishNotificationJob(jobRef, lockId, {
+                status: 'dead', attempts, lastError: String(error?.message || error), completedAt: now, nextAttemptAt: null
+            });
         } else {
-            await jobRef.update({ status: 'retry', attempts, lastError: String(error?.message || error), updatedAt: Date.now(), nextAttemptAt: Date.now() + nextRetryDelay(attempts), leaseUntil: null, lockId: null });
+            await finishNotificationJob(jobRef, lockId, {
+                status: 'retry', attempts, lastError: String(error?.message || error), nextAttemptAt: now + nextRetryDelay(attempts)
+            });
         }
     }
 }
 
+function tokenStatusesNeedsRetry(state) {
+    return state?.state === 'pending';
+}
 
 exports.enqueueNotificationPush = onValueCreated(
   { ref: '/users/{nick}/notifications/{notificationId}', region: 'europe-west1' },
@@ -820,18 +1009,24 @@ exports.enqueueNotificationPush = onValueCreated(
     const queueRef = db.ref(`notificationQueue/${jobId}`);
     const existing = await queueRef.get();
     if (!existing.exists()) {
-        await queueRef.set({
-            id: jobId,
-            nick,
-            notificationId,
-            notification: payload,
-            status: 'queued',
-            attempts: 0,
-            tokenStatus: {},
-            createdAt: now,
-            nextAttemptAt: now,
-            updatedAt: now
+        const createResult = await queueRef.transaction((job) => {
+            if (job) return;
+            return {
+                id: jobId,
+                nick,
+                notificationId,
+                notification: payload,
+                status: 'pending',
+                attempts: 0,
+                tokenStatus: {},
+                createdAt: now,
+                nextAttemptAt: now,
+                updatedAt: now
+            };
         });
+        if (!createResult.committed) {
+            pushLog('info', 'job_already_exists', { jobId, notificationId, user: nick });
+        }
     }
 
     await processNotificationJob(jobId);
@@ -846,10 +1041,20 @@ exports.processNotificationQueue = onSchedule(
     if (!snap.exists()) return null;
     const now = Date.now();
     const jobs = Object.values(snap.val() || {})
-      .filter((job) => job && ['queued', 'retry', 'waiting_token'].includes(job.status) && Number(job.nextAttemptAt || 0) <= now)
+      .filter((job) => {
+          if (!job) return false;
+          if (['pending', 'retry', 'waiting_token'].includes(job.status)) {
+              return Number(job.nextAttemptAt || 0) <= now;
+          }
+          if (job.status === 'processing' || job.status === 'sending') {
+              return Number(job.leaseUntil || 0) > 0 && Number(job.leaseUntil || 0) <= now;
+          }
+          return false;
+      })
       .sort((a, b) => Number(a.nextAttemptAt || 0) - Number(b.nextAttemptAt || 0))
       .slice(0, 100);
 
+    pushLog('info', 'scheduler_tick', { candidates: jobs.length });
     await Promise.allSettled(jobs.map((job) => processNotificationJob(String(job.id))));
     return null;
   }
@@ -1004,6 +1209,35 @@ exports.giftSubscription = onCall(async (request) => {
             }
         };
 
+        updatedRoot.users[giverNick].notifications = {
+            ...(giver.notifications || {}),
+            [`gift_${giftId}`]: {
+                createdAt: committedAt,
+                url: KAPANI_CANONICAL_URL,
+                cat: 'system',
+                push: true,
+                title: 'Капани',
+                time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                text: `🎁 Вы подарили ${plan.name} пользователю ${recipientNick}!`,
+                source: 'subscription_gift',
+                sourceMessageId: giftId
+            }
+        };
+        updatedRoot.users[recipientNick].notifications = {
+            ...(recipient.notifications || {}),
+            [`gift_${giftId}`]: {
+                createdAt: committedAt,
+                url: KAPANI_CANONICAL_URL,
+                cat: 'system',
+                push: true,
+                title: 'Капани',
+                time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                text: `🎁 ${giverNick} подарил вам ${plan.name}!`,
+                source: 'subscription_gift',
+                sourceMessageId: giftId
+            }
+        };
+
         return updatedRoot;
     });
 
@@ -1023,27 +1257,6 @@ exports.giftSubscription = onCall(async (request) => {
 
         throw new HttpsError('aborted', 'Операция не была подтверждена Firebase. Повторите попытку.');
     }
-
-    // Notification delivery is intentionally outside the financial transaction:
-    // notification failure can never roll back or partially apply the gift.
-    const notificationBase = {
-        createdAt: committedAt,
-        url: KAPANI_CANONICAL_URL,
-        cat: 'system',
-        push: true
-    };
-    await Promise.all([
-        db.ref(`users/${giverNick}/notifications/gift_${giftId}`).set({
-            ...notificationBase,
-            text: `🎁 Вы подарили ${plan.name} пользователю ${recipientNick}!`,
-            time: new Date(committedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-        }),
-        db.ref(`users/${recipientNick}/notifications/gift_${giftId}`).set({
-            ...notificationBase,
-            text: `🎁 ${giverNick} подарил вам ${plan.name}!`,
-            time: new Date(committedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-        })
-    ]).catch((error) => console.warn('[giftSubscription notifications]', error));
 
     return {
         success: true,
@@ -1115,6 +1328,85 @@ exports.notifyOnChatMessage = onValueCreated(
     // This keeps chat, gifts and all other notification sources on the same
     // retry/dedupe/invalid-token path.
 
+    return null;
+  }
+);
+
+
+/**
+ * Legacy duel notification bridge.
+ * The game UI historically stores duel events under /notifications/{nick}.
+ * Mirror only duel events into the canonical user notification collection so
+ * they use the same durable queue/FCM path without removing the legacy UI data.
+ */
+exports.notifyOnLegacyDuelNotification = onValueCreated(
+  { ref: '/notifications/{nick}/{notificationId}', region: 'europe-west1' },
+  async (event) => {
+    const nick = String(event.params?.nick || '');
+    const notificationId = String(event.params?.notificationId || '');
+    const raw = event.data?.val() || null;
+    if (!nick || !notificationId || !raw) return null;
+    if (!['duel_invite', 'duel_declined'].includes(String(raw.type || ''))) return null;
+
+    const canonicalId = `legacy_${notificationId}`;
+    const targetRef = db.ref(`users/${nick}/notifications/${canonicalId}`);
+    const existing = await targetRef.get();
+    if (existing.exists()) return null;
+
+    await targetRef.set({
+      text: String(raw.text || 'Новое уведомление'),
+      title: 'Капани',
+      time: String(raw.time || new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })),
+      cat: 'messages',
+      createdAt: Number(raw.ts || Date.now()),
+      url: `${KAPANI_CANONICAL_URL}?duel=${encodeURIComponent(String(raw.duelId || ''))}`,
+      push: true,
+      type: String(raw.type),
+      from: String(raw.from || ''),
+      duelId: String(raw.duelId || ''),
+      source: 'legacy_duel',
+      sourceMessageId: notificationId
+    });
+    return null;
+  }
+);
+
+/**
+ * Server-side news fan-out. This replaces the old client-side best-effort
+ * fan-out, so a publisher closing their tab cannot interrupt delivery.
+ */
+exports.notifyOnNewsCreated = onValueCreated(
+  { ref: '/news/{newsId}', region: 'europe-west1' },
+  async (event) => {
+    const newsId = String(event.params?.newsId || '');
+    const news = event.data?.val() || null;
+    if (!newsId || !news) return null;
+
+    const usersSnap = await db.ref('users').get();
+    const users = usersSnap.val() || {};
+    const text = `📰 Новая новость в Капани\n${String(news.title || '').trim() || 'Новая публикация'}`;
+    const createdAt = Number(news.createdAt || Date.now());
+    const updates = {};
+
+    for (const nick of Object.keys(users)) {
+      if (!nick || nick === String(news.author || '')) continue;
+      const notificationId = `news_${newsId}`;
+      updates[`users/${nick}/notifications/${notificationId}`] = {
+        text,
+        title: 'Капани',
+        time: new Date(createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        cat: 'news',
+        newsId,
+        createdAt,
+        url: `${KAPANI_CANONICAL_URL}?news=${encodeURIComponent(newsId)}`,
+        push: true,
+        source: 'news',
+        sourceMessageId: newsId
+      };
+    }
+
+    if (Object.keys(updates).length) await db.ref().update(updates);
+    pushLog('info', 'news_fanout_created', { newsId, recipients: Object.keys(updates).length });
     return null;
   }
 );
