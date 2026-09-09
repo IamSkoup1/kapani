@@ -3025,14 +3025,21 @@ function hideLoading() {
 })();
 
 // ─── ONLINE PRESENCE ──────────────────────
+let _onlineStatusTimer=null;
+let _onlineStatusInFlight=false;
 async function updateOnlineStatus() {
-    if(!currentNick) return;
-    try { await update(userRef(currentNick), {lastSeen:Date.now()}); } catch(e){}
+    if(!currentNick || _onlineStatusInFlight) return;
+    _onlineStatusInFlight=true;
+    try { await update(userRef(currentNick), {lastSeen:Date.now()}); } catch(e){} finally { _onlineStatusInFlight=false; }
+}
+function scheduleOnlineStatusUpdate(){
+    if(_onlineStatusTimer) return;
+    _onlineStatusTimer=setTimeout(()=>{_onlineStatusTimer=null;updateOnlineStatus();},1500);
 }
 function startOnlineHeartbeat() {
     updateOnlineStatus();
     onlineHeartbeatInterval = registerInterval('onlineHeartbeat', setInterval(updateOnlineStatus, 60000));
-    ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>updateOnlineStatus(),{passive:true}));
+    ['click','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,scheduleOnlineStatusUpdate,{passive:true}));
     // iOS audio unlock: create AudioContext on first touch so speaker is used
     const unlockAudio = () => {
         try {
@@ -4339,7 +4346,7 @@ function updateHeader(u) {
     const vDisp=qs('vehicleDisplay');
     if(vDisp){if(u.vehicle){vDisp.style.display='block';vDisp.textContent='🛵 '+u.vehicle;}else vDisp.style.display='none';}
     const quitBtn=qs('quitJobBtn'); if(quitBtn) quitBtn.style.display=collectEmploymentsFromData(u, u.nick||currentNick).length?'block':'none';
-    if(isDriver&&qs('vehicleInput')) qs('vehicleInput').value=u.vehicle||'';
+    if(isDriver){ const vehicleInput=qs('vehicleInput'); if(vehicleInput && document.activeElement!==vehicleInput) vehicleInput.value=u.vehicle||''; }
     // Кнопка заседания — только для депутатов
     const depBtn=qs('deputySessionQuickBtn'); if(depBtn) depBtn.style.display=hasMunicipalJob(u,'Депутат')?'block':'none';
     // Блок КСБ-штрафов
@@ -5020,7 +5027,7 @@ async function renderWorkerPage(orders){
         if(_driverUiKey===stableDriverKey) return;
         _driverUiKey=stableDriverKey;
         const driverAction=active.status==='accepted'?`<button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="startSharingLocation()">📍 Начать движение</button>`:active.status==='driver_arriving'?`<button class="btn btn-gold btn-sm" style="margin-top:8px;" onclick="beginTaxiTrip('${active.id}')">🚕 Клиент найден — начать поездку</button>`:active.status==='in_progress'?`<button class="btn btn-gold btn-sm" style="margin-top:8px;" onclick="finishTaxiTrip('${active.id}')">🏁 Завершить поездку</button>`:'';
-        el.innerHTML=`<div class="work-order work-active"><div style="color:var(--primary);font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">🟢 Активный заказ</div><div style="font-weight:700;font-size:15px;margin-bottom:4px;">${escHtml(active.info)}</div>${active.address?`<div style="color:var(--muted);font-size:13px;margin-bottom:8px;">📍 ${escHtml(active.address)}</div>`:''}<div style="color:var(--muted);font-size:13px;margin-bottom:12px;">Клиент: <b style="color:var(--text)">${escHtml(active.client)}</b> · ${active.price}₽</div><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="abandonOrder('${active.id}')">⚠️ Отказаться (−35₽)</button>${driverAction}</div>`;
+        el.innerHTML=`<div class="work-order work-active"><div style="color:var(--primary);font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:8px;">🟢 Активный заказ</div><div style="font-weight:700;font-size:15px;margin-bottom:4px;">${escHtml(active.info)}</div>${active.address?`<div style="color:var(--muted);font-size:13px;margin-bottom:8px;">📍 ${escHtml(active.address)}</div>`:''}<div style="color:var(--muted);font-size:13px;margin-bottom:8px;">Клиент: <b style="color:var(--text)">${escHtml(active.client)}</b> · ${active.price}₽</div>${isDriver&&active.type==='taxi'?`<div style="font-size:13px;color:var(--primary);font-weight:900;margin-bottom:12px;">🛵 ${escHtml(active.driverVehicle||u.vehicle||'Транспорт не указан')}</div>`:''}<button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="abandonOrder('${active.id}')">⚠️ Отказаться (−35₽)</button>${driverAction}</div>`;
         const clientUser=allUsersCache[active.client]||{};const clientOnline=isUserOnline(clientUser);
         const clientCardId=isDriver?'driverClientCard':'deliveryClientCard';const clientInfoId=isDriver?'driverClientInfo':'deliveryClientInfo';
         const clientCardEl=qs(clientCardId),clientInfoEl=qs(clientInfoId);
@@ -5745,8 +5752,8 @@ window.takeOrder=async function(id){
         const result = await fallbackTakeOrder({ orderId: id });
         
         if (result.success) {
-            const uSnap=await get(userRef(currentNick));const u=uSnap.val();
-            const isDriver=u.job==='Водитель';
+            const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
+            const isDriver=hasMunicipalJob(u,'Водитель')||u.job==='Водитель';
             const notifText=isDriver?`🛵 Водитель ${currentNick} принял заказ! Транспорт: ${u.vehicle||'?'}`:`📦 Курьер ${currentNick} принял заказ!`;
             await pushNotification(o.client,notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
             sendPushNotification('Капани 📦',notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
@@ -6471,7 +6478,9 @@ async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
     const pushed = await push(chatRef(),msg);
-    notifyAllUsersOfChatMessage(msg).catch(e=>console.warn('[chat notifications]',e));
+    // Уведомления общего чата создаёт Cloud Function по событию chat/{messageId}.
+    // Клиент больше не делает fan-out по всем users, чтобы не перегружать RTDB и не
+    // создавать дублирующие уведомления при одновременной работе push bridge.
     return pushed;
 }
 

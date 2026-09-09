@@ -295,7 +295,7 @@ async function sendOneFcm(
   );
 
   const targetUrl = String(
-    notification?.url || './index.html'
+    notification?.url || '/kapani/'
   );
 
   const createdAt = String(

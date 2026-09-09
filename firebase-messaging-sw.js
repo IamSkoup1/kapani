@@ -1,4 +1,3 @@
-```javascript
 /* Firebase Messaging SW — UTF-8.
  * Лежит рядом с index.html
  */
@@ -39,6 +38,15 @@ function resolveNotificationUrl(requestedUrl) {
     // Чужой origin не используем для перехода из уведомления.
     if (url.origin !== self.location.origin) {
       return new URL(KAPANI_APP_PATH, self.location.origin).href;
+    }
+
+    // Старые уведомления могли содержать /index.html. Нормализуем их
+    // на canonical GitHub Pages путь Kapani, сохраняя query/hash.
+    if (url.pathname === '/index.html') {
+      const canonical = new URL(KAPANI_APP_PATH, self.location.origin);
+      canonical.search = url.search;
+      canonical.hash = url.hash;
+      return canonical.href;
     }
 
     return url.href;
@@ -110,7 +118,7 @@ try {
 
   const messaging = firebase.messaging();
 
-  messaging.onBackgroundMessage((payload) => {
+  messaging.onBackgroundMessage(async (payload) => {
     try {
       const notification = payload?.notification || {};
       const data = payload?.data || {};
@@ -319,4 +327,3 @@ self.addEventListener('notificationclick', (event) => {
     })()
   );
 });
-```

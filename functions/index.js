@@ -1,4 +1,5 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onValueCreated } = require('firebase-functions/v2/database');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getDatabase } = require('firebase-admin/database');
 const admin = require('firebase-admin');
@@ -436,3 +437,62 @@ function getDateTime() {
 function getTime() {
     return new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
 }
+
+/**
+ * Уведомления общего чата.
+ *
+ * Архитектурно fan-out выполняется на сервере, а не из браузера пользователя:
+ * 1) клиент пишет одно сообщение в /chat;
+ * 2) Cloud Function получает событие;
+ * 3) сервер записывает уведомление каждому другому пользователю;
+ * 4) существующие RTDB-listener'ы и FCM bridge доставляют его без перезагрузки.
+ */
+exports.notifyOnChatMessage = onValueCreated(
+  {
+    ref: '/chat/{messageId}',
+    region: 'europe-west1'
+  },
+  async (event) => {
+    const message = event.data?.val();
+    if (!message?.nick) return null;
+
+    const senderNick = String(message.nick);
+    const text = String(message.text || message.caption || '').trim();
+    let preview = text;
+    if (!preview) {
+      if (message.msgType === 'image') preview = '📷 Фото';
+      else if (message.msgType === 'voice') preview = '🎤 Голосовое сообщение';
+      else if (message.msgType === 'video') preview = '🎬 Видео';
+      else if (message.msgType === 'video_circle') preview = '⭕ Видеосообщение';
+      else if (message.mediaData) preview = '📎 Вложение';
+      else preview = 'Новое сообщение';
+    }
+    if (preview.length > 80) preview = `${preview.slice(0, 77)}...`;
+
+    const usersSnap = await db.ref('users').get();
+    const users = usersSnap.val() || {};
+    const sender = users[senderNick] || {};
+    const senderName = String(sender.name || sender.publicName || sender.nick || senderNick);
+    const notificationText = `💬 ${senderName} написал в общий чат: ${preview}`;
+
+    const updates = {};
+    const now = Date.now();
+    for (const nick of Object.keys(users)) {
+      if (nick === senderNick) continue;
+      const notificationId = db.ref(`users/${nick}/notifications`).push().key;
+      if (!notificationId) continue;
+      updates[`users/${nick}/notifications/${notificationId}`] = {
+        text: notificationText,
+        time: new Date(now).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        cat: 'messages',
+        createdAt: now,
+        url: '/kapani/'
+      };
+    }
+
+    if (!Object.keys(updates).length) return null;
+    await db.ref().update(updates);
+    return null;
+  }
+);
+
