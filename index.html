@@ -2463,12 +2463,18 @@ window.kapaniLoadLeaflet = (function(){
     </script>
 
 <script src="./config.js"></script>
+<script src="./functions/subscription-config.js"></script>
 <script type="module">
     const CONFIG = globalThis.KAPANI_CONFIG;
     if (!CONFIG) throw new Error("Kapani config.js не загружен");
-    const CURRENT_SUBSCRIPTION_PRICES = { plus: 299, ultra: 899, prime: 1499 };
     function getSubscriptionPrice(type){
-        return CURRENT_SUBSCRIPTION_PRICES[type] ?? Number(CONFIG.subscriptions?.[type]?.price || 0);
+        const item = globalThis.KAPANI_SUBSCRIPTIONS?.[type];
+        return Number(item?.price ?? CONFIG.subscriptions?.[type]?.price ?? 0);
+    }
+    function getSubscriptionRank(subscription, expiry){
+        const active = subscription && subscription !== 'none' && expiry && new Date(expiry) > new Date();
+        if(!active) return 0;
+        return Number(globalThis.KAPANI_SUBSCRIPTIONS?.[subscription]?.rank || 0);
     }
     window.openBizOwnerPanel = function(bizId){
     currentBizId = bizId;
@@ -2476,13 +2482,21 @@ window.kapaniLoadLeaflet = (function(){
     navTo('bizOwnerPanel');
 };
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp, runTransaction, query, orderByChild, equalTo, limitToLast }
+import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverTimestamp, runTransaction, query, orderByChild, equalTo, limitToLast, onDisconnect }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 // Messaging / Functions / Storage are initialized only when their functionality is actually used.
 let functions = null;
 let storage = null;
 let messagingInstance = null;
+let authInstance = null;
+let authModule = null;
+async function ensureAuth(){
+    if(authInstance) return authInstance;
+    authModule = authModule || await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+    authInstance = authModule.getAuth(app);
+    return authInstance;
+}
 async function ensureFunctions(){
     if(functions) return functions;
     const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
@@ -2811,6 +2825,23 @@ async function callFunctionWithFallback(functionName, data, fallbackFn) {
         }
         throw error;
     }
+}
+
+async function establishKapaniServerSession(nick, password){
+    const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+    const fn = httpsCallable(await ensureFunctions(), 'issueKapaniSessionToken');
+    const result = await fn({ nick, password });
+    const token = result?.data?.token;
+    if(!token) throw new Error('Сервер не выдал защищённую сессию');
+    const auth = await ensureAuth();
+    await authModule.signInWithCustomToken(auth, token);
+    return auth.currentUser;
+}
+
+async function requireKapaniServerSession(){
+    const auth = await ensureAuth();
+    if(auth.currentUser) return auth.currentUser;
+    throw new Error('Требуется повторный вход для защищённой операции');
 }
 
 // Fallback: Create order directly in database
@@ -3862,6 +3893,11 @@ window.handleAuth = async function() {
             localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
             currentNick = nick;
             syncCurrentNick();
+            try {
+                await establishKapaniServerSession(nick, password);
+            } catch(sessionError) {
+                console.warn('[Kapani auth] server session:', sessionError);
+            }
             startApp();
         } else {
             const enteredHash = await hashPassword(password, existing.passwordHashSalt || existing.nick);
@@ -3882,6 +3918,11 @@ window.handleAuth = async function() {
             localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
             currentNick = existing.nick;
             syncCurrentNick();
+            try {
+                await establishKapaniServerSession(existing.nick, password);
+            } catch(sessionError) {
+                console.warn('[Kapani auth] server session:', sessionError);
+            }
             startApp();
         }
     } catch(e) {
@@ -4057,29 +4098,27 @@ function attachUserListener(){
 }
 function attachNotificationsListener(){
     removeServiceListener('core','notifications');
-    let notifInit=false,lastNotifCount=0;
+    let notifInit=false;
+    const seen = window._kapaniSeenNotificationIds || new Set();
+    window._kapaniSeenNotificationIds = seen;
     const nRef=notifRef(currentNick);
     const nFn=(snap)=>{
         const notifs=snap.val()||{};
         const arr=Object.entries(notifs).map(([id,n])=>({...n,id}));
         updateBadge(arr.length);
         if(curPage==='profile') renderNotifications(notifs);
-        if(notifInit&&arr.length>lastNotifCount){
-            const sorted=arr.sort((a,b)=>a.id.localeCompare(b.id)); const newest=sorted[sorted.length-1];
-            if(newest){
-                if(curPage!=='profile') showNotifPopup(newest.text,newest.time);
-                const t=newest.text||''; let pushCat=newest.cat||'system';
-                if(!newest.cat){
-                    if(t.includes('💬')||t.includes('написал')||t.includes('Сообщение')) pushCat='messages';
-                    else if(t.includes('💸')||t.includes('💰')||t.includes('₽')) pushCat='money';
-                    else if(t.includes('🛵')||t.includes('такси')) pushCat='taxi_orders';
-                    else if(t.includes('📦')||t.includes('достав')) pushCat='delivery_orders';
-                    else if(t.includes('🛍')||t.includes('🤝')||t.includes('купил')) pushCat='market';
-                }
-                sendPushNotification('Капани',t,pushCat);
-            }
+
+        if(!notifInit){
+            Object.keys(notifs).forEach(id=>seen.add(id));
+            notifInit=true;
+            return;
         }
-        lastNotifCount=arr.length; notifInit=true;
+
+        for(const [id, newest] of Object.entries(notifs)){
+            if(seen.has(id) || !newest) continue;
+            seen.add(id);
+            if(curPage!=='profile') showNotifPopup(newest.text,newest.time);
+        }
     };
     addServiceListener('core','notifications',nRef,nFn);
 }
@@ -4094,25 +4133,22 @@ function attachOrderService(){
     addServiceListener('orders','orders',oRef,oFn);
 }
 function attachChatService(){
+    removeServiceListener('messages','chat');
     const cRef=query(chatRef(),orderByChild('createdAt'),limitToLast(80));
     const cFn=(snap)=>{
         const data=snap.val()||{};
         const viewingChat=(curPage==='messages'&&document.querySelector('#msgPanel0.active'));
-        if(window._chatNotifInit){
-            Object.entries(data).forEach(([id,m])=>{
-                if(!m||window._chatSeenKeys[id]||!m.nick||m.nick===currentNick||viewingChat)return;
-                const preview=m.text?m.text:(m.msgType==='image'?'📷 Фото':(m.msgType==='voice'?'🎤 Голосовое':(m.msgType?'📎 Вложение':'')));
-                toast(`💬 ${escHtml(m.nick)}: ${escHtml(String(preview).slice(0,40))}`,'green');
-                const badge=qs('dmBadge');if(badge){badge.textContent='•';badge.style.display='block';}
-            });
+        lastChatMsgs=data;
+        if(viewingChat){
+            const b=qs('dmBadge');if(b)b.style.display='none';
+            renderChat(lastChatMsgs);
         }
-        window._chatSeenKeys={};Object.keys(data).forEach(k=>window._chatSeenKeys[k]=true);window._chatNotifInit=true;
-        lastChatMsgs=data;if(viewingChat){const b=qs('dmBadge');if(b)b.style.display='none';renderChat(lastChatMsgs);}
     };
+    // One persistent realtime listener for the open chat service.
+    // Re-rendering never creates another Firebase listener.
     addServiceListener('messages','chat',cRef,cFn);
-    const typingRef=ref(db,'typing/chat');
-    const typingFn=snap=>{if(curPage==='messages'&&document.querySelector('#msgPanel0.active'))updateChatLiveStatus(snap.val()||{});};
-    addServiceListener('messages','chatTyping',typingRef,typingFn);
+    // General-chat typing presence may still be used internally by voice/video flows,
+    // but it is intentionally not rendered as a user-facing typing indicator.
     const dmInboxRef=dmIndexRef(currentNick);
     const dmInboxFn=snap=>{
         const index=snap.val()||{};
@@ -4127,12 +4163,31 @@ function attachChatService(){
     addServiceListener('messages','readState',rsRef,rsFn);
 }
 
+async function setGeneralChatPresence(active){
+    if(!currentNick) return;
+    try{
+        const p = ref(db, `presence/${currentNick}/generalChatOpen`);
+        const dc = onDisconnect(p);
+        if(active){
+            await dc.set(false);
+            await set(p, true);
+        }else{
+            await dc.cancel();
+            await set(p, false);
+        }
+    }catch(e){ console.warn('[Kapani chat presence]',e); }
+}
 function enterService(page){
     const service = page==='messages'?'messages':page==='market'?'market':page==='home'?'home':page==='tasks'?'tasks':(['driverPage','deliveryPage'].includes(page)?'orders':page==='adminPage'?'admin':page==='ratings'?'ratings':(['businesses','bizDetail','bizOwnerPanel'].includes(page)?'business':page==='dutyPage'?'duty':null));
     if(!service) return;
     if(service==='home'||service==='orders') attachOrderService();
     if(service==='tasks') startTaskLiveListeners();
-    if(service==='messages'){ try{ if(!qs('chatEmojiPanel')) buildEmojiPanels(); }catch(e){} loadAllUsersCache().then(()=>{ if(curPage==='messages') renderDmUserList(allUsersCache); }).catch(e=>console.warn('[Kapani] users cache:',e)); attachChatService(); }
+    if(service==='messages'){ 
+        try{ if(!qs('chatEmojiPanel')) buildEmojiPanels(); }catch(e){}
+        setGeneralChatPresence(!!document.querySelector('#msgPanel0.active'));
+        loadAllUsersCache().then(()=>{ if(curPage==='messages') renderDmUserList(allUsersCache); }).catch(e=>console.warn('[Kapani] users cache:',e));
+        attachChatService();
+    }
     if(service==='market'){ const r=marketRef(); addServiceListener('market','market',r,s=>{if(curPage==='market')renderMarket(s.val()||{});}); }
     if(service==='ratings'){ loadAllUsersCache().then(u=>{if(curPage==='ratings')renderLeaderboard(u);}).catch(e=>console.warn('[Kapani] ratings users:',e)); }
     if(service==='admin'){ loadAllUsersCache().then(u=>{if(curPage==='adminPage'){renderAdminUsers(u);renderAdminUserSelect(u);renderUnverifiedAccounts();}}).catch(e=>console.warn('[Kapani] admin users:',e)); const aRef=appsRef(); addServiceListener('admin','apps',aRef,s=>{if(curPage==='adminPage')renderAdminApps(s.val()||{});}); attachOrderService(); }
@@ -4143,6 +4198,7 @@ function leaveService(page){
     const mapping={messages:'messages',market:'market',home:'home',tasks:'tasks',driverPage:'orders',deliveryPage:'orders',adminPage:'admin',ratings:'ratings',businesses:'business',bizDetail:'business',bizOwnerPanel:'business',dutyPage:'duty'};
     const service=mapping[page]; if(service) removeAllServiceListeners(service);
     if(page==='messages'){
+        setGeneralChatPresence(false);
         if(dmListeners.current){try{off(dmListeners.current.ref,'value',dmListeners.current.fn);}catch(e){} dmListeners.current=null;}
         if(dmListeners.read){try{off(dmListeners.read.ref,'value',dmListeners.read.fn);}catch(e){} dmListeners.read=null;}
         if(dmTypingUnsub){try{dmTypingUnsub();}catch(e){} dmTypingUnsub=null;}
@@ -4505,8 +4561,21 @@ async function tryRegisterFcm(){
         const reg=await getSwReg();
         if(!reg) return;
         const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
-        if(token)await update(userRef(currentNick),{fcmToken:token,fcmUpdatedAt:Date.now()});
-        onMessage(pack.messaging,(payload)=>{const t=payload.notification?.title||'Капани';const b=payload.notification?.body||'';if(b)toast('🔔 '+b,'green');});
+        if(token){
+            try{
+                await callFunctionWithFallback('registerFcmToken',{token,userAgent:navigator.userAgent},null);
+            }catch(serverError){
+                console.warn('[Kapani FCM] server token registration:',serverError);
+                // Legacy fallback keeps push available for existing pre-session accounts.
+                await update(userRef(currentNick),{fcmToken:token,fcmUpdatedAt:Date.now()});
+            }
+        }
+        // Foreground UI is driven by the realtime notification listener.
+        // Keeping onMessage silent prevents a second toast/browser notification.
+        if(!window._kapaniFcmOnMessageBound){
+            onMessage(pack.messaging,()=>{});
+            window._kapaniFcmOnMessageBound=true;
+        }
     }catch(e){console.warn('FCM',e);}
 }
 async function sendPushNotification(title,body,cat){
@@ -4606,6 +4675,15 @@ function showFirstPushPrompt(){
     document.body.appendChild(m);
 }
 
+if(!window._kapaniChatPresenceUnloadBound){
+    window._kapaniChatPresenceUnloadBound = true;
+    window.addEventListener('pagehide', ()=>{ 
+        if(currentNick) {
+            try { set(ref(db, `presence/${currentNick}/generalChatOpen`), false); } catch(e) {}
+        }
+    }, {capture:true});
+}
+
 // ─── NOTIFICATIONS ────────────────────────
 async function pushNotification(nick,text,cat='system'){
     try{
@@ -4617,6 +4695,8 @@ async function pushNotification(nick,text,cat='system'){
             time:nowTime(),
             cat,
             createdAt:Date.now(),
+            url:'/kapani/',
+            push:true,
             pushBridgeProcessedAt:null
         });
 
@@ -6440,35 +6520,6 @@ window.sendChat=async function(){
     try{ await sendChatMsg(text,null,null); }
     catch(e){ inp.value=text; toast('❌ Не удалось отправить сообщение','red'); }
 };
-const _chatNotifyDedupe = Object.create(null);
-function chatNotificationPreview(msg){
-    if(!msg) return '';
-    const txt=String(msg.text || msg.caption || '').trim();
-    if(txt) return txt.length>80 ? txt.slice(0,77)+'...' : txt;
-    if(msg.msgType==='image') return '📷 Фото';
-    if(msg.msgType==='voice') return '🎤 Голосовое сообщение';
-    if(msg.msgType==='video') return '🎬 Видео';
-    if(msg.msgType==='video_circle') return '⭕ Видеосообщение';
-    if(msg.mediaData) return '📎 Вложение';
-    return 'Новое сообщение';
-}
-async function notifyAllUsersOfChatMessage(msg){
-    if(!msg || !msg.nick || msg.nick===currentNick) return;
-    const preview=chatNotificationPreview(msg);
-    const fingerprint=`${msg.nick}|${preview}`;
-    const now=Date.now();
-    if(_chatNotifyDedupe[fingerprint] && now-_chatNotifyDedupe[fingerprint] < 30000) return;
-    _chatNotifyDedupe[fingerprint]=now;
-    const usersSnap=await get(ref(db,'users'));
-    const users=usersSnap.val()||{};
-    const sender=users[msg.nick] || allUsersCache[msg.nick] || {};
-    const senderName=displayNick(sender) || msg.nick;
-    const text=`💬 ${senderName} написал в общий чат: ${preview}`;
-    const jobs=Object.keys(users)
-        .filter(nick=>nick!==msg.nick)
-        .map(nick=>pushNotification(nick,text,'messages').catch(()=>{}));
-    await Promise.allSettled(jobs);
-}
 async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     const uSnap=await get(userRef(currentNick));const u=uSnap.val();
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
@@ -6478,9 +6529,8 @@ async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
     const pushed = await push(chatRef(),msg);
-    // Уведомления общего чата создаёт Cloud Function по событию chat/{messageId}.
-    // Клиент больше не делает fan-out по всем users, чтобы не перегружать RTDB и не
-    // создавать дублирующие уведомления при одновременной работе push bridge.
+    // Только Cloud Function fan-out уведомлений по событию /chat/{messageId}.
+    // Браузер пишет ровно одно сообщение и не рассылает уведомления сам.
     return pushed;
 }
 
@@ -6622,6 +6672,7 @@ window.togglePinChat = async function(nick){
 };
 window.switchMsgTab=function(i){
     [0,1].forEach(j=>{const tab=qs(`msgTab${j}`); if(tab) tab.classList.toggle('active',j===i); const panel=qs(`msgPanel${j}`); if(panel) panel.classList.toggle('active',j===i);});
+    setGeneralChatPresence(i===0);
     if(i===0){
         const host = qs('chatMessages');
         if(host && !host.innerHTML.trim()){ host.innerHTML = loadingHtml('Загрузка чата...'); }
@@ -13990,80 +14041,49 @@ window.sendGiftSubscription = async function(){
     const recipient = qs('giftRecipient')?.value;
     if(!recipient) return toast('⚠️ Выберите получателя', 'gold');
     if(!giftSubscriptionType) return;
-    
-    const price = getSubscriptionPrice(giftSubscriptionType);
-    const name = CONFIG.subscriptions[giftSubscriptionType].name;
-    
-    // Check giver's balance
-    const giverSnap = await get(userRef(currentNick));
-    const giver = giverSnap.val();
-    if(!giver || (giver.balance || 0) < price) {
-        return toast(`❌ Недостаточно средств. Нужно ${price}₽`, 'red');
-    }
-    
-    // Check recipient exists
-    const recipientSnap = await get(userRef(recipient));
-    if(!recipientSnap.exists()) {
-        return toast('❌ Получатель не найден', 'red');
-    }
-    const recipientUser = recipientSnap.val();
-    
-    // Calculate expiry (extend if already has active subscription)
-    const now = new Date();
-    const currentExpiry = recipientUser.subscriptionExpiry ? new Date(recipientUser.subscriptionExpiry) : null;
-    const hasActiveSameType = currentExpiry && currentExpiry > now && recipientUser.subscription === giftSubscriptionType;
-    
-    let expiry, startDate;
-    if(hasActiveSameType) {
-        expiry = new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000);
-        startDate = recipientUser.subscriptionStart || now.toISOString();
-    } else {
-        expiry = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        startDate = now.toISOString();
-    }
-    
+
+    const plan = globalThis.KAPANI_SUBSCRIPTIONS?.[giftSubscriptionType];
+    const price = Number(plan?.price || getSubscriptionPrice(giftSubscriptionType));
+    const name = plan?.name || CONFIG.subscriptions[giftSubscriptionType]?.name || giftSubscriptionType;
+
     if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
-    
-    // Deduct from giver
-    await update(userRef(currentNick), { balance: (giver.balance || 0) - price });
-    
-    // Apply to recipient
-    await update(userRef(recipient), {
-        subscription: giftSubscriptionType,
-        subscriptionStatus: 'active',
-        subscriptionExpiry: expiry.toISOString(),
-        subscriptionStart: startDate,
-        subscriptionGiftedBy: currentNick,
-        subscriptionGiftedAt: now.toISOString()
-    });
-    await window.addMunicipalTreasury?.(price, `Подаренная подписка ${name} от ${currentNick}`, {sourceNick:currentNick,sourceType:'subscription_gift'});
-    
-    // Log transactions
-    await logTx(currentNick, {
-        type: 'out',
-        who: 'Подарок подписки',
-        amt: price,
-        desc: `Подарок ${name} для ${recipient}`
-    });
-    
-    // Send notifications
-    await pushNotification(currentNick, `🎁 Вы подарили ${name} пользователю ${recipient}!`, 'system');
-    await pushNotification(recipient, `🎁 ${currentNick} подарил вам ${name}!`, 'system');
-    const giftDm = {
-        nick: currentNick,
-        avatar: giver.avatar || DEFAULT_AVATAR_URL,
-        text: `🎁 ${name} в подарок`,
-        msgType: 'gift_subscription',
-        time: nowTime(),
-        createdAt: Date.now()
-    };
-    await push(dmRef(dmKey(currentNick, recipient)), giftDm);
-    
-    toast(`🎁 ${name} подарен ${recipient}!`, 'green');
-    closeGiftSubscriptionModal();
-    
-    // Update header balance
-    updateHeader_balance({...giver, balance: (giver.balance || 0) - price});
+
+    try{
+        await requireKapaniServerSession();
+        const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+        const fn = httpsCallable(await ensureFunctions(), 'giftSubscription');
+        const result = await fn({
+            recipientNick: recipient,
+            subscriptionType: giftSubscriptionType
+        });
+
+        const data = result?.data || {};
+        if(!data.success) throw new Error(data.message || 'Подарок не выполнен');
+
+        toast(`🎁 ${name} подарен ${recipient}!`, 'green');
+        closeGiftSubscriptionModal();
+
+        // Server is the source of truth. Refresh local state from RTDB.
+        const fresh=await get(userRef(currentNick));
+        if(fresh.exists()){
+            allUsersCache[currentNick]=fresh.val();
+            window.allUsersCache=allUsersCache;
+            updateHeader(fresh.val());
+            updateHeader_balance(fresh.val());
+        }
+        try{ if(typeof renderSubscription==='function') renderSubscription(); }catch(e){}
+    }catch(e){
+        console.error('[giftSubscription]',e);
+        const code=e?.code || '';
+        const message=String(e?.message || '');
+        if(code==='failed-precondition' || message.includes('более высокого') || message.includes('уровень подписки')){
+            toast('❌ Нельзя подарить эту подписку. У пользователя уже есть подписка более высокого уровня.','red');
+        }else if(code==='permission-denied' || code==='unauthenticated' || message.includes('повторный вход')){
+            toast('🔐 Для подарка требуется войти в аккаунт заново.','gold');
+        }else{
+            toast('❌ '+(message || 'Не удалось подарить подписку'),'red');
+        }
+    }
 };
 
 // ═══════════════════════════════════════════════════════

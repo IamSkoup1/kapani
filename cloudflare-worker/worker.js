@@ -5,6 +5,7 @@
 // OAuth используется только для FCM.
 
 const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 let cachedAccessToken = null;
@@ -295,7 +296,7 @@ async function sendOneFcm(
   );
 
   const targetUrl = String(
-    notification?.url || '/kapani/'
+    notification?.url || KAPANI_CANONICAL_URL
   );
 
   const createdAt = String(

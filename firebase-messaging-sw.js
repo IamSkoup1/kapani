@@ -11,7 +11,7 @@ const SW_VERSION = 'kapani-fcm-2026-09-08-v3';
  * Не используем ./index.html как fallback.
  * Для сайта Капани canonical URL — /kapani
  */
-const KAPANI_APP_PATH = '/kapani';
+const KAPANI_APP_PATH = '/kapani/';
 
 /**
  * Нормализует URL уведомления.
@@ -65,7 +65,7 @@ function isKapaniUrl(url) {
       parsed.origin === self.location.origin &&
       (
         parsed.pathname === KAPANI_APP_PATH ||
-        parsed.pathname === `${KAPANI_APP_PATH}/` ||
+        parsed.pathname === KAPANI_APP_PATH.replace(/\/$/, '') ||
         parsed.pathname === '/index.html'
       )
     );

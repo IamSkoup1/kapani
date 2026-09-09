@@ -20,8 +20,8 @@ const KAPANI_CONFIG = Object.freeze({
     location: { kapani: { lat: 52.628825753234985, lng: 38.416863347119566 } },
     rewards: { customAvatar: 40, firstWall: 60 },
     subscriptions: {
-        plus: { price: 199, name: "Kapani Plus" },
-        ultra: { price: 499, name: "Kapani Ultra" },
+        plus: { price: 299, name: "Kapani Plus" },
+        ultra: { price: 899, name: "Kapani Ultra" },
         prime: { price: 1499, name: "Kapani Prime" }
     },
     limits: { chatMessages: 60, dmMessages: 80, videoCircleMaxDuration: 30, debounceTimeout: 50 },
