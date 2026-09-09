@@ -103,8 +103,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .av-wrap-sm{position:relative;display:block;flex-shrink:0;align-self:flex-start;}
 .av-wrap-sm .online-dot{width:9px;height:9px;border-width:2px;bottom:0;right:0;}
 .av-wrap-sm.online .online-dot{display:block;}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;padding:6px 0 10px;z-index:900;overflow:hidden;}
-.bn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--muted);font-size:7px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.15px;padding:4px 2px;position:relative;line-height:1.1;flex:1;min-width:0;}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:490px;background:rgba(12,17,23,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;padding:6px 0 max(10px,env(safe-area-inset-bottom,0px));z-index:900;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.bottom-nav::-webkit-scrollbar{display:none;}
+.bn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:none;color:var(--muted);font-size:8px;font-weight:800;cursor:pointer;transition:.2s;font-family:'Nunito',sans-serif;text-transform:uppercase;letter-spacing:.15px;padding:4px 3px;position:relative;line-height:1.1;flex:0 0 64px;min-width:64px;}
 .bn-item[style*="display:none"]{display:none!important;flex:0!important;padding:0!important;min-width:0!important;}
 .bn-item .ico{font-size:22px;transition:.2s;}
 .bn-item.sel,.bn-item:hover{color:var(--primary);}
@@ -1025,7 +1026,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
     <button class="bn-item" id="bn9" onclick="navTo('businesses')" aria-label="Бизнесы поселка"><span class="ico">🏪</span>Бизнесы</button>
     <button class="bn-item" id="bn10" onclick="navTo('rentBuildings')" aria-label="Аренда зданий"><span class="ico">🏘️</span>Здания</button>
-    <button class="bn-item" id="bn11" onclick="navTo('kveExam')" aria-label="Экзамен КВЭ" style="display:none;"><span class="ico">📝</span>КВЭ<span class="bn-badge" id="kveBadge"></span></button>
+    <button class="bn-item" id="bn11" onclick="navTo('kveExam')" aria-label="Экзамен КВЭ"><span class="ico">📝</span>КВЭ<span class="bn-badge" id="kveBadge"></span></button>
 </div>
 
 <div class="container">
@@ -1364,10 +1365,6 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     </div>
     <div id="taxiDebtNotice"></div>
     <div id="taxiStatus"></div>
-    <div id="taxiHistory" class="card" style="margin-top:12px;display:none;">
-        <div class="card-title">🧾 История поездок</div>
-        <div id="taxiHistoryList"></div>
-    </div>
 </div>
 
 <!-- BANK -->
@@ -2862,23 +2859,19 @@ async function fallbackCancelOrder(data) {
     const o = snap.val();
     
     if(o.client === currentNick) {
-        // Client canceling: this architecture charges only at payment time, so
-        // there is no amount to refund. Apply only the cancellation penalty.
+        // Client canceling - refund minus penalty
         const penalty = 35;
-        const userSnap = await get(userRef(currentNick));
-        const before = userSnap.val() || {};
-        const tx = await runTransaction(userRef(currentNick), current => {
-            const u = current || before;
-            const balance = Number(u.balance || 0);
-            const actualPenalty = Math.min(penalty, Math.max(0, balance));
-            return { ...u, balance: balance - actualPenalty };
-        });
-        if(!tx?.committed) throw new Error('Не удалось применить штраф');
-        const after = tx.snapshot.val() || {};
-        const actualPenalty = Math.max(0, Number(before.balance || 0) - Number(after.balance || 0));
+        const uSnap = await get(userRef(currentNick));
+        const u = uSnap.val();
+        const currentBalance = u.balance || 0;
+        // If balance is less than penalty, deduct all available
+        const actualPenalty = Math.min(penalty, currentBalance);
+        const refundAmount = Math.max(0, o.price - actualPenalty);
+        await update(userRef(currentNick), { balance: currentBalance - actualPenalty });
+        // Удаляем заказ полностью
         await remove(orderRef(data.orderId));
-        if(actualPenalty > 0) await logTx(currentNick, { type: 'out', who: 'Система', amt: actualPenalty, desc: 'Штраф за отмену заказа' });
-        return { success: true, refundAmount: 0, penalty: actualPenalty };
+        await logTx(currentNick, { type: 'in', who: 'Возврат', amt: refundAmount, desc: `Отмена заказа (штраф ${actualPenalty}₽)` });
+        return { success: true, refundAmount, penalty: actualPenalty };
     } else if(o.worker === currentNick) {
         // Worker abandoning - penalty
         const penalty = 35;
@@ -2907,12 +2900,11 @@ async function fallbackPayOrder(data) {
     const w = wSnap.val();
     if(!c || !w) throw new Error('Пользователь не найден');
     if(Number(c.balance||0) < Number(o.price||0)) throw new Error('Недостаточно средств');
-    const debitTx = await runTransaction(userRef(o.client), current=>{
+    await runTransaction(userRef(o.client), current=>{
         const u=current||c;
         if(Number(u.balance||0) < Number(o.price||0)) return;
         return {...u,balance:Number(u.balance||0)-Number(o.price||0)};
     });
-    if(!debitTx?.committed) throw new Error('Недостаточно средств');
     await runTransaction(userRef(o.worker), current=>{
         const u=current||w;
         return {...u,balance:Number(u.balance||0)+Number(o.price||0)};
@@ -3117,10 +3109,8 @@ function orderStatusLabel(status){
 async function archiveTaxiOrder(order, finalStatus='paid'){
     if(!order?.id) return;
     const history={...order,status:finalStatus,completedAt:Date.now(),paidAt:order.paidAt||Date.now()};
-    const updates={};
-    updates[`taxiHistory/${order.id}`]=history;
-    updates[`orders/${order.id}`]=null;
-    await update(ref(db), updates);
+    await set(taxiHistoryRef(order.id), history);
+    try{ await remove(orderRef(order.id)); }catch(e){ console.warn('[taxi archive remove]',e); }
 }
 
 function getBusinessIds(u){
@@ -3168,20 +3158,16 @@ async function findUserByPublicName(name){
     if(allUsersCache && Object.keys(allUsersCache).length){
         for(const [nick, u] of Object.entries(allUsersCache)){
             const dn = normalizePublicName(displayNick(u));
-            if(dn === q || normalizePublicName(u.referralCode) === q) return { nick, ...u };
+            if(dn === q) return { nick, ...u };
         }
     }
     const snap = await get(ref(db, 'users'));
     const users = snap.val() || {};
     for(const [nick, u] of Object.entries(users)){
         const dn = normalizePublicName(displayNick(u));
-        if(dn === q || normalizePublicName(u.referralCode) === q) return { nick, ...u };
+        if(dn === q) return { nick, ...u };
     }
     return null;
-}
-function generateReferralCode(){
-    const raw=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID().replace(/-/g,''):`${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
-    return `KP-${raw.slice(0,10).toUpperCase()}`;
 }
 function makeNickFromName(name){
     let base = String(name||'').trim().replace(/\s+/g, '_').replace(/[^\wа-яА-ЯёЁ_-]/gi, '').slice(0, 24);
@@ -3794,7 +3780,7 @@ window.handleAuth = async function() {
                 const candidate = await findUserByPublicName(inviterInput);
                 if(!candidate){
                     resetBtn();
-                    return toast('❌ Рекламщик с таким именем или кодом не найден','red');
+                    return toast('❌ Рекламщик с таким именем не найден','red');
                 }
                 if(candidate.nick === nick){
                     resetBtn();
@@ -3829,7 +3815,6 @@ window.handleAuth = async function() {
                 accountVerified: false,
                 passwordHash,
                 passwordHashSalt: nick,
-                referralCode: generateReferralCode(),
                 ...(advertiserReferrer ? {
                     invitedBy: advertiserReferrer.nick,
                     invitedByName: advertiserReferrer.displayName,
@@ -4921,22 +4906,6 @@ window.cancelVoice=function(ctx){
     if(ctx==='news') setNewsTypingState('idle');
     toast('🗑 Запись отменена','red');
 };
-
-async function renderTaxiHistory(){
-    const card=qs('taxiHistory'),list=qs('taxiHistoryList');
-    if(!card||!list||!currentNick) return;
-    try{
-        const snap=await get(query(ref(db,'taxiHistory'),orderByChild('client'),equalTo(currentNick)));
-        const arr=Object.entries(snap.val()||{}).map(([id,o])=>({...o,id})).sort((a,b)=>(b.completedAt||b.createdAt||0)-(a.completedAt||a.createdAt||0)).slice(0,20);
-        card.style.display=arr.length?'block':'none';
-        if(!arr.length){list.innerHTML='';return;}
-        list.innerHTML=arr.map(o=>{
-            const date=o.completedAt||o.paidAt||o.createdAt;
-            const route=[o.info,o.address].filter(Boolean).join(' → ');
-            return `<div style="padding:12px 0;border-bottom:1px solid var(--border);"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;"><b>${escHtml(route||'Поездка')}</b><span style="color:var(--primary);font-weight:900;white-space:nowrap;">${Number(o.price||0).toLocaleString('ru-RU')}₽</span></div><div style="font-size:12px;color:var(--muted);margin-top:5px;">${date?new Date(date).toLocaleString('ru-RU'):''} · Водитель: ${escHtml(o.worker||'—')} · <span style="color:var(--primary);">Завершено</span></div></div>`;
-        }).join('');
-    }catch(e){ console.warn('[taxi history]',e); card.style.display='none'; }
-}
 
 // ─── ACTIVE ORDERS ────────────────────────
 let _taxiUiKey='';
@@ -6689,7 +6658,6 @@ window.openDmChat=async function(nick){
         }
 
         const key = dmKey(currentNick,nick);
-        try{ await update(dmIndexRef(currentNick),{[nick]:{...(dmConvoMeta[nick]||{}),unread:false,lastReadAt:Date.now()}}); }catch(e){ console.warn('[DM index read]',e); }
         const dmR = query(dmRef(key),orderByChild('createdAt'),limitToLast(80));
         const dmFn = (snap2) => {
             if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
@@ -7968,17 +7936,7 @@ window.renderJobAppStatus=async function(){
 
 // ─── PROFILE ──────────────────────────────
 window.changeVehicle=async function(){const v=prompt('Транспорт:');if(v!==null){await update(userRef(currentNick),{vehicle:v});toast('🛵 Обновлено','green');}};
-window.saveVehicle=async function(){
-    if(!currentNick) return toast('❌ Сначала войдите в аккаунт','red');
-    const input=qs('vehicleInput');
-    if(!input) return toast('❌ Поле транспорта не найдено','red');
-    const v=input.value.trim().slice(0,120);
-    try{
-        await update(userRef(currentNick),{vehicle:v});
-        if(allUsersCache[currentNick]) allUsersCache[currentNick].vehicle=v;
-        toast(v?'🛵 Транспорт сохранён':'🛵 Транспорт очищен','green');
-    }catch(e){ console.error('[Kapani vehicle]',e); toast('❌ Не удалось сохранить транспорт','red'); }
-};
+window.saveVehicle=async function(){const v=qs('vehicleInput').value.trim();await update(userRef(currentNick),{vehicle:v});toast('🛵 Сохранено','green');};
 // ─── QUIT JOB (master implementation — all overrides removed below) ───
 // quitJob — master implementation above (line ~4800)
 
@@ -9114,7 +9072,6 @@ window.navTo=function(id){
     if(id==='news'){currentNewsTab=currentNewsTab||'village';renderNews();}
     if(id==='newsDiscussion'){const e=qs('newsDiscussionMessages');if(e)renderNewsDiscussionMessages(currentNewsMsgs);}
     if(id==='taxi'){renderDebtNotice('taxiDebtNotice',allUsersCache[currentNick]||{});Promise.resolve(window.initTaxiMap?.()).catch(e=>toast('❌ Не удалось загрузить карту','red'));}
-    if(id==='taxi') renderTaxiHistory();
     if(id==='driverPage') setTimeout(()=>{if(driverTrackMapObj)driverTrackMapObj.invalidateSize();},450);
     if(id==='janitorPage') renderJanitorPage();
     if(id==='businesses') renderBusinesses();
@@ -15212,7 +15169,8 @@ try {
     /* ── Safe-area layout ── */
     .ios-device .g-header{top:0;height:calc(64px + env(safe-area-inset-top,0px));padding-top:env(safe-area-inset-top,0px);box-sizing:border-box;}
     .ios-device .page-wrap{padding-top:calc(76px + env(safe-area-inset-top,0px));padding-bottom:calc(78px + env(safe-area-inset-bottom,0px));}
-    .ios-device .bottom-nav{padding-bottom:max(10px,env(safe-area-inset-bottom)) !important;}
+    .ios-device .bottom-nav{bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);min-height:64px;height:calc(64px + env(safe-area-inset-bottom,0px));overflow-x:auto;overflow-y:hidden;display:flex;flex-wrap:nowrap;justify-content:flex-start;}
+    .ios-device .bn-item{flex:0 0 64px;min-width:64px;}
 
     /* ── Prevent double-tap zoom everywhere ── */
     .ios-device * {
@@ -15225,7 +15183,7 @@ try {
     .ios-device .user-profile-sheet,
     .ios-device .history-sheet,
     .ios-device .container { touch-action: pan-y !important; }
-    .ios-device .bottom-nav { touch-action: manipulation !important; }
+    .ios-device .bottom-nav { touch-action: pan-x !important; }
 
     /* ── Fix modals: no GPU compositing overflow ── */
     .ios-device #userProfileModal.open,
