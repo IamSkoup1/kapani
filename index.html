@@ -2497,15 +2497,10 @@ async function ensureAuth(){
     authInstance = authModule.getAuth(app);
     return authInstance;
 }
-// Callable Functions in functions/index.js use the Firebase default region
-// because their onCall() declarations do not override region. Firebase
-// therefore deploys them to us-central1. Keep the client on the same region;
-// database-triggered push workers may still run in europe-west1 independently.
-const KAPANI_CALLABLE_REGION = 'us-central1';
 async function ensureFunctions(){
     if(functions) return functions;
     const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
-    functions = mod.getFunctions(app, KAPANI_CALLABLE_REGION);
+    functions = mod.getFunctions(app, 'europe-west1');
     return functions;
 }
 async function ensureStorage(){
@@ -4021,7 +4016,7 @@ window.logout = async function() {
     const logoutNick=currentNick;
     try {
         if(logoutNick && window._kapaniFcmTokenId) {
-            try { await callFunctionWithFallback('unregisterFcmToken',{tokenId:window._kapaniFcmTokenId, token:window._kapaniFcmToken||''},null); }
+            try { await callKapaniPushBridge('/unregister',{tokenId:window._kapaniFcmTokenId, token:window._kapaniFcmToken||''}); }
             catch(e){ console.warn('[Kapani FCM] token unregister during logout failed:',e); }
         }
     } catch(e) {}
@@ -4530,7 +4525,8 @@ function isIOSPWA(){
 }
 async function getSwReg(){
     if(_swReg) return _swReg;
-    if(location.protocol !== 'https:') {
+    const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '[::1]';
+    if(location.protocol !== 'https:' && !isLocalDev) {
         window._kapaniPushState={...(window._kapaniPushState||{}),status:'https_required',error:'service_worker_requires_https'};
         return null;
     }
@@ -4626,11 +4622,11 @@ async function tryRegisterFcm(){
         }
 
         const tokenIdLocal = await sha256TokenId(token);
-        const serverResult = await callFunctionWithFallback('registerFcmToken', {
+        const serverResult = await callKapaniPushBridge('/register', {
             token,
             userAgent:navigator.userAgent,
             prefs:getPushPrefs()
-        }, null);
+        });
         window._kapaniFcmToken = token;
         window._kapaniFcmTokenId = serverResult?.tokenId || tokenIdLocal;
         try{ localStorage.setItem('kp_fcm_token_id', window._kapaniFcmTokenId); }catch(e){}
@@ -4660,6 +4656,24 @@ async function tryRegisterFcm(){
         console.error('[Kapani FCM] registration failed:',e);
         return false;
     }
+}
+
+async function callKapaniPushBridge(path, data={}){
+    const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
+    if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
+    const auth=await ensureAuth();
+    const user=auth.currentUser;
+    if(!user) throw new Error('Требуется защищённая Firebase-сессия для push');
+    const idToken=await user.getIdToken();
+    const response=await fetch(`${base}${path}`,{
+        method:'POST',
+        headers:{'content-type':'application/json','authorization':`Bearer ${idToken}`},
+        body:JSON.stringify(data)
+    });
+    const text=await response.text();
+    let json=null;try{json=JSON.parse(text);}catch(_){ }
+    if(!response.ok || !json?.ok) throw new Error(String(json?.error||`Push Bridge ${response.status}: ${text}`));
+    return json;
 }
 
 async function sha256TokenId(token){
@@ -4742,7 +4756,7 @@ window.getKapaniPushDiagnostics = async function(){
     } catch(e){ tokenError=String(e?.message||e); }
     let server = null;
     let serverError = null;
-    try { server = await callFunctionWithFallback('getPushDiagnostics',{},null); }
+    try { server = await callKapaniPushBridge('/diagnostics',{}); }
     catch(e){ serverError=String(e?.message||e); }
     const result={
         checkedAt:new Date().toISOString(),
@@ -4840,9 +4854,16 @@ async function pushNotification(nick,text,cat='system'){
             push:true
         });
 
-        // FCM delivery is server-side: the notification-creation trigger enqueues
-        // this record into the durable notification queue. No client-side HTTP
-        // push bridge is used, preventing duplicate/unauthenticated sends.
+        // Cloudflare is the production push bridge. The notification is stored
+        // first, then the bridge reads the canonical record and sends FCM HTTP v1.
+        // This keeps the same notification data used by the inbox and Service Worker.
+        try{
+            await callKapaniPushBridge('/push',{nick,notificationId});
+        }catch(bridgeError){
+            console.error('[push bridge]',bridgeError);
+            // The RTDB notification remains stored; delivery can be retried by the
+            // server-side Firebase queue where available or by the next notification.
+        }
     }catch(e){
         console.error('[pushNotification]',e);
         throw e;

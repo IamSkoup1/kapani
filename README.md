@@ -6,8 +6,6 @@
 
 `событие → users/{nick}/notifications/{id} → enqueueNotificationPush → notificationQueue/{jobId} → FCM → firebase-messaging-sw.js → системное уведомление`
 
-Callable-функции Kapani (`registerFcmToken` и т. п.) вызываются из региона `us-central1`, потому что их `onCall()` в backend не переопределяет регион. Push-триггеры очереди при этом работают в `europe-west1`.
-
 Очередь использует детерминированный job ID, transaction-based lock/lease, повторные попытки с exponential backoff+jitter, состояние доставки по каждому токену, очистку недействительных токенов и повторную обработку просроченных `processing` jobs. Это at-least-once серверная доставка.
 
 Одно событие имеет один `notificationId`; Service Worker использует стабильный `tag`, поэтому retry не должен создавать второй видимый alert для того же notification ID.

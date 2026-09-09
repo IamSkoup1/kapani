@@ -37,10 +37,9 @@ FCM Web требует HTTPS. citeturn733441search7
 ## Firebase prerequisites
 
 1. Authentication должен быть включён: Kapani создаёт Firebase custom-token сессию перед server-side `registerFcmToken`.
-2. Callable Cloud Functions (`registerFcmToken`, `unregisterFcmToken`, `updatePushPreferences`, `getPushDiagnostics` и остальные `onCall`) объявлены без явного `region`, поэтому Firebase deploys их в `us-central1`; клиент Kapani должен обращаться к `us-central1`.
-3. Database-triggered push workers (`enqueueNotificationPush`, `processNotificationQueue`, `notifyOnChatMessage` и т. д.) работают в `europe-west1`.
-4. Cloud Functions должны иметь доступ к Firebase Admin SDK и Realtime Database.
-5. FCM API и Web Push credentials проекта должны оставаться на backend.
+2. Cloud Functions должны иметь доступ к Firebase Admin SDK.
+3. FCM API и Web Push credentials проекта должны оставаться на backend.
+4. Realtime Database должна быть доступна Functions в регионе `europe-west1`.
 
 ## RTDB Rules
 

@@ -75,7 +75,7 @@ function isAdmin(context) {
 }
 
 // Cloud Function для перевода денег между пользователями
-exports.transferMoney = onCall(async (request) => {
+exports.transferMoney = onCall({ region: 'europe-west1' }, async (request) => {
     const { toUid, amount, description } = request.data;
     const fromUid = request.auth?.uid;
 
@@ -166,7 +166,7 @@ exports.transferMoney = onCall(async (request) => {
 });
 
 // Cloud Function для админских операций с балансом
-exports.adminAdjustBalance = onCall(async (request) => {
+exports.adminAdjustBalance = onCall({ region: 'europe-west1' }, async (request) => {
     const { uid, amount, type, description } = request.data;
 
     // Проверка администратора
@@ -214,7 +214,7 @@ exports.adminAdjustBalance = onCall(async (request) => {
 });
 
 // Cloud Function для создания заказа (такси/доставка)
-exports.createOrder = onCall(async (request) => {
+exports.createOrder = onCall({ region: 'europe-west1' }, async (request) => {
     const { type, info, price, address, distanceKm, clientLat, clientLng, destLat, destLng, originalPrice, discountApplied } = request.data;
     const clientUid = request.auth?.uid;
 
@@ -275,7 +275,7 @@ exports.createOrder = onCall(async (request) => {
 });
 
 // Cloud Function для оплаты заказа
-exports.payOrder = onCall(async (request) => {
+exports.payOrder = onCall({ region: 'europe-west1' }, async (request) => {
     const { orderId } = request.data;
     const clientUid = request.auth?.uid;
 
@@ -355,7 +355,7 @@ exports.payOrder = onCall(async (request) => {
 });
 
 // Cloud Function для отмены заказа
-exports.cancelOrder = onCall(async (request) => {
+exports.cancelOrder = onCall({ region: 'europe-west1' }, async (request) => {
     const { orderId } = request.data;
     const clientUid = request.auth?.uid;
 
@@ -426,7 +426,7 @@ exports.cancelOrder = onCall(async (request) => {
 });
 
 // Cloud Function для принятия заказа работником
-exports.takeOrder = onCall(async (request) => {
+exports.takeOrder = onCall({ region: 'europe-west1' }, async (request) => {
     const { orderId } = request.data;
     const workerUid = request.auth?.uid;
 
@@ -491,7 +491,7 @@ exports.takeOrder = onCall(async (request) => {
  * The user still uses the public/display name in the interface; Firebase Auth
  * is only a backend identity layer for protected operations.
  */
-exports.issueKapaniSessionToken = onCall(async (request) => {
+exports.issueKapaniSessionToken = onCall({ region: 'europe-west1' }, async (request) => {
     const nick = String(request.data?.nick || '').trim();
     const password = String(request.data?.password || '');
 
@@ -522,7 +522,7 @@ exports.issueKapaniSessionToken = onCall(async (request) => {
  * The same token is removed from other Kapani users, preventing delivery
  * to a previous account when the same browser switches users.
  */
-exports.registerFcmToken = onCall(async (request) => {
+exports.registerFcmToken = onCall({ region: 'europe-west1' }, async (request) => {
     const uid = request.auth?.uid;
     const token = String(request.data?.token || '').trim();
 
@@ -562,7 +562,7 @@ exports.registerFcmToken = onCall(async (request) => {
     return { success: true, tokenId };
 });
 
-exports.updatePushPreferences = onCall(async (request) => {
+exports.updatePushPreferences = onCall({ region: 'europe-west1' }, async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
 
@@ -580,7 +580,7 @@ exports.updatePushPreferences = onCall(async (request) => {
     return { success: true, prefs, tokenId: tokenId || null };
 });
 
-exports.unregisterFcmToken = onCall(async (request) => {
+exports.unregisterFcmToken = onCall({ region: 'europe-west1' }, async (request) => {
     const uid = request.auth?.uid;
     const tokenId = String(request.data?.tokenId || '').trim();
     const token = String(request.data?.token || '').trim();
@@ -607,7 +607,7 @@ exports.unregisterFcmToken = onCall(async (request) => {
     return { success: true, tokenId: resolvedTokenId, removed: true };
 });
 
-exports.getPushDiagnostics = onCall(async (request) => {
+exports.getPushDiagnostics = onCall({ region: 'europe-west1' }, async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
     const snap = await db.ref(`users/${uid}`).get();
@@ -1068,7 +1068,7 @@ exports.processNotificationQueue = onSchedule(
  * transaction. If the gift is rejected or the transaction does not commit,
  * no balance/subscription/transaction/gift record is changed.
  */
-exports.giftSubscription = onCall(async (request) => {
+exports.giftSubscription = onCall({ region: 'europe-west1' }, async (request) => {
     const giverNick = String(request.auth?.uid || '').trim();
     const recipientNick = String(request.data?.recipientNick || '').trim();
     const type = normalizeSubscriptionType(request.data?.subscriptionType);
