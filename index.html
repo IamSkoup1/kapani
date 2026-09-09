@@ -4489,7 +4489,16 @@ function renderHomeStats(){qs('homeStats').innerHTML=`<div class="stat-box"><div
 
 // ─── PUSH NOTIFICATIONS ───────────────────
 function getPushPrefs(){try{return JSON.parse(localStorage.getItem('kp_push')||'{}');}catch(e){return{};}}
-function savePushPrefs(p){try{localStorage.setItem('kp_push',JSON.stringify(p));}catch(e){}}
+function syncPushPrefs(){
+    if(!currentNick || typeof callFunctionWithFallback!=='function') return Promise.resolve();
+    const prefs={...getPushPrefs()};
+    delete prefs.updatedAt;
+    return callFunctionWithFallback('updatePushPreferences',{prefs,tokenId:window._kapaniFcmTokenId||null},null).catch(e=>console.warn('[Kapani push prefs]',e));
+}
+function savePushPrefs(p){
+    try{localStorage.setItem('kp_push',JSON.stringify(p));}catch(e){}
+    syncPushPrefs();
+}
 function isPushOn(){const p=getPushPrefs();return p.enabled!==false;}
 function isPushCatEnabled(cat){if(!isPushOn())return false;const p=getPushPrefs();return p[cat]!==false;}
 let _swReg=null;
@@ -4546,7 +4555,7 @@ async function requestPushPermission(){
         toast('📲 Для уведомлений добавьте сайт на главный экран iPhone (Поделиться → На экран «Домой»)','gold');
         return false;
     }
-    if(Notification.permission==='granted'){await tryRegisterFcm();return true;}
+    if(Notification.permission==='granted'){await getSwReg();await tryRegisterFcm();return true;}
     if(Notification.permission==='denied') return false;
     const result = await requestNotificationPermission();
     if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);await getSwReg();await tryRegisterFcm();toast('🔔 Push-уведомления включены!','green');return true;}
@@ -4563,7 +4572,9 @@ async function tryRegisterFcm(){
         const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
         if(token){
             try{
-                await callFunctionWithFallback('registerFcmToken',{token,userAgent:navigator.userAgent},null);
+                const result=await callFunctionWithFallback('registerFcmToken',{token,userAgent:navigator.userAgent,prefs:getPushPrefs()},null);
+                window._kapaniFcmTokenId=result?.tokenId||null;
+                await syncPushPrefs();
             }catch(serverError){
                 console.warn('[Kapani FCM] server token registration:',serverError);
                 // Legacy fallback keeps push available for existing pre-session accounts.
@@ -4656,7 +4667,6 @@ window.finishFirstPushPrompt = async function(allow){
     // This is an in-app notification explaining where the setting lives.
     // It is written independently from browser permission, so declining the
     // browser prompt never blocks the informational notification.
-    try{ await pushNotification(currentNick,'🔔 Уведомления всегда можно включить в профиле','system'); }catch(e){}
 }
 function showFirstPushPrompt(){
     if(!currentNick || wasFirstPushPromptHandled() || qs('firstPushPrompt')) return;
@@ -4700,17 +4710,9 @@ async function pushNotification(nick,text,cat='system'){
             pushBridgeProcessedAt:null
         });
 
-        const bridgeUrl = globalThis.KAPANI_CONFIG?.pushBridgeUrl;
-        if(bridgeUrl && notificationId){
-            fetch(`${bridgeUrl}/push`,{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({
-                    nick,
-                    notificationId
-                })
-            }).catch(e=>console.warn('[Push Bridge]',e));
-        }
+        // FCM delivery is server-side: the notification-creation trigger enqueues
+        // this record into the durable notification queue. No client-side HTTP
+        // push bridge is used, preventing duplicate/unauthenticated sends.
     }catch(e){
         console.error('[pushNotification]',e);
         throw e;

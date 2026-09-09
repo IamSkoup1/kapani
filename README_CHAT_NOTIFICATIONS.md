@@ -1,18 +1,25 @@
-# Kapani — общий чат: уведомления и realtime
+# Kapani — уведомления общего чата
 
-## Что исправлено
-- Сообщения общего чата обновляются в реальном времени без перезагрузки.
-- Текст «кто-то печатает» в общем чате полностью убран.
-- Каждое новое сообщение общего чата создаёт RTDB-уведомление всем пользователям, кроме автора.
-- `pushNotificationCreated` отправляет серверное уведомление через FCM на зарегистрированные устройства.
-- `firebase-messaging-sw.js` получает background push и открывает `https://iamskoup1.github.io/kapani/`.
-- Browser-originated notifications (`pushNotification`) помечаются `pushDelivery: bridge`, чтобы не получать дубль через Firebase Function.
+Новое сообщение в `/chat/{messageId}` обрабатывается `notifyOnChatMessage`. Функция создаёт обычную запись уведомления каждому пользователю, кроме автора.
 
-## Обязательный деплой
+Дальше отправка push **не выполняется непосредственно из chat trigger**. Запись `users/{nick}/notifications/{notificationId}` автоматически попадает в универсальную очередь `notificationQueue` через `enqueueNotificationPush`.
+
+Очередь:
+
+1. создаёт детерминированный job;
+2. захватывает job через RTDB transaction;
+3. читает актуальные FCM-токены и серверные push preferences;
+4. отправляет data-only FCM;
+5. помечает каждый токен как `sent`, `invalid`, `disabled` или `pending`;
+6. повторяет временно неудачные отправки через scheduler;
+7. удаляет невалидные токены.
+
+Такой же контур используется для подарков подписки и остальных функций сайта, которые создают `users/{nick}/notifications/*` с `push !== false`.
+
+## Deploy
+
 ```bash
-cd functions
-npm install
-firebase deploy --only functions:notifyOnChatMessage,functions:pushNotificationCreated
+firebase deploy --only functions
 ```
 
-Для web push VAPID Public Key уже находится в `config.js`.
+`firebase-messaging-sw.js` должен быть размещён рядом с `index.html`. Для iOS Web Push пользователь должен запускать Kapani как установленный PWA.

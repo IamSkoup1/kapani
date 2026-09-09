@@ -1,3 +1,4 @@
+// DEPRECATED: retained only as a legacy archive; current Kapani push delivery uses Firebase Cloud Functions.
 // Kapani Free Push Bridge
 // RTDB -> Cloudflare Worker -> FCM HTTP v1
 // RTDB у проекта разрешает публичные read/write правила,

@@ -167,7 +167,9 @@ try {
           ? `kapani-${data.notificationId}`
           : `kapani-${category}-${Date.now()}`,
 
-        renotify: true,
+        // Stable notificationId/tag makes queue retries idempotent at the UI layer.
+        // Replacements must not alert the user a second time.
+        renotify: false,
 
         data: {
           ...data,

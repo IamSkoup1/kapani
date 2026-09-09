@@ -1,18 +1,32 @@
-# KAPANI — бесплатные Push-уведомления при закрытом сайте
+# Kapani — Push notifications
 
-Эта сборка не использует Firebase Cloud Functions для Push. Существующая запись `users/{nick}/notifications/{notificationId}` остаётся основной. После её создания Kapani передаёт ID записи в бесплатный Cloudflare Worker. Worker, не раскрывая сервисный ключ в браузере, читает запись и FCM-токены и отправляет FCM HTTP v1.
+В этой версии push-уведомления работают через единый серверный контур Firebase Cloud Functions + FCM + Service Worker. Cloudflare Worker больше не участвует в доставке push.
 
-## На сайт
-`index.html`, `config.js`, `firebase-messaging-sw.js`, `manifest.json`.
+## Архитектура
 
-## functions
-Для этого варианта Push ничего из `functions/` деплоить не нужно. Существующие Cloud Functions проекта не трогаются.
+`событие → users/{nick}/notifications/{id} → enqueueNotificationPush → notificationQueue/{jobId} → FCM → firebase-messaging-sw.js → системное уведомление`
 
-## Нужно один раз настроить
-1. Создать Cloudflare Worker по `cloudflare-worker/SETUP.md`.
-2. В Worker сохранить Firebase Service Account JSON как Secret `FIREBASE_SERVICE_ACCOUNT_JSON`.
-3. В `config.js` указать URL Worker в `pushBridgeUrl`.
-4. В Firebase Cloud Messaging создать Web Push/VAPID public key и указать его в `fcmVapidKey`.
-5. Загрузить обновлённые файлы сайта по HTTPS.
+Очередь использует детерминированный job ID, блокировку, повторные попытки с backoff, состояние каждого FCM-токена и удаление невалидных токенов. Это даёт at-least-once серверную доставку без прямых клиентских запросов к push bridge. Повторная доставка одного job использует одинаковый `notificationId`, а Service Worker применяет стабильный notification tag.
 
-Cloudflare Workers Free на текущий момент предоставляет до 100 000 запросов в сутки; для секретов есть отдельное защищённое хранилище Secrets.
+## Токены
+
+FCM-токен регистрируется через защищённую Cloud Function. Для каждого токена создаётся индекс `fcmTokenIndex/{tokenId}`, поэтому регистрация не сканирует всех пользователей. Настройки push синхронизируются на сервер и могут применяться отдельно к каждому токену/устройству.
+
+## Фоновая доставка
+
+`firebase-messaging-sw.js` принимает data-only FCM в `onBackgroundMessage()` и вызывает `self.registration.showNotification()`. Поэтому открытая вкладка Kapani для получения системного push не нужна. Нажатие на уведомление открывает canonical `/kapani/`.
+
+## Развёртывание
+
+Требуется Firebase CLI и поддерживаемый Node.js runtime. В проекте выставлен Node.js 20.
+
+```bash
+cd functions
+npm ci
+cd ..
+firebase deploy --only functions
+```
+
+После деплоя проверь наличие функций `enqueueNotificationPush`, `processNotificationQueue`, `notifyOnChatMessage`, `registerFcmToken` и `updatePushPreferences`.
+
+Папка `cloudflare-worker/` сохранена как архив старой интеграции, но текущий клиент и Firebase Functions её больше не вызывают.

@@ -1,50 +1,43 @@
-# KAPANI — Push-уведомления при закрытом сайте
+# Deploy Kapani
 
-## Что уже сделано
-- Все существующие `users/{nick}/notifications/{notificationId}` автоматически отправляются через FCM.
-- Используется отдельный `firebase-messaging-sw.js` для background/closed push.
-- Добавлена поддержка нескольких устройств пользователя через `fcmTokens`.
-- Невалидные/устаревшие FCM-токены автоматически удаляются.
-- Клик по системному уведомлению возвращает в Kapani и старается использовать уже открытое окно.
-- Для iOS учитывается режим установленной PWA (Add to Home Screen / standalone) и safe-area.
-- Существующая структура уведомлений Firebase Realtime Database не меняется.
+## 1. Firebase Functions
 
-## Единственный обязательный шаг перед нормальным кросс-браузерным Web Push
-В Firebase Console:
-1. Project settings → Cloud Messaging.
-2. Web configuration → Web Push certificates.
-3. Нажать **Generate key pair**.
-4. Скопировать **Public key**.
-5. В `config.js` заменить значение `fcmVapidKey: ""` на этот public key.
-
-Firebase рекомендует задавать собственный VAPID key; без него SDK использует default key, но некоторые push-сервисы (включая Chrome Push Service) требуют не-default ключ. 
-
-## Деплой Cloud Functions
-Из папки проекта:
+В `functions/package.json` установлен Node.js 20 — это текущий рекомендуемый поддерживаемый runtime для Cloud Functions.
 
 ```bash
 cd functions
-npm install
-firebase deploy --only functions:pushNotificationCreated
-```
-
-Или полный деплой Functions:
-
-```bash
-npm install
+npm ci
+cd ..
 firebase deploy --only functions
 ```
 
-## Важно
-Сайт должен работать по HTTPS. Для iPhone уведомления Web Push работают для установленной PWA, а разрешение нужно дать самой PWA.
+## 2. Push architecture
 
-## Проверка
-1. Открыть Kapani по HTTPS.
-2. Включить уведомления.
-3. Убедиться, что в базе у пользователя появился `fcmToken` и/или `fcmTokens`.
-4. Закрыть сайт/вкладку или отправить PWA в фон.
-5. Создать любое обычное Kapani-уведомление через существующий `pushNotification(...)`.
-6. Cloud Function `pushNotificationCreated` должна отправить FCM, а Service Worker — показать системное уведомление.
+Не требуется Cloudflare Push Bridge. Доставка идёт напрямую из Firebase Admin SDK в FCM через `enqueueNotificationPush` и `processNotificationQueue`.
 
-## Ограничение окружения
-Из этого чата я не могу выполнить деплой в твой Firebase-проект без доступа к твоему Firebase CLI/аккаунту. Код, Service Worker и Cloud Function подготовлены; после добавления VAPID public key нужен один деплой функции.
+Проверить в Firebase Console:
+
+- `enqueueNotificationPush` создана;
+- `processNotificationQueue` создана как scheduled function;
+- `registerFcmToken` и `updatePushPreferences` доступны;
+- `notifyOnChatMessage` продолжает работать.
+
+## 3. Client
+
+`index.html` регистрирует `firebase-messaging-sw.js`, получает FCM token и передаёт его в `registerFcmToken`. Настройки категорий синхронизируются через `updatePushPreferences`.
+
+## 4. iOS
+
+На iPhone Web Push должен использоваться в установленном PWA. Обычная вкладка Safari не является рабочим вариантом для этой схемы.
+
+## 5. Проверка
+
+После деплоя:
+
+1. включить уведомления в Kapani;
+2. убедиться, что появился `users/{nick}/fcmTokens/{tokenId}`;
+3. создать тестовое уведомление;
+4. проверить `notificationQueue/{jobId}`: `sent`;
+5. закрыть вкладку Kapani и отправить ещё одно уведомление;
+6. убедиться, что браузер показывает системный push;
+7. проверить notification click.

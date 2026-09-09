@@ -2,7 +2,7 @@
   "name": "Капани",
   "short_name": "Капани",
   "description": "Официальное приложение Капани",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0c1117",
   "theme_color": "#22d3a5",

@@ -1,5 +1,6 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onValueCreated } = require('firebase-functions/v2/database');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getDatabase } = require('firebase-admin/database');
 const admin = require('firebase-admin');
@@ -13,6 +14,16 @@ const SUBSCRIPTIONS = require('./subscription-config');
 const crypto = require('crypto');
 
 const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
+
+function sanitizePushPreferences(incoming) {
+    const source = incoming && typeof incoming === 'object' ? incoming : {};
+    const allowedCategories = ['messages', 'money', 'taxi_orders', 'delivery_orders', 'market', 'system'];
+    const prefs = { enabled: source.enabled !== false };
+    for (const category of allowedCategories) {
+        if (Object.prototype.hasOwnProperty.call(source, category)) prefs[category] = source[category] !== false;
+    }
+    return prefs;
+}
 
 function normalizeSubscriptionType(value) {
     const type = String(value || '').trim().toLowerCase();
@@ -42,17 +53,17 @@ function tokenKey(token) {
 function collectFcmTokens(user) {
     const tokens = [];
     const seen = new Set();
-    const add = (token, path) => {
+    const add = (token, path, pushPrefs = null) => {
         const value = String(token || '').trim();
         if (!value || seen.has(value)) return;
         seen.add(value);
-        tokens.push({ token: value, path });
+        tokens.push({ token: value, path, pushPrefs });
     };
-    add(user?.fcmToken, 'fcmToken');
+    add(user?.fcmToken, 'fcmToken', user?.pushPrefs || null);
     const many = user?.fcmTokens && typeof user.fcmTokens === 'object' ? user.fcmTokens : {};
     for (const [key, entry] of Object.entries(many)) {
-        if (typeof entry === 'string') add(entry, `fcmTokens/${key}`);
-        else if (entry?.token) add(entry.token, `fcmTokens/${key}`);
+        if (typeof entry === 'string') add(entry, `fcmTokens/${key}`, user?.pushPrefs || null);
+        else if (entry?.token) add(entry.token, `fcmTokens/${key}`, entry.pushPrefs || user?.pushPrefs || null);
     }
     return tokens;
 }
@@ -518,36 +529,331 @@ exports.registerFcmToken = onCall(async (request) => {
     }
 
     const tokenId = tokenKey(token);
-    const usersSnap = await db.ref('users').get();
-    const users = usersSnap.val() || {};
+    const now = Date.now();
+    const pushPrefs = sanitizePushPreferences(request.data?.prefs);
+    const indexRef = db.ref(`fcmTokenIndex/${tokenId}`);
+    const indexSnap = await indexRef.get();
+    const indexedOwner = indexSnap.exists() ? String(indexSnap.val()?.uid || '') : '';
     const updates = {};
 
-    for (const [nick, user] of Object.entries(users)) {
-        if (!user || nick === uid) continue;
-
-        if (String(user.fcmToken || '') === token) {
-            updates[`users/${nick}/fcmToken`] = null;
-        }
-
-        const many = user.fcmTokens && typeof user.fcmTokens === 'object' ? user.fcmTokens : {};
-        for (const [key, entry] of Object.entries(many)) {
-            const value = typeof entry === 'string' ? entry : entry?.token;
-            if (value === token) updates[`users/${nick}/fcmTokens/${key}`] = null;
+    // A token belongs to one current Kapani account. Remove it from a previous
+    // account without scanning the entire users collection.
+    if (indexedOwner && indexedOwner !== uid) {
+        updates[`users/${indexedOwner}/fcmTokens/${tokenId}`] = null;
+        if (indexSnap.val()?.token === token) {
+            updates[`users/${indexedOwner}/fcmToken`] = null;
         }
     }
 
-    const now = Date.now();
     updates[`users/${uid}/fcmTokens/${tokenId}`] = {
         token,
         updatedAt: now,
-        userAgent: String(request.data?.userAgent || '').slice(0, 500)
+        userAgent: String(request.data?.userAgent || '').slice(0, 500),
+        pushPrefs
     };
     updates[`users/${uid}/fcmToken`] = token;
     updates[`users/${uid}/fcmUpdatedAt`] = now;
+    updates[`fcmTokenIndex/${tokenId}`] = { uid, token, updatedAt: now };
 
     await db.ref().update(updates);
     return { success: true, tokenId };
 });
+
+exports.updatePushPreferences = onCall(async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
+
+    const prefs = sanitizePushPreferences(request.data?.prefs);
+    prefs.updatedAt = Date.now();
+    const tokenId = String(request.data?.tokenId || '').trim();
+    const updates = { [`users/${uid}/pushPrefs`]: prefs };
+
+    if (tokenId) {
+        const tokenSnap = await db.ref(`users/${uid}/fcmTokens/${tokenId}`).get();
+        if (tokenSnap.exists()) updates[`users/${uid}/fcmTokens/${tokenId}/pushPrefs`] = prefs;
+    }
+
+    await db.ref().update(updates);
+    return { success: true, prefs, tokenId: tokenId || null };
+});
+
+function notificationCategoryEnabled(user, tokenEntry, category) {
+    const prefs = tokenEntry?.pushPrefs && typeof tokenEntry.pushPrefs === 'object'
+        ? tokenEntry.pushPrefs
+        : (user?.pushPrefs && typeof user.pushPrefs === 'object' ? user.pushPrefs : {});
+    if (prefs.enabled === false) return false;
+    return prefs[category] !== false;
+}
+
+function notificationJobId(nick, notificationId) {
+    return crypto.createHash('sha256')
+        .update(`${String(nick)}:${String(notificationId)}`, 'utf8')
+        .digest('hex');
+}
+
+function getNotificationPayload(notification) {
+    const category = String(notification?.cat || 'system');
+    const body = String(notification?.text || notification?.body || '').trim();
+    if (!body) return null;
+    return {
+        title: String(notification?.title || 'Капани'),
+        body,
+        category,
+        notificationId: String(notification?.id || ''),
+        url: String(notification?.url || KAPANI_CANONICAL_URL),
+        createdAt: String(notification?.createdAt || Date.now()),
+        source: String(notification?.source || ''),
+        sourceMessageId: String(notification?.sourceMessageId || '')
+    };
+}
+
+function isTransientFcmError(code) {
+    return /unavailable|internal|deadline|resource-exhausted|quota-exceeded|server-unavailable/i.test(String(code || ''));
+}
+
+function isInvalidTokenError(code) {
+    return /registration-token-not-registered|invalid-registration-token|invalid-argument/i.test(String(code || ''));
+}
+
+function nextRetryDelay(attempt) {
+    const n = Math.max(1, Number(attempt || 1));
+    return Math.min(60 * 60 * 1000, 15 * 1000 * Math.pow(2, Math.min(n - 1, 7)));
+}
+
+async function removeInvalidFcmToken(uid, tokenEntry) {
+    const updates = {};
+    const path = tokenEntry?.path;
+    if (path) updates[`users/${uid}/${path}`] = null;
+    if (tokenEntry?.token) updates[`fcmTokenIndex/${tokenKey(tokenEntry.token)}`] = null;
+    if (Object.keys(updates).length) await db.ref().update(updates);
+}
+
+async function acquireNotificationJob(jobId) {
+    const ref = db.ref(`notificationQueue/${jobId}`);
+    const lockId = crypto.randomBytes(12).toString('hex');
+    const now = Date.now();
+    const result = await ref.transaction((job) => {
+        if (!job) return job;
+        if (job.status === 'sent' || job.status === 'skipped' || job.status === 'dead') return;
+        if (Number(job.leaseUntil || 0) > now && job.lockId && job.lockId !== lockId) return;
+        return {
+            ...job,
+            status: 'sending',
+            lockId,
+            leaseUntil: now + 90 * 1000,
+            workerStartedAt: now,
+            updatedAt: now
+        };
+    });
+    return result.committed ? { ref, job: result.snapshot.val(), lockId } : null;
+}
+
+async function processNotificationJob(jobId) {
+    const acquired = await acquireNotificationJob(jobId);
+    if (!acquired) return;
+
+    const { ref: jobRef, job, lockId } = acquired;
+    const now = Date.now();
+    const nick = String(job.nick || '');
+    if (!nick || !job.notification) {
+        await jobRef.update({ status: 'dead', lastError: 'invalid_job', updatedAt: now });
+        return;
+    }
+
+    try {
+        const userSnap = await db.ref(`users/${nick}`).get();
+        const user = userSnap.exists() ? (userSnap.val() || {}) : null;
+        if (!user) {
+            await jobRef.update({ status: 'dead', lastError: 'user_not_found', updatedAt: now, leaseUntil: null });
+            return;
+        }
+
+        const notification = job.notification;
+        const category = String(notification.category || 'system');
+
+        if (!notificationCategoryEnabled(user, category)) {
+            await jobRef.update({ status: 'skipped', skipReason: 'user_preferences', completedAt: now, updatedAt: now, leaseUntil: null, lockId: null });
+            return;
+        }
+
+        if (notification.source === 'general_chat') {
+            const presenceSnap = await db.ref(`presence/${nick}/generalChatOpen`).get();
+            if (presenceSnap.val() === true) {
+                await jobRef.update({ status: 'skipped', skipReason: 'general_chat_open', completedAt: now, updatedAt: now, leaseUntil: null, lockId: null });
+                return;
+            }
+        }
+
+        const tokenEntries = collectFcmTokens(user);
+        if (!tokenEntries.length) {
+            const attempts = Number(job.attempts || 0) + 1;
+            if (attempts >= 96) {
+                await jobRef.update({ status: 'dead', lastError: 'no_tokens', attempts, completedAt: now, updatedAt: now, leaseUntil: null, lockId: null });
+            } else {
+                await jobRef.update({
+                    status: 'waiting_token', attempts,
+                    nextAttemptAt: now + 15 * 60 * 1000,
+                    lastError: 'no_tokens', updatedAt: now, leaseUntil: null, lockId: null
+                });
+            }
+            return;
+        }
+
+        const tokenStatus = (job.tokenStatus && typeof job.tokenStatus === 'object') ? { ...job.tokenStatus } : {};
+        const responsesToSend = [];
+        let enabledTokenCount = 0;
+        for (const entry of tokenEntries) {
+            const id = tokenKey(entry.token);
+            const state = tokenStatus[id]?.state;
+            if (state === 'sent' || state === 'invalid' || state === 'disabled') continue;
+            if (!notificationCategoryEnabled(user, entry, category)) {
+                tokenStatus[id] = { state: 'disabled', attempts: Number(tokenStatus[id]?.attempts || 0), updatedAt: now };
+                continue;
+            }
+            enabledTokenCount += 1;
+            responsesToSend.push({ ...entry, id });
+        }
+
+        if (!responsesToSend.length) {
+            await jobRef.update({ status: enabledTokenCount ? 'sent' : 'skipped', skipReason: enabledTokenCount ? null : 'user_preferences', tokenStatus, sentAt: now, completedAt: now, updatedAt: now, nextAttemptAt: null, leaseUntil: null, lockId: null });
+            return;
+        }
+
+        const payload = {
+            data: {
+                title: String(notification.title || 'Капани'),
+                body: String(notification.body || ''),
+                text: String(notification.body || ''),
+                category,
+                notificationId: String(job.notificationId || notification.notificationId || jobId),
+                url: String(notification.url || KAPANI_CANONICAL_URL),
+                createdAt: String(notification.createdAt || now),
+                ...(notification.source ? { source: String(notification.source) } : {}),
+                ...(notification.sourceMessageId ? { sourceMessageId: String(notification.sourceMessageId) } : {})
+            },
+            webpush: { headers: { Urgency: 'high' } },
+            token: ''
+        };
+
+        const tokenStatuses = { ...tokenStatus };
+        let successCount = 0;
+        const attemptedAt = Date.now();
+
+        for (let offset = 0; offset < responsesToSend.length; offset += 500) {
+            const batch = responsesToSend.slice(offset, offset + 500);
+            const response = await admin.messaging().sendEach(batch.map((entry) => ({
+                ...payload,
+                token: entry.token
+            })));
+
+            response.responses.forEach((result, index) => {
+                const entry = batch[index];
+                const previousAttempts = Number(tokenStatuses[entry.id]?.attempts || 0);
+                const errorCode = result.success ? '' : String(result.error?.code || 'unknown');
+                if (result.success) {
+                    successCount += 1;
+                    tokenStatuses[entry.id] = { state: 'sent', attempts: previousAttempts + 1, updatedAt: attemptedAt };
+                    return;
+                }
+                if (isInvalidTokenError(errorCode)) {
+                    tokenStatuses[entry.id] = { state: 'invalid', attempts: previousAttempts + 1, updatedAt: attemptedAt, error: errorCode };
+                    removeInvalidFcmToken(nick, entry).catch((cleanupError) => console.warn('[Kapani FCM cleanup]', cleanupError));
+                    return;
+                }
+                tokenStatuses[entry.id] = {
+                    state: 'pending', attempts: previousAttempts + 1,
+                    updatedAt: attemptedAt, error: errorCode
+                };
+            });
+        }
+
+        const unresolved = responsesToSend.filter((entry) => tokenStatuses[entry.id]?.state === 'pending');
+        if (unresolved.length) {
+            const attempts = Number(job.attempts || 0) + 1;
+            if (attempts >= 10) {
+                await jobRef.update({
+                    status: successCount > 0 ? 'partial' : 'dead', attempts,
+                    tokenStatus: tokenStatuses,
+                    lastError: 'max_attempts', completedAt: now,
+                    updatedAt: now, nextAttemptAt: null, leaseUntil: null, lockId: null
+                });
+            } else {
+                await jobRef.update({
+                    status: 'retry', attempts,
+                    tokenStatus: tokenStatuses,
+                    nextAttemptAt: now + nextRetryDelay(attempts),
+                    lastError: 'fcm_delivery_failed', updatedAt: now, leaseUntil: null, lockId: null
+                });
+            }
+            return;
+        }
+
+        await jobRef.update({
+            status: 'sent', tokenStatus: tokenStatuses, sentCount: successCount,
+            completedAt: now, updatedAt: now, nextAttemptAt: null, leaseUntil: null, lockId: null
+        });
+    } catch (error) {
+        const attempts = Number(job.attempts || 0) + 1;
+        console.error('[Kapani notification queue]', jobId, error);
+        if (attempts >= 10) {
+            await jobRef.update({ status: 'dead', attempts, lastError: String(error?.message || error), updatedAt: Date.now(), nextAttemptAt: null, leaseUntil: null, lockId: null });
+        } else {
+            await jobRef.update({ status: 'retry', attempts, lastError: String(error?.message || error), updatedAt: Date.now(), nextAttemptAt: Date.now() + nextRetryDelay(attempts), leaseUntil: null, lockId: null });
+        }
+    }
+}
+
+
+exports.enqueueNotificationPush = onValueCreated(
+  { ref: '/users/{nick}/notifications/{notificationId}', region: 'europe-west1' },
+  async (event) => {
+    const nick = String(event.params?.nick || '');
+    const notificationId = String(event.params?.notificationId || '');
+    const raw = event.data?.val();
+    if (!nick || !notificationId || !raw || raw.push === false) return null;
+
+    const payload = getNotificationPayload({ ...raw, id: notificationId });
+    if (!payload) return null;
+
+    const now = Date.now();
+    const jobId = notificationJobId(nick, notificationId);
+    const queueRef = db.ref(`notificationQueue/${jobId}`);
+    const existing = await queueRef.get();
+    if (!existing.exists()) {
+        await queueRef.set({
+            id: jobId,
+            nick,
+            notificationId,
+            notification: payload,
+            status: 'queued',
+            attempts: 0,
+            tokenStatus: {},
+            createdAt: now,
+            nextAttemptAt: now,
+            updatedAt: now
+        });
+    }
+
+    await processNotificationJob(jobId);
+    return null;
+  }
+);
+
+exports.processNotificationQueue = onSchedule(
+  { schedule: 'every 2 minutes', timeZone: 'UTC', region: 'europe-west1' },
+  async () => {
+    const snap = await db.ref('notificationQueue').get();
+    if (!snap.exists()) return null;
+    const now = Date.now();
+    const jobs = Object.values(snap.val() || {})
+      .filter((job) => job && ['queued', 'retry', 'waiting_token'].includes(job.status) && Number(job.nextAttemptAt || 0) <= now)
+      .sort((a, b) => Number(a.nextAttemptAt || 0) - Number(b.nextAttemptAt || 0))
+      .slice(0, 100);
+
+    await Promise.allSettled(jobs.map((job) => processNotificationJob(String(job.id))));
+    return null;
+  }
+);
 
 /**
  * Server-authoritative subscription gifting.
@@ -776,16 +1082,13 @@ exports.notifyOnChatMessage = onValueCreated(
     if (preview.length > 80) preview = `${preview.slice(0, 77)}...`;
 
     const usersSnap = await db.ref('users').get();
-    const presenceSnap = await db.ref('presence').get();
     const users = usersSnap.val() || {};
-    const presence = presenceSnap.val() || {};
     const sender = users[senderNick] || {};
     const senderName = String(sender.displayName || sender.name || sender.publicName || sender.nick || senderNick);
     const notificationText = `💬 ${senderName} написал в общий чат: ${preview}`;
     const now = Date.now();
 
     const updates = {};
-    const recipients = [];
 
     for (const [nick, user] of Object.entries(users)) {
       if (!user || nick === senderNick) continue;
@@ -802,69 +1105,15 @@ exports.notifyOnChatMessage = onValueCreated(
         sourceMessageId: messageId
       };
 
-      const generalChatOpen = presence?.[nick]?.generalChatOpen === true;
-      if (!generalChatOpen) {
-        recipients.push({ nick, user });
-      }
     }
 
     if (Object.keys(updates).length) {
       await db.ref().update(updates);
     }
 
-    // FCM HTTP v1 via Firebase Admin SDK. No client-side fan-out and no
-    // Cloudflare bridge are involved in the general-chat path.
-    for (const recipient of recipients) {
-      const tokenEntries = collectFcmTokens(recipient.user);
-      if (!tokenEntries.length) continue;
-
-      // FCM multicast accepts at most 500 registration tokens per request.
-      for (let offset = 0; offset < tokenEntries.length; offset += 500) {
-        const batch = tokenEntries.slice(offset, offset + 500);
-        try {
-          const response = await admin.messaging().sendEachForMulticast({
-            tokens: batch.map((entry) => entry.token),
-            data: {
-              title: 'Капани',
-              body: notificationText,
-              text: notificationText,
-              category: 'messages',
-              notificationId: `chat_${messageId}`,
-              url: KAPANI_CANONICAL_URL,
-              createdAt: String(now),
-              sourceMessageId: messageId
-            },
-            webpush: {
-              headers: {
-                Urgency: 'high'
-              }
-            }
-          });
-
-          const cleanup = {};
-          response.responses.forEach((result, index) => {
-            if (result.success) return;
-            const code = String(result.error?.code || '');
-            if (
-              code.includes('registration-token-not-registered') ||
-              code.includes('invalid-registration-token')
-            ) {
-              const path = batch[index]?.path;
-              if (path) cleanup[`users/${recipient.nick}/${path}`] = null;
-            }
-          });
-
-          if (Object.keys(cleanup).length) {
-            await db.ref().update(cleanup);
-          }
-        } catch (pushError) {
-          // The RTDB in-app notification has already been committed. A transient
-          // FCM failure must not cause the whole database trigger to be retried,
-          // which could re-send an already delivered push.
-          console.error('[Kapani chat FCM]', recipient.nick, pushError);
-        }
-      }
-    }
+    // Push delivery is handled by the universal notification queue trigger.
+    // This keeps chat, gifts and all other notification sources on the same
+    // retry/dedupe/invalid-token path.
 
     return null;
   }
