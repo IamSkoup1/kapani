@@ -2827,21 +2827,80 @@ async function callFunctionWithFallback(functionName, data, fallbackFn) {
     }
 }
 
+const KAPANI_AUTH_RETRY_DELAYS = [300, 800, 1800, 3500];
+function sleepMs(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+function setKapaniAuthState(status, error){
+    const state = window._kapaniPushState = window._kapaniPushState || {};
+    state.authStatus = status;
+    if(error) state.authError = String(error?.message || error);
+    else delete state.authError;
+    if(status !== 'ok' && status !== 'signed_out') state.status = 'auth_required';
+}
+function showKapaniAuthWarning(error){
+    try { toast('⚠️ Не удалось создать защищённую сессию Firebase. Push может не работать. Повторите действие или перелогиньтесь.','gold'); } catch(e) {}
+    setKapaniAuthState('failed', error);
+}
+async function callKapaniProtectedFunction(functionName, data={}, options={}){
+    const attempts=Math.max(1, Number(options.attempts || 4));
+    const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+    let lastError=null;
+    for(let i=0;i<attempts;i++){
+        try{
+            const auth=await ensureAuth();
+            if(!auth.currentUser){
+                await restoreKapaniServerSession();
+            }
+            if(!auth.currentUser) throw Object.assign(new Error('Требуется защищённая Firebase-сессия'),{code:'unauthenticated'});
+            const fn=httpsCallable(await ensureFunctions(), functionName);
+            return await fn(data);
+        }catch(e){
+            lastError=e;
+            const code=String(e?.code || '');
+            const retryable=!/permission-denied|invalid-argument|not-found|failed-precondition/i.test(code);
+            if(i>=attempts-1 || !retryable) break;
+            await sleepMs(KAPANI_AUTH_RETRY_DELAYS[Math.min(i,KAPANI_AUTH_RETRY_DELAYS.length-1)]);
+        }
+    }
+    throw lastError || new Error(`Cloud Function ${functionName} failed`);
+}
+
 async function establishKapaniServerSession(nick, password){
     const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
-    const fn = httpsCallable(await ensureFunctions(), 'issueKapaniSessionToken');
-    const result = await fn({ nick, password });
-    const token = result?.data?.token;
-    if(!token) throw new Error('Сервер не выдал защищённую сессию');
-    const auth = await ensureAuth();
-    await authModule.signInWithCustomToken(auth, token);
-    return auth.currentUser;
+    let lastError=null;
+    for(let i=0;i<KAPANI_AUTH_RETRY_DELAYS.length+1;i++){
+        try{
+            const fn=httpsCallable(await ensureFunctions(), 'issueKapaniSessionToken');
+            const result=await fn({nick,password});
+            const token=result?.data?.token;
+            if(!token) throw new Error('Сервер не выдал защищённую сессию');
+            const auth=await ensureAuth();
+            await authModule.signInWithCustomToken(auth, token);
+            const signedIn=await waitForFirebaseAuthUser(5000);
+            if(!signedIn) throw new Error('Firebase Auth не подтвердил защищённую сессию');
+            window._kapaniSessionPassword = String(password || '');
+            setKapaniAuthState('ok');
+            return signedIn;
+        }catch(error){
+            lastError=error;
+            if(i>=KAPANI_AUTH_RETRY_DELAYS.length) break;
+            await sleepMs(KAPANI_AUTH_RETRY_DELAYS[i]);
+        }
+    }
+    setKapaniAuthState('failed', lastError);
+    throw lastError;
+}
+
+async function restoreKapaniServerSession(){
+    const auth=await ensureAuth();
+    if(auth.currentUser){ setKapaniAuthState('ok'); return auth.currentUser; }
+    const nick=currentNick;
+    const password=String(window._kapaniSessionPassword || '');
+    if(!nick || !password) throw Object.assign(new Error('Требуется повторный вход для восстановления защищённой сессии'),{code:'unauthenticated'});
+    return await establishKapaniServerSession(nick,password);
 }
 
 async function requireKapaniServerSession(){
-    const auth = await ensureAuth();
-    if(auth.currentUser) return auth.currentUser;
-    throw new Error('Требуется повторный вход для защищённой операции');
+    return await restoreKapaniServerSession();
 }
 
 // Fallback: Create order directly in database
@@ -3892,11 +3951,12 @@ window.handleAuth = async function() {
             sessionStorage.setItem('kp_s', nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
             currentNick = nick;
+            window._kapaniSessionPassword = password;
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(nick, password);
             } catch(sessionError) {
-                console.warn('[Kapani auth] server session:', sessionError);
+                showKapaniAuthWarning(sessionError);
             }
             startApp();
         } else {
@@ -3917,11 +3977,12 @@ window.handleAuth = async function() {
             sessionStorage.setItem('kp_s', existing.nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
             currentNick = existing.nick;
+            window._kapaniSessionPassword = password;
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(existing.nick, password);
             } catch(sessionError) {
-                console.warn('[Kapani auth] server session:', sessionError);
+                showKapaniAuthWarning(sessionError);
             }
             startApp();
         }
@@ -4016,7 +4077,7 @@ window.logout = async function() {
     const logoutNick=currentNick;
     try {
         if(logoutNick && window._kapaniFcmTokenId) {
-            try { await callKapaniPushBridge('/unregister',{tokenId:window._kapaniFcmTokenId, token:window._kapaniFcmToken||''}); }
+            try { await callKapaniProtectedFunction('unregisterFcmToken',{tokenId:window._kapaniFcmTokenId, token:window._kapaniFcmToken||''},{attempts:3}); }
             catch(e){ console.warn('[Kapani FCM] token unregister during logout failed:',e); }
         }
     } catch(e) {}
@@ -4030,6 +4091,7 @@ window.logout = async function() {
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
     try { if(authInstance?.currentUser) await authModule.signOut(authInstance); } catch(e){ console.warn('[Kapani auth] signOut:',e); }
     try { localStorage.removeItem('kp_fcm_token_id'); } catch(e) {}
+    try { window._kapaniSessionPassword=''; } catch(e) {}
     localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; syncCurrentNick(); location.reload();
 };
 
@@ -4499,10 +4561,17 @@ function renderHomeStats(){qs('homeStats').innerHTML=`<div class="stat-box"><div
 // ─── PUSH NOTIFICATIONS ───────────────────
 function getPushPrefs(){try{return JSON.parse(localStorage.getItem('kp_push')||'{}');}catch(e){return{};}}
 function syncPushPrefs(){
-    if(!currentNick || typeof callFunctionWithFallback!=='function') return Promise.resolve();
+    if(!currentNick) return Promise.resolve();
     const prefs={...getPushPrefs()};
     delete prefs.updatedAt;
-    return callFunctionWithFallback('updatePushPreferences',{prefs,tokenId:window._kapaniFcmTokenId||null},null).catch(e=>console.warn('[Kapani push prefs]',e));
+    return callKapaniProtectedFunction('updatePushPreferences',{prefs,tokenId:window._kapaniFcmTokenId||null},{attempts:4})
+        .catch(e=>{
+            const state=window._kapaniPushState=window._kapaniPushState||{};
+            state.status=/unauthenticated|permission-denied/i.test(String(e?.code||''))?'auth_required':'server_error';
+            state.error=String(e?.message||e);
+            renderKapaniPushStatus({permission:('Notification' in window)?Notification.permission:'unknown',fcmTokenExists:!!window._kapaniFcmToken,serverRegistered:false,state});
+            console.warn('[Kapani push prefs]',e);
+        });
 }
 function savePushPrefs(p){
     try{localStorage.setItem('kp_push',JSON.stringify(p));}catch(e){}
@@ -4578,7 +4647,13 @@ async function requestPushPermission(){
         toast('📲 Для уведомлений добавьте сайт на главный экран iPhone (Поделиться → На экран «Домой»)','gold');
         return false;
     }
-    if(Notification.permission==='granted'){await getSwReg();await tryRegisterFcm();return true;}
+    if(Notification.permission==='granted'){
+        try{ await restoreKapaniServerSession(); }catch(e){ /* tryRegisterFcm will expose auth_required */ }
+        await getSwReg();
+        const ok=await tryRegisterFcm();
+        if(!ok) renderKapaniPushStatus(await window.getKapaniPushDiagnostics().catch(()=>({state:window._kapaniPushState})));
+        return ok;
+    }
     if(Notification.permission==='denied') return false;
     const result = await requestNotificationPermission();
     if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);const ok=await tryRegisterFcm();if(ok){toast('🔔 Push-уведомления включены!','green');return true;}toast('⚠️ Разрешение получено, но регистрация push на сервере не завершилась. Откройте профиль и повторите включение.','gold');return false;}
@@ -4592,11 +4667,15 @@ async function tryRegisterFcm(){
         return false;
     }
     try{
-        const auth = await waitForFirebaseAuthUser(8000);
+        let auth = await waitForFirebaseAuthUser(8000);
+        if(!auth){
+            try { auth = await restoreKapaniServerSession(); } catch(e) {}
+        }
         if(!auth){
             resultState.status='auth_required';
             resultState.error='firebase_auth_session_missing';
             console.warn('[Kapani FCM] Protected token registration requires an authenticated Firebase session.');
+            renderKapaniPushStatus({permission:Notification.permission,fcmTokenExists:false,serverRegistered:false,state:resultState});
             return false;
         }
 
@@ -4622,11 +4701,22 @@ async function tryRegisterFcm(){
         }
 
         const tokenIdLocal = await sha256TokenId(token);
-        const serverResult = await callKapaniPushBridge('/register', {
-            token,
-            userAgent:navigator.userAgent,
-            prefs:getPushPrefs()
-        });
+        let serverResult=null;
+        try{
+            serverResult=(await callKapaniProtectedFunction('registerFcmToken',{
+                token,
+                userAgent:navigator.userAgent,
+                prefs:getPushPrefs()
+            },{attempts:4})).data;
+        }catch(e){
+            const code=String(e?.code || '');
+            resultState.status=/unauthenticated|permission-denied/i.test(code) ? 'auth_required' : 'server_error';
+            resultState.error=String(e?.message || e);
+            resultState.serverRegistered=false;
+            console.error('[Kapani FCM] server token registration failed:',e);
+            try { toast('⚠️ Push получен браузером, но сервер не зарегистрировал устройство. Повторите включение или перелогиньтесь.','gold'); } catch(_) {}
+            return false;
+        }
         window._kapaniFcmToken = token;
         window._kapaniFcmTokenId = serverResult?.tokenId || tokenIdLocal;
         try{ localStorage.setItem('kp_fcm_token_id', window._kapaniFcmTokenId); }catch(e){}
@@ -4637,6 +4727,7 @@ async function tryRegisterFcm(){
         resultState.serverRegistered=true;
         window._kapaniPushLastGoodAt=Date.now();
         await syncPushPrefs();
+        renderKapaniPushStatus({permission:Notification.permission,fcmTokenExists:true,serverRegistered:true,serverTokenCount:1,state:resultState});
 
         // Foreground delivery remains driven by the realtime notification listener.
         // onMessage is intentionally observational so one FCM event cannot produce
@@ -4658,23 +4749,7 @@ async function tryRegisterFcm(){
     }
 }
 
-async function callKapaniPushBridge(path, data={}){
-    const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
-    if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
-    const auth=await ensureAuth();
-    const user=auth.currentUser;
-    if(!user) throw new Error('Требуется защищённая Firebase-сессия для push');
-    const idToken=await user.getIdToken();
-    const response=await fetch(`${base}${path}`,{
-        method:'POST',
-        headers:{'content-type':'application/json','authorization':`Bearer ${idToken}`},
-        body:JSON.stringify(data)
-    });
-    const text=await response.text();
-    let json=null;try{json=JSON.parse(text);}catch(_){ }
-    if(!response.ok || !json?.ok) throw new Error(String(json?.error||`Push Bridge ${response.status}: ${text}`));
-    return json;
-}
+// Deprecated Cloudflare Push Bridge intentionally removed from active client code.
 
 async function sha256TokenId(token){
     const text=String(token||'');
@@ -4710,6 +4785,21 @@ async function waitForFirebaseAuthUser(timeoutMs=8000){
 }
 
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
+function renderKapaniPushStatus(diag){
+    const el=qs('pushStatusText');
+    if(!el) return;
+    const st=diag?.state || window._kapaniPushState || {};
+    const serverOk=diag?.serverRegistered ? `сервер: ${diag.serverTokenCount}` : 'сервер: нет';
+    const parts=[`Статус: ${String(st.status || (diag?.fcmTokenExists?'registered':'not_ready'))}`, `permission: ${diag?.permission || 'unknown'}`, serverOk];
+    if(diag?.serverError) parts.push(`server_error: ${diag.serverError}`);
+    else if(diag?.swError) parts.push(`sw_failed: ${diag.swError}`);
+    else if(diag?.tokenError) parts.push(`token_missing: ${diag.tokenError}`);
+    else if(st.authError) parts.push(`auth_required: ${st.authError}`);
+    el.textContent=parts.join(' · ');
+    el.style.display='block';
+    el.style.color=diag?.serverRegistered && diag?.fcmTokenExists ? 'var(--muted)' : 'var(--gold)';
+}
+
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
     if(!container) return;
@@ -4728,7 +4818,7 @@ function updatePushSettingsUI(){
     if(perm==='unsupported'){if(btn){btn.textContent='❌ Не поддерживается';btn.disabled=true;btn.className='btn btn-ghost';}container.style.display='none';return;}
     if(perm==='denied'){if(btn){btn.textContent='🚫 Заблокировано';btn.disabled=false;btn.className='btn btn-ghost';btn.onclick=()=>toast('Откройте настройки браузера → Уведомления и разрешите для этого сайта','gold');}container.style.display='none';return;}
     if(perm==='default'){if(btn){btn.textContent='🔔 Включить push-уведомления';btn.disabled=false;btn.className='btn btn-primary';btn.onclick=handlePushBtn;}container.style.display='none';return;}
-    if(btn) btn.style.display='none'; if(statusTxt) statusTxt.style.display='none';
+    if(btn) btn.style.display='none'; if(statusTxt) statusTxt.style.display='block';
     const masterOn=isPushOn();
     const cats=[
         {id:'messages',label:'💬 Сообщения',desc:'ЛС и чат'},
@@ -4740,6 +4830,7 @@ function updatePushSettingsUI(){
         {id:'system',label:'⚙️ Система',desc:'Мэрия, должности'}
     ];
     container.style.display='block';
+    if(statusTxt && !statusTxt.textContent) renderKapaniPushStatus({permission:perm,fcmTokenExists:!!window._kapaniFcmToken,serverRegistered:!!window._kapaniPushState?.serverRegistered,state:window._kapaniPushState||{}});
     container.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:2px solid var(--border);margin-bottom:2px;"><div><div style="font-weight:900;font-size:14px;">🔔 Все уведомления</div><div style="font-size:11px;color:var(--muted);">Главный переключатель</div></div>${makeSw(masterOn,"toggleMasterPush()")}</div>`+cats.map(c=>{const catOn=masterOn&&getPushPrefs()[c.id]!==false;const rowOp=masterOn?'':'opacity:.45;pointer-events:none;';return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);${rowOp}"><div><div style="font-weight:800;font-size:13px;">${c.label}</div><div style="font-size:11px;color:var(--muted);">${c.desc}</div></div>${makeSw(catOn,"togglePushCat('"+c.id+"')")}</div>`;}).join('');
 }
 
@@ -4756,8 +4847,15 @@ window.getKapaniPushDiagnostics = async function(){
     } catch(e){ tokenError=String(e?.message||e); }
     let server = null;
     let serverError = null;
-    try { server = await callKapaniPushBridge('/diagnostics',{}); }
-    catch(e){ serverError=String(e?.message||e); }
+    try {
+        server = (await callKapaniProtectedFunction('getPushDiagnostics',{}, {attempts:3})).data;
+    } catch(e){
+        const code=String(e?.code || '');
+        serverError=String(e?.message||e);
+        if(/unauthenticated|permission-denied/i.test(code) && permission==='granted') {
+            window._kapaniPushState={...(window._kapaniPushState||{}),status:'auth_required',error:serverError,serverRegistered:false};
+        }
+    }
     const result={
         checkedAt:new Date().toISOString(),
         permission,
@@ -4777,6 +4875,7 @@ window.getKapaniPushDiagnostics = async function(){
         state:window._kapaniPushState||null,
         lastGoodRegistrationAt:window._kapaniPushLastGoodAt||null
     };
+    renderKapaniPushStatus(result);
     console.table?.(result);
     return result;
 };
@@ -4854,16 +4953,9 @@ async function pushNotification(nick,text,cat='system'){
             push:true
         });
 
-        // Cloudflare is the production push bridge. The notification is stored
-        // first, then the bridge reads the canonical record and sends FCM HTTP v1.
-        // This keeps the same notification data used by the inbox and Service Worker.
-        try{
-            await callKapaniPushBridge('/push',{nick,notificationId});
-        }catch(bridgeError){
-            console.error('[push bridge]',bridgeError);
-            // The RTDB notification remains stored; delivery can be retried by the
-            // server-side Firebase queue where available or by the next notification.
-        }
+        // Delivery is fully server-side: RTDB onCreate -> queue -> FCM -> Service Worker.
+        // No client-side HTTP push call is required, so delivery survives a closed site.
+
     }catch(e){
         console.error('[pushNotification]',e);
         throw e;

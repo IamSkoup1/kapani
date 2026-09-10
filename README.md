@@ -61,4 +61,4 @@ firebase deploy --only functions
 
 ### Cloudflare Worker
 
-`cloudflare-worker/worker.js` сохранён как legacy-архив и не входит в текущий push path. Его секреты и routes не нужны для новой server-side Firebase Functions схемы; не удаляйте Worker автоматически, если он используется другими интеграциями.
+`cloudflare-worker/` сохранён только как legacy-архив. Активный `index.html` не содержит вызовов Worker и не использует `pushBridgeUrl`; для push нужен только Firebase Cloud Functions + FCM + Service Worker. Если старый Worker развёрнут для других интеграций, его можно оставить отдельно от Kapani push.

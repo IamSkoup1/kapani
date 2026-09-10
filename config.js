@@ -11,7 +11,6 @@ const KAPANI_CONFIG = Object.freeze({
         appId: "1:250125043268:web:fd82172b96e326b2001e11"
     },
     fcmVapidKey: "BC1AzcGAzB3u2dDNjMCLtnmOmPx46AXipHPu9rO2et_tyZQFNRBBVr7DQvlZvVYmyIvhoOz1xmneASJtvzcZivc",
-    pushBridgeUrl: "https://kapani-free-push.kapani.workers.dev",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
