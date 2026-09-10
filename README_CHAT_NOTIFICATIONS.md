@@ -18,7 +18,6 @@
 
 Legacy `/notifications/{nick}/{id}` для `duel_invite`/`duel_declined` сохраняется для совместимости игровой UI. Backend trigger `notifyOnLegacyDuelNotification` зеркалит их в `users/{nick}/notifications/legacy_{id}`, откуда они проходят обычную push queue.
 
+## Push backend
 
-## Важно: клиентский push bridge отключён
-
-`index.html` больше не вызывает Cloudflare Worker `/push`, `/register` или `/diagnostics`. Регистрация токена, настройки и диагностика выполняются через `registerFcmToken`, `updatePushPreferences`, `unregisterFcmToken`, `getPushDiagnostics` (Firebase Cloud Functions). Сам `pushNotification()` только создаёт canonical RTDB notification, после чего backend trigger создаёт очередь и отправляет FCM независимо от жизни клиентского JS.
+Общий notification record создаётся в RTDB, после чего `enqueueNotificationPush` создаёт durable job в `notificationQueue`. Активный `index.html` не вызывает Cloudflare Worker: регистрация/снятие FCM-токена, настройки и диагностика выполняются через Firebase callable Functions. Поэтому жизненный цикл страницы отправителя не влияет на постановку job.

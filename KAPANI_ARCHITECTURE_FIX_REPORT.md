@@ -26,6 +26,7 @@
   - backend triggers для общего канала, legacy duel notifications и news;
   - notification records подарков создаются внутри одной RTDB transaction с основной операцией.
 - `index.html`
+  - FCM token registration/unregister/preferences/diagnostics переведены на callable Cloud Functions;
   - удалён client-side FCM token fallback;
   - регистрация token ожидает Firebase Auth и активный Service Worker;
   - добавлена безопасная push diagnostics функция;
@@ -55,3 +56,8 @@ FCM отправляется backend как data-only payload. Service Worker п
 Локально выполнены синтаксические проверки всех inline JavaScript-блоков `index.html`, `functions/index.js` и `firebase-messaging-sw.js`.
 
 Фактическая end-to-end доставка через production Firebase FCM, физический iOS/Android и Cloudflare runtime без деплоя этой версии и доступа к production telemetry не подтверждена.
+
+
+## 2026-09-10 push bridge cutover
+
+`index.html` больше не обращается к Cloudflare Worker. `registerFcmToken`, `unregisterFcmToken`, `updatePushPreferences`, `getPushDiagnostics` вызываются через Firebase callable Functions. `pushNotification()` только создаёт canonical notification record; серверный RTDB trigger ставит job в `notificationQueue`. Auth session теперь явно диагностируется и может быть восстановлена retry с exponential backoff, когда в памяти текущей страницы ещё доступны login credentials.

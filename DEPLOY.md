@@ -45,6 +45,15 @@ FCM Web требует HTTPS. citeturn733441search7
 
 В архиве отсутствуют исходные RTDB/Firestore rules. Functions работают через Admin SDK и не требуют client rules для `notificationQueue`/`fcmTokenIndex`. Не копируйте публичные RTDB rules из старого Worker-конфига в production без отдельного security-аудита.
 
+## Обязательный checklist production deployment
+
+- [ ] `firebase deploy --only functions` выполнен; проверены `enqueueNotificationPush`, `processNotificationQueue`, `registerFcmToken` и остальные функции из списка ниже.
+- [ ] Firebase Authentication включён и `issueKapaniSessionToken` может создать custom-token сессию.
+- [ ] RTDB Rules не мешают backend; `notificationQueue` и `fcmTokenIndex` изменяются Admin SDK.
+- [ ] `/kapani/firebase-messaging-sw.js` физически доступен на GitHub Pages; SW использует `/kapani/` и относительный `./config.js`.
+- [ ] `window.getKapaniPushDiagnostics()` показывает `permission:"granted"`, `fcmTokenExists:true`, `serverRegistered:true`, `serverTokenCount>=1`.
+- [ ] E2E: все вкладки Kapani закрыты, с другого аккаунта создаётся notification event, `notificationQueue/{jobId}` проходит до `sent`, а системное уведомление появляется через Service Worker.
+
 ## Verification after deployment
 
 ### 1. Token registration
