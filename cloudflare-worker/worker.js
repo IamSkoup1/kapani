@@ -6,6 +6,7 @@
 // OAuth используется только для FCM.
 
 const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+const FIREBASE_CUSTOM_TOKEN_AUD = 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit';
 const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const IDENTITY_LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
@@ -48,6 +49,134 @@ function pemToArrayBuffer(pem) {
   }
 
   return bytes.buffer;
+}
+
+
+function normalizePublicName(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(String(value || ''))
+  );
+  return Array.from(new Uint8Array(digest))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function hashKapaniPassword(password, salt) {
+  return sha256Hex(
+    `kapani::${normalizePublicName(salt)}::${String(password || '')}`
+  );
+}
+
+async function signJwtRS256(serviceAccount, headerObject, payloadObject) {
+  const header = base64UrlEncode(JSON.stringify(headerObject));
+  const payload = base64UrlEncode(JSON.stringify(payloadObject));
+  const unsigned = `${header}.${payload}`;
+
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(serviceAccount.private_key),
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256'
+    },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    privateKey,
+    new TextEncoder().encode(unsigned)
+  );
+
+  return `${unsigned}.${base64UrlEncode(new Uint8Array(signature))}`;
+}
+
+async function getServiceAccount(env) {
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || ''));
+  } catch (_) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is invalid JSON');
+  }
+  if (!serviceAccount.client_email || !serviceAccount.private_key) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing client_email or private_key');
+  }
+  return serviceAccount;
+}
+
+async function createFirebaseCustomToken(env, uid, additionalClaims = {}) {
+  const serviceAccount = await getServiceAccount(env);
+  const now = Math.floor(Date.now() / 1000);
+  const normalizedUid = String(uid || '').trim();
+  if (!normalizedUid || normalizedUid.length > 128) {
+    throw new Error('Invalid Firebase UID for custom token');
+  }
+
+  return signJwtRS256(
+    serviceAccount,
+    { alg: 'RS256', typ: 'JWT' },
+    {
+      iss: serviceAccount.client_email,
+      sub: serviceAccount.client_email,
+      aud: FIREBASE_CUSTOM_TOKEN_AUD,
+      iat: now,
+      exp: now + 3600,
+      uid: normalizedUid,
+      claims: {
+        ...additionalClaims,
+        provider: 'kapani-cloudflare'
+      }
+    }
+  );
+}
+
+async function handleSession(request, env) {
+  let input;
+  try {
+    input = await request.json();
+  } catch (_) {
+    return jsonResponse({ ok: false, error: 'Invalid JSON' }, 400, request);
+  }
+
+  const nick = String(input?.nick || '').trim();
+  const password = String(input?.password || '');
+  if (!nick || !password) {
+    return jsonResponse({ ok: false, error: 'nick and password are required' }, 400, request);
+  }
+
+  const user = await rtdbGet(env, `users/${encodeURIComponent(nick)}`);
+  if (!user) {
+    return jsonResponse({ ok: false, error: 'Invalid credentials' }, 401, request);
+  }
+
+  const expected = String(user.passwordHash || '');
+  const salt = String(user.passwordHashSalt || user.nick || nick);
+  if (!expected) {
+    return jsonResponse({ ok: false, error: 'Account does not have a password configured' }, 403, request);
+  }
+
+  const actual = await hashKapaniPassword(password, salt);
+  if (actual !== expected) {
+    return jsonResponse({ ok: false, error: 'Invalid credentials' }, 401, request);
+  }
+
+  const token = await createFirebaseCustomToken(env, nick, {
+    nick: String(user.nick || nick),
+    displayName: String(user.displayName || nick)
+  });
+
+  return jsonResponse({
+    ok: true,
+    token,
+    uid: nick,
+    expiresIn: 3600
+  }, 200, request);
 }
 
 async function getGoogleAccessToken(env) {
@@ -199,6 +328,40 @@ async function rtdbGet(env, path) {
 
 // IMPORTANT:
 // No Authorization header here either.
+
+async function rtdbGetWithEtag(env, path) {
+  const response = await fetch(rtdbUrl(env, path), {
+    headers: { 'X-Firebase-ETag': 'true' }
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`RTDB GET+ETag ${path}: ${response.status} ${text}`);
+  }
+  return {
+    data: text ? JSON.parse(text) : null,
+    etag: response.headers.get('ETag') || null
+  };
+}
+
+async function rtdbPutIfMatch(env, path, value, etag) {
+  const response = await fetch(rtdbUrl(env, path), {
+    method: 'PUT',
+    headers: {
+      'content-type': 'application/json',
+      'if-match': String(etag || 'null_etag')
+    },
+    body: JSON.stringify(value)
+  });
+  const text = await response.text();
+  return {
+    ok: response.ok,
+    status: response.status,
+    text,
+    data: text ? JSON.parse(text) : null,
+    etag: response.headers.get('ETag') || null
+  };
+}
+
 async function rtdbPatch(env, patch) {
   if (!Object.keys(patch).length) return;
 
@@ -223,14 +386,8 @@ async function rtdbPatch(env, patch) {
 }
 
 
-function tokenKey(token) {
-  const value = String(token || '');
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return ('00000000' + (hash >>> 0).toString(16)).slice(-8);
+async function tokenKey(token) {
+  return (await sha256Hex(String(token || ''))).slice(0, 32);
 }
 
 function getBearerToken(request) {
@@ -276,7 +433,7 @@ async function handleRegister(request, env) {
     const { uid } = await authenticateRequest(request, env);
     const token = String(input?.token || '').trim();
     if (!token || token.length < 20) return jsonResponse({ ok:false, error:'Invalid FCM token' }, 400);
-    const tokenId = tokenKey(token);
+    const tokenId = await tokenKey(token);
     const now = Date.now();
     const prefs = extractPrefs(input?.prefs);
     const index = await rtdbGet(env, `fcmTokenIndex/${encodeURIComponent(tokenId)}`);
@@ -313,7 +470,7 @@ async function handleUnregister(request, env) {
     const { uid } = await authenticateRequest(request, env);
     const tokenId = String(input?.tokenId || '').trim();
     const token = String(input?.token || '').trim();
-    const resolved = tokenId || tokenKey(token);
+    const resolved = tokenId || await tokenKey(token);
     if (!resolved) return jsonResponse({ ok:false, error:'tokenId or token required' }, 400);
     const userPath = encodeURIComponent(uid);
     const tokenSnap = await rtdbGet(env, `users/${userPath}/fcmTokens/${encodeURIComponent(resolved)}`);
@@ -339,15 +496,38 @@ async function handleDiagnostics(request, env) {
     const { uid } = await authenticateRequest(request, env);
     const user = await rtdbGet(env, `users/${encodeURIComponent(uid)}`) || {};
     const tokens = collectTokens(user);
+    const tokenRows = [];
+    for (const entry of tokens) {
+      const tid = await tokenKey(entry.token);
+      const stored = user?.fcmTokens?.[tid];
+      tokenRows.push({
+        tokenId: tid,
+        updatedAt: Number(stored?.updatedAt || user?.fcmUpdatedAt || 0) || null
+      });
+    }
+    const queue = await getUserQueueDiagnostics(env, uid);
     return jsonResponse({
-      ok:true,
-      user:uid,
-      tokenCount:tokens.length,
-      tokens:tokens.map(entry => ({ tokenId:tokenKey(entry.token), updatedAt:Number(user?.fcmTokens?.[tokenKey(entry.token)]?.updatedAt || user?.fcmUpdatedAt || 0) || null }))
-    }, 200);
+      ok: true,
+      user: uid,
+      tokenCount: tokens.length,
+      tokens: tokenRows,
+      queue
+    }, 200, request);
   } catch (error) {
-    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401);
+    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request);
   }
+}
+
+async function getUserQueueDiagnostics(env, uid) {
+  const snap = await rtdbGet(env, 'pushQueue');
+  const values = snap && typeof snap === 'object' ? Object.values(snap) : [];
+  const own = values.filter(job => String(job?.nick || '') === String(uid));
+  const counts = { pending:0, processing:0, retry:0, waiting_token:0, sent:0, skipped:0, dead:0 };
+  for (const job of own) {
+    const status = String(job?.status || '');
+    if (Object.prototype.hasOwnProperty.call(counts, status)) counts[status]++;
+  }
+  return { counts, activeJobs: own.filter(job => ['pending','processing','retry','waiting_token'].includes(String(job?.status || ''))).slice(0,20) };
 }
 
 function collectTokens(user) {
@@ -516,7 +696,7 @@ const LEASE_MS = 2 * 60 * 1000;
 const WAITING_TOKEN_MS = 5 * 60 * 1000;
 const MAX_RETRY_MS = 15 * 60 * 1000;
 
-function queueJobId(nick, notificationId) {
+async function queueJobId(nick, notificationId) {
   return tokenKey(`${String(nick)}:${String(notificationId)}`);
 }
 
@@ -548,7 +728,7 @@ async function enqueueNotificationJob(env, nick, notificationId, requestedByUid 
     throw new Error('Authenticated user does not own this notification target');
   }
 
-  const jobId = queueJobId(nick, notificationId);
+  const jobId = await queueJobId(nick, notificationId);
   const existing = await rtdbGet(env, `pushQueue/${encodeURIComponent(jobId)}`);
   if (existing && ['pending','processing','retry','waiting_token'].includes(String(existing.status || ''))) {
     return { ok: true, queued: true, duplicate: true, jobId, status: existing.status };
@@ -594,28 +774,52 @@ function classifyFcmResult(result) {
 
 async function claimQueueJob(env, jobId) {
   const safeId = encodeURIComponent(jobId);
-  const current = await rtdbGet(env, `pushQueue/${safeId}`);
-  if (!current) return null;
-  const now = nowMs();
-  const status = String(current.status || 'pending');
-  const retryAt = Number(current.retryAt || 0);
-  const leaseUntil = Number(current.leaseUntil || 0);
-  if (status === 'sent' || status === 'skipped' || status === 'dead') return null;
-  if ((status === 'retry' || status === 'waiting_token') && retryAt > now) return null;
-  if (status === 'processing' && leaseUntil > now) return null;
-  const attempt = Number(current.attempts || 0) + 1;
-  if (attempt > MAX_QUEUE_ATTEMPTS) {
-    await rtdbPatch(env, { [`pushQueue/${safeId}/status`]: 'dead', [`pushQueue/${safeId}/updatedAt`]: now, [`pushQueue/${safeId}/lastError`]: 'max_attempts_exceeded' });
-    return null;
+  for (let attemptNo = 0; attemptNo < 3; attemptNo++) {
+    const snapshot = await rtdbGetWithEtag(env, `pushQueue/${safeId}`);
+    const current = snapshot.data;
+    const etag = snapshot.etag;
+    if (!current) return null;
+
+    const now = nowMs();
+    const status = String(current.status || 'pending');
+    const retryAt = Number(current.retryAt || 0);
+    const leaseUntil = Number(current.leaseUntil || 0);
+
+    if (status === 'sent' || status === 'skipped' || status === 'dead') return null;
+    if ((status === 'retry' || status === 'waiting_token') && retryAt > now) return null;
+    if (status === 'processing' && leaseUntil > now) return null;
+
+    const nextAttempt = Number(current.attempts || 0) + 1;
+    if (nextAttempt > MAX_QUEUE_ATTEMPTS) {
+      await rtdbPatch(env, {
+        [`pushQueue/${safeId}/status`]: 'dead',
+        [`pushQueue/${safeId}/updatedAt`]: now,
+        [`pushQueue/${safeId}/leaseUntil`]: null,
+        [`pushQueue/${safeId}/lastError`]: 'max_attempts_exceeded'
+      });
+      return null;
+    }
+
+    const claimed = {
+      ...current,
+      status: 'processing',
+      attempts: nextAttempt,
+      leaseUntil: now + LEASE_MS,
+      updatedAt: now,
+      lastStartedAt: now
+    };
+
+    const result = await rtdbPutIfMatch(env, `pushQueue/${safeId}`, claimed, etag);
+    if (result.status === 412) {
+      continue;
+    }
+    if (!result.ok) {
+      throw new Error(`RTDB queue claim failed: ${result.status} ${result.text}`);
+    }
+    return claimed;
   }
-  await rtdbPatch(env, {
-    [`pushQueue/${safeId}/status`]: 'processing',
-    [`pushQueue/${safeId}/attempts`]: attempt,
-    [`pushQueue/${safeId}/leaseUntil`]: now + LEASE_MS,
-    [`pushQueue/${safeId}/updatedAt`]: now,
-    [`pushQueue/${safeId}/lastStartedAt`]: now
-  });
-  return { ...current, status:'processing', attempts:attempt, leaseUntil:now+LEASE_MS };
+
+  return null;
 }
 
 async function processQueueJob(env, claimed) {
@@ -636,15 +840,17 @@ async function processQueueJob(env, claimed) {
     const category = String(notification?.cat || 'system');
     const eligible = allTokens.filter(entry => tokenPrefEnabled({ ...entry, pushPrefs: entry.pushPrefs || user?.pushPrefs }, category));
     if (!eligible.length) {
-      const retryAt = nowMs() + WAITING_TOKEN_MS;
+      const hasTokens = allTokens.length > 0;
+      const nextStatus = hasTokens ? 'skipped' : 'waiting_token';
       await rtdbPatch(env, {
-        [`pushQueue/${safeJobId}/status`]: 'waiting_token',
-        [`pushQueue/${safeJobId}/retryAt`]: retryAt,
+        [`pushQueue/${safeJobId}/status`]: nextStatus,
+        [`pushQueue/${safeJobId}/retryAt`]: hasTokens ? null : (nowMs() + WAITING_TOKEN_MS),
         [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
         [`pushQueue/${safeJobId}/leaseUntil`]: null,
-        [`pushQueue/${safeJobId}/lastError`]: allTokens.length ? 'push_disabled_by_preferences' : 'no_registered_tokens'
+        [`pushQueue/${safeJobId}/lastError`]: hasTokens ? 'push_disabled_by_preferences' : 'no_registered_tokens',
+        ...(hasTokens ? { [`pushQueue/${safeJobId}/reason`]: 'push_disabled_by_preferences' } : {})
       });
-      return { status:'waiting_token', jobId };
+      return { status:nextStatus, jobId };
     }
 
     const priorDeliveries = claimed.deliveries && typeof claimed.deliveries === 'object' ? claimed.deliveries : {};
@@ -654,7 +860,7 @@ async function processQueueJob(env, claimed) {
     let sent = 0, retryable = 0, permanent = 0;
 
     for (const entry of eligible) {
-      const tid = tokenKey(entry.token);
+      const tid = await tokenKey(entry.token);
       if (priorDeliveries[tid]?.status === 'sent') { sent++; continue; }
       let result;
       try {
@@ -667,7 +873,7 @@ async function processQueueJob(env, claimed) {
       deliveryUpdates[`pushQueue/${safeJobId}/deliveries/${tid}`] = {
         tokenId: tid,
         path: entry.path || null,
-        status: kind === 'sent' ? 'sent' : (kind === 'permanent' ? 'permanent' : 'transient'),
+        status: kind,
         updatedAt: nowMs(),
         error: err
       };
@@ -676,8 +882,11 @@ async function processQueueJob(env, claimed) {
         permanent++;
         if (entry.path) cleanup[`users/${safeNick}/${entry.path}`] = null;
         else cleanup[`users/${safeNick}/fcmToken`] = null;
-      } else if (kind === 'transient') retryable++;
-      else permanent++;
+      } else if (kind === 'transient') {
+        retryable++;
+      } else if (kind === 'permanent_payload') {
+        permanent++;
+      }
       console.log(JSON.stringify({ tag:'kapani.push', jobId, notificationId, nick, tokenId:tid, attempt:Number(claimed.attempts||0), status:kind, timestamp:nowMs() }));
     }
 
@@ -686,18 +895,21 @@ async function processQueueJob(env, claimed) {
     }
     if (Object.keys(deliveryUpdates).length) await rtdbPatch(env, deliveryUpdates);
 
-    const totalEligible = eligible.length;
-    const sentCount = Object.values({ ...priorDeliveries, ...Object.fromEntries(eligible.map(e => [tokenKey(e.token), { status: priorDeliveries[tokenKey(e.token)]?.status === 'sent' ? 'sent' : undefined }])) }).length;
-    const deliveredIds = new Set(Object.entries({ ...priorDeliveries }).filter(([,v]) => v?.status === 'sent').map(([k]) => k));
-    for (const entry of eligible) if (priorDeliveries[tokenKey(entry.token)]?.status === 'sent') deliveredIds.add(tokenKey(entry.token));
-    for (const path of Object.keys(deliveryUpdates)) if (deliveryUpdates[path]?.status === 'sent') deliveredIds.add(deliveryUpdates[path].tokenId);
-    const allDone = eligible.every(entry => {
-      const d = deliveryUpdates[`pushQueue/${safeJobId}/deliveries/${tokenKey(entry.token)}`] || priorDeliveries[tokenKey(entry.token)];
-      return d?.status === 'sent' || d?.status === 'permanent';
-    });
+    const allDone = await (async () => {
+      for (const entry of eligible) {
+        const tid = await tokenKey(entry.token);
+        const d = deliveryUpdates[`pushQueue/${safeJobId}/deliveries/${tid}`] || priorDeliveries[tid];
+        if (!(d?.status === 'sent' || d?.status === 'permanent' || d?.status === 'permanent_payload')) return false;
+      }
+      return true;
+    })();
 
-    const hasPayloadFailure = Object.values(deliveryUpdates).some(d => d?.status === 'permanent_payload');
-    const hasInvalidTokenOnly = Object.values(deliveryUpdates).length > 0 && Object.values(deliveryUpdates).every(d => d?.status === 'permanent');
+    const deliveryValues = Object.values(deliveryUpdates);
+    const hasPayloadFailure = deliveryValues.some(d => d?.status === 'permanent_payload');
+    const hasInvalidTokenOnly = deliveryValues.length > 0 &&
+      deliveryValues.every(d => d?.status === 'permanent');
+
+
     if (allDone && sent > 0 && !hasPayloadFailure) {
       await rtdbPatch(env, {
         [`pushQueue/${safeJobId}/status`]: 'sent',
@@ -707,6 +919,16 @@ async function processQueueJob(env, claimed) {
         [`pushQueue/${safeJobId}/lastError`]: null
       });
       return { status:'sent', jobId, sent, permanent, retryable };
+    }
+
+    if (allDone && hasPayloadFailure) {
+      await rtdbPatch(env, {
+        [`pushQueue/${safeJobId}/status`]: 'dead',
+        [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
+        [`pushQueue/${safeJobId}/leaseUntil`]: null,
+        [`pushQueue/${safeJobId}/lastError`]: 'permanent_fcm_payload_error'
+      });
+      return { status:'dead', jobId, sent, permanent, retryable };
     }
     if (allDone && sent === 0 && hasInvalidTokenOnly) {
       await rtdbPatch(env, {
@@ -812,14 +1034,14 @@ function corsHeaders(request) {
     'http://localhost:5173',
     'http://127.0.0.1:5500'
   ]);
-  const allowOrigin = allowed.has(origin) ? origin : 'https://iamskoup1.github.io';
-  return {
-    'access-control-allow-origin': allowOrigin,
+  const headers = {
     'access-control-allow-methods': 'GET, POST, OPTIONS',
     'access-control-allow-headers': 'Authorization, Content-Type',
     'access-control-max-age': '86400',
     'vary': 'Origin'
   };
+  if (!origin || allowed.has(origin)) headers['access-control-allow-origin'] = origin || 'https://iamskoup1.github.io';
+  return headers;
 }
 
 function jsonResponse(
@@ -843,6 +1065,16 @@ function jsonResponse(
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
+      const origin = request.headers.get('Origin') || '';
+      const allowedOrigins = new Set([
+        'https://iamskoup1.github.io',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5500'
+      ]);
+      if (origin && !allowedOrigins.has(origin)) {
+        return new Response(null, { status: 403, headers: { vary:'Origin' } });
+      }
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
     const url = new URL(request.url);
@@ -851,6 +1083,7 @@ export default {
         return jsonResponse({ ok:true, service:'kapani-free-push-bridge', mode:'cloudflare-queue-fcm-v1' }, 200, request);
       }
       if (request.method !== 'POST') return jsonResponse({ok:false,error:'Method not allowed'},405,request);
+      if (url.pathname === '/session') return await handleSession(request, env);
       if (url.pathname === '/register') return await handleRegister(request, env);
       if (url.pathname === '/unregister') return await handleUnregister(request, env);
       if (url.pathname === '/diagnostics') return await handleDiagnostics(request, env);

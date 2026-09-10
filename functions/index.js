@@ -993,72 +993,10 @@ function tokenStatusesNeedsRetry(state) {
     return state?.state === 'pending';
 }
 
-exports.enqueueNotificationPush = onValueCreated(
-  { ref: '/users/{nick}/notifications/{notificationId}', region: 'europe-west1' },
-  async (event) => {
-    const nick = String(event.params?.nick || '');
-    const notificationId = String(event.params?.notificationId || '');
-    const raw = event.data?.val();
-    if (!nick || !notificationId || !raw || raw.push === false) return null;
-
-    const payload = getNotificationPayload({ ...raw, id: notificationId });
-    if (!payload) return null;
-
-    const now = Date.now();
-    const jobId = notificationJobId(nick, notificationId);
-    const queueRef = db.ref(`notificationQueue/${jobId}`);
-    const existing = await queueRef.get();
-    if (!existing.exists()) {
-        const createResult = await queueRef.transaction((job) => {
-            if (job) return;
-            return {
-                id: jobId,
-                nick,
-                notificationId,
-                notification: payload,
-                status: 'pending',
-                attempts: 0,
-                tokenStatus: {},
-                createdAt: now,
-                nextAttemptAt: now,
-                updatedAt: now
-            };
-        });
-        if (!createResult.committed) {
-            pushLog('info', 'job_already_exists', { jobId, notificationId, user: nick });
-        }
-    }
-
-    await processNotificationJob(jobId);
-    return null;
-  }
-);
-
-exports.processNotificationQueue = onSchedule(
-  { schedule: 'every 2 minutes', timeZone: 'UTC', region: 'europe-west1' },
-  async () => {
-    const snap = await db.ref('notificationQueue').get();
-    if (!snap.exists()) return null;
-    const now = Date.now();
-    const jobs = Object.values(snap.val() || {})
-      .filter((job) => {
-          if (!job) return false;
-          if (['pending', 'retry', 'waiting_token'].includes(job.status)) {
-              return Number(job.nextAttemptAt || 0) <= now;
-          }
-          if (job.status === 'processing' || job.status === 'sending') {
-              return Number(job.leaseUntil || 0) > 0 && Number(job.leaseUntil || 0) <= now;
-          }
-          return false;
-      })
-      .sort((a, b) => Number(a.nextAttemptAt || 0) - Number(b.nextAttemptAt || 0))
-      .slice(0, 100);
-
-    pushLog('info', 'scheduler_tick', { candidates: jobs.length });
-    await Promise.allSettled(jobs.map((job) => processNotificationJob(String(job.id))));
-    return null;
-  }
-);
+// Push delivery is intentionally NOT performed by Firebase Functions.
+// Cloudflare Worker owns the canonical durable push queue and FCM HTTP v1
+// delivery path. The old enqueue/process exports have been removed to prevent
+// duplicate sends from an already-deployed Firebase trigger.
 
 /**
  * Server-authoritative subscription gifting.
@@ -1324,7 +1262,7 @@ exports.notifyOnChatMessage = onValueCreated(
       await db.ref().update(updates);
     }
 
-    // Push delivery is handled by the universal notification queue trigger.
+    // Push delivery is handled by the canonical Cloudflare durable queue.
     // This keeps chat, gifts and all other notification sources on the same
     // retry/dedupe/invalid-token path.
 
@@ -1337,7 +1275,7 @@ exports.notifyOnChatMessage = onValueCreated(
  * Legacy duel notification bridge.
  * The game UI historically stores duel events under /notifications/{nick}.
  * Mirror only duel events into the canonical user notification collection so
- * they use the same durable queue/FCM path without removing the legacy UI data.
+ * they use the same Cloudflare durable queue/FCM path without removing the legacy UI data.
  */
 exports.notifyOnLegacyDuelNotification = onValueCreated(
   { ref: '/notifications/{nick}/{notificationId}', region: 'europe-west1' },

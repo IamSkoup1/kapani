@@ -2,7 +2,7 @@
  * Лежит рядом с index.html
  */
 
-const SW_VERSION = 'kapani-fcm-2026-09-09-v4';
+const SW_VERSION = 'kapani-fcm-2026-09-10-cloudflare-v6';
 
 /**
  * Главный URL приложения.
