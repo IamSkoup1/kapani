@@ -2,7 +2,7 @@
  * Лежит рядом с index.html
  */
 
-const SW_VERSION = 'kapani-fcm-2026-09-09-v4';
+const SW_VERSION = 'kapani-fcm-2026-09-10-v5';
 
 /**
  * Главный URL приложения.
@@ -12,6 +12,7 @@ const SW_VERSION = 'kapani-fcm-2026-09-09-v4';
  * Для сайта Капани canonical URL — /kapani
  */
 const KAPANI_APP_PATH = '/kapani/';
+const KAPANI_SCOPE_PATH = '/kapani/';
 
 /**
  * Нормализует URL уведомления.
@@ -35,8 +36,8 @@ function resolveNotificationUrl(requestedUrl) {
 
     const url = new URL(raw, self.location.origin);
 
-    // Чужой origin не используем для перехода из уведомления.
-    if (url.origin !== self.location.origin) {
+    // Чужой origin и URL вне приложения не используем для перехода из уведомления.
+    if (url.origin !== self.location.origin || !url.pathname.startsWith(KAPANI_SCOPE_PATH)) {
       return new URL(KAPANI_APP_PATH, self.location.origin).href;
     }
 
@@ -153,16 +154,6 @@ try {
 
       await self.registration.showNotification(title, {
         body,
-
-        icon: new URL(
-          '/kapani/image.png',
-          self.location.origin
-        ).href,
-
-        badge: new URL(
-          '/kapani/image.png',
-          self.location.origin
-        ).href,
 
         tag: data.notificationId
           ? `kapani-${data.notificationId}`

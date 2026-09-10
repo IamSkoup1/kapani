@@ -4,8 +4,6 @@
 
 ## Архитектура
 
-Активный production push path **не использует Cloudflare Worker**. Клиент вызывает только защищённые Cloud Functions для регистрации токена, настроек и диагностики; сама отправка запускается серверным RTDB-trigger после записи canonical notification.
-
 `событие → users/{nick}/notifications/{id} → enqueueNotificationPush → notificationQueue/{jobId} → FCM → firebase-messaging-sw.js → системное уведомление`
 
 Очередь использует детерминированный job ID, transaction-based lock/lease, повторные попытки с exponential backoff+jitter, состояние доставки по каждому токену, очистку недействительных токенов и повторную обработку просроченных `processing` jobs. Это at-least-once серверная доставка.
@@ -61,5 +59,6 @@ firebase deploy --only functions
 
 Ни FCM, ни браузерный Web Push не дают приложению атомарный ACK уровня «уведомление увидел человек и сервер уже это записал». Поэтому эта система гарантирует сохранение server-side job до принятия сообщения FCM и безопасные retry на уровне очереди. Фактическую доставку на конкретное физическое устройство нужно подтверждать runtime-тестом после deployment.
 
-### Cloudflare Worker
-`cloudflare-worker/` сохранён только как legacy-архив старого Push Bridge и **не используется production-кодом**. `CONFIG.pushBridgeUrl` удалён из `config.js`; активный `index.html` не вызывает Worker ни для регистрации токена, ни для отправки, ни для диагностики. Worker не требуется для текущего push-контура.
+### Cloudflare Worker (вспомогательный API)
+
+`cloudflare-worker/worker.js` сохранён как legacy-архив и не входит в текущий push path. Его секреты и routes не нужны для новой server-side Firebase Functions схемы; не удаляйте Worker автоматически, если он используется другими интеграциями.

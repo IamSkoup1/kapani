@@ -17,7 +17,3 @@
 ## Дуэли
 
 Legacy `/notifications/{nick}/{id}` для `duel_invite`/`duel_declined` сохраняется для совместимости игровой UI. Backend trigger `notifyOnLegacyDuelNotification` зеркалит их в `users/{nick}/notifications/legacy_{id}`, откуда они проходят обычную push queue.
-
-## Push backend
-
-Общий notification record создаётся в RTDB, после чего `enqueueNotificationPush` создаёт durable job в `notificationQueue`. Активный `index.html` не вызывает Cloudflare Worker: регистрация/снятие FCM-токена, настройки и диагностика выполняются через Firebase callable Functions. Поэтому жизненный цикл страницы отправителя не влияет на постановку job.

@@ -5,165 +5,6 @@
 // поэтому для RTDB-запросов авторизация не используется.
 // OAuth используется только для FCM.
 
-const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
-const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
-const TOKEN_URL = 'https://oauth2.googleapis.com/token';
-const IDENTITY_LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
-
-let cachedAccessToken = null;
-let cachedAccessTokenExp = 0;
-
-function base64UrlEncode(input) {
-  const bytes =
-    input instanceof Uint8Array
-      ? input
-      : new TextEncoder().encode(String(input));
-
-  let binary = '';
-  const chunk = 0x8000;
-
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(i, i + chunk)
-    );
-  }
-
-  return btoa(binary)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/g, '');
-}
-
-function pemToArrayBuffer(pem) {
-  const base64 = String(pem || '')
-    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
-    .replace(/-----END PRIVATE KEY-----/g, '')
-    .replace(/\s+/g, '');
-
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return bytes.buffer;
-}
-
-async function getGoogleAccessToken(env) {
-  const now = Math.floor(Date.now() / 1000);
-
-  if (
-    cachedAccessToken &&
-    cachedAccessTokenExp - now > 120
-  ) {
-    return cachedAccessToken;
-  }
-
-  let serviceAccount;
-
-  try {
-    serviceAccount = JSON.parse(
-      env.FIREBASE_SERVICE_ACCOUNT_JSON
-    );
-  } catch (error) {
-    throw new Error(
-      'FIREBASE_SERVICE_ACCOUNT_JSON is invalid JSON'
-    );
-  }
-
-  if (
-    !serviceAccount.client_email ||
-    !serviceAccount.private_key
-  ) {
-    throw new Error(
-      'FIREBASE_SERVICE_ACCOUNT_JSON is missing client_email or private_key'
-    );
-  }
-
-  const header = base64UrlEncode(
-    JSON.stringify({
-      alg: 'RS256',
-      typ: 'JWT'
-    })
-  );
-
-  const payload = base64UrlEncode(
-    JSON.stringify({
-      iss: serviceAccount.client_email,
-      scope: FCM_SCOPE,
-      aud: TOKEN_URL,
-      iat: now,
-      exp: now + 3600
-    })
-  );
-
-  const unsigned = `${header}.${payload}`;
-
-  const privateKey = await crypto.subtle.importKey(
-    'pkcs8',
-    pemToArrayBuffer(serviceAccount.private_key),
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256'
-    },
-    false,
-    ['sign']
-  );
-
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    privateKey,
-    new TextEncoder().encode(unsigned)
-  );
-
-  const assertion =
-    `${unsigned}.${base64UrlEncode(new Uint8Array(signature))}`;
-
-  const response = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: {
-      'content-type':
-        'application/x-www-form-urlencoded'
-    },
-    body: new URLSearchParams({
-      grant_type:
-        'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion
-    })
-  });
-
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    throw new Error(
-      `Google OAuth failed: ${response.status} ${responseText}`
-    );
-  }
-
-  let json;
-
-  try {
-    json = JSON.parse(responseText);
-  } catch (_) {
-    throw new Error(
-      'Google OAuth returned invalid JSON'
-    );
-  }
-
-  if (!json.access_token) {
-    throw new Error(
-      'Google OAuth response does not contain access_token'
-    );
-  }
-
-  cachedAccessToken = json.access_token;
-  cachedAccessTokenExp =
-    now + Number(json.expires_in || 3600);
-
-  return cachedAccessToken;
-}
-
 function rtdbUrl(env, path) {
   const base = String(
     env.FIREBASE_DATABASE_URL || ''
@@ -223,14 +64,13 @@ async function rtdbPatch(env, patch) {
 }
 
 
-function tokenKey(token) {
+async function tokenKey(token) {
   const value = String(token || '');
-  let hash = 2166136261;
-  for (let i = 0; i < value.length; i++) {
-    hash ^= value.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return ('00000000' + (hash >>> 0).toString(16)).slice(-8);
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 32);
 }
 
 function getBearerToken(request) {
@@ -271,12 +111,12 @@ function extractPrefs(input) {
 
 async function handleRegister(request, env) {
   let input;
-  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400); }
+  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400, request); }
   try {
     const { uid } = await authenticateRequest(request, env);
     const token = String(input?.token || '').trim();
-    if (!token || token.length < 20) return jsonResponse({ ok:false, error:'Invalid FCM token' }, 400);
-    const tokenId = tokenKey(token);
+    if (!token || token.length < 20) return jsonResponse({ ok:false, error:'Invalid FCM token' }, 400, request);
+    const tokenId = await tokenKey(token);
     const now = Date.now();
     const prefs = extractPrefs(input?.prefs);
     const index = await rtdbGet(env, `fcmTokenIndex/${encodeURIComponent(tokenId)}`);
@@ -299,21 +139,21 @@ async function handleRegister(request, env) {
     if (Object.keys(prefs).length) updates[`users/${encodeURIComponent(uid)}/pushPrefs`] = prefs;
     updates[`fcmTokenIndex/${tokenId}`] = { uid, token, updatedAt: now };
     await rtdbPatch(env, updates);
-    return jsonResponse({ ok:true, success:true, tokenId, uid }, 200);
+    return jsonResponse({ ok:true, success:true, tokenId, uid }, 200, request);
   } catch (error) {
-    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401);
+    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request);
   }
 }
 
 async function handleUnregister(request, env) {
   let input;
-  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400); }
+  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400, request); }
   try {
     const { uid } = await authenticateRequest(request, env);
     const tokenId = String(input?.tokenId || '').trim();
     const token = String(input?.token || '').trim();
-    const resolved = tokenId || tokenKey(token);
-    if (!resolved) return jsonResponse({ ok:false, error:'tokenId or token required' }, 400);
+    const resolved = tokenId || await tokenKey(token);
+    if (!resolved) return jsonResponse({ ok:false, error:'tokenId or token required' }, 400, request);
     const userPath = encodeURIComponent(uid);
     const tokenSnap = await rtdbGet(env, `users/${userPath}/fcmTokens/${encodeURIComponent(resolved)}`);
     const legacy = await rtdbGet(env, `users/${userPath}/fcmToken`);
@@ -327,9 +167,9 @@ async function handleUnregister(request, env) {
       updates[`users/${userPath}/fcmUpdatedAt`] = null;
     }
     await rtdbPatch(env, updates);
-    return jsonResponse({ ok:true, success:true, tokenId:resolved, removed:!!tokenSnap || !!legacy }, 200);
+    return jsonResponse({ ok:true, success:true, tokenId:resolved, removed:!!tokenSnap || !!legacy }, 200, request);
   } catch (error) {
-    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401);
+    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request);
   }
 }
 
@@ -342,10 +182,14 @@ async function handleDiagnostics(request, env) {
       ok:true,
       user:uid,
       tokenCount:tokens.length,
-      tokens:tokens.map(entry => ({ tokenId:tokenKey(entry.token), updatedAt:Number(user?.fcmTokens?.[tokenKey(entry.token)]?.updatedAt || user?.fcmUpdatedAt || 0) || null }))
-    }, 200);
+      tokens:await Promise.all(tokens.map(async entry => {
+        const tokenId = await tokenKey(entry.token);
+        const record = user?.fcmTokens?.[tokenId];
+        return { tokenId, updatedAt:Number(record?.updatedAt || user?.fcmUpdatedAt || 0) || null };
+      }))
+    }, 200, request);
   } catch (error) {
-    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401);
+    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request);
   }
 }
 
@@ -395,379 +239,99 @@ function collectTokens(user) {
   return entries;
 }
 
-async function sendOneFcm(
-  env,
-  accessToken,
-  token,
-  notificationId,
-  notification
-) {
-  const projectId = String(
-    env.FIREBASE_PROJECT_ID || 'kapanisite'
-  );
-
-  const url =
-    `https://fcm.googleapis.com/v1/projects/` +
-    `${encodeURIComponent(projectId)}/messages:send`;
-
-  const title = String(
-    notification?.title || 'Капани'
-  );
-
-  const body = String(
-    notification?.text ||
-    notification?.body ||
-    ''
-  );
-
-  const category = String(
-    notification?.cat || 'system'
-  );
-
-  const targetUrl = String(
-    notification?.url || KAPANI_CANONICAL_URL
-  );
-
-  const createdAt = String(
-    notification?.createdAt || Date.now()
-  );
-
-  const payload = {
-    message: {
-      token,
-
-      data: {
-        title,
-        body,
-        text: body,
-        category,
-        notificationId: String(notificationId),
-        url: targetUrl,
-        createdAt
-      },
-
-      webpush: {
-        headers: {
-          Urgency: 'high'
-        }
-      }
-    }
-  };
-
-  const response = await fetch(
-    url,
-    {
-      method: 'POST',
-      headers: {
-        Authorization:
-          `Bearer ${accessToken}`,
-        'content-type':
-          'application/json; UTF-8'
-      },
-      body: JSON.stringify(payload)
-    }
-  );
-
-  const text = await response.text();
-
-  let json = null;
-
-  try {
-    json = JSON.parse(text);
-  } catch (_) {}
-
-  return {
-    ok: response.ok,
-    status: response.status,
-    json,
-    text
-  };
-}
-
-function shouldRemoveToken(result) {
-  const status =
-    Number(result?.status || 0);
-
-  const errorCode =
-    String(
-      result?.json?.error?.details?.[0]
-        ?.errorCode || ''
-    );
-
-  const errorStatus =
-    String(
-      result?.json?.error?.status || ''
-    );
-
-  return (
-    status === 404 ||
-    status === 400 ||
-    errorStatus === 'NOT_FOUND' ||
-    errorCode === 'UNREGISTERED'
-  );
-}
-
 async function handlePush(request, env) {
-  if (request.method !== 'POST') {
-    return jsonResponse(
-      {
-        ok: true,
-        service:
-          'kapani-free-push-bridge'
-      },
-      200
-    );
-  }
-
-  let input;
-
-  try {
-    input = await request.json();
-  } catch (_) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: 'Invalid JSON'
-      },
-      400
-    );
-  }
-
-  const nick = String(
-    input?.nick || ''
-  ).trim();
-
-  const notificationId = String(
-    input?.notificationId || ''
-  ).trim();
-
-  if (!nick || !notificationId) {
-    return jsonResponse(
-      {
-        ok: false,
-        error:
-          'nick and notificationId are required'
-      },
-      400
-    );
-  }
-
-  const safeNick =
-    encodeURIComponent(nick);
-
-  const safeId =
-    encodeURIComponent(notificationId);
-
-  // Read notification directly from public RTDB.
-  const notification =
-    await rtdbGet(
-      env,
-      `users/${safeNick}/notifications/${safeId}`
-    );
-
-  if (
-    !notification ||
-    notification.push === false
-  ) {
-    return jsonResponse(
-      {
-        ok: true,
-        skipped: true
-      },
-      200
-    );
-  }
-
-  const createdAt =
-    Number(notification.createdAt || 0);
-
-  if (
-    !createdAt ||
-    Math.abs(Date.now() - createdAt) >
-      10 * 60 * 1000
-  ) {
-    return jsonResponse(
-      {
-        ok: false,
-        error:
-          'Notification is outside the push window'
-      },
-      409
-    );
-  }
-
-  // Read user from RTDB without OAuth.
-  const user =
-    await rtdbGet(
-      env,
-      `users/${safeNick}`
-    );
-
-  const tokens =
-    collectTokens(user).slice(0, 25);
-
-  if (!tokens.length) {
-    return jsonResponse(
-      {
-        ok: true,
-        sent: 0,
-        reason: 'no tokens'
-      },
-      200
-    );
-  }
-
-  // OAuth is required only for FCM.
-  const accessToken =
-    await getGoogleAccessToken(env);
-
-  const results =
-    await Promise.all(
-      tokens.map(
-        async (entry) => {
-          try {
-            const result =
-              await sendOneFcm(
-                env,
-                accessToken,
-                entry.token,
-                notificationId,
-                notification
-              );
-
-            return {
-              ...entry,
-              result
-            };
-          } catch (error) {
-            return {
-              ...entry,
-              result: {
-                ok: false,
-                status: 500,
-                error:
-                  String(
-                    error?.message ||
-                    error
-                  )
-              }
-            };
-          }
-        }
-      )
-    );
-
-  const cleanup = {};
-
-  let sent = 0;
-  let removed = 0;
-
-  for (const item of results) {
-    if (item.result.ok) {
-      sent++;
-      continue;
-    }
-
-    if (
-      shouldRemoveToken(item.result)
-    ) {
-      if (item.path) {
-        cleanup[
-          `users/${safeNick}/${item.path}`
-        ] = null;
-      } else {
-        cleanup[
-          `users/${safeNick}/fcmToken`
-        ] = null;
-      }
-    }
-  }
-
-  if (
-    Object.keys(cleanup).length
-  ) {
-    await rtdbPatch(
-      env,
-      cleanup
-    );
-
-    removed =
-      Object.keys(cleanup).length;
-  }
-
-  // Mark notification as processed.
-  try {
-    await rtdbPatch(
-      env,
-      {
-        [`users/${safeNick}/notifications/${safeId}/pushBridgeProcessedAt`]:
-          Date.now()
-      }
-    );
-  } catch (_) {}
-
-  return jsonResponse(
-    {
-      ok: true,
-      sent,
-      attempted: tokens.length,
-      removed
-    },
-    200
-  );
+  return jsonResponse({
+    ok: false,
+    deprecated: true,
+    code: 'CANONICAL_PIPELINE',
+    message: 'Direct FCM sending through Cloudflare is disabled. Firebase Functions notificationQueue is the sole production delivery path.'
+  }, 410, request);
 }
 
-function corsHeaders() {
+const ALLOWED_ORIGINS = new Set([
+  'https://iamskoup1.github.io',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+]);
+
+function getAllowedOrigin(request) {
+  const origin = String(request.headers.get('Origin') || '');
+  if (!origin) return null;
+  return ALLOWED_ORIGINS.has(origin) ? origin : null;
+}
+
+function corsHeaders(request) {
+  const origin = getAllowedOrigin(request);
+  const requested = String(request.headers.get('Access-Control-Request-Headers') || '');
+  const requestedHeaders = requested
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+  const allowed = new Set(['content-type', 'authorization']);
+  const reflected = requestedHeaders.filter((header) => allowed.has(header));
+
   return {
-    'access-control-allow-origin': '*',
-    'access-control-allow-methods':
-      'POST, OPTIONS',
-    'access-control-allow-headers':
-      'content-type'
+    ...(origin ? {
+      'access-control-allow-origin': origin,
+      'vary': 'Origin'
+    } : {}),
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': reflected.length ? reflected.join(', ') : 'Content-Type, Authorization',
+    'access-control-max-age': '86400'
   };
 }
 
-function jsonResponse(
-  data,
-  status = 200
-) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status,
-      headers: {
-        'content-type':
-          'application/json; charset=utf-8',
-        ...corsHeaders()
-      }
+function jsonResponse(data, status = 200, request = null) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      ...(request ? corsHeaders(request) : {})
     }
-  );
+  });
+}
+
+function preflightResponse(request) {
+  const origin = getAllowedOrigin(request);
+  if (request.headers.get('Origin') && !origin) {
+    return new Response(JSON.stringify({ ok: false, error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json; charset=utf-8' }
+    });
+  }
+  const requestedMethod = String(request.headers.get('Access-Control-Request-Method') || '').toUpperCase();
+  if (requestedMethod && !['GET', 'POST'].includes(requestedMethod)) {
+    return new Response(null, { status: 405, headers: corsHeaders(request) });
+  }
+  return new Response(null, { status: 204, headers: corsHeaders(request) });
 }
 
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+      return preflightResponse(request);
     }
 
     const url = new URL(request.url);
     try {
       if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/health')) {
-        return jsonResponse({ ok: true, service: 'kapani-free-push-bridge' }, 200);
+        return jsonResponse({ ok: true, service: 'kapani-free-push-bridge', canonicalDelivery: 'firebase-functions' }, 200, request);
       }
-      if (request.method !== 'POST') return jsonResponse({ ok:false, error:'Method not allowed' }, 405);
+      if (request.method !== 'POST') return jsonResponse({ ok:false, error:'Method not allowed' }, 405, request);
       if (url.pathname === '/register') return await handleRegister(request, env);
       if (url.pathname === '/unregister') return await handleUnregister(request, env);
       if (url.pathname === '/diagnostics') return await handleDiagnostics(request, env);
       if (url.pathname === '/push' || url.pathname === '/send') {
         try { await authenticateRequest(request, env); }
-        catch (error) { return jsonResponse({ ok:false, error:String(error?.message || error) }, 401); }
+        catch (error) { return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request); }
         return await handlePush(request, env);
       }
-      return jsonResponse({ ok:false, error:'Not found' }, 404);
+      return jsonResponse({ ok:false, error:'Not found' }, 404, request);
     } catch (error) {
       console.error('[Kapani Free Push]', error);
-      return jsonResponse({ ok:false, error:String(error?.message || error) }, 500);
+      return jsonResponse({ ok:false, error:String(error?.message || error) }, 500, request);
     }
   }
 };
