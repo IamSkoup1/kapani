@@ -640,6 +640,33 @@ function notificationJobId(nick, notificationId) {
         .digest('hex');
 }
 
+// Canonical Cloudflare queue entry used by server-side notification fan-out.
+// The notification itself is still written under users/<nick>/notifications;
+// this second write makes server-created notifications eligible for the same
+// durable retry/dedupe/FCM path as client-created notifications.
+function addCloudflarePushQueue(updates, nick, notificationId, createdAt) {
+    const safeNick = String(nick || '').trim();
+    const safeNotificationId = String(notificationId || '').trim();
+    if (!safeNick || !safeNotificationId) return;
+    const jobId = notificationJobId(safeNick, safeNotificationId);
+    const now = Number(createdAt || Date.now());
+    updates[`pushQueue/${jobId}`] = {
+        jobId,
+        nick: safeNick,
+        notificationId: safeNotificationId,
+        status: 'pending',
+        attempts: 0,
+        createdAt: now,
+        updatedAt: now,
+        retryAt: now,
+        lastError: null
+    };
+    updates[`users/${safeNick}/pushQueueRefs/${jobId}`] = {
+        notificationId: safeNotificationId,
+        updatedAt: now
+    };
+}
+
 function getNotificationPayload(notification) {
     const category = String(notification?.cat || 'system');
     const body = String(notification?.text || notification?.body || '').trim();
@@ -1256,6 +1283,8 @@ exports.notifyOnChatMessage = onValueCreated(
         sourceMessageId: messageId
       };
 
+      addCloudflarePushQueue(updates, nick, notificationId, now);
+
     }
 
     if (Object.keys(updates).length) {
@@ -1263,8 +1292,8 @@ exports.notifyOnChatMessage = onValueCreated(
     }
 
     // Push delivery is handled by the canonical Cloudflare durable queue.
-    // This keeps chat, gifts and all other notification sources on the same
-    // retry/dedupe/invalid-token path.
+    // The queue entries are created above atomically with the notification rows,
+    // so closing the publisher's browser cannot interrupt delivery.
 
     return null;
   }
@@ -1291,12 +1320,13 @@ exports.notifyOnLegacyDuelNotification = onValueCreated(
     const existing = await targetRef.get();
     if (existing.exists()) return null;
 
+    const createdAt = Number(raw.ts || Date.now());
     await targetRef.set({
       text: String(raw.text || 'Новое уведомление'),
       title: 'Капани',
       time: String(raw.time || new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })),
       cat: 'messages',
-      createdAt: Number(raw.ts || Date.now()),
+      createdAt,
       url: `${KAPANI_CANONICAL_URL}?duel=${encodeURIComponent(String(raw.duelId || ''))}`,
       push: true,
       type: String(raw.type),
@@ -1305,6 +1335,9 @@ exports.notifyOnLegacyDuelNotification = onValueCreated(
       source: 'legacy_duel',
       sourceMessageId: notificationId
     });
+    const queueUpdates = {};
+    addCloudflarePushQueue(queueUpdates, nick, canonicalId, createdAt);
+    await db.ref().update(queueUpdates);
     return null;
   }
 );
@@ -1341,6 +1374,7 @@ exports.notifyOnNewsCreated = onValueCreated(
         source: 'news',
         sourceMessageId: newsId
       };
+      addCloudflarePushQueue(updates, nick, notificationId, createdAt);
     }
 
     if (Object.keys(updates).length) await db.ref().update(updates);
