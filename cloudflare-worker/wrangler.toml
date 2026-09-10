@@ -9,3 +9,13 @@ FIREBASE_DATABASE_URL = "https://kapanisite-default-rtdb.europe-west1.firebaseda
 
 # Public Firebase Web API key is used only for Firebase Auth ID-token verification.
 FIREBASE_WEB_API_KEY = "AIzaSyCtMtRrKHsfYI4zb9CDuM6HiE56T7H1Ehw"
+
+[triggers]
+crons = ["* * * * *"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[secrets]
+required = ["FIREBASE_SERVICE_ACCOUNT_JSON"]

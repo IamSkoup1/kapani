@@ -5,6 +5,165 @@
 // поэтому для RTDB-запросов авторизация не используется.
 // OAuth используется только для FCM.
 
+const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const IDENTITY_LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
+
+let cachedAccessToken = null;
+let cachedAccessTokenExp = 0;
+
+function base64UrlEncode(input) {
+  const bytes =
+    input instanceof Uint8Array
+      ? input
+      : new TextEncoder().encode(String(input));
+
+  let binary = '';
+  const chunk = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(i, i + chunk)
+    );
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function pemToArrayBuffer(pem) {
+  const base64 = String(pem || '')
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+
+  return bytes.buffer;
+}
+
+async function getGoogleAccessToken(env) {
+  const now = Math.floor(Date.now() / 1000);
+
+  if (
+    cachedAccessToken &&
+    cachedAccessTokenExp - now > 120
+  ) {
+    return cachedAccessToken;
+  }
+
+  let serviceAccount;
+
+  try {
+    serviceAccount = JSON.parse(
+      env.FIREBASE_SERVICE_ACCOUNT_JSON
+    );
+  } catch (error) {
+    throw new Error(
+      'FIREBASE_SERVICE_ACCOUNT_JSON is invalid JSON'
+    );
+  }
+
+  if (
+    !serviceAccount.client_email ||
+    !serviceAccount.private_key
+  ) {
+    throw new Error(
+      'FIREBASE_SERVICE_ACCOUNT_JSON is missing client_email or private_key'
+    );
+  }
+
+  const header = base64UrlEncode(
+    JSON.stringify({
+      alg: 'RS256',
+      typ: 'JWT'
+    })
+  );
+
+  const payload = base64UrlEncode(
+    JSON.stringify({
+      iss: serviceAccount.client_email,
+      scope: FCM_SCOPE,
+      aud: TOKEN_URL,
+      iat: now,
+      exp: now + 3600
+    })
+  );
+
+  const unsigned = `${header}.${payload}`;
+
+  const privateKey = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(serviceAccount.private_key),
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256'
+    },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    privateKey,
+    new TextEncoder().encode(unsigned)
+  );
+
+  const assertion =
+    `${unsigned}.${base64UrlEncode(new Uint8Array(signature))}`;
+
+  const response = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: {
+      'content-type':
+        'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      grant_type:
+        'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion
+    })
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new Error(
+      `Google OAuth failed: ${response.status} ${responseText}`
+    );
+  }
+
+  let json;
+
+  try {
+    json = JSON.parse(responseText);
+  } catch (_) {
+    throw new Error(
+      'Google OAuth returned invalid JSON'
+    );
+  }
+
+  if (!json.access_token) {
+    throw new Error(
+      'Google OAuth response does not contain access_token'
+    );
+  }
+
+  cachedAccessToken = json.access_token;
+  cachedAccessTokenExp =
+    now + Number(json.expires_in || 3600);
+
+  return cachedAccessToken;
+}
+
 function rtdbUrl(env, path) {
   const base = String(
     env.FIREBASE_DATABASE_URL || ''
@@ -64,13 +223,14 @@ async function rtdbPatch(env, patch) {
 }
 
 
-async function tokenKey(token) {
+function tokenKey(token) {
   const value = String(token || '');
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-    .slice(0, 32);
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ('00000000' + (hash >>> 0).toString(16)).slice(-8);
 }
 
 function getBearerToken(request) {
@@ -111,12 +271,12 @@ function extractPrefs(input) {
 
 async function handleRegister(request, env) {
   let input;
-  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400, request); }
+  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400); }
   try {
     const { uid } = await authenticateRequest(request, env);
     const token = String(input?.token || '').trim();
-    if (!token || token.length < 20) return jsonResponse({ ok:false, error:'Invalid FCM token' }, 400, request);
-    const tokenId = await tokenKey(token);
+    if (!token || token.length < 20) return jsonResponse({ ok:false, error:'Invalid FCM token' }, 400);
+    const tokenId = tokenKey(token);
     const now = Date.now();
     const prefs = extractPrefs(input?.prefs);
     const index = await rtdbGet(env, `fcmTokenIndex/${encodeURIComponent(tokenId)}`);
@@ -139,21 +299,22 @@ async function handleRegister(request, env) {
     if (Object.keys(prefs).length) updates[`users/${encodeURIComponent(uid)}/pushPrefs`] = prefs;
     updates[`fcmTokenIndex/${tokenId}`] = { uid, token, updatedAt: now };
     await rtdbPatch(env, updates);
-    return jsonResponse({ ok:true, success:true, tokenId, uid }, 200, request);
+    const tokenCount = collectTokens(await rtdbGet(env, `users/${encodeURIComponent(uid)}`) || {}).length;
+    return jsonResponse({ ok:true, success:true, tokenId, uid, tokenCount }, 200);
   } catch (error) {
-    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request);
+    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401);
   }
 }
 
 async function handleUnregister(request, env) {
   let input;
-  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400, request); }
+  try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400); }
   try {
     const { uid } = await authenticateRequest(request, env);
     const tokenId = String(input?.tokenId || '').trim();
     const token = String(input?.token || '').trim();
-    const resolved = tokenId || await tokenKey(token);
-    if (!resolved) return jsonResponse({ ok:false, error:'tokenId or token required' }, 400, request);
+    const resolved = tokenId || tokenKey(token);
+    if (!resolved) return jsonResponse({ ok:false, error:'tokenId or token required' }, 400);
     const userPath = encodeURIComponent(uid);
     const tokenSnap = await rtdbGet(env, `users/${userPath}/fcmTokens/${encodeURIComponent(resolved)}`);
     const legacy = await rtdbGet(env, `users/${userPath}/fcmToken`);
@@ -167,9 +328,9 @@ async function handleUnregister(request, env) {
       updates[`users/${userPath}/fcmUpdatedAt`] = null;
     }
     await rtdbPatch(env, updates);
-    return jsonResponse({ ok:true, success:true, tokenId:resolved, removed:!!tokenSnap || !!legacy }, 200, request);
+    return jsonResponse({ ok:true, success:true, tokenId:resolved, removed:!!tokenSnap || !!legacy }, 200);
   } catch (error) {
-    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request);
+    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401);
   }
 }
 
@@ -182,14 +343,10 @@ async function handleDiagnostics(request, env) {
       ok:true,
       user:uid,
       tokenCount:tokens.length,
-      tokens:await Promise.all(tokens.map(async entry => {
-        const tokenId = await tokenKey(entry.token);
-        const record = user?.fcmTokens?.[tokenId];
-        return { tokenId, updatedAt:Number(record?.updatedAt || user?.fcmUpdatedAt || 0) || null };
-      }))
-    }, 200, request);
+      tokens:tokens.map(entry => ({ tokenId:tokenKey(entry.token), updatedAt:Number(user?.fcmTokens?.[tokenKey(entry.token)]?.updatedAt || user?.fcmUpdatedAt || 0) || null }))
+    }, 200);
   } catch (error) {
-    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request);
+    return jsonResponse({ ok:false, error:String(error?.message || error) }, 401);
   }
 }
 
@@ -197,7 +354,7 @@ function collectTokens(user) {
   const entries = [];
   const seen = new Set();
 
-  const add = (token, path) => {
+  const add = (token, path, pushPrefs = null) => {
     const value = String(token || '').trim();
 
     if (!value || seen.has(value)) {
@@ -207,11 +364,12 @@ function collectTokens(user) {
     seen.add(value);
     entries.push({
       token: value,
-      path
+      path,
+      pushPrefs: pushPrefs || user?.pushPrefs || {}
     });
   };
 
-  add(user?.fcmToken, null);
+  add(user?.fcmToken, null, user?.pushPrefs || null);
 
   const many =
     user?.fcmTokens &&
@@ -223,7 +381,8 @@ function collectTokens(user) {
     if (typeof entry === 'string') {
       add(
         entry,
-        `fcmTokens/${id}`
+        `fcmTokens/${id}`,
+        user?.pushPrefs || null
       );
     } else if (
       entry &&
@@ -231,7 +390,8 @@ function collectTokens(user) {
     ) {
       add(
         entry.token,
-        `fcmTokens/${id}`
+        `fcmTokens/${id}`,
+        entry.pushPrefs || user?.pushPrefs || null
       );
     }
   }
@@ -239,99 +399,473 @@ function collectTokens(user) {
   return entries;
 }
 
-async function handlePush(request, env) {
-  return jsonResponse({
-    ok: false,
-    deprecated: true,
-    code: 'CANONICAL_PIPELINE',
-    message: 'Direct FCM sending through Cloudflare is disabled. Firebase Functions notificationQueue is the sole production delivery path.'
-  }, 410, request);
-}
+async function sendOneFcm(
+  env,
+  accessToken,
+  token,
+  notificationId,
+  notification
+) {
+  const projectId = String(
+    env.FIREBASE_PROJECT_ID || 'kapanisite'
+  );
 
-const ALLOWED_ORIGINS = new Set([
-  'https://iamskoup1.github.io',
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
-]);
+  const url =
+    `https://fcm.googleapis.com/v1/projects/` +
+    `${encodeURIComponent(projectId)}/messages:send`;
 
-function getAllowedOrigin(request) {
-  const origin = String(request.headers.get('Origin') || '');
-  if (!origin) return null;
-  return ALLOWED_ORIGINS.has(origin) ? origin : null;
-}
+  const title = String(
+    notification?.title || 'Капани'
+  );
 
-function corsHeaders(request) {
-  const origin = getAllowedOrigin(request);
-  const requested = String(request.headers.get('Access-Control-Request-Headers') || '');
-  const requestedHeaders = requested
-    .split(',')
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-  const allowed = new Set(['content-type', 'authorization']);
-  const reflected = requestedHeaders.filter((header) => allowed.has(header));
+  const body = String(
+    notification?.text ||
+    notification?.body ||
+    ''
+  );
+
+  const category = String(
+    notification?.cat || 'system'
+  );
+
+  const targetUrl = String(
+    notification?.url || KAPANI_CANONICAL_URL
+  );
+
+  const createdAt = String(
+    notification?.createdAt || Date.now()
+  );
+
+  const payload = {
+    message: {
+      token,
+
+      data: {
+        title,
+        body,
+        text: body,
+        category,
+        notificationId: String(notificationId),
+        url: targetUrl,
+        createdAt
+      },
+
+      webpush: {
+        headers: {
+          Urgency: 'high'
+        }
+      }
+    }
+  };
+
+  const response = await fetch(
+    url,
+    {
+      method: 'POST',
+      headers: {
+        Authorization:
+          `Bearer ${accessToken}`,
+        'content-type':
+          'application/json; UTF-8'
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+
+  const text = await response.text();
+
+  let json = null;
+
+  try {
+    json = JSON.parse(text);
+  } catch (_) {}
 
   return {
-    ...(origin ? {
-      'access-control-allow-origin': origin,
-      'vary': 'Origin'
-    } : {}),
-    'access-control-allow-methods': 'GET, POST, OPTIONS',
-    'access-control-allow-headers': reflected.length ? reflected.join(', ') : 'Content-Type, Authorization',
-    'access-control-max-age': '86400'
+    ok: response.ok,
+    status: response.status,
+    json,
+    text
   };
 }
 
-function jsonResponse(data, status = 200, request = null) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      ...(request ? corsHeaders(request) : {})
-    }
-  });
+function shouldRemoveToken(result) {
+  const status =
+    Number(result?.status || 0);
+
+  const errorCode =
+    String(
+      result?.json?.error?.details?.[0]
+        ?.errorCode || ''
+    );
+
+  const errorStatus =
+    String(
+      result?.json?.error?.status || ''
+    );
+
+  return (
+    status === 404 ||
+    status === 400 ||
+    errorStatus === 'NOT_FOUND' ||
+    errorCode === 'UNREGISTERED'
+  );
 }
 
-function preflightResponse(request) {
-  const origin = getAllowedOrigin(request);
-  if (request.headers.get('Origin') && !origin) {
-    return new Response(JSON.stringify({ ok: false, error: 'Origin not allowed' }), {
-      status: 403,
-      headers: { 'content-type': 'application/json; charset=utf-8' }
+const MAX_QUEUE_ATTEMPTS = 8;
+const LEASE_MS = 2 * 60 * 1000;
+const WAITING_TOKEN_MS = 5 * 60 * 1000;
+const MAX_RETRY_MS = 15 * 60 * 1000;
+
+function queueJobId(nick, notificationId) {
+  return tokenKey(`${String(nick)}:${String(notificationId)}`);
+}
+
+function nowMs() { return Date.now(); }
+
+function retryDelayMs(attempt) {
+  const exp = Math.min(MAX_RETRY_MS, 30 * 1000 * Math.pow(2, Math.max(0, attempt - 1)));
+  const jitter = Math.floor(Math.random() * Math.min(30 * 1000, exp * 0.25));
+  return Math.min(MAX_RETRY_MS, exp + jitter);
+}
+
+function tokenPrefEnabled(entry, category) {
+  const prefs = entry?.pushPrefs && typeof entry.pushPrefs === 'object' ? entry.pushPrefs : {};
+  if (prefs.enabled === false) return false;
+  if (category && prefs[category] === false) return false;
+  return true;
+}
+
+async function enqueueNotificationJob(env, nick, notificationId, requestedByUid = '') {
+  const safeNick = encodeURIComponent(String(nick).trim());
+  const safeId = encodeURIComponent(String(notificationId).trim());
+  const notification = await rtdbGet(env, `users/${safeNick}/notifications/${safeId}`);
+  if (!notification) throw new Error('Notification not found');
+
+  const targetUser = await rtdbGet(env, `users/${safeNick}`) || {};
+  if (requestedByUid && String(requestedByUid) !== String(nick) && !targetUser?.authUid && requestedByUid !== 'system') {
+    // Kapani custom-auth UIDs are nicknames. Keep the check explicit so a caller
+    // cannot enqueue a notification for a different authenticated account.
+    throw new Error('Authenticated user does not own this notification target');
+  }
+
+  const jobId = queueJobId(nick, notificationId);
+  const existing = await rtdbGet(env, `pushQueue/${encodeURIComponent(jobId)}`);
+  if (existing && ['pending','processing','retry','waiting_token'].includes(String(existing.status || ''))) {
+    return { ok: true, queued: true, duplicate: true, jobId, status: existing.status };
+  }
+  const createdAt = Number(notification.createdAt || nowMs());
+  const job = {
+    jobId,
+    nick: String(nick),
+    notificationId: String(notificationId),
+    status: existing?.status === 'sent' ? 'sent' : 'pending',
+    attempts: Number(existing?.attempts || 0),
+    createdAt,
+    updatedAt: nowMs(),
+    retryAt: nowMs(),
+    lastError: null
+  };
+  if (job.status === 'sent') {
+    return { ok:true, queued:true, duplicate:true, jobId, status:'sent' };
+  }
+  await rtdbPatch(env, {
+    [`pushQueue/${encodeURIComponent(jobId)}`]: job,
+    [`users/${safeNick}/pushQueueRefs/${encodeURIComponent(jobId)}`]: { notificationId:String(notificationId), updatedAt:job.updatedAt }
+  });
+  return { ok:true, queued:true, duplicate:false, jobId, status:'pending' };
+}
+
+function extractFcmError(result) {
+  return {
+    status: Number(result?.status || 0),
+    errorStatus: String(result?.json?.error?.status || ''),
+    errorCode: String(result?.json?.error?.details?.find?.(d => d?.errorCode)?.errorCode || ''),
+    message: String(result?.json?.error?.message || result?.text || result?.error || 'FCM error').slice(0, 1000)
+  };
+}
+
+function classifyFcmResult(result) {
+  if (result?.ok) return 'sent';
+  const e = extractFcmError(result);
+  if (e.status === 404 || e.errorCode === 'UNREGISTERED' || e.errorStatus === 'NOT_FOUND') return 'permanent';
+  if (e.status === 429 || e.status === 408 || e.status >= 500 || e.errorStatus === 'UNAVAILABLE' || e.errorStatus === 'RESOURCE_EXHAUSTED' || e.errorStatus === 'DEADLINE_EXCEEDED') return 'transient';
+  return 'permanent_payload';
+}
+
+async function claimQueueJob(env, jobId) {
+  const safeId = encodeURIComponent(jobId);
+  const current = await rtdbGet(env, `pushQueue/${safeId}`);
+  if (!current) return null;
+  const now = nowMs();
+  const status = String(current.status || 'pending');
+  const retryAt = Number(current.retryAt || 0);
+  const leaseUntil = Number(current.leaseUntil || 0);
+  if (status === 'sent' || status === 'skipped' || status === 'dead') return null;
+  if ((status === 'retry' || status === 'waiting_token') && retryAt > now) return null;
+  if (status === 'processing' && leaseUntil > now) return null;
+  const attempt = Number(current.attempts || 0) + 1;
+  if (attempt > MAX_QUEUE_ATTEMPTS) {
+    await rtdbPatch(env, { [`pushQueue/${safeId}/status`]: 'dead', [`pushQueue/${safeId}/updatedAt`]: now, [`pushQueue/${safeId}/lastError`]: 'max_attempts_exceeded' });
+    return null;
+  }
+  await rtdbPatch(env, {
+    [`pushQueue/${safeId}/status`]: 'processing',
+    [`pushQueue/${safeId}/attempts`]: attempt,
+    [`pushQueue/${safeId}/leaseUntil`]: now + LEASE_MS,
+    [`pushQueue/${safeId}/updatedAt`]: now,
+    [`pushQueue/${safeId}/lastStartedAt`]: now
+  });
+  return { ...current, status:'processing', attempts:attempt, leaseUntil:now+LEASE_MS };
+}
+
+async function processQueueJob(env, claimed) {
+  const jobId = String(claimed.jobId || '');
+  const safeJobId = encodeURIComponent(jobId);
+  const nick = String(claimed.nick || '').trim();
+  const notificationId = String(claimed.notificationId || '').trim();
+  const startedAt = nowMs();
+  const safeNick = encodeURIComponent(nick);
+  try {
+    const notification = await rtdbGet(env, `users/${safeNick}/notifications/${encodeURIComponent(notificationId)}`);
+    if (!notification || notification.push === false) {
+      await rtdbPatch(env, { [`pushQueue/${safeJobId}/status`]:'skipped', [`pushQueue/${safeJobId}/reason`]: 'notification_missing_or_disabled', [`pushQueue/${safeJobId}/updatedAt`]:nowMs(), [`pushQueue/${safeJobId}/leaseUntil`]:null });
+      return { status:'skipped', jobId };
+    }
+    const user = await rtdbGet(env, `users/${safeNick}`) || {};
+    const allTokens = collectTokens(user);
+    const category = String(notification?.cat || 'system');
+    const eligible = allTokens.filter(entry => tokenPrefEnabled({ ...entry, pushPrefs: entry.pushPrefs || user?.pushPrefs }, category));
+    if (!eligible.length) {
+      const retryAt = nowMs() + WAITING_TOKEN_MS;
+      await rtdbPatch(env, {
+        [`pushQueue/${safeJobId}/status`]: 'waiting_token',
+        [`pushQueue/${safeJobId}/retryAt`]: retryAt,
+        [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
+        [`pushQueue/${safeJobId}/leaseUntil`]: null,
+        [`pushQueue/${safeJobId}/lastError`]: allTokens.length ? 'push_disabled_by_preferences' : 'no_registered_tokens'
+      });
+      return { status:'waiting_token', jobId };
+    }
+
+    const priorDeliveries = claimed.deliveries && typeof claimed.deliveries === 'object' ? claimed.deliveries : {};
+    const accessToken = await getGoogleAccessToken(env);
+    const cleanup = {};
+    const deliveryUpdates = {};
+    let sent = 0, retryable = 0, permanent = 0;
+
+    for (const entry of eligible) {
+      const tid = tokenKey(entry.token);
+      if (priorDeliveries[tid]?.status === 'sent') { sent++; continue; }
+      let result;
+      try {
+        result = await sendOneFcm(env, accessToken, entry.token, notificationId, notification);
+      } catch (error) {
+        result = { ok:false, status:500, error:String(error?.message || error) };
+      }
+      const kind = classifyFcmResult(result);
+      const err = kind === 'sent' ? null : extractFcmError(result);
+      deliveryUpdates[`pushQueue/${safeJobId}/deliveries/${tid}`] = {
+        tokenId: tid,
+        path: entry.path || null,
+        status: kind === 'sent' ? 'sent' : (kind === 'permanent' ? 'permanent' : 'transient'),
+        updatedAt: nowMs(),
+        error: err
+      };
+      if (kind === 'sent') { sent++; }
+      else if (kind === 'permanent') {
+        permanent++;
+        if (entry.path) cleanup[`users/${safeNick}/${entry.path}`] = null;
+        else cleanup[`users/${safeNick}/fcmToken`] = null;
+      } else if (kind === 'transient') retryable++;
+      else permanent++;
+      console.log(JSON.stringify({ tag:'kapani.push', jobId, notificationId, nick, tokenId:tid, attempt:Number(claimed.attempts||0), status:kind, timestamp:nowMs() }));
+    }
+
+    if (Object.keys(cleanup).length) {
+      await rtdbPatch(env, cleanup);
+    }
+    if (Object.keys(deliveryUpdates).length) await rtdbPatch(env, deliveryUpdates);
+
+    const totalEligible = eligible.length;
+    const sentCount = Object.values({ ...priorDeliveries, ...Object.fromEntries(eligible.map(e => [tokenKey(e.token), { status: priorDeliveries[tokenKey(e.token)]?.status === 'sent' ? 'sent' : undefined }])) }).length;
+    const deliveredIds = new Set(Object.entries({ ...priorDeliveries }).filter(([,v]) => v?.status === 'sent').map(([k]) => k));
+    for (const entry of eligible) if (priorDeliveries[tokenKey(entry.token)]?.status === 'sent') deliveredIds.add(tokenKey(entry.token));
+    for (const path of Object.keys(deliveryUpdates)) if (deliveryUpdates[path]?.status === 'sent') deliveredIds.add(deliveryUpdates[path].tokenId);
+    const allDone = eligible.every(entry => {
+      const d = deliveryUpdates[`pushQueue/${safeJobId}/deliveries/${tokenKey(entry.token)}`] || priorDeliveries[tokenKey(entry.token)];
+      return d?.status === 'sent' || d?.status === 'permanent';
     });
+
+    const hasPayloadFailure = Object.values(deliveryUpdates).some(d => d?.status === 'permanent_payload');
+    const hasInvalidTokenOnly = Object.values(deliveryUpdates).length > 0 && Object.values(deliveryUpdates).every(d => d?.status === 'permanent');
+    if (allDone && sent > 0 && !hasPayloadFailure) {
+      await rtdbPatch(env, {
+        [`pushQueue/${safeJobId}/status`]: 'sent',
+        [`pushQueue/${safeJobId}/sentAt`]: nowMs(),
+        [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
+        [`pushQueue/${safeJobId}/leaseUntil`]: null,
+        [`pushQueue/${safeJobId}/lastError`]: null
+      });
+      return { status:'sent', jobId, sent, permanent, retryable };
+    }
+    if (allDone && sent === 0 && hasInvalidTokenOnly) {
+      await rtdbPatch(env, {
+        [`pushQueue/${safeJobId}/status`]: 'skipped',
+        [`pushQueue/${safeJobId}/reason`]: 'all_tokens_unregistered',
+        [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
+        [`pushQueue/${safeJobId}/leaseUntil`]: null
+      });
+      return { status:'skipped', jobId, sent, permanent, retryable };
+    }
+
+    if (Number(claimed.attempts || 0) >= MAX_QUEUE_ATTEMPTS) {
+      await rtdbPatch(env, {
+        [`pushQueue/${safeJobId}/status`]: 'dead',
+        [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
+        [`pushQueue/${safeJobId}/leaseUntil`]: null,
+        [`pushQueue/${safeJobId}/lastError`]: 'max_attempts_exceeded'
+      });
+      return { status:'dead', jobId, sent, permanent, retryable };
+    }
+
+    await rtdbPatch(env, {
+      [`pushQueue/${safeJobId}/status`]: 'retry',
+      [`pushQueue/${safeJobId}/retryAt`]: nowMs() + retryDelayMs(Number(claimed.attempts || 1)),
+      [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
+      [`pushQueue/${safeJobId}/leaseUntil`]: null,
+      [`pushQueue/${safeJobId}/lastError`]: retryable ? 'transient_fcm_failure' : 'permanent_token_failures'
+    });
+    return { status:'retry', jobId, sent, permanent, retryable };
+  } catch (error) {
+    const message = String(error?.message || error).slice(0, 1000);
+    console.error(JSON.stringify({ tag:'kapani.push.error', jobId, notificationId, nick, attempt:Number(claimed.attempts||0), error:message, timestamp:nowMs(), startedAt }));
+    const attempt = Number(claimed.attempts || 1);
+    const terminal = attempt >= MAX_QUEUE_ATTEMPTS;
+    await rtdbPatch(env, {
+      [`pushQueue/${safeJobId}/status`]: terminal ? 'dead' : 'retry',
+      [`pushQueue/${safeJobId}/retryAt`]: terminal ? null : (nowMs() + retryDelayMs(attempt)),
+      [`pushQueue/${safeJobId}/updatedAt`]: nowMs(),
+      [`pushQueue/${safeJobId}/leaseUntil`]: null,
+      [`pushQueue/${safeJobId}/lastError`]: message
+    }).catch(patchError => console.error(JSON.stringify({ tag:'kapani.push.queue_update_error', jobId, error:String(patchError?.message||patchError), timestamp:nowMs() })));
+    return { status: terminal ? 'dead' : 'retry', jobId, error:message };
   }
-  const requestedMethod = String(request.headers.get('Access-Control-Request-Method') || '').toUpperCase();
-  if (requestedMethod && !['GET', 'POST'].includes(requestedMethod)) {
-    return new Response(null, { status: 405, headers: corsHeaders(request) });
+}
+
+async function listQueueJobsByStatus(env, status, limit = 40) {
+  const base = String(env.FIREBASE_DATABASE_URL || '').replace(/\/$/, '');
+  const params = new URLSearchParams({ orderBy:'"status"', equalTo:`"${status}"`, limitToFirst:String(limit) });
+  const response = await fetch(`${base}/pushQueue.json?${params.toString()}`);
+  const text = await response.text();
+  if (!response.ok) throw new Error(`RTDB queue query ${status}: ${response.status} ${text}`);
+  const data = text ? JSON.parse(text) : null;
+  return data && typeof data === 'object' ? Object.values(data) : [];
+}
+
+async function processQueue(env) {
+  const candidates = [];
+  for (const status of ['pending','retry','waiting_token','processing']) {
+    try { candidates.push(...await listQueueJobsByStatus(env, status, 50)); } catch (e) { console.error('[Kapani queue scan]', e); }
   }
-  return new Response(null, { status: 204, headers: corsHeaders(request) });
+  candidates.sort((a,b) => Number(a?.updatedAt||0) - Number(b?.updatedAt||0));
+  const unique = [];
+  const seen = new Set();
+  for (const job of candidates) { const id=String(job?.jobId||''); if(id && !seen.has(id)){seen.add(id);unique.push(job);} }
+  const out = [];
+  for (const job of unique.slice(0, 40)) {
+    const claimed = await claimQueueJob(env, String(job.jobId||''));
+    if (claimed) out.push(await processQueueJob(env, claimed));
+  }
+  return out;
+}
+
+async function handleEnqueue(request, env) {
+  let input; try { input = await request.json(); } catch (_) { return jsonResponse({ok:false,error:'Invalid JSON'},400); }
+  const { uid } = await authenticateRequest(request, env);
+  const nick = String(input?.nick || '').trim();
+  const notificationId = String(input?.notificationId || '').trim();
+  if (!nick || !notificationId) return jsonResponse({ok:false,error:'nick and notificationId are required'},400);
+  if (uid !== nick) return jsonResponse({ok:false,error:'Authenticated user does not match notification target'},403);
+  return jsonResponse(await enqueueNotificationJob(env, nick, notificationId, uid), 200);
+}
+
+async function handlePreferences(request, env) {
+  let input; try { input = await request.json(); } catch (_) { return jsonResponse({ok:false,error:'Invalid JSON'},400); }
+  const { uid } = await authenticateRequest(request, env);
+  const prefs = extractPrefs(input?.prefs);
+  const tokenId = String(input?.tokenId || '').trim();
+  const updates = { [`users/${encodeURIComponent(uid)}/pushPrefs`]: {...prefs, updatedAt:nowMs()} };
+  if (tokenId) {
+    const stored = await rtdbGet(env, `users/${encodeURIComponent(uid)}/fcmTokens/${encodeURIComponent(tokenId)}`);
+    if (stored) updates[`users/${encodeURIComponent(uid)}/fcmTokens/${encodeURIComponent(tokenId)}/pushPrefs`] = prefs;
+  }
+  await rtdbPatch(env, updates);
+  return jsonResponse({ok:true,success:true,prefs},200);
+}
+
+
+function corsHeaders(request) {
+  const origin = request?.headers?.get('Origin') || '';
+  const allowed = new Set([
+    'https://iamskoup1.github.io',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5500'
+  ]);
+  const allowOrigin = allowed.has(origin) ? origin : 'https://iamskoup1.github.io';
+  return {
+    'access-control-allow-origin': allowOrigin,
+    'access-control-allow-methods': 'GET, POST, OPTIONS',
+    'access-control-allow-headers': 'Authorization, Content-Type',
+    'access-control-max-age': '86400',
+    'vary': 'Origin'
+  };
+}
+
+function jsonResponse(
+  data,
+  status = 200,
+  request = null
+) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status,
+      headers: {
+        'content-type':
+          'application/json; charset=utf-8',
+        ...corsHeaders(request)
+      }
+    }
+  );
 }
 
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
-      return preflightResponse(request);
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
-
     const url = new URL(request.url);
     try {
       if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/health')) {
-        return jsonResponse({ ok: true, service: 'kapani-free-push-bridge', canonicalDelivery: 'firebase-functions' }, 200, request);
+        return jsonResponse({ ok:true, service:'kapani-free-push-bridge', mode:'cloudflare-queue-fcm-v1' }, 200, request);
       }
-      if (request.method !== 'POST') return jsonResponse({ ok:false, error:'Method not allowed' }, 405, request);
+      if (request.method !== 'POST') return jsonResponse({ok:false,error:'Method not allowed'},405,request);
       if (url.pathname === '/register') return await handleRegister(request, env);
       if (url.pathname === '/unregister') return await handleUnregister(request, env);
       if (url.pathname === '/diagnostics') return await handleDiagnostics(request, env);
-      if (url.pathname === '/push' || url.pathname === '/send') {
-        try { await authenticateRequest(request, env); }
-        catch (error) { return jsonResponse({ ok:false, error:String(error?.message || error) }, 401, request); }
-        return await handlePush(request, env);
-      }
-      return jsonResponse({ ok:false, error:'Not found' }, 404, request);
+      if (url.pathname === '/preferences') return await handlePreferences(request, env);
+      if (url.pathname === '/enqueue' || url.pathname === '/push' || url.pathname === '/send') return await handleEnqueue(request, env);
+      return jsonResponse({ok:false,error:'Not found'},404,request);
     } catch (error) {
-      console.error('[Kapani Free Push]', error);
-      return jsonResponse({ ok:false, error:String(error?.message || error) }, 500, request);
+      console.error(JSON.stringify({tag:'kapani.worker.error',path:url.pathname,error:String(error?.message||error),timestamp:nowMs()}));
+      return jsonResponse({ok:false,error:String(error?.message||error)},500,request);
     }
+  },
+
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(processQueue(env).catch(error => {
+      console.error(JSON.stringify({tag:'kapani.scheduler.error',error:String(error?.message||error),timestamp:nowMs()}));
+    }));
   }
 };

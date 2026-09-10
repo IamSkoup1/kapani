@@ -59,6 +59,6 @@ firebase deploy --only functions
 
 Ни FCM, ни браузерный Web Push не дают приложению атомарный ACK уровня «уведомление увидел человек и сервер уже это записал». Поэтому эта система гарантирует сохранение server-side job до принятия сообщения FCM и безопасные retry на уровне очереди. Фактическую доставку на конкретное физическое устройство нужно подтверждать runtime-тестом после deployment.
 
-### Cloudflare Worker (вспомогательный API)
+### Cloudflare Worker
 
 `cloudflare-worker/worker.js` сохранён как legacy-архив и не входит в текущий push path. Его секреты и routes не нужны для новой server-side Firebase Functions схемы; не удаляйте Worker автоматически, если он используется другими интеграциями.

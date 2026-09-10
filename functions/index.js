@@ -559,15 +559,7 @@ exports.registerFcmToken = onCall({ region: 'europe-west1' }, async (request) =>
     updates[`fcmTokenIndex/${tokenId}`] = { uid, token, updatedAt: now };
 
     await db.ref().update(updates);
-    const verifySnap = await db.ref(`users/${uid}/fcmTokens/${tokenId}`).get();
-    const verifyValue = verifySnap.exists() ? verifySnap.val() : null;
-    const registeredTokenMatches = String(verifyValue?.token || verifyValue || '') === token;
-    const allTokensSnap = await db.ref(`users/${uid}/fcmTokens`).get();
-    const tokenCount = allTokensSnap.exists() ? Object.keys(allTokensSnap.val() || {}).length : 0;
-    if (!registeredTokenMatches) {
-        throw new HttpsError('internal', 'FCM token registration verification failed');
-    }
-    return { success: true, tokenId, tokenCount, registeredTokenMatches: true, backendRegisteredAt: now };
+    return { success: true, tokenId };
 });
 
 exports.updatePushPreferences = onCall({ region: 'europe-west1' }, async (request) => {
@@ -622,34 +614,6 @@ exports.getPushDiagnostics = onCall({ region: 'europe-west1' }, async (request) 
     if (!snap.exists()) throw new HttpsError('not-found', 'Пользователь не найден');
     const user = snap.val() || {};
     const tokens = collectFcmTokens(user);
-
-    const queueSnap = await db.ref('notificationQueue')
-        .orderByChild('nick')
-        .equalTo(uid)
-        .limitToLast(25)
-        .get();
-    const queueEntries = Object.entries(queueSnap.val() || {})
-        .map(([id, job]) => ({ id, ...job }))
-        .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0));
-
-    let lastError = null;
-    for (const job of queueEntries) {
-        if (job.lastError) {
-            lastError = {
-                jobId: job.id,
-                notificationId: String(job.notificationId || ''),
-                status: String(job.status || ''),
-                error: String(job.lastError),
-                attempts: Number(job.attempts || 0),
-                updatedAt: Number(job.updatedAt || 0) || null
-            };
-            break;
-        }
-    }
-
-    const counts = {};
-    for (const job of queueEntries) counts[String(job.status || 'unknown')] = Number(counts[String(job.status || 'unknown')] || 0) + 1;
-
     return {
         ok: true,
         user: uid,
@@ -658,22 +622,7 @@ exports.getPushDiagnostics = onCall({ region: 'europe-west1' }, async (request) 
             tokenId: tokenKey(entry.token),
             updatedAt: Number(user?.fcmTokens?.[tokenKey(entry.token)]?.updatedAt || user?.fcmUpdatedAt || 0) || null,
             pushPrefs: entry.pushPrefs || user.pushPrefs || null
-        })),
-        lastRegistrationAt: Number(user?.fcmUpdatedAt || 0) || null,
-        pushPrefs: user?.pushPrefs || null,
-        queue: {
-            sampleSize: queueEntries.length,
-            counts,
-            lastJob: queueEntries[0] ? {
-                jobId: queueEntries[0].id,
-                notificationId: String(queueEntries[0].notificationId || ''),
-                status: String(queueEntries[0].status || ''),
-                attempts: Number(queueEntries[0].attempts || 0),
-                updatedAt: Number(queueEntries[0].updatedAt || 0) || null,
-                lastError: queueEntries[0].lastError || null
-            } : null,
-            lastError
-        }
+        }))
     };
 });
 
@@ -745,38 +694,21 @@ function nextRetryDelay(attempt) {
 }
 
 async function removeInvalidFcmToken(uid, tokenEntry) {
-    const token = String(tokenEntry?.token || '').trim();
-    if (!token) return;
-    const tokenId = tokenKey(token);
     const updates = {};
-
-    // Never delete a token that has already been re-registered elsewhere.
-    const indexRef = db.ref(`fcmTokenIndex/${tokenId}`);
-    const indexSnap = await indexRef.get().catch(() => null);
-    const index = indexSnap?.exists() ? (indexSnap.val() || {}) : null;
-    if (index && String(index.uid || '') !== String(uid)) return;
-    if (index && String(index.token || '') && String(index.token) !== token) return;
-
-    const path = String(tokenEntry?.path || '');
-    if (path) {
-        const tokenRef = db.ref(`users/${uid}/${path}`);
-        const tokenSnap = await tokenRef.get().catch(() => null);
-        const stored = tokenSnap?.exists() ? tokenSnap.val() : null;
-        const storedToken = typeof stored === 'string' ? stored : String(stored?.token || '');
-        if (storedToken === token) updates[`users/${uid}/${path}`] = null;
-    }
-
-    if (!index || String(index.uid || '') === String(uid)) {
+    const path = tokenEntry?.path;
+    const token = tokenEntry?.token;
+    if (path) updates[`users/${uid}/${path}`] = null;
+    if (token) {
+        const tokenId = tokenKey(token);
         updates[`fcmTokenIndex/${tokenId}`] = null;
+        // Do not leave a stale legacy single-token pointer behind.
+        const legacyRef = db.ref(`users/${uid}/fcmToken`);
+        const snap = await legacyRef.get().catch(() => null);
+        if (snap?.exists() && String(snap.val()) === String(token)) {
+            updates[`users/${uid}/fcmToken`] = null;
+            updates[`users/${uid}/fcmUpdatedAt`] = null;
+        }
     }
-
-    const legacyRef = db.ref(`users/${uid}/fcmToken`);
-    const legacySnap = await legacyRef.get().catch(() => null);
-    if (legacySnap?.exists() && String(legacySnap.val()) === token) {
-        updates[`users/${uid}/fcmToken`] = null;
-        updates[`users/${uid}/fcmUpdatedAt`] = null;
-    }
-
     if (Object.keys(updates).length) await db.ref().update(updates);
 }
 
@@ -867,7 +799,7 @@ async function processNotificationJob(jobId) {
         if (!tokenEntries.length) {
             const attempts = Number(job.attempts || 0) + 1;
             const now = Date.now();
-            if (attempts >= 672) {
+            if (attempts >= 96) {
                 await finishNotificationJob(jobRef, lockId, {
                     status: 'dead', lastError: 'no_tokens', attempts, completedAt: now
                 });
@@ -900,10 +832,9 @@ async function processNotificationJob(jobId) {
 
         if (!responsesToSend.length) {
             const hasSuccessfulToken = Object.values(tokenStatus).some(v => v?.state === 'sent');
-            const hasTerminalFailure = Object.values(tokenStatus).some(v => v?.state === 'failed' || v?.state === 'invalid');
             await finishNotificationJob(jobRef, lockId, {
-                status: hasSuccessfulToken ? 'sent' : (hasTerminalFailure ? 'dead' : 'skipped'),
-                skipReason: hasSuccessfulToken || hasTerminalFailure ? null : 'user_preferences',
+                status: hasSuccessfulToken ? 'sent' : 'skipped',
+                skipReason: hasSuccessfulToken ? null : 'user_preferences',
                 tokenStatus,
                 sentAt: hasSuccessfulToken ? (job.sentAt || Date.now()) : null,
                 completedAt: Date.now(),
@@ -985,24 +916,19 @@ async function processNotificationJob(jobId) {
         await Promise.allSettled(cleanupPromises);
         const unresolved = responsesToSend.filter((entry) => tokenStatusesNeedsRetry(tokenStatus[entry.id]));
         const attempts = Number(job.attempts || 0) + (unresolved.length ? 1 : 0);
-        const totalSentCount = Number(job.sentCount || 0) + successCount;
         const now = Date.now();
 
         if (unresolved.length) {
             if (attempts >= 10) {
-                // At least one token is still unresolved. Never mark the job `sent`
-                // merely because another device accepted the message. This keeps
-                // multi-device delivery state honest and prevents a transiently
-                // failing token from being silently dropped.
+                const status = successCount > 0 ? 'sent' : 'dead';
                 await finishNotificationJob(jobRef, lockId, {
-                    status: 'dead',
+                    status,
                     attempts,
                     tokenStatus,
-                    sentCount: totalSentCount,
+                    sentCount: successCount,
                     failedCount: permanentFailureCount,
                     invalidCount,
-                    lastError: lastError || 'max_attempts_unresolved_tokens',
-                    deliveryIncomplete: true,
+                    lastError: lastError || 'max_attempts',
                     completedAt: now,
                     nextAttemptAt: null
                 });
@@ -1015,7 +941,7 @@ async function processNotificationJob(jobId) {
                 await finishNotificationJob(jobRef, lockId, {
                     status: 'retry', attempts,
                     tokenStatus,
-                    sentCount: totalSentCount,
+                    sentCount: successCount,
                     failedCount: permanentFailureCount,
                     invalidCount,
                     lastError: lastError || 'fcm_delivery_failed',
