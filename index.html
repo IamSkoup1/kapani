@@ -2867,6 +2867,13 @@ async function establishKapaniServerSession(nick, password){
     }
     const auth = await ensureAuth();
     if(!authModule?.signInWithCustomToken) return auth.currentUser || null;
+    try{
+        if(authModule?.setPersistence && authModule?.browserLocalPersistence){
+            await authModule.setPersistence(auth, authModule.browserLocalPersistence);
+        }
+    }catch(persistError){
+        console.warn('[Kapani auth] browser persistence:', persistError);
+    }
     await authModule.signInWithCustomToken(auth, json.token);
     await auth.currentUser?.getIdToken(true);
     return auth.currentUser;
@@ -4028,6 +4035,22 @@ function startApp() {
           if(loBar) loBar.style.cssText='width:100%;transition:width .2s ease;';
           hideLoadingSafe();
           setTimeout(()=>showFirstPushPrompt(), 600);
+
+          // Push registration must not depend on reopening Profile and pressing
+          // the enable button. Once the user is signed in and has already granted
+          // notification permission, restore the Cloudflare session and register
+          // the current FCM token automatically.
+          setTimeout(async ()=>{
+              try{
+                  if(currentNick && ('Notification' in window) && Notification.permission==='granted'){
+                      const ok = await tryRegisterFcm();
+                      if(!ok) console.warn('[Kapani FCM] automatic startup registration did not complete');
+                  }
+              }catch(e){
+                  console.warn('[Kapani FCM] automatic startup registration:', e);
+              }
+          }, 900);
+
           const defer = window.requestIdleCallback || ((cb)=>setTimeout(cb, 0));
           defer(()=>{
               try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:',e); }
@@ -4821,6 +4844,8 @@ window.getKapaniPushDiagnostics = async function(){
     try{ const a=await ensureAuth(); authDiag=a.currentUser||await waitForFirebaseAuthUser(1000); }catch(e){}
     const result={
         checkedAt:new Date().toISOString(),
+        currentNick: currentNick || null,
+        pushBridgeSessionCached: !!(_kapaniPushBridgeToken && _kapaniPushBridgeExpiresAt > Date.now()+60*1000),
         permission,
         firebaseAuthUser: !!authDiag,
         firebaseAuthUid: authDiag?.uid || null,
