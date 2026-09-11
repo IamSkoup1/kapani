@@ -1384,6 +1384,67 @@ exports.notifyOnNewsCreated = onValueCreated(
 );
 
 // Вспомогательная функция для получения даты/времени
+/**
+ * Canonical client-created notification writer.
+ *
+ * Client code must not write users/<nick>/notifications directly because that
+ * node is intentionally read-only from the browser. This callable uses the
+ * authenticated Firebase session, writes the inbox item and durable Cloudflare
+ * queue entry atomically, and then the Worker performs the actual FCM delivery.
+ */
+exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (request) => {
+    const senderNick = String(request.auth?.uid || '').trim();
+    const targetNick = String(request.data?.nick || '').trim();
+    const text = String(request.data?.text || '').trim();
+    const category = String(request.data?.cat || 'system').trim() || 'system';
+
+    if (!senderNick) {
+        throw new HttpsError('unauthenticated', 'Требуется защищённая Firebase-сессия');
+    }
+    if (!targetNick || !text) {
+        throw new HttpsError('invalid-argument', 'Не указаны получатель или текст уведомления');
+    }
+    if (text.length > 2000) {
+        throw new HttpsError('invalid-argument', 'Слишком длинное уведомление');
+    }
+
+    const targetRef = db.ref(`users/${targetNick}`);
+    const targetSnap = await targetRef.get();
+    if (!targetSnap.exists()) {
+        throw new HttpsError('not-found', 'Получатель не найден');
+    }
+
+    const notificationRef = targetRef.child('notifications').push();
+    const notificationId = String(notificationRef.key || '');
+    if (!notificationId) {
+        throw new HttpsError('internal', 'Не удалось создать ID уведомления');
+    }
+
+    const createdAt = Date.now();
+    const notification = {
+        text,
+        title: 'Капани',
+        time: new Date(createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        cat: category,
+        createdAt,
+        url: KAPANI_CANONICAL_URL,
+        push: true
+    };
+    const updates = {};
+    updates[`users/${targetNick}/notifications/${notificationId}`] = notification;
+    addCloudflarePushQueue(updates, targetNick, notificationId, createdAt);
+    await db.ref().update(updates);
+
+    pushLog('info', 'client_notification_created', {
+        sender: senderNick,
+        user: targetNick,
+        notificationId,
+        category
+    });
+
+    return { ok: true, notificationId, queued: true };
+});
+
 function getDateTime() {
     const d = new Date();
     return {

@@ -41,6 +41,8 @@ Worker vars in wrangler.toml:
 - FIREBASE_DATABASE_URL=https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app
 - FIREBASE_WEB_API_KEY=<public web API key>
 
+The Worker also uses the service-account OAuth token for Firebase Realtime Database REST access. Do not loosen `database.rules.json` just for push.
+
 Required secret:
 - FIREBASE_SERVICE_ACCOUNT_JSON
 

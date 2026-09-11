@@ -1,11 +1,14 @@
 // Kapani Free Push Bridge — production push path.
 // Kapani Free Push Bridge
 // RTDB -> Cloudflare Worker -> FCM HTTP v1
-// RTDB у проекта разрешает публичные read/write правила,
-// поэтому для RTDB-запросов авторизация не используется.
-// OAuth используется только для FCM.
+// RTDB закрыт для анонимного REST-доступа. Worker использует
+// короткоживущий Google OAuth2 access token из server-only service account
+// и этим же контуром отправляет FCM HTTP v1.
 
-const FCM_SCOPE = 'https://www.googleapis.com/auth/firebase.messaging';
+const GOOGLE_SCOPES = [
+  'https://www.googleapis.com/auth/firebase.messaging',
+  'https://www.googleapis.com/auth/firebase.database'
+].join(' ');
 const FIREBASE_CUSTOM_TOKEN_AUD = 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit';
 const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -271,7 +274,7 @@ async function getGoogleAccessToken(env) {
   const payload = base64UrlEncode(
     JSON.stringify({
       iss: serviceAccount.client_email,
-      scope: FCM_SCOPE,
+      scope: GOOGLE_SCOPES,
       aud: TOKEN_URL,
       iat: now,
       exp: now + 3600
@@ -352,12 +355,22 @@ function rtdbUrl(env, path) {
   return `${base}/${path}.json`;
 }
 
-// IMPORTANT:
-// No Authorization header here.
-// Your RTDB Rules already allow public read/write.
+async function rtdbAuthHeaders(env, extra = {}) {
+  const accessToken = await getGoogleAccessToken(env);
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    ...extra
+  };
+}
+
+// RTDB rules are intentionally closed to anonymous REST traffic. The Worker
+// accesses RTDB with a short-lived Google OAuth2 access token minted from the
+// server-only Firebase service account. This keeps the public database rules
+// locked while still letting the push backend read/write its queue and tokens.
 async function rtdbGet(env, path) {
   const response = await fetch(
-    rtdbUrl(env, path)
+    rtdbUrl(env, path),
+    { headers: await rtdbAuthHeaders(env) }
   );
 
   const text = await response.text();
@@ -369,7 +382,7 @@ async function rtdbGet(env, path) {
   }
 
   try {
-    return JSON.parse(text);
+    return text ? JSON.parse(text) : null;
   } catch (_) {
     throw new Error(
       `RTDB GET ${path}: invalid JSON response`
@@ -377,12 +390,9 @@ async function rtdbGet(env, path) {
   }
 }
 
-// IMPORTANT:
-// No Authorization header here either.
-
 async function rtdbGetWithEtag(env, path) {
   const response = await fetch(rtdbUrl(env, path), {
-    headers: { 'X-Firebase-ETag': 'true' }
+    headers: await rtdbAuthHeaders(env, { 'X-Firebase-ETag': 'true' })
   });
   const text = await response.text();
   if (!response.ok) {
@@ -397,10 +407,10 @@ async function rtdbGetWithEtag(env, path) {
 async function rtdbPutIfMatch(env, path, value, etag) {
   const response = await fetch(rtdbUrl(env, path), {
     method: 'PUT',
-    headers: {
+    headers: await rtdbAuthHeaders(env, {
       'content-type': 'application/json',
       'if-match': String(etag || 'null_etag')
-    },
+    }),
     body: JSON.stringify(value)
   });
   const text = await response.text();
@@ -420,9 +430,7 @@ async function rtdbPatch(env, patch) {
     rtdbUrl(env, ''),
     {
       method: 'PATCH',
-      headers: {
-        'content-type': 'application/json'
-      },
+      headers: await rtdbAuthHeaders(env, { 'content-type': 'application/json' }),
       body: JSON.stringify(patch)
     }
   );
@@ -1028,7 +1036,10 @@ async function processQueueJob(env, claimed) {
 async function listQueueJobsByStatus(env, status, limit = 40) {
   const base = String(env.FIREBASE_DATABASE_URL || '').replace(/\/$/, '');
   const params = new URLSearchParams({ orderBy:'"status"', equalTo:`"${status}"`, limitToFirst:String(limit) });
-  const response = await fetch(`${base}/pushQueue.json?${params.toString()}`);
+  const accessToken = await getGoogleAccessToken(env);
+  const response = await fetch(`${base}/pushQueue.json?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
   const text = await response.text();
   if (!response.ok) throw new Error(`RTDB queue query ${status}: ${response.status} ${text}`);
   const data = text ? JSON.parse(text) : null;

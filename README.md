@@ -4,7 +4,7 @@
 
 ## Архитектура
 
-`событие → users/{nick}/notifications/{id} → enqueueNotificationPush → notificationQueue/{jobId} → FCM → firebase-messaging-sw.js → системное уведомление`
+`событие → users/{nick}/notifications/{id} + pushQueue/{jobId} → Cloudflare Worker → FCM HTTP v1 → firebase-messaging-sw.js → системное уведомление`
 
 Очередь использует детерминированный job ID, transaction-based lock/lease, повторные попытки с exponential backoff+jitter, состояние доставки по каждому токену, очистку недействительных токенов и повторную обработку просроченных `processing` jobs. Это at-least-once серверная доставка.
 
@@ -12,7 +12,7 @@
 
 ## Token lifecycle
 
-FCM token регистрируется только через защищённую Cloud Function после Firebase Auth-сессии. Прямой client-side fallback в `users/{nick}` удалён. Поддерживаются несколько устройств одного пользователя; каждый token хранится в `users/{nick}/fcmTokens/{tokenId}` и индексируется через `fcmTokenIndex/{tokenId}`.
+FCM token регистрируется только через защищённую Cloud Function после Firebase Auth-сессии. Прямой client-side fallback в `users/{nick}` удалён. Поддерживаются несколько устройств одного пользователя; каждый token хранится в `users/{nick}/fcmTokens/{tokenId}` и индексируется через `fcmTokenIndex/{tokenId}`. Регистрация идёт через Cloudflare bridge; Worker теперь авторизован к RTDB через Google OAuth2.
 
 При `UNREGISTERED`/`registration-token-not-registered`/`invalid-registration-token` token удаляется. Выход пользователя вызывает `unregisterFcmToken` для текущего устройства.
 
@@ -31,8 +31,8 @@ FCM token регистрируется только через защищённ�
 - общий чат — `notifyOnChatMessage`;
 - новости — `notifyOnNewsCreated`;
 - подарки подписок — уведомления создаются внутри той же финансовой RTDB-транзакции;
-- legacy-дуэли — `notifyOnLegacyDuelNotification` зеркалит только duel events в canonical user notifications;
-- остальные существующие вызовы `pushNotification()` используют ту же canonical коллекцию.
+- legacy-дуэли — `notifyOnLegacyDuelNotification` зеркалит duel events в canonical user notifications;
+- остальные существующие вызовы `pushNotification()` проходят через callable `createKapaniNotification`, который атомарно создаёт inbox-запись и `pushQueue` job.
 
 ## Диагностика
 
@@ -61,4 +61,4 @@ firebase deploy --only functions
 
 ### Cloudflare Worker
 
-`cloudflare-worker/worker.js` сохранён как legacy-архив и не входит в текущий push path. Его секреты и routes не нужны для новой server-side Firebase Functions схемы; не удаляйте Worker автоматически, если он используется другими интеграциями.
+`cloudflare-worker/worker.js` — текущий production delivery engine. Он читает `pushQueue`, получает FCM OAuth token и доставляет data-only push через FCM HTTP v1. Для RTDB Worker использует server-only service account OAuth2; публичные RTDB rules ослаблять не нужно.

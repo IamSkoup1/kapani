@@ -3924,14 +3924,6 @@ window.handleAuth = async function() {
             // This preserves the existing Firebase user-write boundary; the advertiser's
             // weekly aggregate is materialized later by the advertiser's economy cycle.
             await set(userRef(nick), userData);
-            if(advertiserReferrer){
-                await incrementAdvertiserReferralCount(advertiserReferrer.nick);
-                try {
-                    await pushNotification(advertiserReferrer.nick, `📢 Новый приглашённый: ${nameInput} зарегистрировался по вашей рекомендации`, 'system');
-                } catch(e){ console.warn('[advertiser referral notification]', e); }
-            }
-            await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
-            toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
             localStorage.setItem('kp_s', nick);
             sessionStorage.setItem('kp_s', nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
@@ -3943,6 +3935,16 @@ window.handleAuth = async function() {
             } catch(sessionError) {
                 console.warn('[Kapani auth] server session:', sessionError);
             }
+            if(advertiserReferrer){
+                await incrementAdvertiserReferralCount(advertiserReferrer.nick);
+                try {
+                    await pushNotification(advertiserReferrer.nick, `📢 Новый приглашённый: ${nameInput} зарегистрировался по вашей рекомендации`, 'system');
+                } catch(e){ console.warn('[advertiser referral notification]', e); }
+            }
+            try {
+                await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
+            } catch(e){ console.warn('[new account notification]', e); }
+            toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
             startApp();
         } else {
             const enteredHash = await hashPassword(password, existing.passwordHashSalt || existing.nick);
@@ -4906,47 +4908,31 @@ if(!window._kapaniChatPresenceUnloadBound){
 // ─── NOTIFICATIONS ────────────────────────
 async function pushNotification(nick,text,cat='system'){
     try{
-        const notificationRef = push(notifRef(nick));
-        const notificationId = notificationRef.key;
-        const createdAt=Date.now();
-        const jobId=await sha256TokenId(`${nick}:${notificationId}`);
-        const safeUser=String(nick).replace(/[.#$\[\]/]/g,c=>({'.':'%2E','#':'%23','$':'%24','[':'%5B',']':'%5D','/':'%2F'}[c]||c));
-        const notificationPath=`users/${safeUser}/notifications/${notificationId}`;
-        const queuePath=`pushQueue/${jobId}`;
-        const queueRefPath=`users/${safeUser}/pushQueueRefs/${jobId}`;
-        const notification={
-            text,
-            time:nowTime(),
-            cat,
-            createdAt,
-            url:'/kapani/',
-            push:true
-        };
-        const queueJob={
-            jobId,
-            nick:String(nick),
-            notificationId:String(notificationId),
-            status:'pending',
-            attempts:0,
-            createdAt,
-            updatedAt:createdAt,
-            retryAt:createdAt,
-            lastError:null
-        };
-        // Atomic multi-location write: notification and durable Cloudflare queue
-        // are created together. Once this succeeds, delivery no longer depends on
-        // the browser staying open or on an immediate Worker request succeeding.
-        await update(ref(db),{
-            [notificationPath]:notification,
-            [queuePath]:queueJob,
-            [queueRefPath]:{notificationId:String(notificationId),updatedAt:createdAt}
-        });
-        // Best-effort immediate wake-up. The scheduler remains authoritative, so
-        // a Worker/network failure here cannot lose the queued notification.
-        try{
-            await callKapaniPushBridge('/enqueue',{nick,notificationId});
-        }catch(bridgeError){
-            console.debug('[push enqueue wake-up] Cloudflare wake-up недоступен, durable queue сохранена:',bridgeError?.message||bridgeError);
+        const targetNick=String(nick||'').trim();
+        const body=String(text||'').trim();
+        if(!targetNick || !body) return;
+
+        // Heal the Firebase Auth session first so a freshly restored/reloaded
+        // Kapani session can still create server-side notifications.
+        await requireKapaniServerSession();
+
+        // The notifications node is intentionally not browser-writable. Use the
+        // authenticated Cloud Function as the single canonical notification writer.
+        const fn=await ensureFunctions();
+        const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+        const createNotification=httpsCallable(fn,'createKapaniNotification');
+        const result=await createNotification({nick:targetNick,text:body,cat:String(cat||'system')});
+        const notificationId=String(result?.data?.notificationId||'');
+
+        // Best-effort immediate wake-up. The Cloudflare scheduler remains the
+        // authoritative delivery mechanism, so this request is never required for
+        // queue durability.
+        if(notificationId){
+            try{
+                await callKapaniPushBridge('/enqueue',{nick:targetNick,notificationId});
+            }catch(bridgeError){
+                console.debug('[push enqueue wake-up] Cloudflare wake-up недоступен, durable queue сохранена:',bridgeError?.message||bridgeError);
+            }
         }
     }catch(e){
         console.error('[pushNotification]',e);
