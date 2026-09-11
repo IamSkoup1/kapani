@@ -53,7 +53,7 @@ Expected response contains:
 
 ## 5. Check CORS preflight
 
-From a browser, the frontend sends `Authorization: Bearer <Firebase ID token>`.
+From the browser, the frontend sends `Authorization: Bearer cfp.<signed-session>` issued by `/session`.
 
 ```powershell
 curl -i -X OPTIONS https://kapani-free-push.kapani.workers.dev/register `

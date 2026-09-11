@@ -136,6 +136,52 @@ async function createFirebaseCustomToken(env, uid, additionalClaims = {}) {
   );
 }
 
+async function pushBridgeSecret(env) {
+  // Reuse the existing server-only Cloudflare secret. Nothing derived from it is
+  // exposed to the frontend except a short-lived signed session token.
+  const source = String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
+  if (!source) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is not configured');
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
+  return new Uint8Array(digest);
+}
+
+async function signPushBridgeSession(env, uid, exp) {
+  const secret = await pushBridgeSecret(env);
+  const payload = `${String(uid)}.${String(exp)}`;
+  const key = await crypto.subtle.importKey('raw', secret, { name:'HMAC', hash:'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload)));
+  return `cfp.${base64UrlEncode(payload)}.${base64UrlEncode(sig)}`;
+}
+
+async function verifyPushBridgeSession(request, env) {
+  const bearer = getBearerToken(request);
+  if (!bearer.startsWith('cfp.')) return null;
+  const parts = bearer.split('.');
+  if (parts.length !== 3) throw new Error('Invalid Cloudflare push session');
+  let payloadText = '';
+  let signature = null;
+  try {
+    payloadText = new TextDecoder().decode(Uint8Array.from(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/').padEnd(parts[1].length + (4 - parts[1].length % 4) % 4, '=')), c=>c.charCodeAt(0)));
+    signature = Uint8Array.from(atob(parts[2].replace(/-/g,'+').replace(/_/g,'/').padEnd(parts[2].length + (4 - parts[2].length % 4) % 4, '=')), c=>c.charCodeAt(0));
+  } catch (_) { throw new Error('Invalid Cloudflare push session encoding'); }
+  const [uid, expText] = payloadText.split('.');
+  const exp = Number(expText || 0);
+  if (!uid || !Number.isFinite(exp) || exp <= Math.floor(Date.now()/1000)) throw new Error('Cloudflare push session expired');
+  const secret = await pushBridgeSecret(env);
+  const key = await crypto.subtle.importKey('raw', secret, { name:'HMAC', hash:'SHA-256' }, false, ['verify']);
+  const ok = await crypto.subtle.verify('HMAC', key, signature, new TextEncoder().encode(payloadText));
+  if (!ok) throw new Error('Invalid Cloudflare push session signature');
+  return { uid, exp };
+}
+
+async function authenticatePushRequest(request, env) {
+  const bridge = await verifyPushBridgeSession(request, env);
+  if (bridge) return bridge;
+  // Backward compatibility for already-deployed clients. New client code uses
+  // the Cloudflare-issued cfp.* token and does not wait for Firebase Auth.
+  return authenticateRequest(request, env);
+}
+
 async function handleSession(request, env) {
   let input;
   try {
@@ -171,11 +217,16 @@ async function handleSession(request, env) {
     displayName: String(user.displayName || nick)
   });
 
+  const pushTokenExp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60;
+  const pushToken = await signPushBridgeSession(env, nick, pushTokenExp);
+
   return jsonResponse({
     ok: true,
     token,
     uid: nick,
-    expiresIn: 3600
+    expiresIn: 3600,
+    pushToken,
+    pushTokenExpiresAt: pushTokenExp * 1000
   }, 200, request);
 }
 
@@ -430,7 +481,7 @@ async function handleRegister(request, env) {
   let input;
   try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400); }
   try {
-    const { uid } = await authenticateRequest(request, env);
+    const { uid } = await authenticatePushRequest(request, env);
     const token = String(input?.token || '').trim();
     if (!token || token.length < 20) return jsonResponse({ ok:false, error:'Invalid FCM token' }, 400);
     const tokenId = await tokenKey(token);
@@ -467,7 +518,7 @@ async function handleUnregister(request, env) {
   let input;
   try { input = await request.json(); } catch (_) { return jsonResponse({ ok:false, error:'Invalid JSON' }, 400); }
   try {
-    const { uid } = await authenticateRequest(request, env);
+    const { uid } = await authenticatePushRequest(request, env);
     const tokenId = String(input?.tokenId || '').trim();
     const token = String(input?.token || '').trim();
     const resolved = tokenId || await tokenKey(token);
@@ -493,7 +544,7 @@ async function handleUnregister(request, env) {
 
 async function handleDiagnostics(request, env) {
   try {
-    const { uid } = await authenticateRequest(request, env);
+    const { uid } = await authenticatePushRequest(request, env);
     const user = await rtdbGet(env, `users/${encodeURIComponent(uid)}`) || {};
     const tokens = collectTokens(user);
     const tokenRows = [];
@@ -1003,7 +1054,7 @@ async function processQueue(env) {
 
 async function handleEnqueue(request, env) {
   let input; try { input = await request.json(); } catch (_) { return jsonResponse({ok:false,error:'Invalid JSON'},400); }
-  const { uid } = await authenticateRequest(request, env);
+  const { uid } = await authenticatePushRequest(request, env);
   const nick = String(input?.nick || '').trim();
   const notificationId = String(input?.notificationId || '').trim();
   if (!nick || !notificationId) return jsonResponse({ok:false,error:'nick and notificationId are required'},400);
@@ -1013,7 +1064,7 @@ async function handleEnqueue(request, env) {
 
 async function handlePreferences(request, env) {
   let input; try { input = await request.json(); } catch (_) { return jsonResponse({ok:false,error:'Invalid JSON'},400); }
-  const { uid } = await authenticateRequest(request, env);
+  const { uid } = await authenticatePushRequest(request, env);
   const prefs = extractPrefs(input?.prefs);
   const tokenId = String(input?.tokenId || '').trim();
   const updates = { [`users/${encodeURIComponent(uid)}/pushPrefs`]: {...prefs, updatedAt:nowMs()} };

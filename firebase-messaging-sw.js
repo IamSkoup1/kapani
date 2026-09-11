@@ -2,7 +2,7 @@
  * Лежит рядом с index.html
  */
 
-const SW_VERSION = 'kapani-fcm-2026-09-10-cloudflare-v6';
+const SW_VERSION = 'kapani-fcm-2026-09-11-cloudflare-v7';
 
 /**
  * Главный URL приложения.
@@ -58,6 +58,36 @@ function resolveNotificationUrl(requestedUrl) {
 /**
  * Определяем, является ли URL страницей Капани.
  */
+
+const shownNotificationIds = new Map();
+function wasShownRecently(notificationId){
+  const id = String(notificationId || '').trim();
+  if(!id) return false;
+  const now = Date.now();
+  for (const [key, ts] of shownNotificationIds) if (now - ts > 120000) shownNotificationIds.delete(key);
+  if(shownNotificationIds.has(id)) return true;
+  shownNotificationIds.set(id, now);
+  return false;
+}
+async function showKapaniPush(data = {}){
+  const notificationId = String(data.notificationId || '').trim();
+  if(notificationId && wasShownRecently(notificationId)) return false;
+  const body = String(data.body || data.text || '').trim();
+  if(!body) return false;
+  const category = String(data.category || 'system');
+  const title = String(data.title || 'Капани');
+  const targetUrl = resolveNotificationUrl(data.url);
+  await self.registration.showNotification(title, {
+    body,
+    icon: new URL('/kapani/image.png', self.location.origin).href,
+    badge: new URL('/kapani/image.png', self.location.origin).href,
+    tag: notificationId ? `kapani-${notificationId}` : `kapani-${category}-${Date.now()}`,
+    renotify: false,
+    data: {...data, url: targetUrl, category, swVersion: SW_VERSION, receivedAt: Date.now()}
+  });
+  return true;
+}
+
 function isKapaniUrl(url) {
   try {
     const parsed = new URL(url, self.location.origin);
@@ -118,78 +148,23 @@ try {
 
   const messaging = firebase.messaging();
 
+  self.addEventListener('message', (event) => {
+    if(event?.data?.type !== 'KAPANI_FOREGROUND_PUSH') return;
+    event.waitUntil(showKapaniPush(event.data.payload || {}).catch(error => {
+      console.error('[Kapani SW] foreground push failed:', error);
+    }));
+  });
+
   messaging.onBackgroundMessage(async (payload) => {
     try {
       console.log('[Kapani SW] background message received', payload?.data?.notificationId || 'without-id');
       const notification = payload?.notification || {};
-      const data = payload?.data || {};
-
-      /*
-       * Если Firebase уже получил notification payload,
-       * повторно уведомление не создаём.
-       */
-      if (Object.keys(notification).length > 0) {
-        return;
-      }
-
-      const title = String(data.title || payload?.notification?.title || 'Капани');
-      const body = String(data.body || data.text || payload?.notification?.body || '');
-      const category = String(data.category || 'system');
-
-      if (!body) {
-        return;
-      }
-
-      /*
-       * Самое важное исправление:
-       *
-       * раньше:
-       *   data.url || './index.html'
-       *
-       * теперь:
-       *   data.url || '/kapani'
-       */
-      const targetUrl = resolveNotificationUrl(data.url);
-
-      await self.registration.showNotification(title, {
-        body,
-
-        icon: new URL(
-          '/kapani/image.png',
-          self.location.origin
-        ).href,
-
-        badge: new URL(
-          '/kapani/image.png',
-          self.location.origin
-        ).href,
-
-        tag: data.notificationId
-          ? `kapani-${data.notificationId}`
-          : `kapani-${category}-${Date.now()}`,
-
-        // Stable notificationId/tag makes queue retries idempotent at the UI layer.
-        // Replacements must not alert the user a second time.
-        renotify: false,
-
-        data: {
-          ...data,
-
-          // Уже нормализованный адрес для notificationclick.
-          url: targetUrl,
-
-          category,
-
-          swVersion: SW_VERSION,
-          receivedAt: Date.now()
-        }
-      });
-
+      // The canonical sender uses data-only FCM. If a legacy notification payload
+      // reaches this worker, the browser already owns its display path.
+      if (Object.keys(notification).length > 0) return;
+      await showKapaniPush(payload?.data || {});
     } catch (error) {
-      console.error(
-        '[Kapani SW] background push failed:',
-        error
-      );
+      console.error('[Kapani SW] background push failed:', error);
     }
   });
 

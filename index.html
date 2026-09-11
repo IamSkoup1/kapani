@@ -2134,7 +2134,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     </div>
 
     <div class="card">
-        <div class="card-title">📬 Жалобы и запросы</div>
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>📬 Жалобы и запросы</span><button class="btn btn-red btn-sm" onclick="clearBizComplaintsAndRequests(currentBizId)">🗑 Очистить всё</button></div>
         <div id="bizComplaintsList"><div style="color:var(--muted);font-size:13px;">Нет сообщений</div></div>
     </div>
     <div class="card">
@@ -2160,14 +2160,17 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="openAddRoleModal()">+ Добавить роль</button>
     </div>
     <div class="card">
-        <div class="card-title">📋 Заявки на работу</div>
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>📋 Заявки на работу</span><button class="btn btn-ghost btn-sm" onclick="clearBizJobApps(currentBizId)">🗑 Очистить заявки</button></div>
         <div id="bizJobApps"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div>
     </div>
     <div class="card">
         <div class="card-title">✏️ Редактировать бизнес</div>
         <input type="text" id="bizEditName" placeholder="Название" maxlength="60">
         <textarea id="bizEditDesc" placeholder="Описание" style="min-height:60px;"></textarea>
-        <input type="text" id="bizEditAddress" placeholder="Адрес" maxlength="120">
+        <input type="text" id="bizEditAddress" placeholder="Адрес / описание точки" maxlength="120">
+        <input type="hidden" id="bizEditLat"><input type="hidden" id="bizEditLng">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="openBusinessLocationPicker('edit')">🗺 Изменить точку на карте</button>
+        <div id="bizEditLocationPreview" style="font-size:12px;color:var(--primary);margin-top:6px;"></div>
         <input type="text" id="bizEditServices" placeholder="Что вы предоставляете? (через запятую)" maxlength="200">
         <input type="text" id="bizEditCategory" placeholder="Категория (Еда, Услуги, Магазин...)" maxlength="40">
         <label style="font-size:13px;font-weight:800;margin:8px 0 4px;display:block;">Иконка бизнеса</label>
@@ -2292,15 +2295,19 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div class="delivery-order-grid" id="deliveryMarketplaceBlock" style="display:none;">
             <div class="delivery-choice-box">
                 <div class="delivery-choice-label">🛍 Объявление с маркетплейса</div>
-                <select id="deliveryOrderMarketItem"></select>
+                <select id="deliveryOrderMarketItem" onchange="updateDeliverySummary()"></select>
                 <div class="delivery-choice-note">Только активные объявления, которые ещё не скрыты и не проданы.</div>
             </div>
         </div>
 
         <textarea id="deliveryOrderNotes" placeholder="Комментарий для доставщика (необязательно): подъезд, время, что уточнить..." style="min-height:88px;margin-top:8px;"></textarea>
-        <input type="text" id="deliveryOrderAddr" placeholder="📍 Ваш адрес доставки" maxlength="150" style="margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="openDeliveryLocationPicker()">🗺 Выбрать точку доставки на карте</button>
+        <input type="text" id="deliveryOrderAddr" placeholder="📍 Адрес / описание точки доставки" maxlength="150" style="margin-top:8px;">
+        <input type="hidden" id="deliveryOrderLat"><input type="hidden" id="deliveryOrderLng">
+        <div id="deliveryLocationPreview" style="font-size:12px;color:var(--primary);margin-top:6px;"></div>
         <input type="text" id="deliveryOrderContact" placeholder="Контакт / способ связи (опционально)" maxlength="100" style="margin-top:8px;">
         <div id="deliverySelectionSummary" class="delivery-summary" style="display:none;"></div>
+        <div id="deliveryBusinessMapCard" class="card" style="display:none;margin-top:10px;padding:8px;"><div style="font-size:12px;font-weight:900;margin-bottom:7px;">🗺 Маршрут доставки</div><div id="deliveryBusinessMap" style="width:100%;height:280px;border-radius:12px;overflow:hidden;"></div><div id="deliveryBusinessMapInfo" style="margin-top:8px;font-size:13px;color:var(--muted);"></div></div>
         <div class="total-row" style="margin-top:10px;">
             <span>Стоимость доставки</span>
             <span class="total-val" style="font-size:16px;">Определяет доставщик</span>
@@ -2308,7 +2315,10 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <button class="btn btn-primary" onclick="placeDeliveryOrder()" style="margin-top:4px;">📤 Разместить заказ на доставку</button>
     </div>
     <div class="card">
-        <div class="card-title">📋 Мои заказы доставки</div>
+        <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <span>📋 Мои заказы доставки</span>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="clearMyDeliveryHistory()">🗑 Очистить историю</button>
+        </div>
         <div id="myDeliveryOrders"><div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0;">Нет заказов</div></div>
     </div>
 </div>
@@ -2406,7 +2416,11 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Заполните анкету. Заявка отправится в мэрию на рассмотрение. Госпошлина за создание бизнеса — <span id="bizFeeDisplay">2500 ₽</span>. С подпиской Ultra — 2000 ₽, с Kapani Prime — 1250 ₽.</div>
         <input type="text" id="bapName" placeholder="Название бизнеса" maxlength="60">
         <textarea id="bapDesc" placeholder="Описание бизнеса" style="min-height:72px;"></textarea>
-        <input type="text" id="bapAddress" placeholder="Адрес (где находится)" maxlength="120">
+        <div style="font-size:12px;color:var(--muted);margin:4px 0 6px;">📍 Местоположение бизнеса выбирается на карте. Текстовый адрес можно уточнить автоматически.</div>
+        <input type="text" id="bapAddress" placeholder="Адрес / описание точки" maxlength="120">
+        <input type="hidden" id="bapLat"><input type="hidden" id="bapLng">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="openBusinessLocationPicker('create')">🗺 Выбрать точку бизнеса на карте</button>
+        <div id="bapLocationPreview" style="font-size:12px;color:var(--primary);margin-top:6px;"></div>
         <input type="text" id="bapCategory" placeholder="Категория (Еда, Услуги, Магазин, Развлечения...)" maxlength="40">
         <input type="text" id="bapServices" placeholder="Что вы предоставляете? (через запятую)" maxlength="200">
         <button class="btn btn-primary" onclick="submitBizApply()" style="margin-top:8px;">📋 Отправить заявку</button>
@@ -2589,9 +2603,15 @@ const PRICE_PER_KM = CONFIG.finance.pricePerKm;
 const MAX_SPEED_KMH = CONFIG.finance.maxSpeedKmh;
 const KAPANI_LAT = CONFIG.location.kapani.lat;
 const KAPANI_LNG = CONFIG.location.kapani.lng;
+const BUSINESS_DEFAULT_LAT = 52.628433;
+const BUSINESS_DEFAULT_LNG = 38.417049;
 const ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
 
 let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
+let _kapaniSessionPassword = null;
+let _kapaniPushBridgeToken = null;
+let _kapaniPushBridgeExpiresAt = 0;
+try { _kapaniPushBridgeToken = localStorage.getItem('kp_push_bridge_token') || null; _kapaniPushBridgeExpiresAt = Number(localStorage.getItem('kp_push_bridge_exp') || 0) || 0; } catch(e) {}
 function syncCurrentNick(){ window.currentNick = currentNick; return currentNick; }
 syncCurrentNick();
 let appStarted = false;
@@ -2840,8 +2860,13 @@ async function establishKapaniServerSession(nick, password){
     if(!response.ok || !json?.ok || !json?.token){
         throw new Error(String(json?.error||`Push Bridge session ${response.status}: ${text}`));
     }
+    if(json.pushToken){
+        _kapaniPushBridgeToken = String(json.pushToken);
+        _kapaniPushBridgeExpiresAt = Number(json.pushTokenExpiresAt || (Date.now()+7*24*3600*1000));
+        try{ localStorage.setItem('kp_push_bridge_token', _kapaniPushBridgeToken); localStorage.setItem('kp_push_bridge_exp', String(_kapaniPushBridgeExpiresAt)); }catch(e){}
+    }
     const auth = await ensureAuth();
-    if(!authModule?.signInWithCustomToken) throw new Error('Firebase Auth module is not ready');
+    if(!authModule?.signInWithCustomToken) return auth.currentUser || null;
     await authModule.signInWithCustomToken(auth, json.token);
     await auth.currentUser?.getIdToken(true);
     return auth.currentUser;
@@ -2850,7 +2875,17 @@ async function establishKapaniServerSession(nick, password){
 async function requireKapaniServerSession(){
     const auth = await ensureAuth();
     if(auth.currentUser) return auth.currentUser;
-    throw new Error('Требуется повторный вход для защищённой операции');
+    const restored = await waitForFirebaseAuthUser(5000);
+    if(restored) return restored;
+    // During the current Kapani session keep the password only in memory so a
+    // transient Firebase Auth loss can be healed without asking the user to log in again.
+    if(_kapaniSessionPassword && currentNick){
+        try{
+            const healed = await establishKapaniServerSession(currentNick, _kapaniSessionPassword);
+            if(healed) return healed;
+        }catch(e){ console.warn('[Kapani auth] session healing:',e); }
+    }
+    throw new Error('Защищённая Firebase-сессия ещё восстанавливается. Повторите действие через секунду.');
 }
 
 // Fallback: Create order directly in database
@@ -3256,8 +3291,8 @@ function getJobLimit(u){
 function getBizLimits(b){
     const bonus = b?.limitBonus || {};
     return {
-        employees: BIZ_BASE_LIMITS.employees + Number(bonus.employees || 0),
-        products: BIZ_BASE_LIMITS.products + Number(bonus.products || 0),
+        employees: BIZ_BASE_LIMITS.employees + Number(bonus.employees ?? bonus.employee ?? 0),
+        products: BIZ_BASE_LIMITS.products + Number(bonus.products ?? bonus.product ?? 0),
         maxProductPrice: BIZ_BASE_LIMITS.maxProductPrice + Number(bonus.priceCap || 0) * 500
     };
 }
@@ -3901,6 +3936,7 @@ window.handleAuth = async function() {
             sessionStorage.setItem('kp_s', nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
             currentNick = nick;
+            _kapaniSessionPassword = password;
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(nick, password);
@@ -3926,6 +3962,7 @@ window.handleAuth = async function() {
             sessionStorage.setItem('kp_s', existing.nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
             currentNick = existing.nick;
+            _kapaniSessionPassword = password;
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(existing.nick, password);
@@ -3977,22 +4014,12 @@ function startApp() {
     if(loBar) loBar.style.cssText = 'width:45%;transition:width .35s ease;';
 
     // Critical path: only the signed-in user's profile. Heavy/global branches are lazy.
+    const criticalProfileLoad = Promise.race([
+        get(userRef(currentNick)),
+        new Promise((_, reject)=>setTimeout(()=>reject(new Error('profile_load_timeout')), 8000))
+    ]);
     Promise.resolve()
-      .then(()=>get(userRef(currentNick)))
-      .then(snap=>{
-          if(snap.exists()){
-              const u=snap.val();
-              if(!allUsersCache[currentNick]) allUsersCache[currentNick]=u;
-              window.allUsersCache=allUsersCache;
-              updateHeader(u);
-              updateFrozenOverlay(u);
-              updateHeader_balance(u);
-              renderHomeStats_users(allUsersCache);
-          }
-          if(loStatus) loStatus.textContent='Запускаем интерфейс…';
-          if(loBar) loBar.style.cssText='width:90%;transition:width .3s ease;';
-      })
-      .catch(e=>console.warn('[Kapani] critical profile load failed:',e))
+      .then(()=>criticalProfileLoad)
       .then(()=>{
           try{ revealApp(); }catch(e){ console.error('[Kapani] Failed to reveal app shell:',e); if(header) header.style.display='flex'; if(bottom) bottom.style.display='flex'; if(main) main.style.display='block'; }
           if(loStatus) loStatus.textContent='Готово!';
@@ -4038,8 +4065,9 @@ window.logout = async function() {
     listeners={};dmListeners={};
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
     try { if(authInstance?.currentUser) await authModule.signOut(authInstance); } catch(e){ console.warn('[Kapani auth] signOut:',e); }
-    try { localStorage.removeItem('kp_fcm_token_id'); } catch(e) {}
-    localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; syncCurrentNick(); location.reload();
+    try { localStorage.removeItem('kp_fcm_token_id'); localStorage.removeItem('kp_push_bridge_token'); localStorage.removeItem('kp_push_bridge_exp'); } catch(e) {}
+    _kapaniPushBridgeToken = null; _kapaniPushBridgeExpiresAt = 0;
+    localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; _kapaniSessionPassword = null; syncCurrentNick(); location.reload();
 };
 
 // ─── REAL-TIME LISTENERS ──────────────────
@@ -4602,25 +4630,7 @@ async function tryRegisterFcm(){
         return false;
     }
     try{
-        const auth = await waitForFirebaseAuthUser(8000);
-        if(!auth){
-            resultState.status='auth_required';
-            resultState.error='firebase_auth_session_missing';
-            console.warn('[Kapani FCM] Protected token registration requires an authenticated Firebase session. Retrying after auth restoration.');
-            let retries=0;
-            const retry=async()=>{
-                if(retries++>=3) return;
-                setTimeout(async()=>{
-                    try{
-                        const ok=await tryRegisterFcm();
-                        if(!ok && retries<3) retry();
-                    }catch(e){ if(retries<3) retry(); }
-                }, 3000 * retries);
-            };
-            retry();
-            return false;
-        }
-
+        await ensureCloudflarePushSession(false);
         const pack = await ensureMessaging();
         if(!pack.messaging){
             resultState.status='unsupported';
@@ -4659,14 +4669,18 @@ async function tryRegisterFcm(){
         window._kapaniPushLastGoodAt=Date.now();
         await syncPushPrefs();
 
-        // Foreground delivery remains driven by the realtime notification listener.
-        // onMessage is intentionally observational so one FCM event cannot produce
-        // both a foreground browser notification and the background notification.
+        // Foreground FCM is forwarded to the same Service Worker notification renderer.
+        // No direct Notification() call is used, so the app still has exactly one
+        // production sender/display path.
         if(!window._kapaniFcmOnMessageBound){
-            onMessage(pack.messaging, (payload)=>{
+            onMessage(pack.messaging, async (payload)=>{
                 resultState.lastForegroundMessageAt=Date.now();
                 resultState.lastForegroundNotificationId=String(payload?.data?.notificationId || '');
-                try{ console.debug('[Kapani FCM] foreground message received', resultState.lastForegroundNotificationId || 'without-id'); }catch(e){}
+                try{
+                    const sw = await getSwReg();
+                    const target = sw?.active || navigator.serviceWorker?.controller;
+                    if(target) target.postMessage({type:'KAPANI_FOREGROUND_PUSH', payload: payload?.data || {}});
+                }catch(e){ console.warn('[Kapani FCM] foreground SW handoff:',e); }
             });
             window._kapaniFcmOnMessageBound=true;
         }
@@ -4679,20 +4693,38 @@ async function tryRegisterFcm(){
     }
 }
 
-async function callKapaniPushBridge(path, data={}){
+async function ensureCloudflarePushSession(forceRefresh=false){
+    if(!forceRefresh && _kapaniPushBridgeToken && _kapaniPushBridgeExpiresAt > Date.now()+60*1000) return _kapaniPushBridgeToken;
+    if(!_kapaniSessionPassword || !currentNick) throw new Error('Cloudflare push session is not available');
     const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
     if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
-    const auth=await ensureAuth();
-    const user=auth.currentUser;
-    if(!user) throw new Error('Требуется защищённая Firebase-сессия для push');
-    const idToken=await user.getIdToken();
+    const response=await fetch(`${base}/session`,{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({nick:currentNick,password:_kapaniSessionPassword})
+    });
+    const text=await response.text(); let json=null; try{json=JSON.parse(text);}catch(_){ }
+    if(!response.ok || !json?.ok || !json?.pushToken) throw new Error(String(json?.error||`Cloudflare push session ${response.status}: ${text}`));
+    _kapaniPushBridgeToken=String(json.pushToken);
+    _kapaniPushBridgeExpiresAt=Number(json.pushTokenExpiresAt || (Date.now()+7*24*3600*1000));
+    try{localStorage.setItem('kp_push_bridge_token',_kapaniPushBridgeToken);localStorage.setItem('kp_push_bridge_exp',String(_kapaniPushBridgeExpiresAt));}catch(e){}
+    return _kapaniPushBridgeToken;
+}
+
+async function callKapaniPushBridge(path, data={}, retry=true){
+    const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
+    if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
+    let token=await ensureCloudflarePushSession(false);
     const response=await fetch(`${base}${path}`,{
         method:'POST',
-        headers:{'content-type':'application/json','authorization':`Bearer ${idToken}`},
+        headers:{'content-type':'application/json','authorization':`Bearer ${token}`},
         body:JSON.stringify(data)
     });
-    const text=await response.text();
-    let json=null;try{json=JSON.parse(text);}catch(_){ }
+    const text=await response.text(); let json=null; try{json=JSON.parse(text);}catch(_){ }
+    if((response.status===401 || response.status===403) && retry){
+        await ensureCloudflarePushSession(true);
+        return callKapaniPushBridge(path,data,false);
+    }
     if(!response.ok || !json?.ok) throw new Error(String(json?.error||`Push Bridge ${response.status}: ${text}`));
     return json;
 }
@@ -4783,9 +4815,13 @@ window.getKapaniPushDiagnostics = async function(){
     } catch(e){ serverError=String(e?.message||e); }
     const localTokenId=token?await sha256TokenId(token):null;
     const serverTokenRegistered=!!server?.tokens?.some?.(x=>String(x?.tokenId||'')===String(localTokenId||''));
+    let authDiag=null;
+    try{ const a=await ensureAuth(); authDiag=a.currentUser||await waitForFirebaseAuthUser(1000); }catch(e){}
     const result={
         checkedAt:new Date().toISOString(),
         permission,
+        firebaseAuthUser: !!authDiag,
+        firebaseAuthUid: authDiag?.uid || null,
         isIOS:isIOSDevice(),
         isIOSPWA:isIOSPWA(),
         serviceWorkerRegistered:!!reg,
@@ -4907,8 +4943,11 @@ async function pushNotification(nick,text,cat='system'){
         });
         // Best-effort immediate wake-up. The scheduler remains authoritative, so
         // a Worker/network failure here cannot lose the queued notification.
-        try{ await callKapaniPushBridge('/enqueue',{nick,notificationId}); }
-        catch(bridgeError){ console.warn('[push enqueue wake-up]',bridgeError); }
+        try{
+            await callKapaniPushBridge('/enqueue',{nick,notificationId});
+        }catch(bridgeError){
+            console.debug('[push enqueue wake-up] Cloudflare wake-up недоступен, durable queue сохранена:',bridgeError?.message||bridgeError);
+        }
     }catch(e){
         console.error('[pushNotification]',e);
         throw e;
@@ -5259,7 +5298,7 @@ function renderActiveOrders(orders) {
             if(tOrder.worker){
                 driverBlock=`<div class="driver-card"><div class="driver-card-header" style="cursor:pointer;" onclick="openUserProfile('${escHtml(tOrder.worker)}')"><img class="driver-card-av" src="${escHtml(tOrder.driverAvatar||DEFAULT_AVATAR_URL)}" loading="lazy"><div><div class="driver-card-name">${escHtml(tOrder.worker)}</div><div class="driver-card-vehicle">${escHtml(tOrder.driverVehicle||'Транспорт не указан')}</div></div></div>${etaMin?`<div class="driver-eta">⏱ ~<b>${etaMin} мин</b></div>`:''}<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="goToChat('${escHtml(tOrder.worker)}')">💬 Написать</button><button class="btn btn-ghost btn-sm" style="flex:1;font-size:11px;" onclick="openUserProfile('${escHtml(tOrder.worker)}')">👤 Профиль</button></div></div>`;
             }
-            const tracking=(tOrder.worker&&['driver_arriving','in_progress'].includes(tOrder.status))?`<div class="tracking-card"><div class="tracking-live"><span class="pulse"></span>Live — водитель на карте</div><div id="trackingMap"></div></div>`:'';
+            const tracking=(tOrder.worker&&['driver_arriving','in_progress'].includes(tOrder.status))?`<div class="tracking-card"><div class="tracking-live"><span class="pulse"></span>Live — водитель на карте</div><div id="trackingMap"></div><div id="taxiTrackingEta" style="margin-top:10px;font-size:13px;color:var(--muted);font-weight:800;"></div></div>`:'';
             const payment=tOrder.status==='waiting_payment'?`<button class="btn btn-gold" style="margin-bottom:8px" onclick="payOrder('${tOrder.id}')">💳 Оплатить ${tOrder.price}₽</button>`:'';
             const cancel=`<button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${tOrder.id}')">Отменить (-35₽)</button>`;
             ts.innerHTML=`<div class="status-card gold"><div class="status-badge ${tOrder.status==='waiting_payment'?'badge-active':(tOrder.status==='pending'?'badge-wait':'badge-active')}"><span class="pulse"></span>${lbl2}</div><div style="font-weight:700;margin-bottom:8px;">🗺 ${escHtml(tOrder.info)}</div>${driverBlock}${tracking}${payment}${cancel}</div>`;
@@ -5909,7 +5948,11 @@ window.buyShop=async function(){
         
         if (result.success) {
             await pushNotification(currentNick,`📦 Заказ: ${items} — ${finalTotal}₽${discountPercent > 0 ? ` (скидка ${discountPercent}%)` : ''} (вкл. доставка 30₽)`);
-            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Доставщик'&&nick!==currentNick){await pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders');}}}catch(e){console.error('[notification pipeline][delivery order]',e);}
+            try{
+                const workersSnap=await get(query(ref(db,'users'),orderByChild('job'),equalTo('Доставщик')));
+                const workers=workersSnap.val()||{};
+                await Promise.all(Object.keys(workers).filter(nick=>nick!==currentNick).map(nick=>pushNotification(nick,`📦 Новый заказ: ${items} → ${escHtml(addr)} — ${finalTotal}₽`,'delivery_orders')));
+            }catch(e){console.error('[notification pipeline][delivery order]',e);}
             ['sB','sP','sL','sK'].forEach(i=>qs(i).value=0);qs('sAddr').value='';shopAddrCoords=null;if(shopMarker&&shopMapObj){shopMapObj.removeLayer(shopMarker);shopMarker=null;}recalcShop();
             toast(`📦 Заказ оформлен!${discountPercent > 0 ? ' Скидка ' + discountPercent + '% применена!' : ''}`,'green');
         }
@@ -5921,7 +5964,15 @@ window.buyShop=async function(){
 };
 
 function addSatelliteLayer(map){
-    return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19}).addTo(map);
+    // Kapani uses a single hybrid map everywhere: current satellite/aerial imagery
+    // plus a readable reference overlay with roads, city/place names and boundaries.
+    // World Imagery is the base; the reference layer is intentionally transparent.
+    const imagery=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri',maxZoom:19});
+    const reference=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{attribution:'Reference © Esri',maxZoom:19,pane:'overlayPane'});
+    const transportation=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{attribution:'Transportation © Esri',maxZoom:19,pane:'overlayPane',opacity:0.92});
+    imagery.addTo(map);
+    try{ reference.addTo(map); transportation.addTo(map); }catch(e){}
+    return imagery;
 }
 
 // ─── TAXI MAP ─────────────────────────────
@@ -6007,7 +6058,11 @@ window.orderTaxi=async function(){
             const priceText = discountPercent > 0 ? `${finalPrice}₽ (скидка ${discountPercent}%)` : `${finalPrice}₽`;
             await pushNotification(currentNick,`🛵 Такси: ${from} → ${to} — ${priceText}`,'taxi_orders');
             toast(`🛵 Такси вызвано!${discountPercent > 0 ? ` Скидка ${discountPercent}% применена!` : ''}`,'gold');
-            try{const allSnap=await get(ref(db,'users'));const allU=allSnap.val()||{};for(const[nick,usr]of Object.entries(allU)){if(usr.job==='Водитель'&&nick!==currentNick){await pushNotification(nick,`🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,'taxi_orders');}}}catch(e){console.error('[notification pipeline][taxi order]',e);}
+            try{
+                const driversSnap=await get(query(ref(db,'users'),orderByChild('job'),equalTo('Водитель')));
+                const drivers=driversSnap.val()||{};
+                await Promise.all(Object.keys(drivers).filter(nick=>nick!==currentNick).map(nick=>pushNotification(nick,`🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,'taxi_orders')));
+            }catch(e){console.error('[notification pipeline][taxi order]',e);}
         }
     } catch (error) {
         console.error('Ошибка заказа такси:', error);
@@ -6073,7 +6128,7 @@ window.startSharingLocation=function(){
     if(locationWatchId!==null)return;
     if(currentTrackOrderId){ get(orderRef(currentTrackOrderId)).then(s=>{if(s.exists()&&s.val().status==='accepted') update(orderRef(currentTrackOrderId),{status:'driver_arriving',locationSharingStartedAt:Date.now()});}).catch(()=>{}); }
     qs('driverShareLocBtn').style.display='none'; qs('driverStopLocBtn').style.display='block';
-    locationWatchId=navigator.geolocation.watchPosition(async pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude;if(currentTrackOrderId){await update(orderRef(currentTrackOrderId),{driverLat:lat,driverLng:lng});}if(driverTrackMapObj){if(!driverOwnMarker){driverOwnMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:18px;height:18px;border-radius:50%;border:3px solid white;">🛵</div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(driverTrackMapObj);}else driverOwnMarker.setLatLng([lat,lng]);}},()=>toast('❌ Геолокация недоступна','red'),{enableHighAccuracy:true,maximumAge:5000,timeout:10000});
+    locationWatchId=navigator.geolocation.watchPosition(async pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude;if(currentTrackOrderId){await update(orderRef(currentTrackOrderId),{driverLat:lat,driverLng:lng,driverLocationUpdatedAt:Date.now()});try{const s=await get(orderRef(currentTrackOrderId));const o=s.val()||{};const tLat=String(o.status)==='in_progress'?Number(o.destLat):Number(o.clientLat),tLng=String(o.status)==='in_progress'?Number(o.destLng):Number(o.clientLng),info=qs('driverTrackInfo');if(info&&Number.isFinite(tLat)&&Number.isFinite(tLng)){const d=haversine(lat,lng,tLat,tLng),mins=Math.max(1,Math.ceil(d/MAX_SPEED_KMH*60));info.innerHTML=String(o.status)==='in_progress'?`🏁 До конечной точки: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`:`🛵 До клиента: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`;}}catch(e){}}if(driverTrackMapObj){if(!driverOwnMarker){driverOwnMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:18px;height:18px;border-radius:50%;border:3px solid white;">🛵</div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(driverTrackMapObj);}else driverOwnMarker.setLatLng([lat,lng]);}},()=>toast('❌ Геолокация недоступна','red'),{enableHighAccuracy:true,maximumAge:5000,timeout:10000});
     toast('📍 Трансляция началась','green');
 };
 window.beginTaxiTrip=async function(id){if(!id)return;const snap=await get(orderRef(id));if(!snap.exists())return;if(snap.val().worker!==currentNick||snap.val().status!=='driver_arriving')return;await update(orderRef(id),{status:'in_progress',tripStartedAt:Date.now()});toast('🚕 Поездка началась','green');};
@@ -6081,21 +6136,37 @@ window.finishTaxiTrip=async function(id){if(!id)return;const snap=await get(orde
 window.stopSharingLocation=function(){if(locationWatchId!==null){navigator.geolocation.clearWatch(locationWatchId);locationWatchId=null;}const shareBtn=qs('driverShareLocBtn'),stopBtn=qs('driverStopLocBtn');if(shareBtn)shareBtn.style.display='block';if(stopBtn)stopBtn.style.display='none';toast('⏹ Остановлено','gold');};
 async function initDriverTrackMap(orderId,clientLat,clientLng,destLat,destLng){
     await window.kapaniLoadLeaflet();
-    currentTrackOrderId=orderId;const card=qs('driverTrackCard');if(!card)return;card.style.display='block';
+    currentTrackOrderId=orderId;
+    const card=qs('driverTrackCard');if(!card)return;card.style.display='block';
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     const mapEl=qs('driverTrackMap');if(!mapEl)return;
-    if(driverTrackMapObj && driverTrackMapObj.getContainer()===mapEl){ driverTrackMapObj.invalidateSize(); return; }
+    if(driverTrackMapObj && driverTrackMapObj.getContainer()===mapEl){driverTrackMapObj.invalidateSize();return;}
     if(driverTrackMapObj){try{driverTrackMapObj.remove();}catch(e){}driverTrackMapObj=null;clientMarkerOnDriverMap=null;driverOwnMarker=null;}
-    const center=(clientLat&&clientLng)?[clientLat,clientLng]:[KAPANI_LAT,KAPANI_LNG];
-    driverTrackMapObj=L.map(mapEl,{center,zoom:14});
-    addSatelliteLayer(driverTrackMapObj);
+    const center=(Number.isFinite(Number(clientLat))&&Number.isFinite(Number(clientLng)))?[clientLat,clientLng]:[KAPANI_LAT,KAPANI_LNG];
+    driverTrackMapObj=L.map(mapEl,{center,zoom:14}); addSatelliteLayer(driverTrackMapObj);
     const bounds=[];
     if(clientLat&&clientLng){clientMarkerOnDriverMap=L.marker([clientLat,clientLng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">👤</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('<b>📍 Клиент</b>');bounds.push([clientLat,clientLng]);}
     if(destLat&&destLng){L.marker([destLat,destLng],{icon:L.divIcon({html:'<div style="background:#fbbf24;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🏁</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('<b>🏁 Конечная</b>');bounds.push([destLat,destLng]);}
     if(clientLat&&clientLng&&destLat&&destLng)L.polyline([[clientLat,clientLng],[destLat,destLng]],{color:'#fbbf24',weight:3,dashArray:'5,5',opacity:0.7}).addTo(driverTrackMapObj);
-    try{const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:7000,maximumAge:0}));const dlat=pos.coords.latitude,dlng=pos.coords.longitude;bounds.push([dlat,dlng]);driverOwnMarker=L.marker([dlat,dlng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('Вы');if(clientLat&&clientLng)L.polyline([[dlat,dlng],[clientLat,clientLng]],{color:'#22d3a5',weight:4,dashArray:'8,5',opacity:0.9}).addTo(driverTrackMapObj);const infoEl=qs('driverTrackInfo');if(infoEl){let html='';if(clientLat&&clientLng){const d1=haversine(dlat,dlng,clientLat,clientLng);const t1=Math.ceil(d1/MAX_SPEED_KMH*60);html+=`📏 До клиента: <b style="color:var(--primary)">${d1.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${t1} мин</b>`;}if(clientLat&&clientLng&&destLat&&destLng){const d2=haversine(clientLat,clientLng,destLat,destLng);const t2=Math.ceil(d2/MAX_SPEED_KMH*60);html+=`<br>🏁 До конечной: <b style="color:var(--primary)">${d2.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${t2} мин</b>`;}infoEl.innerHTML=html;}}catch(e){const infoEl=qs('driverTrackInfo');if(infoEl)infoEl.textContent='⚠️ Разрешите геолокацию';}
+    try{
+        const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:7000,maximumAge:0}));
+        const dlat=pos.coords.latitude,dlng=pos.coords.longitude; bounds.push([dlat,dlng]);
+        driverOwnMarker=L.marker([dlat,dlng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('Вы');
+        const infoEl=qs('driverTrackInfo');
+        let status='driver_arriving';
+        try{const snap=await get(orderRef(orderId));if(snap.exists())status=String(snap.val().status||status);}catch(e){}
+        const targetLat=status==='in_progress'?Number(destLat):Number(clientLat);
+        const targetLng=status==='in_progress'?Number(destLng):Number(clientLng);
+        if(infoEl&&Number.isFinite(targetLat)&&Number.isFinite(targetLng)){
+            const d=haversine(dlat,dlng,targetLat,targetLng), mins=Math.max(1,Math.ceil(d/MAX_SPEED_KMH*60));
+            infoEl.innerHTML=status==='in_progress'
+                ? `🏁 До конечной точки: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`
+                : `🛵 До клиента: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`;
+        }
+    }catch(e){const infoEl=qs('driverTrackInfo');if(infoEl)infoEl.textContent='⚠️ Разрешите геолокацию';}
     if(bounds.length>=2)driverTrackMapObj.fitBounds(bounds,{padding:[40,40]});else if(bounds.length===1)driverTrackMapObj.setView(bounds[0],15);
 }
+
 async function initClientTrackingMap(orderId){
     await window.kapaniLoadLeaflet();
     const mapEl=qs('trackingMap');if(!mapEl)return;
@@ -6109,14 +6180,26 @@ async function initClientTrackingMap(orderId){
         if(!snap.exists()||!clientTrackingMap||snap.key!==orderId)return;
         const o=snap.val();
         const lat=Number(o.driverLat),lng=Number(o.driverLng);
+        const info=qs('taxiTrackingEta');
+        const targetLat=String(o.status||'')==='in_progress'?Number(o.destLat):Number(o.clientLat);
+        const targetLng=String(o.status||'')==='in_progress'?Number(o.destLng):Number(o.clientLng);
         if(Number.isFinite(lat)&&Number.isFinite(lng)){
-            if(!driverMarkerOnClientMap){driverMarkerOnClientMap=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(clientTrackingMap).bindPopup('Водитель');}
-            else driverMarkerOnClientMap.setLatLng([lat,lng]);
-        }
+            if(!driverMarkerOnClientMap){
+                driverMarkerOnClientMap=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(clientTrackingMap).bindPopup('Водитель');
+            } else driverMarkerOnClientMap.setLatLng([lat,lng]);
+            if(Number.isFinite(targetLat)&&Number.isFinite(targetLng)){
+                const d=haversine(lat,lng,targetLat,targetLng);
+                const mins=Math.max(1,Math.ceil(d/MAX_SPEED_KMH*60));
+                info.textContent=String(o.status||'')==='in_progress'
+                    ? `🏁 До конечной точки примерно ${mins} мин · ${d.toFixed(1)} км`
+                    : `🛵 Таксист приедет примерно через ${mins} мин · ${d.toFixed(1)} км`;
+            }
+        } else if(info) info.textContent='📍 Ожидаем GPS водителя…';
     };
     const unsub=onValue(oRef,fn,err=>console.warn('[taxi tracking listener]',err?.message||err));
     clientTrackListener={ref:oRef,fn,unsub,orderId};
 }
+
 
 let _payOrderBusy = false;
 window.payOrder=async function(id){
@@ -7504,7 +7587,7 @@ async function creditTaskRewardOnce(taskKey, reward, title, claimedKey, claimVal
     toast(`🎁 +${safeReward} ₽ на счёт заданий!`, 'green');
     return true;
 }
-window.claimDailyTask = async function(taskId, reward){
+window.claimDailyTask = async function(taskId, reward, options={}){
     if(!currentNick) return;
     const today = todayKey();
     const claimedKey = `dailyClaimed_${today}`;
@@ -7516,9 +7599,10 @@ window.claimDailyTask = async function(taskId, reward){
         if(primeActive) tasks.push(...(getPrimeDailyTasksForToday()||[]));
     }catch(e){}
     const task = tasks.find(t => t.id === taskId);
-    if(!task) return toast('❌ Задание не найдено','red');
+    if(!task) return options.autoPrime ? false : toast('❌ Задание не найдено','red');
+    if(options.autoPrime && !task.id.startsWith('prime_')) return false;
     const claimed = (await get(userRef(currentNick))).val()?.[claimedKey] || [];
-    if(claimed.includes(taskId)) return toast('✅ Уже получено','gold');
+    if(claimed.includes(taskId)) return false;
     const ok = await creditTaskRewardOnce(`__dailyReward_${today}_${taskId}` , Number(task.reward), 'Ежедневное задание выполнено', claimedKey, taskId);
     if(ok) renderTasks();
 };
@@ -7684,8 +7768,8 @@ window.renderTasks = async function(){
         }
         function primeDailyRow(t){
             let stateHtml;
-            if(t.alreadyClaimed) stateHtml = `<div class="task-state done">✅ Получено</div>`;
-            else if(t.conditionMet) stateHtml = `<button class="btn btn-sm" style="font-size:11px;padding:7px 12px;background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);font-weight:900;" onclick="claimDailyTask('${t.id}',${t.reward})">Забрать +${t.reward}₽</button>`;
+            if(t.alreadyClaimed) stateHtml = `<div class="task-state done">✅ Выполнено — +${t.reward} ₽</div>`;
+            else if(t.conditionMet) stateHtml = `<div class="task-state done">⏳ Автоматическое начисление…</div>`;
             else stateHtml = `<div class="task-state todo">В процессе</div>`;
             return `<div class="task-item" style="border-color:rgba(240,196,25,.35);background:linear-gradient(120deg,rgba(240,196,25,.08),rgba(255,110,196,.06),rgba(120,115,245,.06));"><div class="task-main"><div class="task-name">${escHtml(t.title)}</div><div class="task-desc">${escHtml(t.desc)}</div><div class="task-reward" style="color:#f0c419;">+${t.reward} ₽</div></div>${stateHtml}</div>`;
         }
@@ -7695,6 +7779,15 @@ window.renderTasks = async function(){
         const taskBalanceEl = qs('taskBalanceDisplay');
         if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(u.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
         el.innerHTML = `${primeDailyRows.length ? `<div class="task-group" style="margin-top:0;"><div class="task-group-title" style="color:var(--gold);">👑 Kapani Prime — эксклюзивные задания</div>${primeDailyRows.map(primeDailyRow).join('')}</div>` : ''}<div class="task-group"><div class="task-group-title">📅 Ежедневные (обновляются каждый день)</div>${dailyRows.map(dailyRow).join('')}</div><div class="task-group" style="margin-top:0;"><div class="task-group-title">⭐ Одноразовые</div>${oneTimeTasks.map(oneTimeRow).join('')}</div>`;
+
+        // Prime Daily Tasks are automatically claimed once their condition is met.
+        // The existing creditTaskRewardOnce transaction remains the idempotency guard.
+        if (primeDailyRows.length) {
+            const autoPrime = primeDailyRows.filter(t => t.conditionMet && !t.alreadyClaimed);
+            if (autoPrime.length) {
+                Promise.all(autoPrime.map(t => claimDailyTask(t.id, t.reward, {autoPrime:true, silent:true}))).catch(e => console.warn('[prime daily auto]', e));
+            }
+        }
 
         if(!isMigrantUser(u)){
             const pendingRewards = oneTimeTasks.filter(t=>t.done && !u[t.key]);
@@ -11253,6 +11346,11 @@ const bizAppsRef = () => ref(db, 'businessApps');
 const bizAppRef = (id) => ref(db, `businessApps/${id}`);
 
 let currentBizId = null;
+// Keep the legacy inline onclick handlers working: top-level module variables are not
+// properties of window, so expose a tiny synchronized bridge for existing UI markup.
+try {
+    Object.defineProperty(window, 'currentBizId', { configurable:true, get:()=>currentBizId, set:v=>{ currentBizId=v||null; } });
+} catch(e) { window.currentBizId = null; }
 let currentBizDetailData = null;
 let allBusinessesCache = {};
 let bizCarts = {};
@@ -11261,6 +11359,135 @@ let _bizEditBannerData = null;
 let _bizProdPhotoData = null;
 let _rentBuildingPhotoData = null;
 
+
+let businessLocationMap=null, businessLocationMarker=null;
+let deliveryLocationMap=null, deliveryLocationMarker=null;
+let _businessLocationMode='create';
+async function ensureMapModal(id,title,initialLat,initialLng,saveFn){
+    await window.kapaniLoadLeaflet();
+    let modal=qs(id);
+    if(!modal){
+        modal=document.createElement('div'); modal.id=id;
+        modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9998;display:flex;align-items:center;justify-content:center;padding:14px;';
+        modal.innerHTML=`<div style="width:100%;max-width:600px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:14px;box-shadow:var(--shadow);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b style="font-size:16px;">${title}</b><button class="btn btn-ghost btn-sm" onclick="this.closest('#${id}').style.display='none'">✕</button></div>
+            <div id="${id}Map" style="height:360px;border-radius:14px;overflow:hidden;"></div>
+            <div id="${id}Coords" style="font-size:11px;color:var(--muted);margin:8px 0;"></div>
+            <div style="display:flex;gap:8px;"><button type="button" class="btn btn-primary" data-location-save="1" style="flex:1;">✅ Сохранить точку</button><button type="button" class="btn btn-ghost" style="flex:1;" onclick="this.closest('#${id}').style.display='none'">Отмена</button></div>
+        </div>`;
+        document.body.appendChild(modal);
+    }
+    modal.style.display='flex';
+    await new Promise(r=>requestAnimationFrame(r));
+    const host=qs(id+"Map"); if(!host) return;
+    const isBusinessPicker = id === 'bizLocationPicker';
+    const fallbackLat = isBusinessPicker ? BUSINESS_DEFAULT_LAT : BUSINESS_DEFAULT_LAT;
+    const fallbackLng = isBusinessPicker ? BUSINESS_DEFAULT_LNG : BUSINESS_DEFAULT_LNG;
+    const saveBtn = modal.querySelector('[data-location-save="1"]');
+    if(saveBtn && !saveBtn.dataset.bound){
+        saveBtn.dataset.bound='1';
+        saveBtn.addEventListener('click', (ev)=>{
+            ev.preventDefault(); ev.stopPropagation();
+            try { const fn=window[saveFn]; if(typeof fn==='function') fn(); else toast('❌ Функция сохранения точки не найдена','red'); }
+            catch(e){ console.error('[location picker save]',e); toast('❌ Не удалось сохранить точку: '+(e?.message||'ошибка'),'red'); }
+        });
+    }
+    const lat=Number.isFinite(Number(initialLat))?Number(initialLat):fallbackLat;
+    const lng=Number.isFinite(Number(initialLng))?Number(initialLng):fallbackLng;
+    const state={lat,lng};
+    modal._locationState=state;
+    const mapVar=id==='bizLocationPicker'?'businessLocationMap':'deliveryLocationMap';
+    const markerVar=id==='bizLocationPicker'?'businessLocationMarker':'deliveryLocationMarker';
+    if(globalThis[mapVar]){try{globalThis[mapVar].remove()}catch(e){}}
+    globalThis[mapVar]=L.map(host,{center:[lat,lng],zoom:(Number.isFinite(Number(initialLat))&&Number.isFinite(Number(initialLng)))?17:14});
+    addSatelliteLayer(globalThis[mapVar]);
+    globalThis[markerVar]=L.marker([lat,lng],{draggable:true}).addTo(globalThis[mapVar]);
+    const update=()=>{
+        const ll=globalThis[markerVar].getLatLng(); state.lat=ll.lat; state.lng=ll.lng;
+        const c=qs(id+"Coords"); if(c)c.textContent=`📍 ${ll.lat.toFixed(6)}, ${ll.lng.toFixed(6)}`;
+    };
+    globalThis[mapVar].on('click',e=>{globalThis[markerVar].setLatLng(e.latlng);update();});
+    globalThis[markerVar].on('dragend',update);
+    update();
+}
+window.openBusinessLocationPicker=async function(mode){
+    _businessLocationMode=mode||'create';
+    // Business location picker always opens at the Kapani base point requested by the project.
+    // Existing saved coordinates are not overwritten until the user explicitly presses Save.
+    const lat=BUSINESS_DEFAULT_LAT;
+    const lng=BUSINESS_DEFAULT_LNG;
+    await ensureMapModal('bizLocationPicker','🗺 Точка бизнеса',lat,lng,'saveBusinessLocationPicker');
+};
+window.saveBusinessLocationPicker=async function(){
+    const modal=qs('bizLocationPicker');
+    if(!modal) return toast('❌ Окно выбора точки не найдено','red');
+    const marker=globalThis.businessLocationMarker;
+    const state=modal._locationState || {};
+    if(marker?.getLatLng){ const ll=marker.getLatLng(); state.lat=ll.lat; state.lng=ll.lng; modal._locationState=state; }
+    const lat=Number(state.lat), lng=Number(state.lng);
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)) return toast('⚠️ Сначала выберите точку на карте','gold');
+    const ids=_businessLocationMode==='edit'?['bizEditLat','bizEditLng','bizEditLocationPreview']:['bapLat','bapLng','bapLocationPreview'];
+    const latEl=qs(ids[0]), lngEl=qs(ids[1]), preview=qs(ids[2]);
+    if(!latEl||!lngEl) return toast('❌ Поля координат бизнеса не найдены','red');
+    latEl.value=String(lat); lngEl.value=String(lng);
+    if(preview) preview.textContent=`📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+    // In edit mode persist the point immediately to the real business record.
+    // This avoids the old situation where coordinates only lived in hidden inputs
+    // until the owner saved the entire business form.
+    if(_businessLocationMode==='edit'){
+        const bizId=currentBizId || window.currentBizId;
+        if(!bizId) return toast('❌ Не выбран бизнес для сохранения точки','red');
+        try{
+            await update(bizItemRef(bizId), {lat, lng, address: (qs('bizEditAddress')?.value||'').trim() || `${lat.toFixed(6)}, ${lng.toFixed(6)}`});
+            if(allBusinessesCache) allBusinessesCache[bizId] = {...(allBusinessesCache[bizId]||{}), lat, lng};
+            currentBizDetailData = currentBizDetailData ? {...currentBizDetailData, lat, lng} : currentBizDetailData;
+            modal.style.display='none';
+            toast('✅ Точка бизнеса сохранена','green');
+            // Refresh owner/public views using the same database coordinates.
+            if(curPage==='bizOwnerPanel' && typeof window.renderBizOwnerPanel==='function') await window.renderBizOwnerPanel(bizId);
+            return;
+        }catch(e){
+            console.error('[save business location]',e);
+            return toast('❌ Не удалось сохранить точку','red');
+        }
+    }
+
+    modal.style.display='none';
+    toast('✅ Точка сохранена в форме бизнеса','green');
+};
+window.openDeliveryLocationPicker=async function(){
+    // Delivery picker opens at the same fixed Kapani point as the business picker.
+    // The selected point is written only when the user confirms the picker.
+    const lat=BUSINESS_DEFAULT_LAT;
+    const lng=BUSINESS_DEFAULT_LNG;
+    if(qs('deliveryOrderLat')) qs('deliveryOrderLat').value=String(lat);
+    if(qs('deliveryOrderLng')) qs('deliveryOrderLng').value=String(lng);
+    await ensureMapModal('deliveryLocationPicker','🗺 Точка доставки',lat,lng,'saveDeliveryLocationPicker');
+};
+window.saveDeliveryLocationPicker=function(){
+    const state=qs('deliveryLocationPicker')?._locationState; if(!state) return;
+    qs('deliveryOrderLat').value=state.lat; qs('deliveryOrderLng').value=state.lng;
+    qs('deliveryLocationPreview').textContent=`📍 ${state.lat.toFixed(6)}, ${state.lng.toFixed(6)}`;
+    const addr=qs('deliveryOrderAddr'); if(addr&&!addr.value.trim()) addr.value=`${state.lat.toFixed(6)}, ${state.lng.toFixed(6)}`;
+    qs('deliveryLocationPicker').style.display='none';
+    updateDeliverySummary();
+    renderBusinessDeliveryMap().catch(e=>console.warn('[delivery business map]',e));
+};
+async function initBusinessDetailLocationMap(b){
+    const host=qs('bizDetailLocationMap'); if(!host) return;
+    if(!host.style.position) host.style.position='relative';
+    await window.kapaniLoadLeaflet();
+    if(host._map){try{host._map.remove()}catch(e){}}
+    const normLat = Number(b?.lat ?? b?.businessLat ?? b?.locationLat);
+    const normLng = Number(b?.lng ?? b?.businessLng ?? b?.locationLng);
+    const hasPoint=Number.isFinite(normLat)&&Number.isFinite(normLng);
+    const center=hasPoint?[normLat,normLng]:[BUSINESS_DEFAULT_LAT,BUSINESS_DEFAULT_LNG];
+    const map=L.map(host,{center,zoom:15});
+    host._map=map; addSatelliteLayer(map);
+    if(hasPoint) L.marker(center).addTo(map).bindPopup(`<b>${escHtml(b.name||'Бизнес')}</b><br>${escHtml(b.address||'')}`).openPopup();
+    else host.insertAdjacentHTML('beforeend','<div style="position:absolute;z-index:500;left:10px;bottom:10px;background:rgba(10,15,20,.82);padding:7px 10px;border-radius:8px;color:var(--muted);font-size:11px;">📍 Базовая точка Kapani: 52.628433, 38.417049</div>');
+}
 // ─── BIZ APPLY MODAL ─────────────────────────
 window.openBizApplyModal = async function(){
     const snap = await get(userRef(currentNick));
@@ -11275,7 +11502,8 @@ window.openBizApplyModal = async function(){
         return toast(`⚠️ У вас уже ${ownedCount}/${limit} бизнес${ownedCount === 1 ? '' : 'ов'}. Лимит подписки достигнут.`, 'gold');
     }
     // Clear and show modal
-    ['bapName','bapDesc','bapAddress','bapCategory','bapServices'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
+    ['bapName','bapDesc','bapAddress','bapCategory','bapServices','bapLat','bapLng'].forEach(id=>{ const el=qs(id); if(el) el.value=''; });
+     if(qs('bapLocationPreview')) qs('bapLocationPreview').textContent='📍 Точка не выбрана';
     const hasUltraBizModal = (u.subscription === 'ultra') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasPrimeBizModal = (u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const feeEl = qs('bizFeeDisplay'); if(feeEl) feeEl.textContent = hasPrimeBizModal ? '1250 ₽' : (hasUltraBizModal ? '2000 ₽' : '2500 ₽');
@@ -11292,9 +11520,12 @@ window.submitBizApply = async function(){
     const address = (qs('bapAddress')?.value||'').trim();
     const category = (qs('bapCategory')?.value||'Услуги').trim();
     const services = (qs('bapServices')?.value||'').trim();
+    const lat = Number(qs('bapLat')?.value);
+    const lng = Number(qs('bapLng')?.value);
     if(!name) return toast('⚠️ Укажите название','gold');
     if(!desc) return toast('⚠️ Укажите описание','gold');
-    if(!address) return toast('⚠️ Укажите адрес','gold');
+    if(!Number.isFinite(lat) || !Number.isFinite(lng)) return toast('🗺 Выберите точку бизнеса на карте','gold');
+    const normalizedAddress = address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
     const limit = getBusinessLimitForUser(u);
@@ -11312,7 +11543,7 @@ window.submitBizApply = async function(){
     await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -50%)' : (hasUltraForBiz ? ' (Ultra -20%)' : '')}` });
     await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasPrimeForBiz ? ' (скидка Prime)' : (hasUltraForBiz ? ' (скидка Ultra)' : '')}`, 'money');
     await set(bizAppRef(id), {
-        id, owner: currentNick, name, desc, address, category, services,
+        id, owner: currentNick, name, desc, address: normalizedAddress, lat, lng, category, services,
         status: 'pending', createdAt: Date.now(), feePaid: actualFee
     });
     await pushNotification(ADMIN, `🏪 Новая заявка на бизнес от ${currentNick}: «${name}»`, 'system');
@@ -11438,7 +11669,7 @@ window.adminApproveBiz = async function(id){
     const bizId = genId();
     await set(bizItemRef(bizId), {
         id: bizId, owner: a.owner, name: a.name, desc: a.desc,
-        address: a.address, category: a.category, services: a.services,
+        address: a.address, ...(Number.isFinite(Number(a.lat))&&Number.isFinite(Number(a.lng))?{lat:Number(a.lat),lng:Number(a.lng)}:{}), category: a.category, services: a.services,
         icon: '', banner: '', balance: 0, delivery: false,
         roles: {}, employees: {}, products: {},
         createdAt: Date.now(), bizWeeklyFeeAt: Date.now(), status: 'active'
@@ -11572,6 +11803,7 @@ window.openBizDetail = async function(bizId){
             <div style="font-size:13px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">${escHtml(b.category||'')}</div>
             <div style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:12px;">${escHtml(b.desc||'')}</div>
             ${b.address ? `<div style="font-size:13px;color:var(--muted);">📍 ${escHtml(b.address)}</div>` : ''}
+            ${b.lat != null && b.lng != null ? `<div style="font-size:12px;color:var(--primary);margin-top:5px;">🗺 Координаты: ${Number(b.lat).toFixed(6)}, ${Number(b.lng).toFixed(6)}</div><div class="card" style="margin-top:10px;padding:8px;"><div id="bizDetailLocationMap" style="width:100%;height:240px;border-radius:12px;overflow:hidden;"></div><div style="font-size:11px;color:var(--muted);margin-top:6px;">📍 Точное местоположение бизнеса</div></div>` : `<div class="card" style="margin-top:10px;padding:8px;"><div id="bizDetailLocationMap" style="width:100%;height:240px;border-radius:12px;overflow:hidden;"></div><div style="font-size:11px;color:var(--muted);margin-top:6px;">📍 Точка бизнеса ещё не задана</div></div>`}
             ${b.services ? `<div style="font-size:13px;color:var(--muted);margin-top:6px;">🛠 ${escHtml(b.services)}</div>` : ''}
             ${b.delivery ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.3);border-radius:20px;font-size:12px;font-weight:800;color:var(--primary);">🚚 Доставка доступна</div>' : ''}
             <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
@@ -11611,6 +11843,9 @@ window.openBizDetail = async function(bizId){
     // Roles tab
     renderBizDetailRoles(roles, employees);
 
+    // Public business location map
+    setTimeout(()=>initBusinessDetailLocationMap(b),180);
+
     // Products tab
     renderBizDetailProducts(b.products||{}, b, isOwner);
 
@@ -11624,6 +11859,7 @@ window.openBizDetail = async function(bizId){
     // Switch to about
     switchBizDetailTab(0);
     navTo('bizDetail');
+    setTimeout(()=>initBusinessDetailLocationMap(b).catch(e=>console.warn('[biz map]',e)),120);
 
     // Live listener for this biz orders — updates both client and staff in real time
     if(listeners.bizOrders) { off(listeners.bizOrders.ref, 'value', listeners.bizOrders.fn); delete listeners.bizOrders; }
@@ -11943,6 +12179,9 @@ if(!bizId){
     fn('bizEditName', bData.name);
     fn('bizEditDesc', bData.desc);
     fn('bizEditAddress', bData.address);
+    fn('bizEditLat', bData.lat);
+    fn('bizEditLng', bData.lng);
+    const editLoc=qs('bizEditLocationPreview'); if(editLoc) editLoc.textContent=(Number.isFinite(Number(bData.lat))&&Number.isFinite(Number(bData.lng)))?`📍 ${Number(bData.lat).toFixed(6)}, ${Number(bData.lng).toFixed(6)}`:'📍 Точка не выбрана'; 
     fn('bizEditServices', bData.services);
     fn('bizEditCategory', bData.category);
 
@@ -11982,9 +12221,22 @@ function renderBizLimitsPanel(b){
     const upEl = qs('bizLimitsUpgrades');
     if(!upEl) return;
     upEl.innerHTML = `
-        <button class="btn btn-gold btn-sm" onclick="upgradeBizLimit('employee')">+1 сотрудник (${BIZ_UPGRADE_PRICES.employee}₽)</button>
-        <button class="btn btn-gold btn-sm" onclick="upgradeBizLimit('product')">+1 товар (${BIZ_UPGRADE_PRICES.product}₽)</button>
-        <button class="btn btn-gold btn-sm" onclick="upgradeBizLimit('priceCap')">+500₽ лимит цены (${BIZ_UPGRADE_PRICES.priceCap}₽)</button>`;
+        ${['employee','product','priceCap'].map(kind=>{
+            const names={employee:'Сотрудники',product:'Товары',priceCap:'Лимит цены'};
+            const unit=kind==='priceCap'?500:1;
+            return `<div style="padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;">
+                <div style="font-weight:900;margin-bottom:6px;">${names[kind]}</div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <button class="btn btn-ghost btn-sm" onclick="changeBizUpgradeQty('${kind}',-1)">−</button>
+                    <input id="bizUpgradeQty_${kind}" type="number" min="1" value="1" oninput="updateBizUpgradeTotal('${kind}')" style="width:70px;text-align:center;margin:0;">
+                    <button class="btn btn-ghost btn-sm" onclick="changeBizUpgradeQty('${kind}',1)">+</button>
+                    <div style="font-size:11px;color:var(--muted);">1 ед. = ${unit} ${unit===1?'место':'₽ лимита'}</div>
+                </div>
+                <div style="font-size:11px;color:var(--gold);margin-top:5px;">Цена за 1: ${BIZ_UPGRADE_PRICES[kind]} ₽</div>
+                <div id="bizUpgradeTotal_${kind}" style="font-size:13px;font-weight:900;margin-top:4px;">Итого: ${BIZ_UPGRADE_PRICES[kind]} ₽</div>
+                <button class="btn btn-gold btn-sm" style="margin-top:7px;width:100%;" onclick="upgradeBizLimit('${kind}')">Купить</button>
+            </div>`;
+        }).join('')}`;
 }
 function renderBizBgShop(b){
     const el = qs('bizBgEffectsShop'); if(!el) return;
@@ -11996,44 +12248,52 @@ function renderBizBgShop(b){
         (current ? `<button class="btn btn-ghost btn-sm" style="color:var(--muted);" onclick="buyBizBgEffect('')">Убрать оформление</button>` : '');
 }
 let _bizUpgradeBusy = false;
+window.updateBizUpgradeTotal=function(kind){
+    const qty=Math.max(1,parseInt(qs(`bizUpgradeQty_${kind}`)?.value||'1',10)||1);
+    const total=qty*Number(BIZ_UPGRADE_PRICES[kind]||0);
+    const el=qs(`bizUpgradeTotal_${kind}`); if(el) el.textContent=`Итого: ${total.toLocaleString()} ₽`;
+};
+window.changeBizUpgradeQty=function(kind,delta){
+    const el=qs(`bizUpgradeQty_${kind}`); if(!el) return;
+    el.value=Math.max(1,(parseInt(el.value||1,10)||1)+Number(delta||0));
+    updateBizUpgradeTotal(kind);
+};
 window.upgradeBizLimit = async function(kind){
     if(_bizUpgradeBusy) return toast('⏳ Покупка уже выполняется…','gold');
     if(!currentBizId) return;
-    const price = BIZ_UPGRADE_PRICES[kind];
-    if(!price) return;
-    const labels = { employee: 'дополнительного сотрудника', product: 'дополнительного товара', priceCap: 'увеличения лимита цены' };
-    if(!confirm(`Увеличение количества ${labels[kind] || 'улучшения бизнеса'}
-
-Стоимость: ${price} ₽
-
-После покупки деньги будут списаны с вашего основного баланса.
-
-Подтвердить покупку?`)) return;
-    _bizUpgradeBusy = true;
+    const unitPrice = Number(BIZ_UPGRADE_PRICES[kind]||0);
+    if(!unitPrice) return;
+    const qty=Math.max(1,parseInt(qs(`bizUpgradeQty_${kind}`)?.value||'1',10)||1);
+    const labels={employee:'дополнительных сотрудников',product:'дополнительных товаров',priceCap:'увеличения лимита цены'};
+    const canonical={employee:'employees',product:'products',priceCap:'priceCap'}[kind] || kind;
+    const total=unitPrice*qty;
+    const currentSnap=await get(bizItemRef(currentBizId));
+    const currentBiz=currentSnap.val()||{};
+    const currentBalance=Number(currentBiz.balance||0);
+    if(currentBalance<total) return toast(`❌ Недостаточно средств на счёте бизнеса. Нужно ${total.toLocaleString()} ₽`,'red');
+    if(!confirm(`Покупка улучшения бизнеса\n\n${labels[kind]||kind}: ${qty} шт.\nЦена за 1: ${unitPrice.toLocaleString()} ₽\nИтого к оплате: ${total.toLocaleString()} ₽\nБаланс после покупки: ${(currentBalance-total).toLocaleString()} ₽\n\nПодтвердить оплату?`)) return;
+    _bizUpgradeBusy=true;
     try{
-        const field = kind === 'employee' ? 'employees' : kind === 'product' ? 'products' : 'priceCap';
-        const bizSnap = await get(bizItemRef(currentBizId));
-        const b = bizSnap.val()||{};
-        const result = await runTransaction(userRef(currentNick), current => {
-            if(current === null) return;
-            const balance = Number(current.balance || 0);
-            if(balance < price) return;
-            return { ...current, balance: balance - price };
+        const result=await runTransaction(bizItemRef(currentBizId), current=>{
+            const cur=current||{};
+            const balance=Number(cur.balance||0);
+            if(balance<total) return;
+            const bonus={...(cur.limitBonus||{})};
+            bonus[canonical]=Number(bonus[canonical]||0)+qty;
+            // Keep legacy aliases too so older records/readers remain compatible.
+            if(kind==='employee') bonus.employee=bonus.employees;
+            if(kind==='product') bonus.product=bonus.products;
+            return {...cur,balance:balance-total,limitBonus:bonus};
         });
-        if(!result || !result.committed) return toast(`❌ Нужно ${price}₽`,'red');
-        const bonus = b.limitBonus || {};
-        const bizResult = await runTransaction(bizItemRef(currentBizId), current => {
-            const cur = current || {};
-            const curBonus = cur.limitBonus || {};
-            return { ...cur, limitBonus: { ...curBonus, [field]: Number(curBonus[field]||0)+1 } };
-        });
-        if(!bizResult.committed) throw new Error('Не удалось применить улучшение бизнеса');
-        await logTx(currentNick, { type:'out', who:'Бизнес', amt:price, desc:`Улучшение бизнеса: ${labels[kind] || kind}` });
-        toast('✅ Лимит увеличен','green');
-        renderBizOwnerPanel();
+        if(!result?.committed) return toast('❌ Покупка не подтверждена: баланс бизнеса или лимит изменился','red');
+        await logTx(currentNick,{type:'out',who:'Бизнес',amt:total,desc:`Улучшение бизнеса: ${labels[kind]||kind} × ${qty}`});
+        toast(`✅ Оплата подтверждена: ${total.toLocaleString()} ₽ · лимит увеличен`,'green');
+        if(qs(`bizUpgradeQty_${kind}`)) qs(`bizUpgradeQty_${kind}`).value='1';
+        await renderBizOwnerPanel();
     }catch(e){ toast('❌ '+(e.message||'Ошибка покупки'),'red'); }
-    finally{ _bizUpgradeBusy = false; }
+    finally{ _bizUpgradeBusy=false; }
 };
+
 let _bizBgBusy = false;
 window.buyBizBgEffect = async function(effectId){
     if(_bizBgBusy) return toast('⏳ Покупка уже выполняется…','gold');
@@ -12055,19 +12315,19 @@ window.buyBizBgEffect = async function(effectId){
 Название: ${eff.name}
 Стоимость: ${eff.price} ₽
 
-После покупки деньги будут списаны с вашего основного баланса.
+Деньги будут списаны со счёта бизнеса.
 
 Подтвердить покупку?`)) return;
     _bizBgBusy = true;
     try{
-        const result = await runTransaction(userRef(currentNick), current => {
-            if(current === null) return;
-            const balance = Number(current.balance || 0);
-            if(balance < eff.price) return;
-            return { ...current, balance: balance - eff.price };
+        const result = await runTransaction(bizItemRef(currentBizId), current => {
+            const cur=current||{};
+            const balance=Number(cur.balance||0);
+            if(balance < eff.price || cur.bgEffect===effectId) return;
+            return {...cur,balance:balance-eff.price,bgEffect:effectId};
         });
-        if(!result || !result.committed) return toast(`❌ Нужно ${eff.price}₽`,'red');
-        await update(bizItemRef(currentBizId), { bgEffect: effectId });
+        if(!result || !result.committed) return toast(`❌ Недостаточно средств на счёте бизнеса. Нужно ${eff.price}₽`,'red');
+
         if(currentBizDetailData) currentBizDetailData.bgEffect = effectId;
         const effectHost = qs('bizDetailBgEffect'); if(effectHost) applyBizBgEffect(effectHost, effectId);
         await logTx(currentNick, { type:'out', who:'Бизнес', amt:eff.price, desc:`Оформление бизнеса: ${eff.name}` });
@@ -12075,6 +12335,24 @@ window.buyBizBgEffect = async function(effectId){
         renderBizOwnerPanel();
     }catch(e){ toast('❌ '+(e.message||'Ошибка покупки'),'red'); }
     finally{ _bizBgBusy = false; }
+};
+window.clearBizComplaintsAndRequests=async function(bizId){
+    if(!bizId) return;
+    if(!confirm('Удалить все жалобы и запросы, накопленные у этого бизнеса? Это нельзя отменить.')) return;
+    try{
+        await remove(ref(db, `bizComplaints/${bizId}`));
+        toast('✅ Жалобы и запросы очищены','green');
+        await renderBizComplaints(bizId);
+    }catch(e){ toast('❌ Не удалось очистить сообщения: '+(e?.message||'ошибка'),'red'); }
+};
+window.clearBizJobApps=async function(bizId){
+    if(!bizId) return;
+    if(!confirm('Удалить все заявки на работу этого бизнеса? Это нельзя отменить.')) return;
+    try{
+        await remove(ref(db, `bizJobApps/${bizId}`));
+        toast('✅ Заявки на работу очищены','green');
+        await renderOwnerJobApps(bizId);
+    }catch(e){ toast('❌ Не удалось очистить заявки: '+(e?.message||'ошибка'),'red'); }
 };
 window.sendBizComplaint = async function(bizId, type){
     const text = (qs('bizComplaintText')?.value||'').trim();
@@ -12138,12 +12416,17 @@ function renderOwnerProducts(b){
     const el = qs('bizProductsList'); if(!el) return;
     const prods = Object.entries(b.products||{});
     el.innerHTML = prods.length ? prods.map(([pid,p])=>`
-        <div class="item-row">
-            <div>
+        <div class="item-row" style="align-items:center;gap:10px;">
+            ${p.photo ? `<img src="${escAttr(p.photo)}" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;">` : '<div style="width:44px;height:44px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">📦</div>'}
+            <div style="flex:1;min-width:0;">
                 <div style="font-weight:800;">${escHtml(p.name||'')}</div>
-                <div style="font-size:12px;color:var(--gold);">${(p.price||0).toLocaleString()} ₽</div>
+                ${p.desc ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(p.desc)}</div>` : ''}
+                <div style="font-size:12px;color:var(--gold);margin-top:2px;">${(p.price||0).toLocaleString()} ₽</div>
             </div>
-            <button class="btn btn-red btn-sm" onclick="deleteBizProduct('${jsEsc(pid)}')">✕</button>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+                <button class="btn btn-ghost btn-sm" onclick="editBizProduct('${jsEsc(pid)}')">✏️</button>
+                <button class="btn btn-red btn-sm" onclick="deleteBizProduct('${jsEsc(pid)}')">✕</button>
+            </div>
         </div>`).join('') : '<div style="color:var(--muted);font-size:13px;">Нет товаров</div>';
 }
 
@@ -12491,6 +12774,9 @@ window.saveBizEdit = async function(){
         category: (qs('bizEditCategory')?.value||'').trim(),
         delivery: !!(qs('bizDeliveryCheck')?.checked),
     };
+    const editLat = Number(qs('bizEditLat')?.value);
+    const editLng = Number(qs('bizEditLng')?.value);
+    if(Number.isFinite(editLat) && Number.isFinite(editLng)){ patch.lat=editLat; patch.lng=editLng; }
     if(!patch.name) return toast('⚠️ Укажите название','gold');
     if(_bizEditIconData){ patch.icon = _bizEditIconData; _bizEditIconData = null; }
     if(_bizEditBannerData){ patch.banner = _bizEditBannerData; _bizEditBannerData = null; }
@@ -12521,6 +12807,39 @@ window.addBizProduct = async function(){
     toast('✅ Товар добавлен','green');
     renderBizOwnerPanel();
 };
+window.editBizProduct = async function(pid){
+    if(!currentBizId) return;
+    const snap = await get(bizItemRef(currentBizId));
+    const b = snap.val() || {};
+    const existing = b.products?.[pid];
+    if(!existing) return toast('❌ Товар не найден','red');
+
+    const name = prompt('Название товара:', String(existing.name || ''));
+    if(name === null) return;
+    const trimmedName = name.trim();
+    if(!trimmedName) return toast('⚠️ Название товара не может быть пустым','gold');
+
+    const desc = prompt('Описание товара:', String(existing.desc || ''));
+    if(desc === null) return;
+
+    const priceRaw = prompt('Цена товара (₽):', String(Number(existing.price || 0)));
+    if(priceRaw === null) return;
+    const price = parseInt(String(priceRaw).replace(/\s+/g,''),10);
+    if(!Number.isFinite(price) || price < 0) return toast('⚠️ Укажите корректную цену','gold');
+
+    const limits = getBizLimits(b);
+    if(price > limits.maxProductPrice) return toast(`❌ Максимальная цена товара: ${limits.maxProductPrice.toLocaleString()} ₽`,'red');
+
+    const result = await runTransaction(bizItemRef(currentBizId), current => {
+        if(!current?.products?.[pid]) return;
+        const product = {...current.products[pid], name: trimmedName.slice(0,60), desc: String(desc).trim().slice(0,500), price};
+        return {...current, products:{...(current.products||{}), [pid]:product}};
+    });
+    if(!result?.committed) return toast('❌ Товар уже изменён или удалён','red');
+    toast('✅ Товар изменён','green');
+    await renderBizOwnerPanel();
+};
+
 window.deleteBizProduct = async function(pid){
     if(!currentBizId) return;
     if(!confirm('Удалить товар?')) return;
@@ -14265,8 +14584,8 @@ window.sendGiftSubscription = async function(){
         const message=String(e?.message || '');
         if(code==='failed-precondition' || message.includes('более высокого') || message.includes('уровень подписки')){
             toast('❌ Нельзя подарить эту подписку. У пользователя уже есть подписка более высокого уровня.','red');
-        }else if(code==='permission-denied' || code==='unauthenticated' || message.includes('повторный вход')){
-            toast('🔐 Для подарка требуется войти в аккаунт заново.','gold');
+        }else if(code==='permission-denied' || code==='unauthenticated' || message.includes('повторный вход') || message.includes('защищённая сессия')){
+            toast('🔐 Восстанавливаю защищённую сессию… повторите подарок через секунду, без повторного входа.','gold');
         }else{
             toast('❌ '+(message || 'Не удалось подарить подписку'),'red');
         }
@@ -14340,6 +14659,53 @@ async function renderDeputyProposals() {
 // (см. submitDutyFine и window.ksbFineWorker = navTo('dutyPage') ниже).
 window.ksbFineWorker = function(){ if(typeof navTo==='function') navTo('dutyPage'); };
 
+
+async function purchaseMarketplaceListingForDelivery(listingId){
+    const lRef=listingRef(listingId);
+    const lSnap=await get(lRef); if(!lSnap.exists()) return toast('❌ Объявление не найдено','red')&&false;
+    const l=lSnap.val()||{};
+    if(l.status==='sold' && l.buyer===currentNick && l.deliveryPurchase===true) return true;
+    if(l.status!=='active' || l.seller===currentNick || l.category==='work' || l.category==='service') return toast('❌ Объявление уже куплено или недоступно','red')&&false;
+    const price=Math.max(0,Number(l.price||0));
+    const buyerSnap=await get(userRef(currentNick)); const sellerSnap=await get(userRef(l.seller));
+    if(!buyerSnap.exists()||!sellerSnap.exists()) return toast('❌ Пользователь не найден','red')&&false;
+    const reserveId=genId();
+    const result=await runTransaction(lRef,cur=>{
+        if(!cur || cur.status!=='active') return;
+        return {...cur,status:'sold',buyer:currentNick,purchasedAt:Date.now(),deliveryPurchase:true,deliveryPurchaseId:reserveId};
+    });
+    if(!result?.committed) return toast('❌ Объявление уже купил другой пользователь','red')&&false;
+
+    const payRes=await runTransaction(userRef(currentNick),cur=>{
+        const bal=Number(cur?.balance||0);
+        if(bal<price) return;
+        return {...cur,balance:bal-price};
+    });
+    if(!payRes?.committed){
+        await runTransaction(lRef,cur=>{
+            if(cur?.status==='sold'&&cur?.buyer===currentNick&&cur?.deliveryPurchaseId===reserveId){
+                const restored={...cur,status:'active'}; delete restored.buyer; delete restored.purchasedAt; delete restored.deliveryPurchase; delete restored.deliveryPurchaseId; return restored;
+            }
+        });
+        return toast(`❌ Недостаточно средств. Нужно ${price.toLocaleString()} ₽`,'red')&&false;
+    }
+
+    const sellerPay=await runTransaction(userRef(l.seller),cur=>({...cur,balance:Number(cur?.balance||0)+price}));
+    if(!sellerPay?.committed){
+        // Keep the listing sold rather than allowing a second buyer; a later reconciliation can
+        // finish the seller credit from deliveryPurchaseId.
+        console.warn('[market delivery] seller credit not committed',listingId,l.seller);
+    }
+
+    await Promise.all([
+        logTx(currentNick,{type:'out',who:l.seller,amt:price,desc:`Куплено объявление «${l.title}»`}),
+        sellerPay?.committed ? logTx(l.seller,{type:'in',who:currentNick,amt:price,desc:`Продано объявление «${l.title}»`}) : Promise.resolve(),
+        pushNotification(l.seller,`💰 ${currentNick} купил «${l.title}» за ${price} ₽`,'market'),
+        pushNotification(currentNick,`✅ «${l.title}» куплено. Теперь оформите доставку.`,'market')
+    ]);
+    return true;
+}
+
 // ═══════════════════════════════════════════════════════
 // 🚚 ДОСТАВКА ИЗ БИЗНЕСА / МАРКЕТПЛЕЙСА
 // ═══════════════════════════════════════════════════════
@@ -14403,7 +14769,32 @@ window.updateDeliveryBizProducts = function() {
     updateDeliverySummary();
 };
 
+let deliveryBusinessMapObj=null, deliveryBusinessMapBusinessMarker=null, deliveryBusinessMapClientMarker=null, deliveryBusinessMapLine=null;
+async function renderBusinessDeliveryMap(){
+    const card=qs('deliveryBusinessMapCard'), host=qs('deliveryBusinessMap');
+    if(!card||!host) return;
+    const source=qs('deliveryOrderSource')?.value||'business';
+    if(source!=='business'){ card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return; }
+    const bizId=qs('deliveryOrderBiz')?.value||'', b=(allBusinessesCache||{})[bizId];
+    const dLat=Number(qs('deliveryOrderLat')?.value), dLng=Number(qs('deliveryOrderLng')?.value);
+    const bLat=Number(b?.lat), bLng=Number(b?.lng);
+    if(!b||!Number.isFinite(bLat)||!Number.isFinite(bLng)||!Number.isFinite(dLat)||!Number.isFinite(dLng)){ card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return; }
+    card.style.display='block';
+    await window.kapaniLoadLeaflet();
+    await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){}}
+    deliveryBusinessMapObj=L.map(host,{center:[bLat,bLng],zoom:14});
+    addSatelliteLayer(deliveryBusinessMapObj);
+    deliveryBusinessMapBusinessMarker=L.marker([bLat,bLng]).addTo(deliveryBusinessMapObj).bindPopup(`<b>🏪 ${escHtml(b.name||'Бизнес')}</b><br>📍 Бизнес`);
+    deliveryBusinessMapClientMarker=L.marker([dLat,dLng]).addTo(deliveryBusinessMapObj).bindPopup('<b>📍 Точка доставки</b>');
+    deliveryBusinessMapLine=L.polyline([[bLat,bLng],[dLat,dLng]],{weight:4,dashArray:'8 8'}).addTo(deliveryBusinessMapObj);
+    deliveryBusinessMapObj.fitBounds([[bLat,bLng],[dLat,dLng]],{padding:[35,35],maxZoom:16});
+    const km=haversineKm(bLat,bLng,dLat,dLng), price=deliveryDistancePrice(km), info=qs('deliveryBusinessMapInfo');
+    if(info) info.innerHTML=`🏪 <b>${escHtml(b.name||'Бизнес')}</b> → 📍 доставка · 📏 Расстояние: <b style="color:var(--primary)">${km.toFixed(2)} км</b> · 🚚 Цена доставки: <b style="color:var(--gold)">${price.toLocaleString()} ₽</b>`;
+}
+
 window.updateDeliverySummary = function() {
+    renderBusinessDeliveryMap().catch(e=>console.warn('[delivery business map]',e));
     const summary = qs('deliverySelectionSummary');
     if (!summary) return;
     const source = qs('deliveryOrderSource')?.value || 'business';
@@ -14476,197 +14867,290 @@ window.renderDeliveryOrderOptions = async function(forceFetch = false) {
 };
 
 let _placeDeliveryOrderBusy = false;
+
+function haversineKm(lat1,lng1,lat2,lng2){
+    const R=6371, dLat=(Number(lat2)-Number(lat1))*Math.PI/180, dLng=(Number(lng2)-Number(lng1))*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(Number(lat1)*Math.PI/180)*Math.cos(Number(lat2)*Math.PI/180)*Math.sin(dLng/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function deliveryDistancePrice(distanceKm){ return Math.max(0, Math.round(Number(distanceKm||0)*200)); }
+
 window.placeDeliveryOrder = async function() {
     if (_placeDeliveryOrderBusy) return toast('⏳ Заказ уже размещается…','gold');
     _placeDeliveryOrderBusy = true;
     const placeBtn = document.querySelector('button[onclick*="placeDeliveryOrder"]');
     if(placeBtn){ placeBtn.disabled = true; placeBtn.textContent = '⏳ Размещение…'; }
     try {
-    if (!await requireSpendable()) return;
-    const source = qs('deliveryOrderSource')?.value || 'business';
-    const addr = (qs('deliveryOrderAddr')?.value || '').trim();
-    const contact = (qs('deliveryOrderContact')?.value || '').trim();
-    const notes = (qs('deliveryOrderNotes')?.value || '').trim();
-    const sourceLabels = { business: '🏪 Бизнес', marketplace: '🛍 Маркетплейс' };
+        if (!await requireSpendable()) return;
+        const source = qs('deliveryOrderSource')?.value || 'business';
+        const addr = (qs('deliveryOrderAddr')?.value || '').trim();
+        const deliveryLat = Number(qs('deliveryOrderLat')?.value), deliveryLng = Number(qs('deliveryOrderLng')?.value);
+        const contact = (qs('deliveryOrderContact')?.value || '').trim();
+        const notes = (qs('deliveryOrderNotes')?.value || '').trim();
+        const sourceLabels = { business: '🏪 Бизнес', marketplace: '🛍 Маркетплейс' };
+        if(!Number.isFinite(deliveryLat)||!Number.isFinite(deliveryLng)) return toast('🗺 Выберите точку доставки на карте','gold');
 
-    let from = '';
-    let items = '';
-    let summaryText = '';
-    let payload = { source, sourceLabel: sourceLabels[source] || source };
-
-    if (source === 'business') {
-        const bizId = qs('deliveryOrderBiz')?.value || '';
-        const productId = qs('deliveryOrderBizProduct')?.value || '';
-        const b = (allBusinessesCache || {})[bizId];
-        const p = b?.products?.[productId];
-        if (!bizId || !b) return toast('⚠️ Выберите бизнес', 'gold');
-        if (!productId || !p) return toast('⚠️ Выберите товар бизнеса', 'gold');
-        from = b.name || 'Бизнес';
-        items = p.name || 'Товар';
-        summaryText = `🏪 ${from} → ${items}`;
-        payload = {
-            ...payload,
-            bizId,
-            businessName: b.name || '',
-            productId,
-            productName: p.name || '',
-            productPrice: Number(p.price || 0),
-            itemKind: 'business_product'
-        };
-    } else {
-        const listingId = qs('deliveryOrderMarketItem')?.value || '';
-        const l = (lastMarketListings || {})[listingId];
-        if (!listingId || !l) return toast('⚠️ Выберите объявление с маркетплейса', 'gold');
-        from = l.seller || 'Продавец';
-        items = l.title || 'Объявление';
-        summaryText = `🛍 ${items} → ${from}`;
-        payload = {
-            ...payload,
-            listingId,
-            listingTitle: l.title || '',
-            listingPrice: Number(l.price || 0),
-            sellerNick: l.seller || '',
-            itemKind: 'marketplace_listing'
-        };
-    }
-
-    if (!addr) return toast('⚠️ Укажите адрес доставки', 'gold');
-
-    const id = genId();
-    const order = {
-        id,
-        ...payload,
-        from,
-        items,
-        notes,
-        address: addr,
-        contact,
-        client: currentNick,
-        status: 'waiting',
-        date: new Date().toLocaleDateString('ru'),
-        time: nowTime(),
-        createdAt: Date.now()
-    };
-    await set(deliveryCustomOrderRef(id), order);
-
-    const notifyText = source === 'business'
-        ? `🚚 Новый заказ доставки от ${currentNick}: бизнес «${from}», товар «${items}»`
-        : `🚚 Новый заказ доставки от ${currentNick}: маркетплейс «${items}»`;
-    await pushNotification(ADMIN, notifyText, 'delivery_orders');
-
-    const usersSnap = await get(ref(db, 'users'));
-    const allUsers = usersSnap.val() || {};
-    for (const [nick, u] of Object.entries(allUsers)) {
-        if (u.job === 'Доставщик') {
-            await pushNotification(nick, source === 'business'
-                ? `📦 Новый заказ: бизнес «${from}» → ${items}`
-                : `📦 Новый заказ: маркетплейс «${items}»`, 'delivery_orders');
+        let from='', items='', summaryText='', payload={source,sourceLabel:sourceLabels[source]||source};
+        if(source==='business'){
+            const bizId=qs('deliveryOrderBiz')?.value||'', productId=qs('deliveryOrderBizProduct')?.value||'';
+            const b=(allBusinessesCache||{})[bizId], p=b?.products?.[productId];
+            if(!bizId||!b) return toast('⚠️ Выберите бизнес','gold');
+            if(!productId||!p) return toast('⚠️ Выберите товар бизнеса','gold');
+            const blat=Number(b.lat), blng=Number(b.lng);
+            if(!Number.isFinite(blat)||!Number.isFinite(blng)) return toast('❌ У бизнеса не задана точка на карте','red');
+            const distanceKm=haversineKm(blat,blng,deliveryLat,deliveryLng), deliveryPrice=deliveryDistancePrice(distanceKm);
+            from=b.name||'Бизнес'; items=p.name||'Товар'; summaryText=`🏪 ${from} → ${items}`;
+            payload={...payload,bizId,businessName:b.name||'',businessLat:blat,businessLng:blng,productId,productName:p.name||'',productPrice:Number(p.price||0),itemKind:'business_product',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km'};
+        } else {
+            const listingId=qs('deliveryOrderMarketItem')?.value||'', l=(lastMarketListings||{})[listingId];
+            if(!listingId||!l) return toast('⚠️ Выберите объявление с маркетплейса','gold');
+            // Purchase the one-of-one listing before creating a delivery request.
+            const bought=await purchaseMarketplaceListingForDelivery(listingId);
+            if(!bought) return;
+            const sellerSnap=await get(userRef(l.seller)), seller=sellerSnap.val()||{};
+            from=l.seller||'Продавец'; items=l.title||'Объявление'; summaryText=`🛍 ${items} → ${from}`;
+            const sellerLat=Number(l.sellerLat ?? seller.lat), sellerLng=Number(l.sellerLng ?? seller.lng);
+            if(!Number.isFinite(sellerLat)||!Number.isFinite(sellerLng)) return toast('❌ У продавца не указано местоположение — доставка невозможна','red');
+            const distanceKm=haversineKm(sellerLat,sellerLng,deliveryLat,deliveryLng), deliveryPrice=deliveryDistancePrice(distanceKm);
+            payload={...payload,listingId,listingTitle:l.title||'',listingPrice:Number(l.price||0),sellerNick:l.seller||'',sellerLat,sellerLng,itemKind:'marketplace_listing',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km',priceMode:'fixed_200_per_km'};
         }
-    }
 
-    if (qs('deliveryOrderNotes')) qs('deliveryOrderNotes').value = '';
-    if (qs('deliveryOrderAddr')) qs('deliveryOrderAddr').value = '';
-    if (qs('deliveryOrderContact')) qs('deliveryOrderContact').value = '';
+        const id=genId();
+        const order={
+            id,...payload,from,items,notes,address:addr||`${deliveryLat.toFixed(6)}, ${deliveryLng.toFixed(6)}`,
+            deliveryLat,deliveryLng,contact,client:currentNick,status:'waiting',
+            priceOffer:Number(payload.deliveryPrice||0),clientConfirmed:false,workerConfirmed:false,clientReceived:false,
+            escrowAmount:0,payoutDone:false,date:new Date().toLocaleDateString('ru'),time:nowTime(),createdAt:Date.now()
+        };
+        await set(deliveryCustomOrderRef(id),order);
 
-    toast(`✅ Заказ на доставку размещён! ${summaryText}`, 'green');
-    renderMyDeliveryOrders();
+        const notifyText=source==='business'
+            ? `🚚 Новый заказ доставки от ${currentNick}: бизнес «${from}», товар «${items}», ${Number(payload.deliveryPrice||0).toLocaleString()} ₽`
+            : `🚚 Новый заказ доставки от ${currentNick}: маркетплейс «${items}», цена доставки предложением`;
+        await pushNotification(ADMIN,notifyText,'delivery_orders');
+
+        const usersSnap=await get(ref(db,'users')), allUsers=usersSnap.val()||{};
+        await Promise.all(Object.entries(allUsers).filter(([,u])=>u?.job==='Доставщик').map(([nick])=>
+            pushNotification(nick,source==='business'
+                ? `📦 Новый заказ: ${from} → ${items}, доставка ${Number(payload.deliveryPrice||0).toLocaleString()} ₽`
+                : `📦 Новый заказ: маркетплейс «${items}» — предложите цену доставки`,'delivery_orders')
+        ));
+
+        ['deliveryOrderNotes','deliveryOrderAddr','deliveryOrderContact'].forEach(id2=>{if(qs(id2))qs(id2).value='';});
+        if(qs('deliveryOrderLat')) qs('deliveryOrderLat').value='';
+        if(qs('deliveryOrderLng')) qs('deliveryOrderLng').value='';
+        if(qs('deliveryLocationPreview')) qs('deliveryLocationPreview').textContent='📍 Точка не выбрана';
+        toast(`✅ Заказ на доставку размещён! ${summaryText}`,'green');
+        renderMyDeliveryOrders();
+    } catch(e) {
+        console.error('[placeDeliveryOrder]',e);
+        toast('❌ Не удалось разместить заказ: '+(e?.message||'ошибка'),'red');
     } finally {
-        _placeDeliveryOrderBusy = false;
-        if(placeBtn && placeBtn.isConnected){ placeBtn.disabled = false; placeBtn.textContent = '📤 Разместить заказ на доставку'; }
+        _placeDeliveryOrderBusy=false;
+        if(placeBtn&&placeBtn.isConnected){placeBtn.disabled=false;placeBtn.textContent='📤 Разместить заказ на доставку';}
     }
 };
 
-async function renderMyDeliveryOrders() {
-    const el = qs('myDeliveryOrders');
-    if (!el) return;
-    el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Загрузка...</div>';
-    try {
+async function renderMyDeliveryOrders(){
+    const el=qs('myDeliveryOrders'); if(!el)return;
+    el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Загрузка...</div>';
+    try{
+        const all=(await get(deliveryCustomOrdersRef())).val()||{};
+        const mine=Object.values(all).filter(o=>o.client===currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+        if(!mine.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Нет заказов</div>';return;}
+        const labels={waiting:'⏳ Ожидает',price_proposed:'💰 Цена предложена',client_confirmed:'✅ Подтверждено',in_progress:'🛵 В доставке',delivered:'📦 Доставлено — ждём подтверждения',done:'✅ Оплачено',cancelled:'❌ Отменён'};
+        el.innerHTML=mine.map(o=>{
+            const line=o.productName?`${o.from} · ${o.productName}`:o.listingTitle||o.items;
+            const extra=o.priceOffer!=null?`<div style="font-size:12px;color:var(--gold);font-weight:900;">🚚 Доставка: ${Number(o.priceOffer).toLocaleString()} ₽</div>`:(o.deliveryPrice!=null?`<div style="font-size:12px;color:var(--gold);font-weight:900;">🚚 Доставка: ${Number(o.deliveryPrice).toLocaleString()} ₽ · ${Number(o.distanceKm||0).toFixed(2)} км</div>`:'');
+            let actions='';
+            if(o.status==='price_proposed'&&o.client===currentNick) actions=`<div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="confirmCustomDeliveryPrice('${o.id}',true)">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="confirmCustomDeliveryPrice('${o.id}',false)">❌ Отказаться</button></div>`;
+            if(o.status==='delivered'&&!o.clientReceived) actions=`<button class="btn btn-primary btn-sm" onclick="confirmCustomDeliveryReceived('${o.id}')">✅ Получил</button>`;
+            return `<div class="work-order" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;"><b>${escHtml(line||o.from)}</b><span class="status-badge badge-wait">${labels[o.status]||o.status}</span></div><div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>${extra}${o.worker?`<div style="font-size:12px;color:var(--primary);">🛵 ${escHtml(o.worker)}</div>`:''}${o.notes?`<div style="font-size:12px;color:var(--muted);">📝 ${escHtml(o.notes)}</div>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${actions}${['waiting','client_confirmed','price_proposed'].includes(o.status)?`<button class="btn btn-red btn-sm" onclick="cancelCustomDelivery('${o.id}')">❌ Отменить</button>`:''}</div></div>`;
+        }).join('');
+    }catch(e){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>';}
+}
+
+window.clearMyDeliveryHistory = async function(){
+    if(!currentNick) return toast('❌ Сначала войдите в аккаунт','red');
+    if(!confirm('Очистить историю ваших доставок? Активные и ожидающие заказы останутся, чтобы не сломать текущую доставку.')) return;
+    try{
         const snap = await get(deliveryCustomOrdersRef());
         const all = snap.val() || {};
-        const mine = Object.values(all).filter(o => o.client === currentNick).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-        if (!mine.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Нет заказов</div>'; return; }
-        const stColors = { waiting:'gold', in_progress:'primary', done:'primary', cancelled:'red' };
-        const stLabels = { waiting:'⏳ Ожидает', in_progress:'🔄 В пути', done:'✅ Доставлено', cancelled:'❌ Отменён' };
-        el.innerHTML = mine.map(o => {
-            const sc = stColors[o.status] || 'gold';
-            const sl = stLabels[o.status] || '⏳ Ожидает';
-            const itemLine = o.productName ? `${o.from} · ${o.productName}` : o.listingTitle ? o.listingTitle : o.items;
-            return `<div class="work-order" style="margin-bottom:10px;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
-                    <div><div style="font-size:10px;color:var(--muted);font-weight:800;">${escHtml(o.sourceLabel||o.source)}</div>
-                    <div style="font-weight:900;font-size:14px;">${escHtml(itemLine || o.from)}</div></div>
-                    <span style="font-size:10px;font-weight:900;color:var(--${sc});white-space:nowrap;padding:4px 8px;border-radius:8px;background:var(--${sc}-dim);">${sl}</span>
-                </div>
-                <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📋 ${escHtml(o.items)}</div>
-                ${o.notes ? `<div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📝 ${escHtml(o.notes)}</div>` : ''}
-                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>
-                ${o.worker ? `<div style="font-size:12px;color:var(--primary);margin-top:4px;">🛵 Доставщик: ${escHtml(o.worker)}</div>` : ''}
-                <div style="font-size:10px;color:var(--muted);margin-top:4px;">${escHtml(o.date||'')} ${escHtml(o.time||'')}</div>
-                ${o.status==='waiting'?`<button class="btn btn-red btn-sm" style="margin-top:8px;" onclick="cancelCustomDelivery('${o.id}')">❌ Отменить</button>`:''}
-            </div>`;
-        }).join('');
-    } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>'; }
-}
-
-window.cancelCustomDelivery = async function(orderId) {
-    if (!confirm('Отменить заказ?')) return;
-    await update(deliveryCustomOrderRef(orderId), { status: 'cancelled' });
-    toast('❌ Заказ отменён', 'gold');
-    renderMyDeliveryOrders();
-};
-
-// Показываем в deliveryPage кастомные заказы тоже
-const _origRenderWorkerPage = typeof renderWorkerPage === 'function' ? renderWorkerPage : null;
-
-// Доп. отображение кастомных заказов на странице доставщика
-async function renderDeliveryCustomOrders() {
-    const snap = await get(userRef(currentNick));
-    if (!snap.exists()) return;
-    const u = snap.val();
-    if (u.job !== 'Доставщик' && currentNick !== ADMIN) return;
-    const ordersSnap = await get(deliveryCustomOrdersRef());
-    const all = ordersSnap.val() || {};
-    const waiting = Object.values(all).filter(o => o.status === 'waiting').sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-    const myActive = Object.values(all).filter(o => o.worker === currentNick && o.status === 'in_progress');
-    const delivList = qs('deliveryList');
-    if (!delivList) return;
-    let extraHtml = '';
-    if (myActive.length || waiting.length) {
-        extraHtml = `<div style="font-size:12px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;">📦 Заказы из бизнесов / маркетплейса</div>`;
-        [...myActive, ...waiting].forEach(o => {
-            const isMine = o.worker === currentNick;
-            extraHtml += `<div class="work-order${isMine?' work-active':''}" style="margin-bottom:10px;">
-                <div style="font-weight:900;font-size:14px;margin-bottom:4px;">${escHtml(o.sourceLabel||'')} «${escHtml(o.from)}»</div>
-                <div style="font-size:12px;color:var(--muted);">📋 ${escHtml(o.items)}</div>
-                <div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>
-                <div style="font-size:12px;color:var(--muted);">👤 Клиент: ${escHtml(o.client)}</div>
-                ${o.contact ? `<div style="font-size:12px;color:var(--muted);">📞 ${escHtml(o.contact)}</div>` : ''}
-                <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-                    ${!isMine && o.status==='waiting' ? `<button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">✅ Взять заказ</button>` : ''}
-                    ${isMine ? `<button class="btn btn-gold btn-sm" onclick="completeCustomDelivery('${o.id}')">✅ Доставлено</button>` : ''}
-                </div>
-            </div>`;
-        });
+        const terminal = new Set(['done','cancelled']);
+        const removals = Object.entries(all).filter(([id,o])=>
+            o && o.client === currentNick && terminal.has(String(o.status||''))
+        ).map(([id])=>remove(deliveryCustomOrderRef(id)));
+        await Promise.all(removals);
+        toast(removals.length ? `✅ Удалено записей: ${removals.length}` : 'ℹ️ Готовых записей для очистки нет','green');
+        await renderMyDeliveryOrders();
+    }catch(e){
+        console.error('[clearMyDeliveryHistory]',e);
+        toast('❌ Не удалось очистить историю: '+(e?.message||'ошибка'),'red');
     }
-    if (extraHtml) delivList.insertAdjacentHTML('beforeend', extraHtml);
-}
-
-window.takeCustomDelivery = async function(orderId) {
-    await update(deliveryCustomOrderRef(orderId), { worker: currentNick, status: 'in_progress' });
-    const snap = await get(deliveryCustomOrderRef(orderId));
-    const o = snap.val();
-    if (o && o.client) await pushNotification(o.client, `🛵 ${currentNick} взял ваш заказ на доставку из «${o.from}»`, 'delivery_orders');
-    toast('✅ Заказ принят!', 'green');
-    renderDeliveryCustomOrders();
 };
 
-window.completeCustomDelivery = async function(orderId) {
-    await update(deliveryCustomOrderRef(orderId), { status: 'done', completedAt: Date.now() });
-    const snap = await get(deliveryCustomOrderRef(orderId));
-    const o = snap.val();
-    if (o && o.client) await pushNotification(o.client, `✅ Ваш заказ из «${o.from}» доставлен!`, 'delivery_orders');
-    toast('✅ Заказ выполнен!', 'green');
-    renderDeliveryCustomOrders();
+window.cancelCustomDelivery=async function(orderId){
+    if(!currentNick)return toast('❌ Сначала войдите в аккаунт','red');
+    if(!confirm('Отменить заказ?'))return;
+    try{
+        const orderRef=deliveryCustomOrderRef(orderId);
+        const snap=await get(orderRef);
+        const current=snap.val()||null;
+        if(!current)return toast('❌ Заказ не найден','red');
+        const status=String(current.status||'').trim().toLowerCase();
+        if(String(current.client||'')!==String(currentNick||''))return toast('❌ Это не ваш заказ','red');
+        if(status==='cancelled')return toast('ℹ️ Заказ уже отменён','gold');
+        if(!['waiting','price_proposed','client_confirmed'].includes(status)){
+            return toast(`❌ Нельзя отменить заказ в статусе «${status||'неизвестно'}»`,'red');
+        }
+
+        // Do not use runTransaction() on the whole order here: client-side RTDB
+        // transactions require read + write permissions at that location.
+        // The cancellation state is guarded by a fresh read immediately before
+        // a single-path update, then verified after the write.
+        await update(orderRef,{
+            status:'cancelled',
+            cancelledAt:Date.now(),
+            cancelledBy:currentNick,
+            priceOffer:null,
+            escrowAmount:0,
+            clientConfirmed:false,
+            worker:null,
+            updatedAt:Date.now()
+        });
+
+        const verify=await get(orderRef);
+        const after=verify.val()||null;
+        if(String(after?.status||'').trim().toLowerCase()!=='cancelled'){
+            return toast('❌ Не удалось отменить заказ. Сервер не подтвердил отмену.','red');
+        }
+        toast('✅ Заказ отменён','gold');
+        renderMyDeliveryOrders();
+        renderDeliveryCustomOrders();
+    }catch(e){
+        console.error('[cancelCustomDelivery]',e);
+        toast('❌ Не удалось отменить заказ: '+(e?.message||'ошибка'),'red');
+    }
+};
+
+async function renderDeliveryCustomOrders(){
+    const uSnap=await get(userRef(currentNick)); if(!uSnap.exists())return;
+    const u=uSnap.val(); if(u.job!=='Доставщик'&&currentNick!==ADMIN)return;
+    const all=(await get(deliveryCustomOrdersRef())).val()||{};
+    const waiting=Object.values(all).filter(o=>o.status==='waiting');
+    const proposed=Object.values(all).filter(o=>o.status==='price_proposed'&&o.client!==currentNick);
+    const myActive=Object.values(all).filter(o=>o.worker===currentNick&&['client_confirmed','in_progress','delivered'].includes(o.status));
+    const delivList=qs('deliveryList'); if(!delivList)return;
+    const pool=[...waiting,...proposed,...myActive.filter(o=>!waiting.includes(o)&&!proposed.includes(o))];
+    if(!pool.length)return;
+    let html=`<div style="font-size:12px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;">📦 Заказы из бизнесов / маркетплейса</div>`;
+    pool.forEach(o=>{
+        const isMine=o.worker===currentNick;
+        let priceControl='';
+        if(!isMine&&o.status==='waiting'&&['business','marketplace'].includes(o.source)) priceControl=`<div style="margin-top:7px;"><div style="font-size:12px;color:var(--gold);font-weight:900;margin-bottom:5px;">🚚 Цена доставки: ${Number(o.deliveryPrice||deliveryDistancePrice(Number(o.distanceKm||0))||0).toLocaleString()} ₽</div><button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">🛵 Взять заказ</button></div>`;
+        if(!isMine&&o.status==='waiting'&&o.source==='business') priceControl=`<button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">✅ Взять заказ (${Number(o.deliveryPrice||0).toLocaleString()} ₽)</button>`;
+        const mineActions=isMine?`<div style="display:flex;gap:6px;flex-wrap:wrap;">${o.status==='client_confirmed'?`<button class="btn btn-primary btn-sm" onclick="startCustomDelivery('${o.id}')">🛵 Начать доставку</button>`:''}${o.status==='in_progress'?`<button class="btn btn-gold btn-sm" onclick="completeCustomDelivery('${o.id}')">✅ Доставлено</button>`:''}${o.status==='delivered'&&!o.workerConfirmed?`<button class="btn btn-gold btn-sm" onclick="confirmCustomDeliveryDone('${o.id}')">✅ Завершить</button>`:''}</div>`:'';
+        html+=`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:900;font-size:14px;">${escHtml(o.sourceLabel||'')} «${escHtml(o.from)}»</div><div style="font-size:12px;color:var(--muted);">📋 ${escHtml(o.items)}</div><div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div><div style="font-size:12px;color:var(--muted);">👤 ${escHtml(o.client)}</div>${o.contact?`<div style="font-size:12px;color:var(--muted);">📞 ${escHtml(o.contact)}</div>`:''}${o.distanceKm!=null?`<div style="font-size:12px;color:var(--muted);">📏 ${Number(o.distanceKm).toFixed(2)} км</div>`:''}${o.priceOffer!=null?`<div style="font-size:12px;color:var(--gold);font-weight:900;">💰 ${Number(o.priceOffer).toLocaleString()} ₽</div>`:''}${priceControl}${mineActions}</div>`;
+    });
+    delivList.insertAdjacentHTML('beforeend',html);
+}
+
+window.proposeCustomDeliveryPrice=async function(){ return toast('ℹ️ Цена доставки фиксирована: 200 ₽/км','gold'); };
+
+window.takeCustomDelivery=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.status!=='waiting'||!['business','marketplace'].includes(cur.source)||cur.worker)return;
+        const amount=Number(cur.deliveryPrice||deliveryDistancePrice(Number(cur.distanceKm||0))||0);
+        if(!Number.isFinite(amount)||amount<0)return;
+        return {...cur,worker:currentNick,priceOffer:amount,status:'client_confirmed',priceMode:'fixed_200_per_km',clientConfirmed:true,clientConfirmedAt:Date.now(),driverAcceptedAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже принят другим доставщиком','red');
+    const o=res.snapshot.val(); await pushNotification(o.client,`🛵 ${currentNick} взял доставку «${o.from}» за ${Number(o.priceOffer||0).toLocaleString()} ₽`,'delivery_orders');
+    toast(`✅ Заказ взят. Цена доставки: ${Number(o.priceOffer||0).toLocaleString()} ₽`,'green'); renderDeliveryCustomOrders(); renderMyDeliveryOrders();
+};
+
+window.confirmCustomDeliveryPrice=async function(orderId,approve){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.client!==currentNick||cur.status!=='price_proposed')return;
+        if(!approve)return {...cur,status:'cancelled',cancelledAt:Date.now(),rejectedAt:Date.now(),worker:null,priceOffer:null};
+        return {...cur,status:'client_confirmed',clientConfirmed:true,clientConfirmedAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже изменён','red');
+    if(!approve){const o=res.snapshot.val();if(o.worker){} toast('❌ Доставка отклонена','gold');renderMyDeliveryOrders();renderDeliveryCustomOrders();return;}
+    // Reserve client money in the order escrow; the driver is not paid yet.
+    const price=Number(res.snapshot.val()?.priceOffer||0);
+    const pay=await runTransaction(userRef(currentNick),cur=>{
+        const bal=Number(cur?.balance||0);if(bal<price)return;return {...cur,balance:bal-price};
+    });
+    if(!pay?.committed){
+        await runTransaction(deliveryCustomOrderRef(orderId),cur=>cur?.status==='client_confirmed'&&cur.client===currentNick?{...cur,status:'price_proposed',clientConfirmed:false,clientConfirmedAt:null}:undefined);
+        return toast(`❌ Недостаточно средств для доставки: ${price.toLocaleString()} ₽`,'red');
+    }
+    await update(deliveryCustomOrderRef(orderId),{escrowAmount:price});
+    toast('✅ Цена подтверждена. Деньги зарезервированы до получения.','green');
+    const o=res.snapshot.val(); await pushNotification(o.worker,`✅ ${o.client} подтвердил доставку за ${price} ₽`,'delivery_orders');
+    renderMyDeliveryOrders();renderDeliveryCustomOrders();
+};
+
+window.startCustomDelivery=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.worker!==currentNick||cur.status!=='client_confirmed')return;
+        return {...cur,status:'in_progress',startedAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Статус заказа уже изменён','red');
+    toast('🛵 Доставка началась','green');renderDeliveryCustomOrders();renderMyDeliveryOrders();
+};
+
+window.completeCustomDelivery=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.worker!==currentNick||cur.status!=='in_progress')return;
+        return {...cur,status:'delivered',deliveredAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже завершён','red');
+    const o=res.snapshot.val();if(o?.client)await pushNotification(o.client,`✅ Доставщик отметил доставку «${o.from}» выполненной. Подтвердите получение.` ,'delivery_orders');
+    toast('✅ Доставлено. Ждём подтверждения клиента.','green');renderDeliveryCustomOrders();renderMyDeliveryOrders();
+};
+
+window.confirmCustomDeliveryReceived=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.client!==currentNick||cur.status!=='delivered'||cur.clientReceived)return;
+        return {...cur,clientReceived:true};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже подтверждён','red');
+    await finalizeCustomDeliveryPayout(orderId);
+};
+
+window.confirmCustomDeliveryDone=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.worker!==currentNick||cur.status!=='delivered'||cur.workerConfirmed)return;
+        return {...cur,workerConfirmed:true};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже подтверждён','red');
+    await finalizeCustomDeliveryPayout(orderId);
+};
+
+async function finalizeCustomDeliveryPayout(orderId){
+    const snap=await get(deliveryCustomOrderRef(orderId)),o=snap.val(); if(!o||o.payoutDone)return;
+    if(!o.clientReceived||!o.workerConfirmed)return;
+    const payout=Number(o.escrowAmount||0); if(payout<=0){
+        await update(deliveryCustomOrderRef(orderId),{status:'done',payoutDone:true,paidAt:Date.now(),escrowAmount:0});
+        return;
+    }
+    const pay=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.payoutDone||!cur.clientReceived||!cur.workerConfirmed)return;
+        return {...cur,payoutDone:true,status:'done',paidAt:Date.now(),escrowAmount:0};
+    });
+    if(!pay?.committed)return;
+    const workerRes=await runTransaction(userRef(o.worker),cur=>({...cur,balance:Number(cur?.balance||0)+payout}));
+    if(workerRes?.committed){
+        await logTx(o.worker,{type:'in',who:'Доставка',amt:payout,desc:`Доставка заказа ${o.id}`});
+        await pushNotification(o.worker,`💰 +${payout} ₽ за доставку`,'money');
+        await pushNotification(o.client,`✅ Доставка завершена. Доставщику выплачено ${payout} ₽.` ,'delivery_orders');
+    } else {
+        console.error('[delivery payout] worker credit failed',o.worker,orderId);
+    }
+    renderDeliveryCustomOrders();renderMyDeliveryOrders();
 };
 
 // ══════════════════════════════════════════════════════════════════
