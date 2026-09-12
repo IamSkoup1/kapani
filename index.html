@@ -1647,8 +1647,9 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <div class="profile-header" style="margin-bottom:14px;position:relative;">
         <div id="vpfProfileBgEffect" style="position:absolute;inset:0;pointer-events:none;z-index:-1;overflow:hidden;border-radius:var(--r);"></div>
         <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;">
-            <div style="position:relative;display:inline-block;">
+            <div id="vpfAvWrap" style="position:relative;display:inline-block;">
                 <img id="vpfAv" src="" class="p-av" style="cursor:pointer;" onclick="openImgViewer(this.src)" alt=""><video id="vpfAvVideo" class="p-av" style="cursor:pointer;position:absolute;inset:0;display:none;object-fit:cover;border-radius:26px;" muted autoplay loop playsinline onclick="openVideoViewer(this.currentSrc||this.src)"></video>
+                <div id="vpfAvatarFrame" class="avatar-frame" style="display:none;position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;z-index:2;"></div>
             </div>
             <div class="p-name" id="vpfName" style="text-align:center;"></div>
             <div class="p-job" id="vpfJob" style="text-align:center;"></div>
@@ -2599,6 +2600,33 @@ const BIZ_BG_EFFECTS = [
     { id: 'dragon', name: '🐉 Дракон', price: 849, cls: 'profile-bg-dragon' },
     { id: 'prime', name: '👑 Прайм', price: 899, cls: 'profile-bg-prime' }
 ];
+const AVATAR_FRAME_CLASSES = Object.freeze({
+    gold:'avatar-frame-gold', rainbow:'avatar-frame-rainbow', pulse:'avatar-frame-pulse',
+    glow:'avatar-frame-glow', neon:'avatar-frame-neon', fire:'avatar-frame-fire',
+    crystal:'avatar-frame-crystal', ice:'avatar-frame-ice', rose:'avatar-frame-rose',
+    plasma:'avatar-frame-plasma', thunder:'avatar-frame-thunder', hologram:'avatar-frame-hologram',
+    dragon:'avatar-frame-dragon', prime:'avatar-frame-prime'
+});
+const PROFILE_BG_CLASSES = Object.freeze({
+    shimmer:'profile-bg-shimmer', particles:'profile-bg-particles',
+    gradient:'profile-bg-gradient-animated', ocean:'profile-bg-ocean', sunset:'profile-bg-sunset',
+    aurora:'profile-bg-aurora', galaxy:'profile-bg-galaxy', fire:'profile-bg-fire',
+    plasma:'profile-bg-plasma', thunder:'profile-bg-thunder', hologram:'profile-bg-hologram',
+    dragon:'profile-bg-dragon', prime:'profile-bg-prime'
+});
+const PROFILE_EFFECT_CLASSES = Object.freeze([...Object.values(PROFILE_BG_CLASSES)]);
+function hasActiveSubscription(u){
+    const expiry = u?.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
+    return !!(expiry && expiry > new Date());
+}
+function getAvatarFrameClass(user){
+    if(!hasActiveSubscription(user)) return '';
+    return AVATAR_FRAME_CLASSES[user?.avatarFrame] || '';
+}
+function getProfileBgClass(user){
+    if(!hasActiveSubscription(user)) return '';
+    return PROFILE_BG_CLASSES[user?.profileBgEffect] || '';
+}
 const PRICE_PER_KM = CONFIG.finance.pricePerKm;
 const MAX_SPEED_KMH = CONFIG.finance.maxSpeedKmh;
 const KAPANI_LAT = CONFIG.location.kapani.lat;
@@ -3952,6 +3980,10 @@ window.handleAuth = async function() {
             sessionStorage.setItem('kp_s', nick);
             localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
             currentNick = nick;
+            allUsersCache[nick]=userData;
+            allUsersCacheLoaded=true;
+            window.allUsersCache=allUsersCache;
+            renderHomeStats_users(allUsersCache);
             _kapaniSessionPassword = password;
             syncCurrentNick();
             try {
@@ -4160,6 +4192,7 @@ function attachUserListener(){
         allUsersCache[currentNick]=u; window.allUsersCache=allUsersCache;
         await syncJanitorTaskState(u);
         updateHeader(u); updateFrozenOverlay(u); updateHeader_balance(u);
+        renderHomeStats_users(allUsersCache);
         const taskBalanceEl = qs('taskBalanceDisplay');
         if(taskBalanceEl) taskBalanceEl.textContent = `${Math.max(0, Number(u.taskBalance||0)).toLocaleString('ru-RU')} ₽`;
         const casinoBalanceEl = qs('casinoBalanceDisplay');
@@ -4268,7 +4301,11 @@ async function setGeneralChatPresence(active){
 function enterService(page){
     const service = page==='messages'?'messages':page==='market'?'market':page==='home'?'home':page==='tasks'?'tasks':(['driverPage','deliveryPage'].includes(page)?'orders':page==='adminPage'?'admin':page==='ratings'?'ratings':(['businesses','bizDetail','bizOwnerPanel'].includes(page)?'business':page==='dutyPage'?'duty':null));
     if(!service) return;
-    if(service==='home'||service==='orders') attachOrderService();
+    if(service==='home'){
+        loadAllUsersCache().then(users=>{ if(curPage==='home') renderHomeStats_users(users); })
+            .catch(e=>console.warn('[Kapani] home users cache:',e));
+        attachOrderService();
+    } else if(service==='orders') attachOrderService();
     if(service==='tasks') startTaskLiveListeners();
     if(service==='messages'){ 
         try{ if(!qs('chatEmojiPanel')) buildEmojiPanels(); }catch(e){}
@@ -4326,39 +4363,20 @@ function updateHeader(u) {
         // Reset to default theme if no subscription or no theme set
         applyInterfaceTheme('default');
     }
-    // Apply avatar frame in header if user has subscription and frame
+    // Apply avatar frame in header using the same centralized frame mapping.
     const headerAvatarWrap = qs('headerAvatarWrap');
-    if(headerAvatarWrap && isActive && u.avatarFrame) {
-        // Remove existing frame
+    if(headerAvatarWrap){
         const existingFrame = headerAvatarWrap.querySelector('.avatar-frame');
         if(existingFrame) existingFrame.remove();
-        
-        // Add new frame
-        const frameEl = document.createElement('div');
-        frameEl.className = 'avatar-frame';
-        frameEl.style.cssText = 'position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;z-index:1;';
-        
-        if(u.avatarFrame === 'gold') frameEl.classList.add('avatar-frame-gold');
-        else if(u.avatarFrame === 'rainbow') frameEl.classList.add('avatar-frame-rainbow');
-        else if(u.avatarFrame === 'pulse') frameEl.classList.add('avatar-frame-pulse');
-        else if(u.avatarFrame === 'glow') frameEl.classList.add('avatar-frame-glow');
-        else if(u.avatarFrame === 'neon') frameEl.classList.add('avatar-frame-neon');
-        else if(u.avatarFrame === 'fire') frameEl.classList.add('avatar-frame-fire');
-        else if(u.avatarFrame === 'crystal') frameEl.classList.add('avatar-frame-crystal');
-        else if(u.avatarFrame === 'ice') frameEl.classList.add('avatar-frame-ice');
-        else if(u.avatarFrame === 'rose') frameEl.classList.add('avatar-frame-rose');
-        else if(u.avatarFrame === 'plasma') frameEl.classList.add('avatar-frame-plasma');
-        else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
-        else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
-        else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
-        else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
-        headerAvatarWrap.appendChild(frameEl);
-    } else if(headerAvatarWrap) {
-        // Remove frame if no subscription or no frame
-        const existingFrame = headerAvatarWrap.querySelector('.avatar-frame');
-        if(existingFrame) existingFrame.remove();
+        const frameClass = getAvatarFrameClass(u);
+        if(frameClass){
+            const frameEl = document.createElement('div');
+            frameEl.className = `avatar-frame ${frameClass}`;
+            frameEl.style.cssText = 'position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;z-index:1;';
+            headerAvatarWrap.appendChild(frameEl);
+        }
     }
-    
+
     // Check if avatar is video (only for Ultra)
     const isVideoAvatar = av && (av.endsWith('.mp4') || av.endsWith('.webm') || av.includes('video'));
     const hasUltra = (u.subscription === 'ultra') && isActive;
@@ -4422,58 +4440,23 @@ function updateHeader(u) {
         }
     }
     
-    // Avatar frame
+    // Avatar frame + profile background use the same mappings everywhere.
     const frameEl = qs('avatarFrame');
     if(frameEl){
-        frameEl.style.display = 'none';
-        frameEl.className = '';
-        if(u.avatarFrame && isActive){
-            frameEl.style.display = 'block';
-            if(u.avatarFrame === 'gold') frameEl.classList.add('avatar-frame-gold');
-            else if(u.avatarFrame === 'rainbow') frameEl.classList.add('avatar-frame-rainbow');
-            else if(u.avatarFrame === 'pulse') frameEl.classList.add('avatar-frame-pulse');
-            else if(u.avatarFrame === 'glow') frameEl.classList.add('avatar-frame-glow');
-            else if(u.avatarFrame === 'neon') frameEl.classList.add('avatar-frame-neon');
-            else if(u.avatarFrame === 'fire') frameEl.classList.add('avatar-frame-fire');
-            else if(u.avatarFrame === 'crystal') frameEl.classList.add('avatar-frame-crystal');
-            else if(u.avatarFrame === 'ice') frameEl.classList.add('avatar-frame-ice');
-            else if(u.avatarFrame === 'rose') frameEl.classList.add('avatar-frame-rose');
-            else if(u.avatarFrame === 'plasma') frameEl.classList.add('avatar-frame-plasma');
-            else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
-            else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
-            else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
-            else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
-            else frameEl.style.display = 'none';
-        }
+        frameEl.className = 'avatar-frame';
+        const frameClass = getAvatarFrameClass(u);
+        frameEl.style.display = frameClass ? 'block' : 'none';
+        if(frameClass) frameEl.classList.add(frameClass);
     }
-    
-    // Profile background effect
+
     const headerBg = qs('profileHeaderBg');
     const bgEffect = qs('profileBgEffect');
     if(headerBg && bgEffect){
-        // Remove all background classes first
-        headerBg.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
-                                   'profile-bg-ocean', 'profile-bg-sunset', 'profile-bg-aurora', 
-                                   'profile-bg-galaxy', 'profile-bg-fire', 'profile-bg-plasma',
-                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon', 'profile-bg-prime');
-        
-        if(u.profileBgEffect && isActive){
-            if(u.profileBgEffect === 'shimmer') headerBg.classList.add('profile-bg-shimmer');
-            else if(u.profileBgEffect === 'particles') headerBg.classList.add('profile-bg-particles');
-            else if(u.profileBgEffect === 'gradient') headerBg.classList.add('profile-bg-gradient-animated');
-            else if(u.profileBgEffect === 'ocean') headerBg.classList.add('profile-bg-ocean');
-            else if(u.profileBgEffect === 'sunset') headerBg.classList.add('profile-bg-sunset');
-            else if(u.profileBgEffect === 'aurora') headerBg.classList.add('profile-bg-aurora');
-            else if(u.profileBgEffect === 'galaxy') headerBg.classList.add('profile-bg-galaxy');
-            else if(u.profileBgEffect === 'fire') headerBg.classList.add('profile-bg-fire');
-            else if(u.profileBgEffect === 'plasma') headerBg.classList.add('profile-bg-plasma');
-            else if(u.profileBgEffect === 'thunder') headerBg.classList.add('profile-bg-thunder');
-            else if(u.profileBgEffect === 'hologram') headerBg.classList.add('profile-bg-hologram');
-            else if(u.profileBgEffect === 'dragon') headerBg.classList.add('profile-bg-dragon');
-            else if(u.profileBgEffect === 'prime') headerBg.classList.add('profile-bg-prime');
-        }
+        headerBg.classList.remove(...PROFILE_EFFECT_CLASSES);
+        const bgClass = getProfileBgClass(u);
+        if(bgClass) headerBg.classList.add(bgClass);
     }
-    
+
     updateFrozenOverlay(u);
     const isAdmin=currentNick===ADMIN, isDriver=hasMunicipalJob(u,'Водитель'), isDelivery=hasMunicipalJob(u,'Доставщик'), isJanitor=hasMunicipalJob(u,JOB_JANITOR);
     qs('adminQuickBtn').style.display=isAdmin?'block':'none';
@@ -4556,7 +4539,14 @@ window.closeDutyCall = async function(id){
     try{ await update(ref(db,`calls/${id}`), { status:'closed', closedBy: currentNick, closedAt: Date.now() }); toast('✅ Вызов закрыт','green'); }
     catch(e){ toast('❌ Ошибка','red'); }
 };
-function updateHeader_balance(u){if(!u)return;qs('hBal').textContent=(u.balance||0).toLocaleString();if(curPage==='bank')renderSavingsDisplay();}
+function updateHeader_balance(u){
+    if(!u) return;
+    const balance=Number(u.balance||0);
+    const balEl=qs('hBal'); if(balEl) balEl.textContent=balance.toLocaleString();
+    _myBalance=balance;
+    renderHomeStats();
+    if(curPage==='bank')renderSavingsDisplay();
+}
 
 window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const u=snap.val();if(hasMunicipalJob(u,'Водитель'))navTo('driverPage');else if(hasMunicipalJob(u,'Доставщик'))navTo('deliveryPage');else if(hasMunicipalJob(u,JOB_JANITOR))navTo('janitorPage');});};
 function updateBadge(count){const badge=qs('notifyBadge');badge.textContent=count>0?(count>9?'9+':count):'';badge.style.display=count>0?'block':'none';}
@@ -4571,9 +4561,31 @@ function stopCallsListener(){
 
 // ─── HOME STATS ───────────────────────────
 let _usersCount=0,_ordersCount=0,_myBalance=0;
-function renderHomeStats_users(users){_usersCount=Object.keys(users).length;_myBalance=(users[currentNick]||{}).balance||0;renderHomeStats();}
-function renderHomeStats_orders(orders){_ordersCount=Object.keys(orders).length;renderHomeStats();}
-function renderHomeStats(){qs('homeStats').innerHTML=`<div class="stat-box"><div class="sv">${_myBalance.toLocaleString()}</div><div class="sl">₽ Баланс</div></div><div class="stat-box"><div class="sv">${_usersCount}</div><div class="sl">Жителей</div></div><div class="stat-box"><div class="sv">${_ordersCount}</div><div class="sl">Заказов</div></div>`;}
+function isHomeStatsActiveOrder(o){
+    if(!o || !o.status) return false;
+    const status=String(o.status);
+    return o.type==='taxi' ? TAXI_ACTIVE_STATUSES.has(status)
+        : ['waiting','in_progress'].includes(status);
+}
+function renderHomeStats_users(users){
+    const source=users||allUsersCache||{};
+    _usersCount=Object.keys(source).length;
+    const me=source[currentNick];
+    if(me) _myBalance=Number(me.balance||0);
+    renderHomeStats();
+}
+function renderHomeStats_orders(orders){
+    _ordersCount=Object.values(orders||{}).reduce((count,o)=>count+(isHomeStatsActiveOrder(o)?1:0),0);
+    renderHomeStats();
+}
+function renderHomeStats_balance(user){
+    if(user) _myBalance=Number(user.balance||0);
+    renderHomeStats();
+}
+function renderHomeStats(){
+    const host=qs('homeStats'); if(!host) return;
+    host.innerHTML=`<div class="stat-box"><div class="sv">${Number(_myBalance||0).toLocaleString()}</div><div class="sl">₽ Баланс</div></div><div class="stat-box"><div class="sv">${_usersCount}</div><div class="sl">Жителей</div></div><div class="stat-box"><div class="sv">${_ordersCount}</div><div class="sl">Заказов</div></div>`;
+}
 
 // ─── PUSH NOTIFICATIONS ───────────────────
 function getPushPrefs(){try{return JSON.parse(localStorage.getItem('kp_push')||'{}');}catch(e){return{};}}
@@ -6977,29 +6989,11 @@ function renderDmContactList(users, pinnedOnly=false){
         const badge = meta.unread ? `<span class="dm-unread-badge">${meta.latest?.msgType ? '1' : '•'}</span>` : '';
         
         // Apply avatar frame for users with subscriptions
-        let avatarFrameHtml = '';
-        const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
-        const isActive = expiry && expiry > new Date();
-        if(isActive && u.avatarFrame) {
-            let frameClass = 'avatar-frame';
-            if(u.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
-            else if(u.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
-            else if(u.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
-            else if(u.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
-            else if(u.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
-            else if(u.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
-            else if(u.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
-            else if(u.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
-            else if(u.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
-            else if(u.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
-            else if(u.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
-            else if(u.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-            else if(u.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
-            else if(u.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
-            
-            avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
-        }
-        
+        const frameClass = getAvatarFrameClass(u);
+        const avatarFrameHtml = frameClass
+            ? `<div class="avatar-frame ${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`
+            : '';
+
         return `<div class="dm-user-row" onclick="${pinnedOnly ? 'openPinnedDmChat' : 'openDmChat'}('${escHtml(u.nick)}')">
             <div class="av-wrap-sm ${online ? 'online' : ''}" style="position:relative;">
                 <img class="dm-user-av" src="${escHtml(u.avatar||DEFAULT_AVATAR_URL)}" loading="lazy">
@@ -7030,11 +7024,9 @@ window.togglePinChat = async function(nick){
     try{
         await update(userRef(currentNick), { pinnedChats: cur });
         toast(willPin ? '📌 Чат закреплён' : '📍 Чат откреплён', 'green');
-        if(curPage === 'messages'){
-            const usersSnap = await get(ref(db,'users'));
-            const users = usersSnap.val() || {};
-            if(document.querySelector('#msgPanel1.active')) renderDmUserList(users);
-        }
+        if(curPage === 'messages' && document.querySelector('#msgPanel1.active')){
+             renderDmUserList(allUsersCache);
+         }
     }catch(e){
         toast('❌ Не удалось сохранить закрепление','red');
     }
@@ -7049,7 +7041,14 @@ window.switchMsgTab=function(i){
         Promise.resolve(renderChat(lastChatMsgs||{})).catch(err=>console.warn('[Kapani chat render]',err));
         try{set(ref(db,`readState/${currentNick}/chat`),Date.now());}catch(e){}
     }
-    if(i===1){renderDmContactList(allUsersCache, false); if(!Object.keys(allUsersCache).length) get(ref(db,'users')).then(snap=>renderDmUserList(snap.val()||{}));}
+    if(i===1){
+        renderDmContactList(allUsersCache, false);
+        if(!allUsersCacheLoaded){
+            loadAllUsersCache().then(users=>{
+                if(curPage==='messages' && document.querySelector('#msgPanel1.active')) renderDmUserList(users);
+            }).catch(e=>console.warn('[Kapani DM users cache]',e));
+        }
+    }
 };
 window.renderDmUserList=function(users){ renderDmContactList(users, false); };
 window.renderPinnedDmList=function(users){ renderDmContactList(users, true); };
@@ -7086,9 +7085,16 @@ window.openDmChat=async function(nick){
     dmLoading = true;
 
     try{
-        const snap = await get(userRef(nick));
+        let u = allUsersCache?.[nick] || null;
+        if(!u){
+            const snap = await get(userRef(nick));
+            u = snap.exists() ? (snap.val() || {}) : {nick,avatar:'',job:'Житель'};
+            if(snap.exists()){
+                allUsersCache[nick]=u;
+                window.allUsersCache=allUsersCache;
+            }
+        }
         if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
-        const u = snap.exists() ? (snap.val() || {}) : {nick,avatar:'',job:'Житель'};
         const online = isUserOnline(u);
 
         toggleAvatarMedia(qs('dmChatAv'), qs('dmChatAvVideo'), u.avatar||DEFAULT_AVATAR_URL);
@@ -7099,20 +7105,11 @@ window.openDmChat=async function(nick){
         // Apply avatar frame for chat header.
         if(avWrap){
             avWrap.querySelectorAll('.avatar-frame').forEach(el=>el.remove());
-            const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
-            const isActive = expiry && expiry > new Date();
-            if(isActive && u.avatarFrame){
+            const frameClass = getAvatarFrameClass(u);
+            if(frameClass){
                 const frameEl = document.createElement('div');
-                frameEl.className = 'avatar-frame';
+                frameEl.className = `avatar-frame ${frameClass}`;
                 frameEl.style.cssText = 'position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;';
-                const frameMap = {
-                    gold:'avatar-frame-gold', rainbow:'avatar-frame-rainbow', pulse:'avatar-frame-pulse',
-                    glow:'avatar-frame-glow', neon:'avatar-frame-neon', fire:'avatar-frame-fire',
-                    crystal:'avatar-frame-crystal', ice:'avatar-frame-ice', rose:'avatar-frame-rose',
-                    plasma:'avatar-frame-plasma', thunder:'avatar-frame-thunder', hologram:'avatar-frame-hologram',
-                    dragon:'avatar-frame-dragon', prime:'avatar-frame-prime'
-                };
-                if(frameMap[u.avatarFrame]) frameEl.classList.add(frameMap[u.avatarFrame]);
                 avWrap.appendChild(frameEl);
             }
         }
@@ -7363,67 +7360,31 @@ window.openUserProfile=async function(nick){
     const onlineEl=qs('upmOnline');if(onlineEl){onlineEl.className=`upm-online ${online?'is-online':'is-offline'}`;onlineEl.querySelector('span').textContent=online?'В сети':formatLastSeen(u);}
     const avWrap=qs('upmAvatarWrap');if(avWrap)avWrap.classList.toggle('online',online);
     
-    // Apply avatar frame if user has subscription and frame
+    // Apply avatar frame using the centralized mapping.
     const frameContainer = qs('upmAvatarWrap');
     if(frameContainer){
-        // Always remove existing frame first (fixes bleed-over between profiles)
         const existingFrame = frameContainer.querySelector('.avatar-frame');
         if(existingFrame) existingFrame.remove();
-        
-        if(isActive && u.avatarFrame){
-            // Add new frame
+        const frameClass = getAvatarFrameClass(u);
+        if(frameClass){
             const frameEl = document.createElement('div');
-            frameEl.className = 'avatar-frame';
+            frameEl.className = `avatar-frame ${frameClass}`;
             frameEl.style.cssText = 'position:absolute;inset:-8px;border-radius:inherit;pointer-events:none;z-index:1;';
-            
-            if(u.avatarFrame === 'gold') frameEl.classList.add('avatar-frame-gold');
-            else if(u.avatarFrame === 'rainbow') frameEl.classList.add('avatar-frame-rainbow');
-            else if(u.avatarFrame === 'pulse') frameEl.classList.add('avatar-frame-pulse');
-            else if(u.avatarFrame === 'glow') frameEl.classList.add('avatar-frame-glow');
-            else if(u.avatarFrame === 'neon') frameEl.classList.add('avatar-frame-neon');
-            else if(u.avatarFrame === 'fire') frameEl.classList.add('avatar-frame-fire');
-            else if(u.avatarFrame === 'crystal') frameEl.classList.add('avatar-frame-crystal');
-            else if(u.avatarFrame === 'ice') frameEl.classList.add('avatar-frame-ice');
-            else if(u.avatarFrame === 'rose') frameEl.classList.add('avatar-frame-rose');
-            else if(u.avatarFrame === 'plasma') frameEl.classList.add('avatar-frame-plasma');
-            else if(u.avatarFrame === 'thunder') frameEl.classList.add('avatar-frame-thunder');
-            else if(u.avatarFrame === 'hologram') frameEl.classList.add('avatar-frame-hologram');
-            else if(u.avatarFrame === 'dragon') frameEl.classList.add('avatar-frame-dragon');
-            else if(u.avatarFrame === 'prime') frameEl.classList.add('avatar-frame-prime');
-            
             frameContainer.appendChild(frameEl);
         }
     }
-    
-    // Apply profile background effect if user has subscription
+
+    // Apply profile background using the same mapping as the full profile page.
     const profileSheet = document.querySelector('#userProfileModal .user-profile-sheet');
     const wallHost = document.getElementById('upmWallHost');
-    const BG_CLASSES = ['profile-bg-shimmer','profile-bg-particles','profile-bg-gradient-animated',
-                        'profile-bg-ocean','profile-bg-sunset','profile-bg-aurora',
-                        'profile-bg-galaxy','profile-bg-fire','profile-bg-plasma',
-                        'profile-bg-thunder','profile-bg-hologram','profile-bg-dragon','profile-bg-prime'];
-    
-    // Always remove old background classes first (fixes bleed-over between profiles)
-    if(profileSheet) profileSheet.classList.remove(...BG_CLASSES);
-    if(wallHost) wallHost.classList.remove(...BG_CLASSES);
-    
-    if(profileSheet && isActive && u.profileBgEffect){
-        // Add new background class
-        const bgMap = {
-            shimmer:'profile-bg-shimmer', particles:'profile-bg-particles',
-            gradient:'profile-bg-gradient-animated', ocean:'profile-bg-ocean',
-            sunset:'profile-bg-sunset', aurora:'profile-bg-aurora',
-            galaxy:'profile-bg-galaxy', fire:'profile-bg-fire',
-            plasma:'profile-bg-plasma', thunder:'profile-bg-thunder',
-            hologram:'profile-bg-hologram', dragon:'profile-bg-dragon', prime:'profile-bg-prime'
-        };
-        const bgClass = bgMap[u.profileBgEffect];
-        if(bgClass){
-            profileSheet.classList.add(bgClass);
-            if(wallHost) wallHost.classList.add(bgClass);
-        }
+    if(profileSheet) profileSheet.classList.remove(...PROFILE_EFFECT_CLASSES);
+    if(wallHost) wallHost.classList.remove(...PROFILE_EFFECT_CLASSES);
+    const bgClass = getProfileBgClass(u);
+    if(bgClass){
+        if(profileSheet) profileSheet.classList.add(bgClass);
+        if(wallHost) wallHost.classList.add(bgClass);
     }
-    
+
     qs('upmStats').innerHTML = (subscriptionHtml ? `<div style="grid-column:1/-1;text-align:center;margin-bottom:8px;">${subscriptionHtml}</div>` : '') + `<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:16px;">${escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div><div class="sl">Должность</div></div>${u.vehicle?`<div class="stat-box" style="grid-column:1/-1;"><div class="sv" style="font-size:14px;">🛵 ${escHtml(u.vehicle)}</div><div class="sl">Транспорт</div></div>`:''}`;
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,12);
@@ -7510,31 +7471,21 @@ async function renderVisitorProfilePage(nick){
     const vo=qs('vpfOnline');
     if(vo){vo.className='upm-online '+(online?'is-online':'is-offline');const sp=vo.querySelector('span');if(sp)sp.textContent=online?'В сети':formatLastSeen(u);}
     
-    // Apply profile background effect if user has subscription
+    // Apply profile background + avatar frame with the same mappings as the own profile.
     const profileBgEffect = qs('vpfProfileBgEffect');
-    if(profileBgEffect && isActive && u.profileBgEffect){
-        // Remove existing background classes
-        profileBgEffect.classList.remove('profile-bg-shimmer', 'profile-bg-particles', 'profile-bg-gradient-animated', 
-                                   'profile-bg-ocean', 'profile-bg-sunset', 'profile-bg-aurora', 
-                                   'profile-bg-galaxy', 'profile-bg-fire', 'profile-bg-plasma',
-                                   'profile-bg-thunder', 'profile-bg-hologram', 'profile-bg-dragon', 'profile-bg-prime');
-        
-        // Add new background class
-        if(u.profileBgEffect === 'shimmer') profileBgEffect.classList.add('profile-bg-shimmer');
-        else if(u.profileBgEffect === 'particles') profileBgEffect.classList.add('profile-bg-particles');
-        else if(u.profileBgEffect === 'gradient') profileBgEffect.classList.add('profile-bg-gradient-animated');
-        else if(u.profileBgEffect === 'ocean') profileBgEffect.classList.add('profile-bg-ocean');
-        else if(u.profileBgEffect === 'sunset') profileBgEffect.classList.add('profile-bg-sunset');
-        else if(u.profileBgEffect === 'aurora') profileBgEffect.classList.add('profile-bg-aurora');
-        else if(u.profileBgEffect === 'galaxy') profileBgEffect.classList.add('profile-bg-galaxy');
-        else if(u.profileBgEffect === 'fire') profileBgEffect.classList.add('profile-bg-fire');
-        else if(u.profileBgEffect === 'plasma') profileBgEffect.classList.add('profile-bg-plasma');
-        else if(u.profileBgEffect === 'thunder') profileBgEffect.classList.add('profile-bg-thunder');
-        else if(u.profileBgEffect === 'hologram') profileBgEffect.classList.add('profile-bg-hologram');
-        else if(u.profileBgEffect === 'dragon') profileBgEffect.classList.add('profile-bg-dragon');
-        else if(u.profileBgEffect === 'prime') profileBgEffect.classList.add('profile-bg-prime');
+    if(profileBgEffect){
+        profileBgEffect.classList.remove(...PROFILE_EFFECT_CLASSES);
+        const bgClass = getProfileBgClass(u);
+        if(bgClass) profileBgEffect.classList.add(bgClass);
     }
-    
+    const visitorFrame = qs('vpfAvatarFrame');
+    if(visitorFrame){
+        visitorFrame.className = 'avatar-frame';
+        const frameClass = getAvatarFrameClass(u);
+        visitorFrame.style.display = frameClass ? 'block' : 'none';
+        if(frameClass) visitorFrame.classList.add(frameClass);
+    }
+
     const wSnap=await get(wallRef(nick));
     const posts=Object.entries(wSnap.val()||{}).map(([id,p])=>({...p,id})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
     qs('vpfWall').innerHTML=posts.length?posts.map(p=>wallPostCardHtml(nick,p.id||'',p)).join(''):'<div style="color:var(--muted);font-size:13px;">Пока пусто</div>';
@@ -8042,27 +7993,11 @@ function marketCard(l,isMine, isArchived=false){
     // Check if seller has active subscription and avatar frame
     const expiry = su.subscriptionExpiry ? new Date(su.subscriptionExpiry) : null;
     const isActive = expiry && expiry > new Date();
-    let frameHtml = '';
-    
-    if(isActive && su.avatarFrame){
-        let frameClass = 'avatar-frame';
-        if(su.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
-        else if(su.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
-        else if(su.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
-        else if(su.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
-        else if(su.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
-        else if(su.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
-        else if(su.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
-        else if(su.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
-        else if(su.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
-        else if(su.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
-        else if(su.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
-        else if(su.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-        else if(su.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
-        else if(su.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
-        frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
-    }
-    
+    const frameClass = getAvatarFrameClass(su);
+    const frameHtml = frameClass
+        ? `<div class="avatar-frame ${frameClass}" style="position:absolute;inset:-3px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`
+        : '';
+
     const workBadge=isWork&&l.workAcceptedBy?`<span class="market-status-pending" style="margin-left:8px;">✅ Подтверждено</span>`:'';
     const serviceBadge=isService?`<span class="market-status-service" style="margin-left:8px;">🤝 Услуга</span>`:'';
     const archivedBadge=isArchived?`<span class="market-status-sold" style="margin-left:8px;">🕓 Скрыто</span>`:'';
@@ -8290,23 +8225,11 @@ function renderLeaderboard(users){
     const online=isUserOnline(u);const dn=displayNick(u)||u.nick;
     const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
     const isActive = expiry && expiry > new Date();
-    let frameHtml = '';
-    if(isActive && u.avatarFrame){
-      let frameClass = 'avatar-frame';
-      if(u.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
-      else if(u.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
-      else if(u.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
-      else if(u.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
-      else if(u.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
-      else if(u.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
-      else if(u.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
-      else if(u.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
-      else if(u.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-      else if(u.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
-      else if(u.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
-      frameHtml = `<div class="${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
-    }
-    return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div>${valHtml}</div>`;
+    const frameClass = getAvatarFrameClass(u);
+    const frameHtml = frameClass
+        ? `<div class="avatar-frame ${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`
+        : '';
+        return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div>${valHtml}</div>`;
   };
 
   const lbEl=qs('lbList'); if(!lbEl) return;
@@ -9074,6 +8997,8 @@ window.adminDeleteAccount=async function(nick){
     if(!confirm(`Удалить аккаунт ${nick}? Это действие необратимо!`))return;
     await remove(userRef(nick));
     if(allUsersCache) delete allUsersCache[nick];
+    allUsersCacheLoaded=true;
+    renderHomeStats_users(allUsersCache);
     toast(`🗑 Аккаунт ${nick} удалён`,'red');
     renderUnverifiedAccounts();
 };
@@ -13812,15 +13737,16 @@ window.renderChat = async function(msgs){
         } catch(e) {}
         
         let lastDateStr = '';
+        const otherUsers = Object.keys(allUsersCache).filter(n => n !== currentNick);
+        const hasOtherUsers = otherUsers.length > 0;
         const html = entries.map(([msgId, m]) => {
             const isMe = m.nick === currentNick;
             const online = isUserOnline(allUsersCache[m.nick]);
             const edited = m.edited ? `<span style="font-size:9px;color:var(--muted);margin-left:4px;">(изм.)</span>` : '';
             const avSrc = safeAvatar(m.nick, m.avatar);
             const ts = m.createdAt || 0;
-            const others = Object.keys(allUsersCache).filter(n => n !== currentNick);
-            const allRead = isMe && ts > 0 && others.length > 0 && others.every(n => (chatReadStates[n] || 0) >= ts);
-            const readLine = isMe && ts > 0 && others.length > 0
+            const allRead = isMe && ts > 0 && hasOtherUsers && otherUsers.every(n => (chatReadStates[n] || 0) >= ts);
+            const readLine = isMe && ts > 0 && hasOtherUsers
                 ? (allRead ? `<div class="chat-time" style="color:var(--primary);font-weight:800;">✓✓ Прочитано всеми</div>` : `<div class="chat-time" style="color:var(--muted);font-size:9px;">✓ Отправлено</div>`)
                 : '';
             // Date separator
@@ -13853,31 +13779,11 @@ window.renderChat = async function(msgs){
                     else if(style === 'prime') bubbleClass += ' chat-bubble-prime';
                 }
             }
-            // Apply avatar frame for users with subscriptions
-            let avatarFrameHtml = '';
-            if(senderUser) {
-                const hasActiveSub = senderUser.subscriptionExpiry && new Date(senderUser.subscriptionExpiry) > new Date();
-                if(hasActiveSub && senderUser.avatarFrame) {
-                    let frameClass = 'avatar-frame';
-                    if(senderUser.avatarFrame === 'gold') frameClass += ' avatar-frame-gold';
-                    else if(senderUser.avatarFrame === 'rainbow') frameClass += ' avatar-frame-rainbow';
-                    else if(senderUser.avatarFrame === 'pulse') frameClass += ' avatar-frame-pulse';
-                    else if(senderUser.avatarFrame === 'glow') frameClass += ' avatar-frame-glow';
-                    else if(senderUser.avatarFrame === 'neon') frameClass += ' avatar-frame-neon';
-                    else if(senderUser.avatarFrame === 'fire') frameClass += ' avatar-frame-fire';
-                    else if(senderUser.avatarFrame === 'crystal') frameClass += ' avatar-frame-crystal';
-                    else if(senderUser.avatarFrame === 'ice') frameClass += ' avatar-frame-ice';
-                    else if(senderUser.avatarFrame === 'rose') frameClass += ' avatar-frame-rose';
-                    else if(senderUser.avatarFrame === 'plasma') frameClass += ' avatar-frame-plasma';
-                    else if(senderUser.avatarFrame === 'thunder') frameClass += ' avatar-frame-thunder';
-                    else if(senderUser.avatarFrame === 'hologram') frameClass += ' avatar-frame-hologram';
-                    else if(senderUser.avatarFrame === 'dragon') frameClass += ' avatar-frame-dragon';
-                    else if(senderUser.avatarFrame === 'prime') frameClass += ' avatar-frame-prime';
-                    
-                    avatarFrameHtml = `<div class="${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`;
-                }
-            }
-            
+            const frameClass = getAvatarFrameClass(senderUser);
+            const avatarFrameHtml = frameClass
+                ? `<div class="avatar-frame ${frameClass}" style="position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`
+                : '';
+
             return separator + `<div class="chat-msg ${isMe ? 'me' : ''}" data-msgid="${jsEsc(msgId)}">
                 <div class="av-wrap-sm ${online ? 'online' : ''}" onclick="openUserProfile('${jsEsc(m.nick)}')" style="position:relative;">
                     <img class="chat-av" src="${escHtml(avSrc)}" style="cursor:pointer;" loading="lazy" onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'">
@@ -13957,10 +13863,8 @@ window.renderDmMessages = async function(msgs){
         // Get current user's chat bubble style
         let myBubbleStyle = '';
         try {
-            const snap = await get(userRef(currentNick));
-            const u = snap.val() || {};
-            const hasActiveSub = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
-            if(hasActiveSub) myBubbleStyle = u.chatBubbleStyle || '';
+            const u = allUsersCache?.[currentNick] || {};
+            if(hasActiveSubscription(u)) myBubbleStyle = u.chatBubbleStyle || '';
         } catch(e) {}
         
         let lastDateStr = '';
@@ -17581,6 +17485,15 @@ ready(function(){
       return (await get(userRef(nick))).val()||{};
     }
     function casinoBalance(u){return Math.max(0,Number(u?.casino?.balance||0));}
+    function casinoCachedBalance(){
+      const u=window.allUsersCache?.[current()];
+      return casinoBalance(u||{});
+    }
+    function casinoCheckStake(stake){
+      if(!Number.isSafeInteger(stake)||stake<=0){toast('❌ Укажите ставку','red');return false;}
+      if(casinoCachedBalance()<stake){toast('❌ Недостаточно средств на балансе казино','red');return false;}
+      return true;
+    }
     function setCasinoTransferBusy(v){window._casinoTransferBusy=!!v;}
     async function renderCasinoBalances(uOverride=null){
       const u=uOverride||await getCasinoUser();
@@ -17636,9 +17549,9 @@ ready(function(){
       if(pv===dv)return state.stake;
       return 0;
     }
-    async function renderBlackjack(){
+    async function renderBlackjack(uOverride=null){
       const host=qs('blackjackArea'); if(!host)return;
-      const u=await getCasinoUser(); const st=u.casino?.blackjack;
+      const u=uOverride||await getCasinoUser(); const st=u.casino?.blackjack;
       if(!st || st.status==='finished'){
         host.innerHTML=`<div class="card-title">🎰 Блекджек</div>
           <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;">Классический блекджек. Победа — 1:1, натуральный блекджек — 3:2, ничья возвращает ставку.</div>
@@ -17662,17 +17575,20 @@ ready(function(){
       if(stake<=0)return toast('❌ Укажите ставку','red');
       window._blackjackActionBusy=true;
       try{
-        const result=await runTransaction(userRef(current()),u=>{
-          if(!u)return;
-          const casino={...(u.casino||{})}; const cb=Math.max(0,Number(casino.balance||0)); if(cb<stake)return;
+        const result=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{
+          casino=casino||{}; const cb=Math.max(0,Number(casino.balance||0)); if(cb<stake)return;
           const old=casino.blackjack;if(old?.status==='playing')return;
           const deck=shuffle(makeDeck()); const player=[deck.pop(),deck.pop()]; const dealer=[deck.pop(),deck.pop()];
-          return {...u,casino:{...casino,balance:cb-stake,blackjack:{id:genId(),status:'playing',stake,deck,player,dealer,createdAt:Date.now()}}};
+          return {...casino,balance:cb-stake,blackjack:{id:genId(),status:'playing',stake,deck,player,dealer,createdAt:Date.now()}};
         });
         if(!result?.committed)return toast('❌ Недостаточно средств на балансе казино или текущая игра ещё не завершена','red');
-        const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
-        await window.logTx?.(current(),{type:'out',who:'Казино · Блекджек',amt:stake,desc:'Ставка в блекджек'});
-        await renderCasinoBalances(nu); renderBlackjack();
+        const casinoState=result.snapshot.val()||{}; const base=allUsersCache?.[current()]||{}; const nu={...base,casino:casinoState};
+        allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        // Сначала показываем результат пользователю, вторичные записи не должны
+        // задерживать появление кнопок Hit/Stand.
+        window._blackjackActionBusy=false;
+        await renderCasinoBalances(nu); await renderBlackjack(nu);
+        Promise.resolve(window.logTx?.(current(),{type:'out',who:'Казино · Блекджек',amt:stake,desc:'Ставка в блекджек'})).catch(()=>{});
         toast('🎰 Карты розданы','green');
       }finally{window._blackjackActionBusy=false;}
     }
@@ -17680,41 +17596,49 @@ ready(function(){
       if(window._blackjackActionBusy)return;
       window._blackjackActionBusy=true;
       try{
-        const result=await runTransaction(userRef(current()),u=>{
-          const st=u?.casino?.blackjack; if(!st||st.status!=='playing')return;
+        const result=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{
+          const st=casino?.blackjack; if(!st||st.status!=='playing')return;
           const deck=(st.deck||[]).slice(); if(!deck.length)return;
           const player=(st.player||[]).slice(); player.push(deck.pop()); const value=handValue(player);
-          if(value>21)return {...u,casino:{...(u.casino||{}),blackjack:{...st,deck,player,status:'finished',resultText:'❌ Перебор — проигрыш',payout:0,finishedAt:Date.now()}}};
-          return {...u,casino:{...(u.casino||{}),blackjack:{...st,deck,player}}};
+          if(value>21)return {...(casino||{}),blackjack:{...st,deck,player,status:'finished',resultText:'❌ Перебор — проигрыш',payout:0,finishedAt:Date.now()}};
+          return {...(casino||{}),blackjack:{...st,deck,player}};
         });
         if(!result?.committed)return;
-        const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        const casinoState=result.snapshot.val()||{}; const base=allUsersCache?.[current()]||{}; const nu={...base,casino:casinoState};
+        allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
         const hitState=nu.casino?.blackjack;
-        if(hitState?.status==='finished' && Number(hitState.payout||0)===0) await window.addMunicipalTreasury?.(Number(hitState.stake||0), `Проигрыш в блекджек: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
         window._blackjackActionBusy=false;
-        await renderCasinoBalances(nu); await renderBlackjack();
+        await renderCasinoBalances(nu); await renderBlackjack(nu);
+        if(hitState?.status==='finished' && Number(hitState.payout||0)===0){
+          Promise.resolve().then(()=>window.addMunicipalTreasury?.(Number(hitState.stake||0), `Проигрыш в блекджек: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'})).catch(()=>{});
+        }
       }finally{window._blackjackActionBusy=false;}
     }
     async function blackjackStand(){
       if(window._blackjackActionBusy)return;
       window._blackjackActionBusy=true;
       try{
-        const result=await runTransaction(userRef(current()),u=>{
-          const st=u?.casino?.blackjack; if(!st||st.status!=='playing')return;
+        const result=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{
+          const st=casino?.blackjack; if(!st||st.status!=='playing')return;
           const deck=(st.deck||[]).slice(); const player=(st.player||[]).slice(); const dealer=(st.dealer||[]).slice();
           while(handValue(dealer)<17 && deck.length) dealer.push(deck.pop());
           const payout=bjTotalPayout({...st,player,dealer});
           const text=payout===0?'❌ Проигрыш':payout===st.stake?'🤝 Ничья — ставка возвращена':(payout===Math.round(st.stake*2.5)?'🎉 Натуральный блекджек — выплата 3:2':'🎉 Победа');
-          const casino={...(u.casino||{})}; const cb=Math.max(0,Number(casino.balance||0));
-          return {...u,casino:{...casino,balance:cb+payout,blackjack:{...st,deck,player,dealer,status:'finished',resultText:text,payout,finishedAt:Date.now()}}};
+          const next={...(casino||{})}; const cb=Math.max(0,Number(next.balance||0));
+          return {...next,balance:cb+payout,blackjack:{...st,deck,player,dealer,status:'finished',resultText:text,payout,finishedAt:Date.now()}};
         });
         if(!result?.committed)return;
-        const nu=result.snapshot.val(); allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
+        const casinoState=result.snapshot.val()||{}; const base=allUsersCache?.[current()]||{}; const nu={...base,casino:casinoState};
+        allUsersCache[current()]=nu; window.allUsersCache=allUsersCache;
         const st=nu.casino?.blackjack; const payout=Number(st?.payout||0);
-        if(payout<=0) await window.addMunicipalTreasury?.(Number(st?.stake||0), `Проигрыш в блекджек: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
-        if(payout>0) await window.logTx?.(current(),{type:'in',who:'Казино · Блекджек',amt:payout,desc:st.resultText||'Выплата за блекджек'});
         window._blackjackActionBusy=false;
-        await renderCasinoBalances(nu); await renderBlackjack();
+        await renderCasinoBalances(nu); await renderBlackjack(nu);
+        if(payout<=0){
+          Promise.resolve().then(()=>window.addMunicipalTreasury?.(Number(st?.stake||0), `Проигрыш в блекджек: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'})).catch(()=>{});
+        }
+        if(payout>0){
+          Promise.resolve().then(()=>window.logTx?.(current(),{type:'in',who:'Казино · Блекджек',amt:payout,desc:st.resultText||'Выплата за блекджек'})).catch(()=>{});
+        }
         toast(st?.resultText||'Раунд завершён',payout>0?'green':'red');
       }finally{window._blackjackActionBusy=false;}
     }
@@ -17745,9 +17669,9 @@ ready(function(){
       if([a,b,c].filter(x=>x==='🍒').length>=2)return 2;
       return 0;
     }
-    async function renderSlots(){
+    async function renderSlots(uOverride=null){
       const host=qs('slotsArea');if(!host)return;
-      const u=await getCasinoUser();const last=u.casino?.slotsLast;const disabled=window._slotsBusy?'disabled':'';
+      const u=uOverride||await getCasinoUser();const last=u.casino?.slotsLast;const disabled=window._slotsBusy?'disabled':'';
       const reels=last?.reels||['❔','❔','❔'];
       host.innerHTML=`<div class="card-title">🎰 Игровые слоты</div>
         <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;">Классический трёхбарабанный игровой автомат. Совпадение символов приносит выигрыш.</div>
@@ -17759,23 +17683,31 @@ ready(function(){
     }
     async function slotsSpin(){
       if(window._slotsBusy)return;
-      const stake=Math.floor(Number(qs('slotsStake')?.value||0));if(stake<=0)return toast('❌ Укажите ставку','red');
+      const stake=Math.floor(Number(qs('slotsStake')?.value||0));if(!casinoCheckStake(stake))return;
       window._slotsBusy=true;
       try{
         const opId=genId();const reels=[slotPick(),slotPick(),slotPick()];const mult=slotMultiplier(reels);const payout=stake*mult;
-        const tx=await runTransaction(userRef(current()),u=>{
-          if(!u)return;const casino={...(u.casino||{})};const cb=Math.max(0,Number(casino.balance||0));if(cb<stake)return;
+        const tx=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{
+          casino=casino||{};const cb=Math.max(0,Number(casino.balance||0));if(cb<stake)return;
           const ops=casino.slotsOps||{};if(ops[opId])return;
           const last={id:opId,reels,stake,payout,multiplier:mult,createdAt:Date.now()};
-          return {...u,casino:{...casino,balance:cb-stake+payout,slotsLast:last,slotsOps:{...ops,[opId]:last}}};
+          return {...casino,balance:cb-stake+payout,slotsLast:last,slotsOps:{...ops,[opId]:last}};
         });
         if(!tx?.committed)return toast('❌ Недостаточно средств на балансе казино','red');
-        const nu=tx.snapshot.val();allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
+        const casinoState=tx.snapshot.val()||{};const base=allUsersCache?.[current()]||{};const nu={...base,casino:casinoState};
+        allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
         const input=qs('slotsStake');if(input)input.value='';
-        await window.logTx?.(current(),{type:'out',who:'Казино · Слоты',amt:stake,desc:'Ставка в игровых слотах'});
-        if(payout<=0) await window.addMunicipalTreasury?.(stake, `Проигрыш в слотах: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
-        if(payout>0)await window.logTx?.(current(),{type:'in',who:'Казино · Слоты',amt:payout,desc:`Выигрыш в слотах (${mult}×)`});
-        window._slotsBusy=false;await renderCasinoBalances(nu);await renderSlots();
+        window._slotsBusy=false;
+        // UI обновляется сразу после подтверждённой транзакции. Логи и казна
+        // не должны заставлять игрока ждать завершения вторичных операций.
+        await renderCasinoBalances(nu);await renderSlots(nu);
+        Promise.resolve().then(()=>window.logTx?.(current(),{type:'out',who:'Казино · Слоты',amt:stake,desc:'Ставка в игровых слотах'})).catch(()=>{});
+        if(payout<=0){
+          Promise.resolve().then(()=>window.addMunicipalTreasury?.(stake, `Проигрыш в слотах: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'})).catch(()=>{});
+        }
+        if(payout>0){
+          Promise.resolve().then(()=>window.logTx?.(current(),{type:'in',who:'Казино · Слоты',amt:payout,desc:`Выигрыш в слотах (${mult}×)`})).catch(()=>{});
+        }
         toast(payout>0?`🎰 ${reels.join(' · ')} — выплата ${payout.toLocaleString('ru-RU')} ₽`:`🎰 ${reels.join(' · ')} — проигрыш ${stake.toLocaleString('ru-RU')} ₽`,payout>0?'green':'red');
       }finally{window._slotsBusy=false;}
     }
@@ -17795,47 +17727,217 @@ ready(function(){
         return {...c,balance:cb-stake+payout,[lastKey]:{...lastValue,createdAt:Date.now()}};
       });
       if(!tx?.committed)return null;
-      const nu=(await get(userRef(current()))).val()||{};allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
-      // Логи — вторичные: не должны оставлять кнопку игры заблокированной,
-      // если запись истории тормозит или временно падает.
-      if(payout<=0) await window.addMunicipalTreasury?.(stake, `Проигрыш в ${label.toLowerCase()}: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'});
-      const logs=[
-        window.logTx?.(current(),{type:'out',who:`Казино · ${label}`,amt:stake,desc:`Ставка в ${label.toLowerCase()}`}),
-        payout>0 ? window.logTx?.(current(),{type:'in',who:`Казино · ${label}`,amt:payout,desc:`Выигрыш в ${label.toLowerCase()}`}) : null
-      ].filter(Boolean);
-      Promise.allSettled(logs).catch(()=>{});
+      const base=allUsersCache?.[current()]||{};
+      const nu={...base,casino:tx.snapshot.val()||{}};
+      allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
+      // Вторичные записи не блокируют визуальный результат игры.
+      const secondary=[];
+      if(payout<=0 && window.addMunicipalTreasury) secondary.push(Promise.resolve().then(()=>window.addMunicipalTreasury(stake, `Проигрыш в ${label.toLowerCase()}: ${current()}`, {sourceNick:current(),sourceType:'casino_loss'})));
+      if(window.logTx) secondary.push(Promise.resolve(window.logTx(current(),{type:'out',who:`Казино · ${label}`,amt:stake,desc:`Ставка в ${label.toLowerCase()}`})));
+      if(payout>0 && window.logTx) secondary.push(Promise.resolve(window.logTx(current(),{type:'in',who:`Казино · ${label}`,amt:payout,desc:`Выигрыш в ${label.toLowerCase()}`})));
+      Promise.allSettled(secondary).catch(()=>{});
       return nu;
     }
     async function rouletteSpin(){
       if(window._rouletteBusy)return;const stake=Math.floor(Number(qs('rouletteStake')?.value||0)),bet=String(qs('rouletteBet')?.value||'red');
-      if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');window._rouletteBusy=true;setCasinoGameBusy('rouletteSpinBtn',true);
+      if(!casinoCheckStake(stake))return;window._rouletteBusy=true;setCasinoGameBusy('rouletteSpinBtn',true);
       try{const n=crypto.getRandomValues(new Uint32Array(1))[0]%37,color=n===0?'green':([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(n)?'red':'black'),mult=color==='green'?36:(bet===color?2:0),payout=stake*mult,nu=await casinoRound(`users/${current()}/casino`,{n,color},stake,payout,'rouletteLast',{number:n,color,bet,stake,payout,multiplier:mult},'Рулетка');
-        if(!nu)return toast('❌ Недостаточно средств на балансе казино','red');await renderCasinoBalances(nu);await renderRoulette();toast(payout?`🎯 Выпало ${n} — +${payout.toLocaleString('ru-RU')} ₽`:`🎯 Выпало ${n} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');
+        if(!nu){setCasinoGameBusy('rouletteSpinBtn',false);return toast('❌ Недостаточно средств на балансе казино','red');}await renderCasinoBalances(nu);await renderRoulette(nu);toast(payout?`🎯 Выпало ${n} — +${payout.toLocaleString('ru-RU')} ₽`:`🎯 Выпало ${n} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');
       }catch(e){console.error('[casino roulette]',e);toast('❌ Ошибка рулетки: '+(e.message||'операция не выполнена'),'red');}
       finally{window._rouletteBusy=false;setCasinoGameBusy('rouletteSpinBtn',false);}
     }
     window.kapaniRouletteSpin=rouletteSpin;
-    async function renderRoulette(){const h=qs('rouletteArea');if(!h)return;const u=await getCasinoUser(),l=u.casino?.rouletteLast;h.innerHTML=`<div class="card-title">🎯 Рулетка</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">🔴 Красное / ⚫ чёрное — 2×, 🟢 0 — 36×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="rouletteBet" style="margin:0;"><option value="red">🔴 Красное</option><option value="black">⚫ Чёрное</option><option value="green">🟢 Зелёное 0</option></select><input id="rouletteStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="rouletteSpinBtn" style="margin-top:8px;" onclick="kapaniRouletteSpin()">🎯 Крутить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний результат: <b>${l.number}</b> · ${l.color==='green'?'🟢':l.color==='red'?'🔴':'⚫'} · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
+    async function renderRoulette(uOverride=null){const h=qs('rouletteArea');if(!h)return;const u=uOverride||await getCasinoUser(),l=u.casino?.rouletteLast;h.innerHTML=`<div class="card-title">🎯 Рулетка</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">🔴 Красное / ⚫ чёрное — 2×, 🟢 0 — 36×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="rouletteBet" style="margin:0;"><option value="red">🔴 Красное</option><option value="black">⚫ Чёрное</option><option value="green">🟢 Зелёное 0</option></select><input id="rouletteStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="rouletteSpinBtn" style="margin-top:8px;" onclick="kapaniRouletteSpin()">🎯 Крутить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний результат: <b>${l.number}</b> · ${l.color==='green'?'🟢':l.color==='red'?'🔴':'⚫'} · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
     async function coinflipPlay(){
       if(window._coinflipBusy)return;const stake=Math.floor(Number(qs('coinflipStake')?.value||0)),choice=String(qs('coinflipChoice')?.value||'heads');
-      if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');window._coinflipBusy=true;setCasinoGameBusy('coinflipPlayBtn',true);
-      try{const result=crypto.getRandomValues(new Uint32Array(1))[0]%2?'tails':'heads',payout=choice===result?stake*2:0,nu=await casinoRound(`users/${current()}/casino`,{result},stake,payout,'coinflipLast',{result,choice,stake,payout},'Орлянка');if(!nu)return toast('❌ Недостаточно средств на балансе казино','red');await renderCasinoBalances(nu);await renderCoinflip();toast(payout?`🪙 ${result==='heads'?'Орёл':'Решка'} — +${payout.toLocaleString('ru-RU')} ₽`:`🪙 ${result==='heads'?'Орёл':'Решка'} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');}finally{window._coinflipBusy=false;}
+      if(!casinoCheckStake(stake))return;window._coinflipBusy=true;setCasinoGameBusy('coinflipPlayBtn',true);
+      try{const result=crypto.getRandomValues(new Uint32Array(1))[0]%2?'tails':'heads',payout=choice===result?stake*2:0,nu=await casinoRound(`users/${current()}/casino`,{result},stake,payout,'coinflipLast',{result,choice,stake,payout},'Орлянка');if(!nu){setCasinoGameBusy('coinflipPlayBtn',false);return toast('❌ Недостаточно средств на балансе казино','red');}await renderCasinoBalances(nu);await renderCoinflip(nu);toast(payout?`🪙 ${result==='heads'?'Орёл':'Решка'} — +${payout.toLocaleString('ru-RU')} ₽`:`🪙 ${result==='heads'?'Орёл':'Решка'} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');}finally{window._coinflipBusy=false;}
     }
     window.kapaniCoinflipPlay=coinflipPlay;
-    async function renderCoinflip(){const h=qs('coinflipArea');if(!h)return;const u=await getCasinoUser(),l=u.casino?.coinflipLast;h.innerHTML=`<div class="card-title">🪙 Орлянка</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Угадайте сторону монеты и получите 2×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="coinflipChoice" style="margin:0;"><option value="heads">🪙 Орёл</option><option value="tails">🪙 Решка</option></select><input id="coinflipStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="coinflipPlayBtn" style="margin-top:8px;" onclick="kapaniCoinflipPlay()">🪙 Подбросить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний результат: ${l.result==='heads'?'🦅 Орёл':'👑 Решка'} · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
+    async function renderCoinflip(uOverride=null){const h=qs('coinflipArea');if(!h)return;const u=uOverride||await getCasinoUser(),l=u.casino?.coinflipLast;h.innerHTML=`<div class="card-title">🪙 Орлянка</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Угадайте сторону монеты и получите 2×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="coinflipChoice" style="margin:0;"><option value="heads">🪙 Орёл</option><option value="tails">🪙 Решка</option></select><input id="coinflipStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="coinflipPlayBtn" style="margin-top:8px;" onclick="kapaniCoinflipPlay()">🪙 Подбросить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний результат: ${l.result==='heads'?'🦅 Орёл':'👑 Решка'} · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
     async function dicePlay(){
       if(window._diceBusy)return;const stake=Math.floor(Number(qs('diceStake')?.value||0)),guess=String(qs('diceGuess')?.value||'high');
-      if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');window._diceBusy=true;setCasinoGameBusy('dicePlayBtn',true);
-      try{const n=(crypto.getRandomValues(new Uint32Array(1))[0]%6)+1,actual=n>=4?'high':'low',payout=guess===actual?stake*2:0,nu=await casinoRound(`users/${current()}/casino`,{number:n},stake,payout,'diceLast',{number:n,guess,result:actual,stake,payout},'Кубик');if(!nu)return toast('❌ Недостаточно средств на балансе казино','red');await renderCasinoBalances(nu);await renderDice();toast(payout?`🎲 Выпало ${n} — +${payout.toLocaleString('ru-RU')} ₽`:`🎲 Выпало ${n} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');}finally{window._diceBusy=false;}
+      if(!casinoCheckStake(stake))return;window._diceBusy=true;setCasinoGameBusy('dicePlayBtn',true);
+      try{const n=(crypto.getRandomValues(new Uint32Array(1))[0]%6)+1,actual=n>=4?'high':'low',payout=guess===actual?stake*2:0,nu=await casinoRound(`users/${current()}/casino`,{number:n},stake,payout,'diceLast',{number:n,guess,result:actual,stake,payout},'Кубик');if(!nu){setCasinoGameBusy('dicePlayBtn',false);return toast('❌ Недостаточно средств на балансе казино','red');}await renderCasinoBalances(nu);await renderDice(nu);toast(payout?`🎲 Выпало ${n} — +${payout.toLocaleString('ru-RU')} ₽`:`🎲 Выпало ${n} — −${stake.toLocaleString('ru-RU')} ₽`,payout?'green':'red');}finally{window._diceBusy=false;}
     }
     window.kapaniDicePlay=dicePlay;
-    async function renderDice(){const h=qs('diceArea');if(!h)return;const u=await getCasinoUser(),l=u.casino?.diceLast;h.innerHTML=`<div class="card-title">🎲 Кубик</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Угадайте 1–3 или 4–6. Победа — 2×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="diceGuess" style="margin:0;"><option value="high">⬆️ 4–6</option><option value="low">⬇️ 1–3</option></select><input id="diceStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="dicePlayBtn" style="margin-top:8px;" onclick="kapaniDicePlay()">🎲 Бросить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний бросок: <b>${l.number}</b> · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
+    async function renderDice(uOverride=null){const h=qs('diceArea');if(!h)return;const u=uOverride||await getCasinoUser(),l=u.casino?.diceLast;h.innerHTML=`<div class="card-title">🎲 Кубик</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Угадайте 1–3 или 4–6. Победа — 2×.</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"><select id="diceGuess" style="margin:0;"><option value="high">⬆️ 4–6</option><option value="low">⬇️ 1–3</option></select><input id="diceStake" type="number" min="1" step="1" placeholder="Ставка ₽" style="margin:0;"></div><button type="button" class="btn btn-primary" id="dicePlayBtn" style="margin-top:8px;" onclick="kapaniDicePlay()">🎲 Бросить</button>${l?`<div style="margin-top:10px;font-size:12px;">Последний бросок: <b>${l.number}</b> · ${l.payout>0?`✅ +${Number(l.payout).toLocaleString('ru-RU')} ₽`:`❌ −${Number(l.stake).toLocaleString('ru-RU')} ₽`}</div>`:''}`;}
+
+    // ────────────────────────────────────────────────────────────────
+    // Casino games: Baccarat · Video Poker (Jacks or Better)
+    // Все три игры используют существующий users/<nick>/casino, runTransaction,
+    // logTx/addMunicipalTreasury и криптографический RNG.
+    // ────────────────────────────────────────────────────────────────
+    const BACCARAT_BETS = {player:{label:'👤 Игрок',multiplier:2},banker:{label:'🏦 Банкир',multiplier:1.95},tie:{label:'🤝 Ничья',multiplier:9}};
+    function casinoGameId(prefix){
+      const a=new Uint32Array(4); crypto.getRandomValues(a);
+      return `${prefix}_${Date.now().toString(36)}_${Array.from(a).map(x=>x.toString(36)).join('')}`;
+    }
+    function baccaratCardValue(card){
+      if(!card)return 0;
+      if(card.rank==='A')return 1;
+      if(['10','J','Q','K'].includes(card.rank))return 0;
+      return Number(card.rank)||0;
+    }
+    function baccaratHandValue(cards){return (cards||[]).reduce((sum,c)=>sum+baccaratCardValue(c),0)%10;}
+    function baccaratPlayerDraw(total){return total<=5;}
+    function baccaratBankerDraw(total,playerThird){
+      if(total<=2)return true;
+      if(total===3)return playerThird!==8;
+      if(total===4)return playerThird>=2&&playerThird<=7;
+      if(total===5)return playerThird>=4&&playerThird<=7;
+      if(total===6)return playerThird===6||playerThird===7;
+      return false;
+    }
+    function baccaratResolve(player,dealer){
+      const pv=baccaratHandValue(player), bv=baccaratHandValue(dealer);
+      return {playerValue:pv,bankerValue:bv,winner:pv===bv?'tie':pv>bv?'player':'banker'};
+    }
+    function playBaccaratDeal(deck){
+      const d=(deck||[]).slice();
+      const player=[d.pop(),d.pop()], dealer=[d.pop(),d.pop()];
+      const first=baccaratResolve(player,dealer);
+      if(player.length===2 && (first.playerValue>=8||first.bankerValue>=8)) return {deck:d,player,dealer,...first,natural:true};
+      let playerThird=null;
+      if(baccaratPlayerDraw(first.playerValue)){
+        playerThird=d.pop(); player.push(playerThird);
+      }
+      const bankerBefore=baccaratHandValue(dealer);
+      if(playerThird){
+        if(baccaratBankerDraw(bankerBefore,baccaratCardValue(playerThird))) dealer.push(d.pop());
+      }else if(bankerBefore<=5){
+        dealer.push(d.pop());
+      }
+      return {deck:d,player,dealer,...baccaratResolve(player,dealer),natural:false};
+    }
+    function baccaratResultText(state,payout,stake,bet){
+      const winner=state.winner==='player'?'👤 Игрок':state.winner==='banker'?'🏦 Банкир':'🤝 Ничья';
+      if(payout<=0)return `❌ ${winner} победил — проигрыш ${stake.toLocaleString('ru-RU')} ₽`;
+      if(state.winner==='tie' && bet!=='tie')return `↩️ Ничья — ставка возвращена: ${stake.toLocaleString('ru-RU')} ₽`;
+      return `🎉 ${winner} — выплата ${payout.toLocaleString('ru-RU')} ₽`;
+    }
+    async function renderBaccarat(uOverride=null){
+      const host=qs('baccaratArea');if(!host)return;
+      const u=uOverride||await getCasinoUser(),st=u.casino?.baccarat;
+      if(st?.status==='playing'){
+        host.innerHTML=`<div class="card-title">🃏 Баккара</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;">Классическая Punto Banco. Игрок и Банкир автоматически получают третью карту по стандартным правилам.</div>
+          <div style="display:grid;gap:10px;">
+            <div style="padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);"><div style="font-weight:900;">👤 Игрок · ${st.playerValue}</div><div style="margin-top:7px;white-space:nowrap;overflow:auto;">${renderCards(st.player)}</div></div>
+            <div style="padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--surface2);"><div style="font-weight:900;">🏦 Банкир · ${st.bankerValue}</div><div style="margin-top:7px;white-space:nowrap;overflow:auto;">${renderCards(st.banker)}</div></div>
+          </div>
+          <div style="margin-top:10px;color:var(--gold);font-size:12px;font-weight:900;">Ставка: ${Number(st.stake).toLocaleString('ru-RU')} ₽ · ${esc(BACCARAT_BETS[st.bet]?.label||st.bet)}</div>
+          <div style="margin-top:10px;padding:10px;border-radius:12px;background:var(--surface2);font-size:12px;color:var(--muted);">Раздача выполняется автоматически — следующего действия не требуется.</div>`;
+        return;
+      }
+      const last=st?.status==='finished'?st:null;
+      host.innerHTML=`<div class="card-title">🃏 Баккара</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px;">Классическая баккара. Выберите сторону, сделайте ставку и узнайте результат. Игрок — 1:1 · Банкир — 0,95:1 · Ничья — 8:1.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px;">
+          <label style="padding:9px;border:1px solid var(--border);border-radius:11px;background:var(--surface2);font-size:12px;font-weight:900;text-align:center;cursor:pointer;"><input type="radio" name="baccaratBet" value="player" checked style="margin-right:5px;">👤 Игрок</label>
+          <label style="padding:9px;border:1px solid var(--border);border-radius:11px;background:var(--surface2);font-size:12px;font-weight:900;text-align:center;cursor:pointer;"><input type="radio" name="baccaratBet" value="banker" style="margin-right:5px;">🏦 Банкир</label>
+          <label style="padding:9px;border:1px solid var(--border);border-radius:11px;background:var(--surface2);font-size:12px;font-weight:900;text-align:center;cursor:pointer;"><input type="radio" name="baccaratBet" value="tie" style="margin-right:5px;">🤝 Ничья</label>
+        </div>
+        <input type="number" id="baccaratStake" min="1" step="1" placeholder="Ставка (₽)">
+        <button class="btn btn-primary" id="baccaratDealBtn" onclick="kapaniBaccaratDeal()">🃏 Раздать</button>
+        ${last?`<div style="margin-top:10px;padding:11px;border-radius:12px;background:var(--surface2);"><div style="font-weight:900;">${esc(last.resultText||'Раунд завершён')}</div><div style="font-size:11px;color:var(--muted);margin-top:5px;">👤 ${Number(last.playerValue)||0} · 🏦 ${Number(last.bankerValue)||0} · Ставка ${Number(last.stake||0).toLocaleString('ru-RU')} ₽</div><div style="margin-top:5px;white-space:nowrap;overflow:auto;">${renderCards(last.player)} ${renderCards(last.banker)}</div><button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="kapaniBaccaratNewRound()">🔄 Новая раздача</button></div>`:''}
+        <details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:900;">❓ Правила</summary><div style="font-size:11px;color:var(--muted);line-height:1.55;margin-top:7px;">A=1, 2–9 по номиналу, 10/J/Q/K=0. Считается последняя цифра суммы. Natural 8 или 9 останавливает раздачу. Правила третьей карты Игрока и Банкира применяются автоматически.</div></details>`;
+    }
+    async function baccaratDeal(){
+      if(window._baccaratBusy)return;
+      const stake=Math.floor(Number(qs('baccaratStake')?.value||0));
+      const bet=String(document.querySelector('input[name="baccaratBet"]:checked')?.value||'player');
+      if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');
+      if(!casinoCheckStake(stake))return;
+      if(!BACCARAT_BETS[bet])return toast('❌ Некорректная ставка','red');
+      window._baccaratBusy=true;
+      try{
+        const gameId=casinoGameId('bac');
+        const deck=shuffle(makeDeck());
+        const tx=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{
+          casino=casino||{};const cb=Math.max(0,Number(casino.balance||0));if(cb<stake)return;
+          const old=casino.baccarat;if(old?.status==='playing')return;
+          const result=playBaccaratDeal(deck);let payout=0;
+          if(result.winner===bet) payout=Math.round(stake*BACCARAT_BETS[bet].multiplier);
+          else if(result.winner==='tie'&&(bet==='player'||bet==='banker')) payout=stake;
+          const finished={...result,status:'finished',id:gameId,opId:gameId,stake,bet,payout,resultText:baccaratResultText(result,payout,stake,bet),createdAt:Date.now(),finishedAt:Date.now()};
+          if(result.natural || result.winner) return {...casino,balance:cb-stake+payout,baccarat:finished,baccaratOps:{...(casino.baccaratOps||{}),[gameId]:{id:gameId,stake,bet,payout,winner:result.winner,createdAt:finished.createdAt}}};
+          return {...casino,balance:cb-stake,baccarat:{...result,status:'playing',id:gameId,opId:gameId,stake,bet,payout:0,createdAt:Date.now()}};
+        });
+        if(!tx?.committed)return toast('❌ Недостаточно средств на балансе казино или текущая раздача ещё не завершена','red');
+        const casinoState=tx.snapshot.val()||{},nu={...(allUsersCache?.[current()]||{}),casino:casinoState};allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;
+        window._baccaratBusy=false;await renderCasinoBalances(nu);await renderBaccarat(nu);
+        const st=casinoState.baccarat||{}, payout=Number(st.payout||0);
+        Promise.resolve(window.logTx?.(current(),{type:'out',who:'Казино · Баккара',amt:stake,desc:'Ставка в баккаре'})).catch(()=>{});
+        if(st.status==='finished'&&payout>0)Promise.resolve(window.logTx?.(current(),{type:'in',who:'Казино · Баккара',amt:payout,desc:st.resultText||'Выплата за баккару'})).catch(()=>{});
+        if(st.status==='finished'&&payout<=0)Promise.resolve(window.addMunicipalTreasury?.(stake,`Проигрыш в баккаре: ${current()}`,{sourceNick:current(),sourceType:'casino_loss'})).catch(()=>{});
+        if(st.status==='finished')toast(st.resultText||'Раздача завершена',payout>0?'green':'red');else toast('🃏 Карты разданы — результат рассчитывается по правилам','green');
+      }catch(e){console.error('[casino baccarat]',e);toast('❌ Ошибка баккары: '+(e?.message||'операция не выполнена'),'red');}
+      finally{window._baccaratBusy=false;}
+    }
+    async function baccaratNewRound(){if(window._baccaratBusy)return;await renderBaccarat(await getCasinoUser());}
+    window.kapaniBaccaratDeal=baccaratDeal;window.kapaniBaccaratNewRound=baccaratNewRound;
+
+    const VP_RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const VP_PAYOUTS={'Royal Flush':800,'Straight Flush':50,'Four of a Kind':25,'Full House':9,'Flush':6,'Straight':4,'Three of a Kind':3,'Two Pair':2,'Jacks or Better':1};
+    function videoPokerEvaluate(cards){
+      const ranks=(cards||[]).map(c=>c.rank),suits=(cards||[]).map(c=>c.suit),counts={};ranks.forEach(r=>counts[r]=(counts[r]||0)+1);
+      const flush=suits.length===5&&new Set(suits).size===1;
+      const vals=ranks.map(r=>r==='A'?14:VP_RANKS.indexOf(r)+1).sort((a,b)=>a-b);const unique=[...new Set(vals)];
+      const straight=unique.length===5&&(unique[4]-unique[0]===4||(unique.join(',')==='2,3,4,5,14'));
+      const freq=Object.values(counts).sort((a,b)=>b-a);let name='';
+      if(flush&&unique.length===5&&unique[0]===10&&unique[4]===14)name='Royal Flush';
+      else if(flush&&straight)name='Straight Flush';
+      else if(freq[0]===4)name='Four of a Kind';
+      else if(freq[0]===3&&freq[1]===2)name='Full House';
+      else if(flush)name='Flush';
+      else if(straight)name='Straight';
+      else if(freq[0]===3)name='Three of a Kind';
+      else if(freq[0]===2&&freq[1]===2)name='Two Pair';
+      else if(freq[0]===2){const pairRank=vals.find((v)=>counts[v===14?'A':VP_RANKS[v-1]]===2);if(pairRank>=11||pairRank===14)name='Jacks or Better';}
+      const multiplier=VP_PAYOUTS[name]||0;return {name:name||'Нет комбинации',multiplier};
+    }
+    function renderVideoPokerCards(st){
+      const cards=st?.cards||[];const interactive=st?.phase==='draw';return `<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:10px 0;">${cards.map((c,i)=>{const held=(st.held||[]).includes(i);const red=['♥','♦'].includes(c.suit);return `<button type="button" class="btn btn-ghost" ${(!interactive||window._videoPokerBusy)?'disabled':''} ${interactive?'onclick="kapaniVideoPokerToggleHold('+i+')"':''} style="min-width:0;padding:7px 2px;height:82px;border:${held?'2px solid var(--gold)':'1px solid var(--border)'};background:${held?'rgba(251,191,36,.12)':'#fff'};color:${red?'#c33':'#111'};border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:${held?'0 0 0 2px rgba(251,191,36,.12)':''};"><span style="font-size:22px;font-weight:900;line-height:1;">${esc(c.rank)}</span><span style="font-size:20px;line-height:1;margin-top:5px;">${esc(c.suit)}</span>${held?'<span style="font-size:8px;font-weight:900;color:#9a6700;margin-top:4px;">HOLD</span>':''}</button>`;}).join('')}</div>`;
+    }
+    async function renderVideoPoker(uOverride=null){
+      const host=qs('videoPokerArea');if(!host)return;const u=uOverride||await getCasinoUser(),st=u.casino?.videoPoker;
+      if(st?.phase==='draw'){
+        host.innerHTML=`<div class="card-title">🂡 Видео-покер</div><div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;">Выберите карты, которые хотите оставить, затем нажмите «Обменять». Нажатие на карту переключает HOLD.</div>${renderVideoPokerCards(st)}<div style="font-size:11px;color:var(--muted);">Ставка: <b style="color:var(--gold);">${Number(st.stake).toLocaleString('ru-RU')} ₽</b> · Удержано: ${(st.held||[]).length}/5</div><button class="btn btn-primary" id="videoPokerDrawBtn" style="margin-top:8px;" onclick="kapaniVideoPokerDraw()">🔄 Обменять карты</button><details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:900;">❓ Таблица выплат</summary><div style="font-size:10px;color:var(--muted);line-height:1.55;margin-top:7px;">Royal Flush 800× · Straight Flush 50× · Four of a Kind 25× · Full House 9× · Flush 6× · Straight 4× · Three of a Kind 3× · Two Pair 2× · Jacks or Better 1×.</div></details>`;
+        return;
+      }
+      const last=st?.phase==='finished'?st:null;
+      host.innerHTML=`<div class="card-title">🂡 Видео-покер</div><div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px;">Получите 5 карт, выберите какие оставить и обменяйте остальные. Выигрывают стандартные комбинации Jacks or Better.</div><input type="number" id="videoPokerStake" min="1" step="1" placeholder="Ставка (₽)"><button class="btn btn-primary" id="videoPokerDealBtn" onclick="kapaniVideoPokerDeal()">🃏 Раздать</button>${last?`<div style="margin-top:10px;padding:11px;border-radius:12px;background:var(--surface2);"><div style="font-weight:900;">${last.payout>0?`🎉 ${esc(last.handName)} — выигрыш ${Number(last.payout).toLocaleString('ru-RU')} ₽`:'❌ Нет выигрышной комбинации'}</div>${renderVideoPokerCards({...last,held:[]})}<div style="font-size:11px;color:var(--muted);">Ставка ${Number(last.stake||0).toLocaleString('ru-RU')} ₽ · ${Number(last.multiplier||0)}×</div><button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="kapaniVideoPokerNewRound()">🔄 Новая игра</button></div>`:''}<details style="margin-top:10px;"><summary style="cursor:pointer;font-size:12px;font-weight:900;">❓ Правила и выплаты</summary><div style="font-size:10px;color:var(--muted);line-height:1.55;margin-top:7px;">После раздачи используйте HOLD и затем «Обменять карты». Jacks or Better — пара J/Q/K/A. Royal Flush 800×, Straight Flush 50×, Four of a Kind 25×, Full House 9×, Flush 6×, Straight 4×, Three of a Kind 3×, Two Pair 2×, Jacks or Better 1×.</div></details>`;
+    }
+    async function videoPokerDeal(){
+      if(window._videoPokerBusy)return;const stake=Math.floor(Number(qs('videoPokerStake')?.value||0));if(!Number.isSafeInteger(stake)||stake<=0)return toast('❌ Укажите ставку','red');if(!casinoCheckStake(stake))return;window._videoPokerBusy=true;
+      try{
+        const gameId=casinoGameId('vp'),deck=shuffle(makeDeck()),cards=[deck.pop(),deck.pop(),deck.pop(),deck.pop(),deck.pop()];
+        const tx=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{casino=casino||{};const cb=Math.max(0,Number(casino.balance||0));if(cb<stake)return;if(casino.videoPoker?.phase==='draw')return;const state={id:gameId,opId:gameId,phase:'draw',stake,cards,deck,held:[],createdAt:Date.now()};return {...casino,balance:cb-stake,videoPoker:state};});
+        if(!tx?.committed)return toast('❌ Недостаточно средств на балансе казино или текущая игра ещё не завершена','red');const casinoState=tx.snapshot.val()||{},nu={...(allUsersCache?.[current()]||{}),casino:casinoState};allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;window._videoPokerBusy=false;await renderCasinoBalances(nu);await renderVideoPoker(nu);Promise.resolve(window.logTx?.(current(),{type:'out',who:'Казино · Видео-покер',amt:stake,desc:'Ставка в видео-покере'})).catch(()=>{});toast('🂡 Карты разданы — выберите HOLD','green');
+      }catch(e){console.error('[casino video poker deal]',e);toast('❌ Ошибка видео-покера: '+(e?.message||'операция не выполнена'),'red');}finally{window._videoPokerBusy=false;}
+    }
+    async function videoPokerToggleHold(index){
+      if(window._videoPokerBusy)return;index=Number(index);if(!Number.isInteger(index)||index<0||index>4)return;window._videoPokerBusy=true;
+      try{const tx=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{const st=casino?.videoPoker;if(!st||st.phase!=='draw')return;const held=new Set((st.held||[]).map(Number));if(held.has(index))held.delete(index);else held.add(index);return {...casino,videoPoker:{...st,held:[...held].sort((a,b)=>a-b)}};});if(!tx?.committed)return;const casinoState=tx.snapshot.val()||{},nu={...(allUsersCache?.[current()]||{}),casino:casinoState};allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;window._videoPokerBusy=false;await renderVideoPoker(nu);}catch(e){console.error('[casino video poker hold]',e);toast('❌ Не удалось изменить HOLD','red');}finally{window._videoPokerBusy=false;}
+    }
+    async function videoPokerDraw(){
+      if(window._videoPokerBusy)return;window._videoPokerBusy=true;
+      try{
+        const tx=await runTransaction(ref(db,`users/${current()}/casino`),casino=>{const st=casino?.videoPoker;if(!st||st.phase!=='draw')return;const deck=(st.deck||[]).slice(),cards=(st.cards||[]).slice(),held=new Set((st.held||[]).map(Number));for(let i=0;i<5;i++)if(!held.has(i)&&deck.length)cards[i]=deck.pop();const evalResult=videoPokerEvaluate(cards),payout=Number(st.stake||0)*evalResult.multiplier;const finished={...st,phase:'finished',cards,deck,handName:evalResult.name,multiplier:evalResult.multiplier,payout,finishedAt:Date.now()};const cb=Math.max(0,Number(casino.balance||0));return {...casino,balance:cb+payout,videoPoker:finished,videoPokerOps:{...(casino.videoPokerOps||{}),[st.id]:{id:st.id,payout,handName:evalResult.name,finishedAt:finished.finishedAt}}};});
+        if(!tx?.committed)return toast('❌ Игра уже завершена или не найдена','red');const casinoState=tx.snapshot.val()||{},nu={...(allUsersCache?.[current()]||{}),casino:casinoState};allUsersCache[current()]=nu;window.allUsersCache=allUsersCache;window._videoPokerBusy=false;await renderCasinoBalances(nu);await renderVideoPoker(nu);const st=casinoState.videoPoker||{},payout=Number(st.payout||0);if(payout>0)Promise.resolve(window.logTx?.(current(),{type:'in',who:'Казино · Видео-покер',amt:payout,desc:`${st.handName} — ${st.multiplier}×`})).catch(()=>{});else Promise.resolve(window.addMunicipalTreasury?.(Number(st.stake||0),`Проигрыш в видео-покере: ${current()}`,{sourceNick:current(),sourceType:'casino_loss'})).catch(()=>{});toast(payout>0?`🎉 ${st.handName} — выигрыш ${payout.toLocaleString('ru-RU')} ₽`:'❌ Нет выигрышной комбинации',payout>0?'green':'red');
+      }catch(e){console.error('[casino video poker draw]',e);toast('❌ Ошибка обмена карт: '+(e?.message||'операция не выполнена'),'red');}finally{window._videoPokerBusy=false;}
+    }
+    async function videoPokerNewRound(){if(window._videoPokerBusy)return;await renderVideoPoker(await getCasinoUser());}
+    window.kapaniVideoPokerDeal=videoPokerDeal;window.kapaniVideoPokerToggleHold=videoPokerToggleHold;window.kapaniVideoPokerDraw=videoPokerDraw;window.kapaniVideoPokerNewRound=videoPokerNewRound;
 
     async function renderCasino(){
       const host=qs('casino');if(!host)return;
       const u=await getCasinoUser();
       await renderCasinoBalances(u);
-      await renderBlackjack();await renderSlots();await renderRoulette();await renderCoinflip();await renderDice();
+      await Promise.all([
+          renderBlackjack(u), renderSlots(u), renderRoulette(u), renderCoinflip(u), renderDice(u), renderBaccarat(u), renderVideoPoker(u)
+      ]);
     }
     window.kapaniRenderCasino=renderCasino;
     window.kapaniRenderKEducation=renderKEducation;
@@ -17908,7 +18010,7 @@ ready(function(){
         casino=document.createElement('div');
         casino.id='casino';
         casino.className='section';
-        casino.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);"><div style="font-size:22px;font-weight:900;">🎰 Казино</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек, слоты и новые мини-игры</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;"><div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div><div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div></div><div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div><div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;"><button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button><div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div></div></div><div class="card" id="blackjackArea"></div><div class="card" id="slotsArea"></div><div class="card" id="rouletteArea"></div><div class="card" id="coinflipArea"></div><div class="card" id="diceArea"></div>`;
+        casino.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);"><div style="font-size:22px;font-weight:900;">🎰 Казино</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек, слоты и новые мини-игры</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;"><div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div><div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div></div><div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div><div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;"><button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button><div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div></div></div><div class="card" id="blackjackArea"></div><div class="card" id="slotsArea"></div><div class="card" id="rouletteArea"></div><div class="card" id="coinflipArea"></div><div class="card" id="diceArea"></div><div class="card" id="baccaratArea"></div><div class="card" id="videoPokerArea"></div>`;
         main.appendChild(casino);
       }
       if(!qs('kEducationContent')){const c=document.createElement('div');c.id='kEducationContent';edu.appendChild(c);}
@@ -17917,6 +18019,8 @@ ready(function(){
       if(!qs('rouletteArea')){const c=document.createElement('div');c.className='card';c.id='rouletteArea';casino.appendChild(c);}
       if(!qs('coinflipArea')){const c=document.createElement('div');c.className='card';c.id='coinflipArea';casino.appendChild(c);}
       if(!qs('diceArea')){const c=document.createElement('div');c.className='card';c.id='diceArea';casino.appendChild(c);}
+      if(!qs('baccaratArea')){const c=document.createElement('div');c.className='card';c.id='baccaratArea';casino.appendChild(c);}
+      if(!qs('videoPokerArea')){const c=document.createElement('div');c.className='card';c.id='videoPokerArea';casino.appendChild(c);}
       return {edu,casino};
     }
     function injectKEducationSection(){ return ensureEconomySections(); }
@@ -17947,7 +18051,7 @@ ready(function(){
       try{
         if(id==='autoSchool') setTimeout(()=>injectRightsCard(),40);
         if(id==='kEducation') renderKEducation().catch(e=>{console.error('[K-education render]',e);const host=qs('kEducationContent');if(host)host.innerHTML='<div class=\"card\"><div style=\"font-weight:900;color:var(--red);\">❌ Не удалось загрузить К-образование</div><div style=\"font-size:12px;color:var(--muted);margin-top:6px;\">Попробуйте открыть вкладку ещё раз.</div></div>';});
-        if(id==='casino') renderCasino().catch(e=>{console.error('[Casino render]',e);const ids=['blackjackArea','slotsArea','rouletteArea','coinflipArea','diceArea'];ids.forEach(id=>{const el=qs(id);if(el)el.innerHTML='<div style=\"color:var(--red);\">❌ Не удалось загрузить игру</div>';});});
+        if(id==='casino') renderCasino().catch(e=>{console.error('[Casino render]',e);const ids=['blackjackArea','slotsArea','rouletteArea','coinflipArea','diceArea','baccaratArea','videoPokerArea'];ids.forEach(id=>{const el=qs(id);if(el)el.innerHTML='<div style=\"color:var(--red);\">❌ Не удалось загрузить игру</div>';});});
         if(id==='tasks') setTimeout(()=>{const u=window.allUsersCache?.[current()]||{};const el=qs('taskBalanceDisplay');if(el)el.textContent=`${Number(u.taskBalance||0).toLocaleString('ru-RU')} ₽`;},80);
         if(id==='adminPage') setTimeout(()=>injectEconomyAdminUI(),120);
       }catch(e){console.warn('[Kapani economy nav]',e)}
