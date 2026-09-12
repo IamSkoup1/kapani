@@ -3988,14 +3988,6 @@ window.handleAuth = async function() {
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(nick, password);
-                // After a successful login, register FCM immediately when the user
-                // has already granted notification permission. This makes the push
-                // bridge/session available before startApp() and avoids a timing race
-                // during the initial app bootstrap.
-                if(window.Notification && Notification.permission==='granted'){
-                    try { await tryRegisterFcm(); }
-                    catch(pushError) { console.warn('[Kapani FCM] post-login registration:', pushError); }
-                }
             } catch(sessionError) {
                 console.warn('[Kapani auth] server session:', sessionError);
             }
@@ -4032,13 +4024,6 @@ window.handleAuth = async function() {
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(existing.nick, password);
-                // Register push right after login as well as during startup.
-                // The startup path remains as a fallback, while this path removes
-                // the window in which push registration can be missed.
-                if(window.Notification && Notification.permission==='granted'){
-                    try { await tryRegisterFcm(); }
-                    catch(pushError) { console.warn('[Kapani FCM] post-login registration:', pushError); }
-                }
             } catch(sessionError) {
                 console.warn('[Kapani auth] server session:', sessionError);
             }
@@ -4114,6 +4099,18 @@ function startApp() {
                   console.warn('[Kapani FCM] automatic startup registration:', e);
               }
           }, 900);
+
+          // Firebase Auth restoration can finish after the first startup push
+          // attempt. Give it one additional non-blocking chance to restore the
+          // FCM registration without requiring the Profile screen.
+          setTimeout(async ()=>{
+              try{
+                  if(currentNick && ('Notification' in window) && Notification.permission==='granted'){
+                      const ok = await tryRegisterFcm();
+                      if(!ok) console.debug('[Kapani FCM] secondary startup registration did not complete');
+                  }
+              }catch(e){ console.debug('[Kapani FCM] secondary startup registration:', e); }
+          }, 3500);
 
           const defer = window.requestIdleCallback || ((cb)=>setTimeout(cb, 0));
           defer(()=>{
@@ -4800,15 +4797,37 @@ async function ensureCloudflarePushSession(forceRefresh=false){
     return _kapaniPushBridgeToken;
 }
 
-// Debug helpers: keep internal push functions callable from DevTools without
-// changing their application behavior.
+// Expose the recovery helper for diagnostics/manual testing without changing
+// the security model. The actual password remains memory-only.
 window.ensureCloudflarePushSession = ensureCloudflarePushSession;
-window.tryRegisterFcm = tryRegisterFcm;
 
 async function callKapaniPushBridge(path, data={}, retry=true){
     const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
     if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
-    let token=await ensureCloudflarePushSession(false);
+
+    // Prefer the short-lived Cloudflare push token. After a page reload it may
+    // not be available in memory yet, while Firebase Auth can already have a
+    // persisted signed-in user. The Worker accepts a Firebase ID token as a
+    // fallback for protected push-bridge endpoints, so use that path instead
+    // of forcing the user to log in again just to restore push registration.
+    let token = null;
+    try {
+        token = await ensureCloudflarePushSession(false);
+    } catch (pushSessionError) {
+        try {
+            const auth = await ensureAuth();
+            const user = auth.currentUser;
+            if(user){
+                token = await user.getIdToken();
+                console.debug('[Kapani push] using persisted Firebase Auth token for push bridge');
+            } else {
+                throw pushSessionError;
+            }
+        } catch(_authFallbackError) {
+            throw pushSessionError;
+        }
+    }
+
     const response=await fetch(`${base}${path}`,{
         method:'POST',
         headers:{'content-type':'application/json','authorization':`Bearer ${token}`},
@@ -4904,13 +4923,16 @@ window.getKapaniPushDiagnostics = async function(){
     let server = null;
     let serverError = null;
     try {
-        await waitForFirebaseAuthUser(5000);
         server = await callKapaniPushBridge('/diagnostics',{});
     } catch(e){ serverError=String(e?.message||e); }
     const localTokenId=token?await sha256TokenId(token):null;
     const serverTokenRegistered=!!server?.tokens?.some?.(x=>String(x?.tokenId||'')===String(localTokenId||''));
     let authDiag=null;
-    try{ const a=await ensureAuth(); authDiag=a.currentUser||await waitForFirebaseAuthUser(1000); }catch(e){}
+    try{
+        const a=await ensureAuth();
+        authDiag=a.currentUser||await waitForFirebaseAuthUser(3000);
+        if(authDiag){ try{ await authDiag.getIdToken(); }catch(_){} }
+    }catch(e){}
     const result={
         checkedAt:new Date().toISOString(),
         currentNick: currentNick || null,
