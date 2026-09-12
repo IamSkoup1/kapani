@@ -2879,20 +2879,39 @@ async function establishKapaniServerSession(nick, password){
     return auth.currentUser;
 }
 
+// Single-flight lock: several callers (e.g. several pushNotification() calls
+// fired in quick succession) can hit requireKapaniServerSession() at once
+// while Firebase Auth is still restoring. Without a shared lock each caller
+// starts its own waitForFirebaseAuthUser()/establishKapaniServerSession(),
+// which races several signInWithCustomToken() calls against each other and
+// produces the "Not found" session-healing errors. Instead, the first caller
+// starts the healing process and every concurrent caller awaits the same
+// promise and reuses its result.
+let firebaseAuthRestorePromise = null;
 async function requireKapaniServerSession(){
     const auth = await ensureAuth();
     if(auth.currentUser) return auth.currentUser;
-    const restored = await waitForFirebaseAuthUser(5000);
-    if(restored) return restored;
-    // During the current Kapani session keep the password only in memory so a
-    // transient Firebase Auth loss can be healed without asking the user to log in again.
-    if(_kapaniSessionPassword && currentNick){
+    if(firebaseAuthRestorePromise) return await firebaseAuthRestorePromise;
+    firebaseAuthRestorePromise = (async()=>{
         try{
-            const healed = await establishKapaniServerSession(currentNick, _kapaniSessionPassword);
-            if(healed) return healed;
-        }catch(e){ console.warn('[Kapani auth] session healing:',e); }
-    }
-    throw new Error('Защищённая Firebase-сессия ещё восстанавливается. Повторите действие через секунду.');
+            const restored = await waitForFirebaseAuthUser(5000);
+            if(restored) return restored;
+            // During the current Kapani session keep the password only in memory so a
+            // transient Firebase Auth loss can be healed without asking the user to log in again.
+            if(_kapaniSessionPassword && currentNick){
+                try{
+                    const healed = await establishKapaniServerSession(currentNick, _kapaniSessionPassword);
+                    if(healed) return healed;
+                }catch(e){ console.warn('[Kapani auth] session healing:',e); }
+            }
+            throw new Error('Защищённая Firebase-сессия ещё восстанавливается. Повторите действие через секунду.');
+        } finally {
+            // Release the lock once this attempt settles so a future genuine
+            // reconnect (e.g. after a real network drop) can try again.
+            firebaseAuthRestorePromise = null;
+        }
+    })();
+    return await firebaseAuthRestorePromise;
 }
 
 // Fallback: Create order directly in database
@@ -2983,8 +3002,7 @@ async function fallbackPayOrder(data) {
     const o = snap.val();
     if(!o.worker) throw new Error('Нет исполнителя');
     if(o.type==='taxi' && o.status !== 'waiting_payment') throw new Error('Заказ ещё не готов к оплате');
-    const cSnap = await get(userRef(o.client));
-    const wSnap = await get(userRef(o.worker));
+    const [cSnap, wSnap] = await Promise.all([get(userRef(o.client)), get(userRef(o.worker))]);
     const c = cSnap.val();
     const w = wSnap.val();
     if(!c || !w) throw new Error('Пользователь не найден');
@@ -3009,8 +3027,7 @@ async function fallbackPayOrder(data) {
 
 // Fallback: Transfer money directly
 async function fallbackTransferMoney(data) {
-    const fromSnap = await get(userRef(currentNick));
-    const toSnap = await get(userRef(data.toUid));
+    const [fromSnap, toSnap] = await Promise.all([get(userRef(currentNick)), get(userRef(data.toUid))]);
     const fromUser = fromSnap.val();
     const toUser = toSnap.val();
 
@@ -4683,6 +4700,12 @@ async function tryRegisterFcm(){
             userAgent:navigator.userAgent,
             prefs:getPushPrefs()
         });
+        resultState.lastRegisterResponse = {
+            ok: !!serverResult?.ok,
+            success: !!serverResult?.success,
+            tokenId: serverResult?.tokenId || null,
+            tokenCount: Number(serverResult?.tokenCount || 0)
+        };
         window._kapaniFcmToken = token;
         window._kapaniFcmTokenId = serverResult?.tokenId || tokenIdLocal;
         try{ localStorage.setItem('kp_fcm_token_id', window._kapaniFcmTokenId); }catch(e){}
@@ -4713,7 +4736,21 @@ async function tryRegisterFcm(){
     }catch(e){
         resultState.status='error';
         resultState.error=String(e?.message || e);
-        console.error('[Kapani FCM] registration failed:',e);
+        // "Cloudflare push session is not available" is an EXPECTED, routine
+        // condition: the plaintext password is only ever kept in memory for
+        // the current tab session (never persisted — see the security note on
+        // _kapaniSessionPassword) and the persisted push-bridge token expires
+        // every 7 days. So after a page reload/reopen that lands outside that
+        // 7-day window, this call is *supposed* to fail until the user logs
+        // in again or opens Profile and re-enables push manually — it is not
+        // a bug and must not be reported as one. A loud console.error here
+        // scared users/devs on completely ordinary page loads.
+        const isExpectedSessionGap = /Cloudflare push session is not available/.test(resultState.error);
+        if(isExpectedSessionGap){
+            console.debug('[Kapani FCM] automatic registration skipped — no active push session (expected after reload until next login):', resultState.error);
+        } else {
+            console.error('[Kapani FCM] registration failed:',e);
+        }
         return false;
     }
 }
@@ -4866,9 +4903,26 @@ window.getKapaniPushDiagnostics = async function(){
         lastGoodRegistrationAt:window._kapaniPushLastGoodAt||null,
         lastForegroundMessageAt:window._kapaniPushState?.lastForegroundMessageAt||null,
         lastServerError:window._kapaniPushState?.lastServerError||null,
+        lastRegisterResponse:window._kapaniPushState?.lastRegisterResponse||null,
+        serviceWorkerScript: reg ? new URL('./firebase-messaging-sw.js', location.href).href : null,
+        cloudflareWorker: String(CONFIG.pushBridgeUrl || '').replace(/\/$/,'') || null,
+        cloudflareHealth: null,
         queueDiagnostic:server?.queue||null
     };
-    console.table?.(result);
+    try {
+        const base = String(CONFIG.pushBridgeUrl || '').replace(/\/$/,'');
+        if(base){
+            const controller = new AbortController();
+            const timer = setTimeout(()=>controller.abort(), 5000);
+            const response = await fetch(`${base}/health`, { cache:'no-store', signal:controller.signal });
+            clearTimeout(timer);
+            const text = await response.text();
+            let json = null; try { json = JSON.parse(text); } catch(_) {}
+            result.cloudflareHealth = { httpStatus:response.status, ok:response.ok && !!json?.ok, response:json || text.slice(0,500) };
+        }
+    } catch(e) {
+        result.cloudflareHealth = { httpStatus:null, ok:false, error:String(e?.message || e) };
+    }
     return result;
 };
 
@@ -4931,14 +4985,20 @@ if(!window._kapaniChatPresenceUnloadBound){
 }
 
 // ─── NOTIFICATIONS ────────────────────────
+// Notifications are always best-effort: pushNotification() must NEVER throw,
+// because it is called right after critical business operations (account
+// verification, transfers, fines, business approvals, etc.) have already
+// succeeded. A push/session failure here must never look like the underlying
+// operation failed and must never produce an unhandled promise rejection.
 async function pushNotification(nick,text,cat='system'){
+    const targetNick=String(nick||'').trim();
+    const body=String(text||'').trim();
+    if(!targetNick || !body) return { ok:false, notificationFailed:true, error:'invalid-args' };
     try{
-        const targetNick=String(nick||'').trim();
-        const body=String(text||'').trim();
-        if(!targetNick || !body) return;
-
         // Heal the Firebase Auth session first so a freshly restored/reloaded
-        // Kapani session can still create server-side notifications.
+        // Kapani session can still create server-side notifications. This reuses
+        // the single-flight lock in requireKapaniServerSession(), so many
+        // notifications fired together never race each other's session healing.
         await requireKapaniServerSession();
 
         // The notifications node is intentionally not browser-writable. Use the
@@ -4954,16 +5014,34 @@ async function pushNotification(nick,text,cat='system'){
         // queue durability.
         if(notificationId){
             try{
+                // /enqueue is only a best-effort wake-up. The notification +
+                // durable queue entry already exist atomically in Firebase.
                 await callKapaniPushBridge('/enqueue',{nick:targetNick,notificationId});
             }catch(bridgeError){
                 console.debug('[push enqueue wake-up] Cloudflare wake-up недоступен, durable queue сохранена:',bridgeError?.message||bridgeError);
             }
         }
+        return { ok:true, notificationId, nick:targetNick };
     }catch(e){
-        console.error('[pushNotification]',e);
-        throw e;
+        // Diagnostic only — never rethrow. The caller's business operation has
+        // already completed successfully before pushNotification() was invoked.
+        console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e);
+        return { ok:false, notificationFailed:true, error:String(e?.message||e), nick:targetNick };
     }
 }
+window.testKapaniPush = async function(){
+    if(!currentNick) throw new Error('Сначала войдите в Капани');
+    if(!('Notification' in window) || Notification.permission !== 'granted') {
+        throw new Error('Сначала разрешите системные уведомления в профиле');
+    }
+    const result = await pushNotification(currentNick, '🧪 Тестовый Push Капани. Проверьте уведомление даже после закрытия сайта.', 'system');
+    toast('🧪 Тестовый Push поставлен в очередь','green');
+    return {
+        ...result,
+        message: 'Уведомление создано через Firebase Functions → pushQueue → Cloudflare → FCM. Закройте сайт для проверки доставки.',
+        diagnostics: await window.getKapaniPushDiagnostics()
+    };
+};
 window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
 window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
 function renderNotifications(notifs){
@@ -6812,7 +6890,7 @@ window.sendChat=async function(){
     catch(e){ inp.value=text; toast('❌ Не удалось отправить сообщение','red'); }
 };
 async function sendChatMsg(text,mediaData,msgType,cameraFacing){
-    const uSnap=await get(userRef(currentNick));const u=uSnap.val();
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val();
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
@@ -7130,7 +7208,9 @@ window.sendDm=async function(){
 };
 async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(!currentDmNick)return;
-    const uSnap=await get(userRef(currentNick));const u=uSnap.val();
+    // currentNick's user record is already kept live via attachUserListener(),
+    // so avoid a fresh get() on every single message send.
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val();
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
@@ -8514,8 +8594,8 @@ async function renderAdvertiserWorkStats(){
 }
 async function renderAdminAdvertiserStats(){
     const host=qs('adminAdvertiserStats'); if(!host) return;
-    const snap=await get(ref(db,'users')); const users=snap.val()||{};
-    const statsSnap=await get(ref(db,'advertiserStats'));
+    const [snap, statsSnap] = await Promise.all([get(ref(db,'users')), get(ref(db,'advertiserStats'))]);
+    const users=snap.val()||{};
     const stats=statsSnap.val()||{};
     const rows=[];
     for(const [nick,u] of Object.entries(users)){
@@ -8982,20 +9062,26 @@ window.adminFireWorker=async function(){
 window.adminVerifyAccount=async function(nick){
     if(!confirm(`Подтвердить аккаунт ${nick}?`))return;
     await update(userRef(nick),{accountVerified:true});
-    await pushNotification(nick,'✅ Ваш аккаунт подтверждён мэрией!','system');
+    if(allUsersCache?.[nick]) allUsersCache[nick].accountVerified = true;
+    // The account update above has already succeeded — push is fire-and-forget
+    // and can never make this operation look like it failed (pushNotification
+    // never throws).
+    pushNotification(nick,'✅ Ваш аккаунт подтверждён мэрией!','system');
     toast(`✅ Аккаунт ${nick} подтверждён`,'green');
     renderUnverifiedAccounts();
 };
 window.adminDeleteAccount=async function(nick){
     if(!confirm(`Удалить аккаунт ${nick}? Это действие необратимо!`))return;
     await remove(userRef(nick));
+    if(allUsersCache) delete allUsersCache[nick];
     toast(`🗑 Аккаунт ${nick} удалён`,'red');
     renderUnverifiedAccounts();
 };
 window.renderUnverifiedAccounts=async function(){
     const el=qs('unverifiedAccounts');if(!el)return;
-    const snap=await get(ref(db,'users'));
-    const all=snap.val()||{};
+    // /admin's service already primes allUsersCache via loadAllUsersCache();
+    // reuse it instead of a fresh full get(users) on every render.
+    const all = (allUsersCacheLoaded ? allUsersCache : (await loadAllUsersCache())) || {};
     const unverified=Object.entries(all).filter(([k,u])=>u && u.accountVerified !== true);
     if(unverified.length===0){
         el.innerHTML='<div style="color:var(--muted);font-size:13px;">Нет неподтверждённых аккаунтов</div>';
@@ -9474,8 +9560,8 @@ window.navTo=function(id){
     if(id==='dutyPage'){startCallsListener();renderDutyCalls(_lastCalls);}
     if(id==='deliveryOrderPage'){renderMyDeliveryOrders();if(typeof renderDeliveryOrderOptions==='function')renderDeliveryOrderOptions(true);else updateDeliverySourceHint();}
     if(id==='events') renderEventsSection();
-    if(id==='kEducation' && typeof window.kapaniRenderKEducation==='function') window.kapaniRenderKEducation();
-    if(id==='casino' && typeof window.kapaniRenderCasino==='function') window.kapaniRenderCasino();
+    if(id==='kEducation' && typeof window.kapaniRenderKEducation==='function' && !window._kapaniEconomyNavHandlesRender) window.kapaniRenderKEducation();
+    if(id==='casino' && typeof window.kapaniRenderCasino==='function' && !window._kapaniEconomyNavHandlesRender) window.kapaniRenderCasino();
     if(id==='gameSpySection') initSpyGame();
     if(id==='gameMafiaSection') initMafiaGame();
     if(id==='gameMatch3Section') initMatch3();
@@ -11655,10 +11741,14 @@ window.adminRejectBizDelete = async function(reqId, bizId){
 
 
 // ─── ADMIN: RENDER BIZ APPS ───────────────
-async function renderAdminBizApps(){
+let _adminBizAppsCache = null;
+async function renderAdminBizApps(forceFetch){
     const el = qs('adminBizApps'); if(!el) return;
-    const snap = await get(bizAppsRef());
-    const apps = Object.values(snap.val() || {}).filter(a => a.status === 'pending');
+    if(forceFetch || !_adminBizAppsCache){
+        const snap = await get(bizAppsRef());
+        _adminBizAppsCache = snap.val() || {};
+    }
+    const apps = Object.values(_adminBizAppsCache).filter(a => a.status === 'pending');
     if(!apps.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;">Нет заявок</div>'; return; }
     el.innerHTML = apps.map(a => `
         <div class="submission-card">
@@ -11695,6 +11785,9 @@ window.adminApproveBiz = async function(id){
     await update(userRef(a.owner), ownerUpdate);
 
     await update(bizAppRef(id), { status: 'approved' });
+    // Update the local admin-apps cache in place instead of re-reading the
+    // whole businessApps branch again.
+    if(_adminBizAppsCache?.[id]) _adminBizAppsCache[id].status = 'approved';
     await pushNotification(a.owner, `🎉 Ваш бизнес «${a.name}» одобрен мэрией!`, 'system');
     toast(`✅ Бизнес «${a.name}» одобрен`, 'green');
     renderAdminBizApps();
@@ -11704,6 +11797,7 @@ window.adminRejectBiz = async function(id){
     const snap = await get(bizAppRef(id)); if(!snap.exists()) return;
     const a = snap.val();
     await update(bizAppRef(id), { status: 'rejected' });
+    if(_adminBizAppsCache?.[id]) _adminBizAppsCache[id].status = 'rejected';
     await pushNotification(a.owner, `❌ Заявка на бизнес «${a.name}» отклонена мэрией.`, 'system');
     toast('❌ Отклонено', 'red');
     renderAdminBizApps();
@@ -11712,15 +11806,26 @@ window.adminRejectBiz = async function(id){
 // ─── BUSINESSES LIST ──────────────────────
 async function renderBusinesses(){
     const el = qs('bizList'); if(!el) return;
-    el.innerHTML = loadingHtml('Загружаем бизнесы...');
 
-    const snap = await get(bizRef());
-    const biznesesRaw = snap.val() || {};
-    allBusinessesCache = biznesesRaw;
+    // /businesses is already kept live by the 'business' service listener
+    // (attached in enterService), which populates allBusinessesCache on every
+    // update. Reuse that cache instead of doing another full get(bizRef())
+    // on every render — only fall back to a one-off fetch if the cache is
+    // genuinely empty (e.g. this render runs before the listener's first
+    // snapshot has arrived).
+    let biznesesRaw = allBusinessesCache;
+    if(!biznesesRaw || !Object.keys(biznesesRaw).length){
+        el.innerHTML = loadingHtml('Загружаем бизнесы...');
+        const snap = await get(bizRef());
+        biznesesRaw = snap.val() || {};
+        allBusinessesCache = biznesesRaw;
+        window.allBusinessesCache = allBusinessesCache;
+    }
     const bizneses = Object.values(biznesesRaw).filter(b => b.status === 'active')
         .sort((a,b)=>Number(Number(b.promotedUntil||0) > Date.now()) - Number(Number(a.promotedUntil||0) > Date.now()));
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val() || {};
+    // currentNick's own user record is kept live by attachUserListener()
+    // (allUsersCache[currentNick]); reuse it instead of a fresh get() here.
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val() || {};
     const myBizPanel = qs('myBizPanel');
     const ownedLimit = getBusinessLimitForUser(u);
     const ownedBizs = bizneses.filter(b => b.owner === currentNick);
@@ -11761,7 +11866,10 @@ async function renderBusinesses(){
     el.innerHTML = `<div class="biz-grid">${bizneses.map(b => `
         <div class="biz-card" onclick="openBizDetail('${jsEsc(b.id)}')">
             ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 <span class="text-rainbow-prime">ТОП!</span></span>` : ''}
-            ${b.banner ? `<img class="biz-card-img" src="${escHtml(b.banner)}" loading="lazy">` : '<div class="biz-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;">🏪</div>'}
+            <div style="position:relative;">
+                ${b.banner ? `<img class="biz-card-img" src="${escHtml(b.banner)}" loading="lazy" decoding="async">` : '<div class="biz-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;">🏪</div>'}
+                ${b.bgEffect ? `<div class="biz-card-bg-effect" id="bizCardBg_${jsEsc(b.id)}" style="position:absolute;inset:0;pointer-events:none;z-index:1;"></div>` : ''}
+            </div>
             <div class="biz-card-body">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                     ${b.icon ? `<img loading="lazy" decoding="async" src="${escHtml(b.icon)}" style="width:28px;height:28px;border-radius:8px;object-fit:cover;border:1px solid var(--border);">` : ''}
@@ -11778,14 +11886,25 @@ async function renderBusinesses(){
                 ${b.delivery ? '<div style="font-size:11px;color:var(--primary);font-weight:800;margin-top:4px;">🚚 Доставка</div>' : ''}
             </div>
         </div>`).join('')}</div>`;
+    // Apply purchased bgEffect visuals on each card (same helper used on the
+    // business detail page). Only touches decorative overlay elements, never
+    // the card's text/buttons, and does no extra Firebase reads.
+    bizneses.forEach(b => { if(b.bgEffect) applyBizBgEffect(qs(`bizCardBg_${b.id}`), b.bgEffect); });
     if (curPage === 'deliveryOrderPage' && typeof renderDeliveryOrderOptions === 'function') renderDeliveryOrderOptions();
 }
 
 // ─── BUSINESS DETAIL ──────────────────────
 window.openBizDetail = async function(bizId){
     currentBizId = bizId;
-    const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return toast('❌ Бизнес не найден','red');
-    const b = snap.val();
+    // The business list is already kept live in allBusinessesCache by the
+    // 'business' service listener, so reuse it instead of another full
+    // get(bizItemRef()) on every open — only fetch when the entry is
+    // genuinely missing from cache.
+    let b = allBusinessesCache?.[bizId];
+    if(!b){
+        const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return toast('❌ Бизнес не найден','red');
+        b = snap.val();
+    }
     currentBizDetailData = b;
     allBusinessesCache[bizId] = b;
     const isOwner = b.owner === currentNick;
@@ -12135,8 +12254,7 @@ window.buyBizProduct = window.addBizToCart;
 
 // ─── OWNER PANEL ─────────────────────────
 async function renderBizOwnerPanel(){
-    const uSnap = await get(userRef(currentNick));
-    const u = uSnap.val() || {};
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val() || {};
 
     const bizIds = Array.from(new Set([
         ...(Array.isArray(u.businessIds) ? u.businessIds : []),
@@ -12173,10 +12291,12 @@ if(!bizId){
         switchEl.innerHTML = '';
     }
 
-    const snap = await get(bizItemRef(bizId));
-    if(!snap.exists()) return;
-
-    const b = snap.val();
+    let b = allBusinessesCache?.[bizId];
+    if(!b){
+        const snap = await get(bizItemRef(bizId));
+        if(!snap.exists()) return;
+        b = snap.val();
+    }
     await processBizAutoSalaries(bizId, b).catch(()=>{});
     const refreshedSnap = await get(bizItemRef(bizId));
     const bData = refreshedSnap.val() || b;
@@ -12313,6 +12433,7 @@ window.buyBizBgEffect = async function(effectId){
     if(!effectId){
         await update(bizItemRef(currentBizId), { bgEffect: null });
         if(currentBizDetailData){ currentBizDetailData.bgEffect = null; }
+        if(allBusinessesCache?.[currentBizId]) allBusinessesCache[currentBizId].bgEffect = null;
         const effectHost = qs('bizDetailBgEffect'); if(effectHost) applyBizBgEffect(effectHost, null);
         toast('✅ Оформление убрано','green');
         renderBizOwnerPanel();
@@ -12340,6 +12461,7 @@ window.buyBizBgEffect = async function(effectId){
         if(!result || !result.committed) return toast(`❌ Недостаточно средств на счёте бизнеса. Нужно ${eff.price}₽`,'red');
 
         if(currentBizDetailData) currentBizDetailData.bgEffect = effectId;
+        if(allBusinessesCache?.[currentBizId]) allBusinessesCache[currentBizId].bgEffect = effectId;
         const effectHost = qs('bizDetailBgEffect'); if(effectHost) applyBizBgEffect(effectHost, effectId);
         await logTx(currentNick, { type:'out', who:'Бизнес', amt:eff.price, desc:`Оформление бизнеса: ${eff.name}` });
         toast('✅ Оформление применено','green');
@@ -12368,14 +12490,20 @@ window.clearBizJobApps=async function(bizId){
 window.sendBizComplaint = async function(bizId, type){
     const text = (qs('bizComplaintText')?.value||'').trim();
     if(!text || text.length < 5) return toast('⚠️ Напишите сообщение (мин. 5 символов)','gold');
-    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
-    const bSnap = await get(bizItemRef(bizId)); if(!bSnap.exists()) return;
-    const b = bSnap.val();
+    const u = allUsersCache?.[currentNick];
+    const b = allBusinessesCache?.[bizId];
+    const [uSnap, bSnap] = await Promise.all([
+        u ? Promise.resolve(null) : get(userRef(currentNick)),
+        b ? Promise.resolve(null) : get(bizItemRef(bizId))
+    ]);
+    const uu = u || uSnap.val() || {};
+    const bb = b || (bSnap && bSnap.exists() ? bSnap.val() : null);
+    if(!bb) return;
     const id = genId();
     await set(ref(db, `bizComplaints/${bizId}/${id}`), {
-        id, bizId, from: currentNick, fromName: displayNick(u), text, type: type||'request', createdAt: Date.now()
+        id, bizId, from: currentNick, fromName: displayNick(uu), text, type: type||'request', createdAt: Date.now()
     });
-    await pushNotification(b.owner, `${type==='complaint'?'⚠️ Жалоба':'📩 Запрос'} в «${b.name}» от ${displayNick(u)}`, 'system');
+    await pushNotification(bb.owner, `${type==='complaint'?'⚠️ Жалоба':'📩 Запрос'} в «${bb.name}» от ${displayNick(uu)}`, 'system');
     if(qs('bizComplaintText')) qs('bizComplaintText').value='';
     toast('✅ Сообщение отправлено владельцу','green');
 };
@@ -15392,8 +15520,7 @@ async function tryFinalizeHospitalPayment(id){
         const appt = freshSnap.val();
         if(!appt || appt.paymentStatus !== 'processing') return;
 
-        const clientSnap = await get(userRef(appt.clientNick));
-        const doctorSnap = await get(userRef(appt.doctorNick));
+        const [clientSnap, doctorSnap] = await Promise.all([get(userRef(appt.clientNick)), get(userRef(appt.doctorNick))]);
         const client = clientSnap.val();
         const doctor = doctorSnap.val();
         if(!client || !doctor){ await update(hospitalAppointmentRef(id), { paymentStatus:'unpaid' }); return; }
@@ -15765,6 +15892,15 @@ try {
   window.parseMoneyValue = parseMoneyValue;
   window.bizItemRef = bizItemRef;
   window.JANITOR_TASK_TEXT = JANITOR_TASK_TEXT;
+  // updateHeader/updateHeader_balance are called from the classic (non-module)
+  // <script> further down (casino, K-education, licenses, etc). Module-scope
+  // function declarations are private to this module and are NOT visible
+  // there, so without this export those calls throw
+  // "ReferenceError: updateHeader is not defined" — an unhandled rejection
+  // that aborts the rest of the calling function (toasts/UI updates after it
+  // never run, balances look stuck, buttons feel unresponsive).
+  window.updateHeader = updateHeader;
+  window.updateHeader_balance = updateHeader_balance;
   // Shared Firebase primitives — additive modules must reuse these instead of
   // importing their own copy of the Firebase SDK (was: a second, differently
   // versioned firebase-database.js fetched and initialized independently).
@@ -17189,6 +17325,10 @@ ready(function(){
     const current = ()=>window._getCurrentNick ? window._getCurrentNick() : window.currentNick;
     const formatDate = ts => ts ? new Date(Number(ts)).toLocaleString('ru-RU') : '—';
     const genId = ()=> (window.genId ? window.genId() : `${Date.now()}_${Math.random().toString(36).slice(2,10)}`);
+    // Same cross-scope reasoning as the primitives above: these live in the
+    // ES module and must be captured explicitly, or any call here throws.
+    const updateHeader = window.updateHeader || (()=>{});
+    const updateHeader_balance = window.updateHeader_balance || (()=>{});
 
     // ────────────────────────────────────────────────────────────────
     // Rights / documents
@@ -17426,7 +17566,20 @@ ready(function(){
     function shuffle(deck){const d=deck.slice();for(let i=d.length-1;i>0;i--){const b=new Uint32Array(1);crypto.getRandomValues(b);const j=b[0]%(i+1);[d[i],d[j]]=[d[j],d[i]];}return d;}
     function handValue(cards){let total=0,aces=0;for(const c of cards){if(c.rank==='A'){total+=11;aces++;}else if(['K','Q','J'].includes(c.rank))total+=10;else total+=Number(c.rank);}while(total>21&&aces>0){total-=10;aces--;}return total;}
     function renderCards(cards){return (cards||[]).map(c=>`<span style="display:inline-flex;width:48px;height:66px;align-items:center;justify-content:center;background:#fff;color:${['♥','♦'].includes(c.suit)?'#c33':'#111'};border-radius:8px;border:1px solid #ddd;font-weight:900;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.2);margin-right:5px;">${esc(c.rank)}${esc(c.suit)}</span>`).join('');}
-    async function getCasinoUser(){return (await get(userRef(current()))).val()||{};}
+    // Every casino sub-render (slots/roulette/coinflip/dice/blackjack) used to
+    // call getCasinoUser(), which always did its own get(userRef(...)) round
+    // trip to Firebase — so opening the casino page, or any single game
+    // action that re-renders several panels, fired several sequential network
+    // reads in a row. The user record is already kept live in
+    // allUsersCache[nick] by the module's attachUserListener(), and every
+    // game action already writes the fresh result into allUsersCache right
+    // after its transaction commits — so reuse that instead of a fresh read.
+    async function getCasinoUser(){
+      const nick=current();
+      const cached=window.allUsersCache?.[nick];
+      if(cached) return cached;
+      return (await get(userRef(nick))).val()||{};
+    }
     function casinoBalance(u){return Math.max(0,Number(u?.casino?.balance||0));}
     function setCasinoTransferBusy(v){window._casinoTransferBusy=!!v;}
     async function renderCasinoBalances(uOverride=null){
@@ -17780,6 +17933,11 @@ ready(function(){
     // Create both sections as soon as the main app exists, before any click can navigate to them.
     // Economy-specific sections are created lazily when their page is opened.
 
+    // From this point on, this wrapper is the one that renders kEducation/casino
+    // (after ensureEconomySections() + the base navigator have both run), so the
+    // base navTo's own kapaniRenderKEducation/kapaniRenderCasino calls must stop
+    // firing — otherwise every navigation into these pages rendered them twice.
+    window._kapaniEconomyNavHandlesRender = true;
     window.navTo=function(id){
       try{
         // Guarantee that the destination exists BEFORE the original navigator hides all sections.

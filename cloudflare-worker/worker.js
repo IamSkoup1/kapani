@@ -756,7 +756,9 @@ const WAITING_TOKEN_MS = 5 * 60 * 1000;
 const MAX_RETRY_MS = 15 * 60 * 1000;
 
 async function queueJobId(nick, notificationId) {
-  return tokenKey(`${String(nick)}:${String(notificationId)}`);
+  // Must match functions/index.js::notificationJobId exactly. Token IDs are
+  // intentionally truncated to 32 hex chars, but queue job IDs are full SHA-256.
+  return sha256Hex(`${String(nick)}:${String(notificationId)}`);
 }
 
 function nowMs() { return Date.now(); }
@@ -1142,7 +1144,22 @@ export default {
     const url = new URL(request.url);
     try {
       if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/health')) {
-        return jsonResponse({ ok:true, service:'kapani-free-push-bridge', mode:'cloudflare-queue-fcm-v1' }, 200, request);
+        const serviceAccountConfigured = !!String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim();
+        const projectConfigured = !!String(env.FIREBASE_PROJECT_ID || '').trim();
+        const databaseConfigured = !!String(env.FIREBASE_DATABASE_URL || '').trim();
+        const ready = serviceAccountConfigured && projectConfigured && databaseConfigured;
+        return jsonResponse({
+          ok: ready,
+          service: 'kapani-free-push-bridge',
+          mode: 'cloudflare-queue-fcm-v1',
+          configured: {
+            serviceAccount: serviceAccountConfigured,
+            projectId: projectConfigured,
+            databaseUrl: databaseConfigured,
+            cron: true
+          },
+          timestamp: nowMs()
+        }, ready ? 200 : 503, request);
       }
       if (request.method !== 'POST') return jsonResponse({ok:false,error:'Method not allowed'},405,request);
       if (url.pathname === '/session') return await handleSession(request, env);

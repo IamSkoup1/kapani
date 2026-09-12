@@ -1,13 +1,25 @@
 # Kapani Cloudflare Push Bridge — ACTIVE PRODUCTION PUSH BRIDGE
 
-Этот каталог сохранён только как архив старой интеграции.
+Это активная production-система Push Kapani.
 
-**Активный production push path использует Cloudflare Worker.**
-Frontend получает короткоживущий `cfp.*` push session token от `/session`; push bridge `/register`, `/unregister`, `/diagnostics`, `/preferences` и `/enqueue` работают через этот Cloudflare-issued token. Firebase Auth больше не является обязательной частью push delivery path.
+Каноническая цепочка:
 
-`users/{nick}/notifications/{id} → enqueueNotificationPush → notificationQueue → FCM → firebase-messaging-sw.js`
+`Kapani → createKapaniNotification → users/<nick>/notifications + pushQueue → Cloudflare Worker → FCM HTTP v1 → firebase-messaging-sw.js → системное уведомление`
 
-`pushBridgeUrl`, `/register`, `/push` и `/diagnostics` являются активным Cloudflare push bridge API.
+## API
 
-Не разворачивайте Worker для работы push. Если старый Worker остаётся
-развёрнутым по другим причинам, это независимая legacy-интеграция.
+- `GET /health` — проверка production-конфигурации Worker.
+- `POST /session` — короткоживущая Cloudflare push-сессия.
+- `POST /register` — регистрация FCM token.
+- `POST /unregister` — удаление FCM token.
+- `POST /diagnostics` — состояние токенов и очереди пользователя.
+- `POST /preferences` — настройки категорий Push.
+- `POST /enqueue` — идемпотентный wake-up/ensure queue entry.
+
+Actual FCM delivery выполняется только Worker через FCM HTTP v1. Firebase Functions больше не отправляют Push напрямую.
+
+## Важно
+
+Не удаляйте `createKapaniNotification`, `notifyOnChatMessage`, `notifyOnLegacyDuelNotification` и `notifyOnNewsCreated`: эти функции создают канонические записи уведомлений/очереди.
+
+Не возвращайте `admin.messaging().sendEach()` или другой прямой sender в Firebase Functions: это создаст конкурирующий путь доставки и риск двойных Push.
