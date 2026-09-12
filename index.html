@@ -3988,6 +3988,14 @@ window.handleAuth = async function() {
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(nick, password);
+                // After a successful login, register FCM immediately when the user
+                // has already granted notification permission. This makes the push
+                // bridge/session available before startApp() and avoids a timing race
+                // during the initial app bootstrap.
+                if(window.Notification && Notification.permission==='granted'){
+                    try { await tryRegisterFcm(); }
+                    catch(pushError) { console.warn('[Kapani FCM] post-login registration:', pushError); }
+                }
             } catch(sessionError) {
                 console.warn('[Kapani auth] server session:', sessionError);
             }
@@ -4024,6 +4032,13 @@ window.handleAuth = async function() {
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(existing.nick, password);
+                // Register push right after login as well as during startup.
+                // The startup path remains as a fallback, while this path removes
+                // the window in which push registration can be missed.
+                if(window.Notification && Notification.permission==='granted'){
+                    try { await tryRegisterFcm(); }
+                    catch(pushError) { console.warn('[Kapani FCM] post-login registration:', pushError); }
+                }
             } catch(sessionError) {
                 console.warn('[Kapani auth] server session:', sessionError);
             }
@@ -4784,6 +4799,11 @@ async function ensureCloudflarePushSession(forceRefresh=false){
     try{localStorage.setItem('kp_push_bridge_token',_kapaniPushBridgeToken);localStorage.setItem('kp_push_bridge_exp',String(_kapaniPushBridgeExpiresAt));}catch(e){}
     return _kapaniPushBridgeToken;
 }
+
+// Debug helpers: keep internal push functions callable from DevTools without
+// changing their application behavior.
+window.ensureCloudflarePushSession = ensureCloudflarePushSession;
+window.tryRegisterFcm = tryRegisterFcm;
 
 async function callKapaniPushBridge(path, data={}, retry=true){
     const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
