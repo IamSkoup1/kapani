@@ -6,8 +6,9 @@
 // и этим же контуром отправляет FCM HTTP v1.
 
 const GOOGLE_SCOPES = [
-  'https://www.googleapis.com/auth/firebase.messaging',
-  'https://www.googleapis.com/auth/firebase.database'
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/firebase.database',
+  'https://www.googleapis.com/auth/firebase.messaging'
 ].join(' ');
 const FIREBASE_CUSTOM_TOKEN_AUD = 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit';
 const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
