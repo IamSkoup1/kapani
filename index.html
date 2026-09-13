@@ -2637,9 +2637,6 @@ const ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
 
 let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
 let _kapaniSessionPassword = null;
-let _kapaniPushBridgeToken = null;
-let _kapaniPushBridgeExpiresAt = 0;
-try { _kapaniPushBridgeToken = localStorage.getItem('kp_push_bridge_token') || null; _kapaniPushBridgeExpiresAt = Number(localStorage.getItem('kp_push_bridge_exp') || 0) || 0; } catch(e) {}
 function syncCurrentNick(){ window.currentNick = currentNick; return currentNick; }
 syncCurrentNick();
 let appStarted = false;
@@ -2876,33 +2873,20 @@ async function callFunctionWithFallback(functionName, data, fallbackFn) {
 }
 
 async function establishKapaniServerSession(nick, password){
-    const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
-    if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
-    const response=await fetch(`${base}/session`,{
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body:JSON.stringify({nick,password})
-    });
-    const text=await response.text();
-    let json=null; try{json=JSON.parse(text);}catch(_){}
-    if(!response.ok || !json?.ok || !json?.token){
-        throw new Error(String(json?.error||`Push Bridge session ${response.status}: ${text}`));
-    }
-    if(json.pushToken){
-        _kapaniPushBridgeToken = String(json.pushToken);
-        _kapaniPushBridgeExpiresAt = Number(json.pushTokenExpiresAt || (Date.now()+7*24*3600*1000));
-        try{ localStorage.setItem('kp_push_bridge_token', _kapaniPushBridgeToken); localStorage.setItem('kp_push_bridge_exp', String(_kapaniPushBridgeExpiresAt)); }catch(e){}
-    }
-    const auth = await ensureAuth();
-    if(!authModule?.signInWithCustomToken) return auth.currentUser || null;
+    const fn=await ensureFunctions();
+    const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+    const issueSession=httpsCallable(fn,'issueKapaniSessionToken');
+    const result=await issueSession({nick:String(nick||'').trim(),password:String(password||'')});
+    const token=String(result?.data?.token||'');
+    if(!token) throw new Error('Не удалось получить Firebase-сессию Kapani');
+    const auth=await ensureAuth();
+    if(!authModule?.signInWithCustomToken) return auth.currentUser||null;
     try{
         if(authModule?.setPersistence && authModule?.browserLocalPersistence){
-            await authModule.setPersistence(auth, authModule.browserLocalPersistence);
+            await authModule.setPersistence(auth,authModule.browserLocalPersistence);
         }
-    }catch(persistError){
-        console.warn('[Kapani auth] browser persistence:', persistError);
-    }
-    await authModule.signInWithCustomToken(auth, json.token);
+    }catch(persistError){ console.warn('[Kapani auth] browser persistence:',persistError); }
+    await authModule.signInWithCustomToken(auth,token);
     await auth.currentUser?.getIdToken(true);
     return auth.currentUser;
 }
@@ -4064,16 +4048,21 @@ function startApp() {
         }
     } catch(e) {}
     syncCurrentNick();
-    try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:',e); }
 
     const loStatus = document.getElementById('loStatus');
     const loBar    = document.getElementById('loBar');
     if(loStatus) loStatus.textContent = 'Загружаем ваш профиль…';
     if(loBar) loBar.style.cssText = 'width:45%;transition:width .35s ease;';
 
-    // Critical path: only the signed-in user's profile. Heavy/global branches are lazy.
+    // Restore protected Firebase Auth before attaching user-scoped listeners.
+    // Realtime Database rules require auth for /users/<nick>/notifications.
+    const authReady = requireKapaniServerSession().catch(err=>{
+        console.warn('[Kapani auth] startup session restore:',err?.message||err);
+        return null;
+    });
+
     const criticalProfileLoad = Promise.race([
-        get(userRef(currentNick)),
+        authReady.then(()=>{ try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:',e); } return get(userRef(currentNick)); }),
         new Promise((_, reject)=>setTimeout(()=>reject(new Error('profile_load_timeout')), 8000))
     ]);
     Promise.resolve()
@@ -4087,7 +4076,7 @@ function startApp() {
 
           // Push registration must not depend on reopening Profile and pressing
           // the enable button. Once the user is signed in and has already granted
-          // notification permission, restore the Cloudflare session and register
+          // notification permission and register
           // the current FCM token automatically.
           setTimeout(async ()=>{
               try{
@@ -4138,7 +4127,7 @@ window.logout = async function() {
     const logoutNick=currentNick;
     try {
         if(logoutNick && window._kapaniFcmTokenId) {
-            try { await callKapaniPushBridge('/unregister',{tokenId:window._kapaniFcmTokenId, token:window._kapaniFcmToken||''}); }
+            try { const fn=await ensureFunctions(); const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js'); await httpsCallable(fn,'unregisterFcmToken')({tokenId:window._kapaniFcmTokenId,token:window._kapaniFcmToken||''}); }
             catch(e){ console.warn('[Kapani FCM] token unregister during logout failed:',e); }
         }
     } catch(e) {}
@@ -4151,8 +4140,7 @@ window.logout = async function() {
     listeners={};dmListeners={};
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
     try { if(authInstance?.currentUser) await authModule.signOut(authInstance); } catch(e){ console.warn('[Kapani auth] signOut:',e); }
-    try { localStorage.removeItem('kp_fcm_token_id'); localStorage.removeItem('kp_push_bridge_token'); localStorage.removeItem('kp_push_bridge_exp'); } catch(e) {}
-    _kapaniPushBridgeToken = null; _kapaniPushBridgeExpiresAt = 0;
+    try { localStorage.removeItem('kp_fcm_token_id'); } catch(e) {}
     localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; _kapaniSessionPassword = null; syncCurrentNick(); location.reload();
 };
 
@@ -4602,11 +4590,14 @@ function renderHomeStats(){
 // ─── PUSH NOTIFICATIONS ───────────────────
 function getPushPrefs(){try{return JSON.parse(localStorage.getItem('kp_push')||'{}');}catch(e){return{};}}
 function syncPushPrefs(){
-    if(!currentNick) return Promise.resolve();
-    const prefs={...getPushPrefs()};
-    delete prefs.updatedAt;
-    if(!window._kapaniFcmTokenId) return Promise.resolve();
-    return callKapaniPushBridge('/preferences',{prefs,tokenId:window._kapaniFcmTokenId}).catch(e=>console.warn('[Kapani push prefs]',e));
+    if(!currentNick || !window._kapaniFcmTokenId) return Promise.resolve();
+    return (async()=>{
+        try{
+            const fn=await ensureFunctions();
+            const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+            await httpsCallable(fn,'updatePushPreferences')({prefs:getPushPrefs(),tokenId:window._kapaniFcmTokenId});
+        }catch(e){ console.warn('[Kapani push prefs]',e); }
+    })();
 }
 function savePushPrefs(p){
     try{localStorage.setItem('kp_push',JSON.stringify(p));}catch(e){}
@@ -4689,157 +4680,39 @@ async function requestPushPermission(){
     return false;
 }
 async function tryRegisterFcm(){
-    const resultState = window._kapaniPushState = window._kapaniPushState || {};
-    if(!FCM_VAPID_KEY || !currentNick){
-        resultState.status='not_ready';
-        resultState.error='missing_user_or_vapid_key';
-        return false;
-    }
+    const resultState=window._kapaniPushState=window._kapaniPushState||{};
+    if(!FCM_VAPID_KEY||!currentNick){ resultState.status='not_ready'; resultState.error='missing_user_or_vapid_key'; return false; }
     try{
-        await ensureCloudflarePushSession(false);
-        const pack = await ensureMessaging();
-        if(!pack.messaging){
-            resultState.status='unsupported';
-            resultState.error='firebase_messaging_unsupported';
-            return false;
-        }
-        const { getToken, onMessage } = pack.mod;
-        const reg = await getSwReg();
-        if(!reg){
-            resultState.status='sw_failed';
-            resultState.error='service_worker_registration_failed';
-            return false;
-        }
-
-        const token = await getToken(pack.messaging, { vapidKey:FCM_VAPID_KEY, serviceWorkerRegistration:reg });
-        if(!token){
-            resultState.status='token_missing';
-            resultState.error='fcm_get_token_returned_empty';
-            return false;
-        }
-
-        const tokenIdLocal = await sha256TokenId(token);
-        const serverResult = await callKapaniPushBridge('/register', {
-            token,
-            userAgent:navigator.userAgent,
-            prefs:getPushPrefs()
-        });
-        resultState.lastRegisterResponse = {
-            ok: !!serverResult?.ok,
-            success: !!serverResult?.success,
-            tokenId: serverResult?.tokenId || null,
-            tokenCount: Number(serverResult?.tokenCount || 0)
-        };
-        window._kapaniFcmToken = token;
-        window._kapaniFcmTokenId = serverResult?.tokenId || tokenIdLocal;
-        try{ localStorage.setItem('kp_fcm_token_id', window._kapaniFcmTokenId); }catch(e){}
-        resultState.status='registered';
-        resultState.tokenId=window._kapaniFcmTokenId;
-        resultState.lastTokenUpdate=Date.now();
-        resultState.error=null;
-        resultState.serverRegistered=true;
-        window._kapaniPushLastGoodAt=Date.now();
-        await syncPushPrefs();
-
-        // Foreground FCM is forwarded to the same Service Worker notification renderer.
-        // No direct Notification() call is used, so the app still has exactly one
-        // production sender/display path.
+        await requireKapaniServerSession();
+        const pack=await ensureMessaging();
+        if(!pack.messaging){resultState.status='unsupported';resultState.error='firebase_messaging_unsupported';return false;}
+        const {getToken,onMessage}=pack.mod;
+        const reg=await getSwReg();
+        if(!reg){resultState.status='sw_failed';resultState.error='service_worker_registration_failed';return false;}
+        const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
+        if(!token){resultState.status='token_missing';resultState.error='fcm_get_token_returned_empty';return false;}
+        const tokenId=await sha256TokenId(token);
+        const fn=await ensureFunctions();
+        const server=await (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js")).httpsCallable(fn,'registerFcmToken')({token,userAgent:navigator.userAgent,prefs:getPushPrefs()});
+        window._kapaniFcmToken=token; window._kapaniFcmTokenId=server?.data?.tokenId||tokenId;
+        try{localStorage.setItem('kp_fcm_token_id',window._kapaniFcmTokenId);}catch(e){}
+        resultState.status='registered'; resultState.tokenId=window._kapaniFcmTokenId; resultState.lastTokenUpdate=Date.now(); resultState.error=null; resultState.serverRegistered=true; window._kapaniPushLastGoodAt=Date.now();
         if(!window._kapaniFcmOnMessageBound){
-            onMessage(pack.messaging, async (payload)=>{
+            onMessage(pack.messaging,(payload)=>{
                 resultState.lastForegroundMessageAt=Date.now();
-                resultState.lastForegroundNotificationId=String(payload?.data?.notificationId || '');
-                try{
-                    const sw = await getSwReg();
-                    const target = sw?.active || navigator.serviceWorker?.controller;
-                    if(target) target.postMessage({type:'KAPANI_FOREGROUND_PUSH', payload: payload?.data || {}});
-                }catch(e){ console.warn('[Kapani FCM] foreground SW handoff:',e); }
+                const data=payload?.data||{};
+                const id=String(data.notificationId||'');
+                try{const sw=reg?.active||navigator.serviceWorker?.controller;if(sw) sw.postMessage({type:'KAPANI_FOREGROUND_PUSH',payload:data});}
+                catch(e){console.warn('[Kapani FCM] foreground SW handoff:',e);}
+                // Also refresh the in-app inbox immediately. The RTDB listener remains authoritative.
+                if(currentNick) get(notifRef(currentNick)).then(s=>{if(curPage==='profile') renderNotifications(s.val()||{});}).catch(()=>{});
+                if(id) resultState.lastForegroundNotificationId=id;
             });
             window._kapaniFcmOnMessageBound=true;
         }
+        await syncPushPrefs();
         return true;
-    }catch(e){
-        resultState.status='error';
-        resultState.error=String(e?.message || e);
-        // "Cloudflare push session is not available" is an EXPECTED, routine
-        // condition: the plaintext password is only ever kept in memory for
-        // the current tab session (never persisted — see the security note on
-        // _kapaniSessionPassword) and the persisted push-bridge token expires
-        // every 7 days. So after a page reload/reopen that lands outside that
-        // 7-day window, this call is *supposed* to fail until the user logs
-        // in again or opens Profile and re-enables push manually — it is not
-        // a bug and must not be reported as one. A loud console.error here
-        // scared users/devs on completely ordinary page loads.
-        const isExpectedSessionGap = /Cloudflare push session is not available/.test(resultState.error);
-        if(isExpectedSessionGap){
-            console.debug('[Kapani FCM] automatic registration skipped — no active push session (expected after reload until next login):', resultState.error);
-        } else {
-            console.error('[Kapani FCM] registration failed:',e);
-        }
-        return false;
-    }
-}
-
-async function ensureCloudflarePushSession(forceRefresh=false){
-    if(!forceRefresh && _kapaniPushBridgeToken && _kapaniPushBridgeExpiresAt > Date.now()+60*1000) return _kapaniPushBridgeToken;
-    if(!_kapaniSessionPassword || !currentNick) throw new Error('Cloudflare push session is not available');
-    const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
-    if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
-    const response=await fetch(`${base}/session`,{
-        method:'POST',
-        headers:{'content-type':'application/json'},
-        body:JSON.stringify({nick:currentNick,password:_kapaniSessionPassword})
-    });
-    const text=await response.text(); let json=null; try{json=JSON.parse(text);}catch(_){ }
-    if(!response.ok || !json?.ok || !json?.pushToken) throw new Error(String(json?.error||`Cloudflare push session ${response.status}: ${text}`));
-    _kapaniPushBridgeToken=String(json.pushToken);
-    _kapaniPushBridgeExpiresAt=Number(json.pushTokenExpiresAt || (Date.now()+7*24*3600*1000));
-    try{localStorage.setItem('kp_push_bridge_token',_kapaniPushBridgeToken);localStorage.setItem('kp_push_bridge_exp',String(_kapaniPushBridgeExpiresAt));}catch(e){}
-    return _kapaniPushBridgeToken;
-}
-
-// Expose the recovery helper for diagnostics/manual testing without changing
-// the security model. The actual password remains memory-only.
-window.ensureCloudflarePushSession = ensureCloudflarePushSession;
-
-async function callKapaniPushBridge(path, data={}, retry=true){
-    const base=String(CONFIG.pushBridgeUrl||'').replace(/\/$/,'');
-    if(!base) throw new Error('Cloudflare Push Bridge URL is not configured');
-
-    // Prefer the short-lived Cloudflare push token. After a page reload it may
-    // not be available in memory yet, while Firebase Auth can already have a
-    // persisted signed-in user. The Worker accepts a Firebase ID token as a
-    // fallback for protected push-bridge endpoints, so use that path instead
-    // of forcing the user to log in again just to restore push registration.
-    let token = null;
-    try {
-        token = await ensureCloudflarePushSession(false);
-    } catch (pushSessionError) {
-        try {
-            const auth = await ensureAuth();
-            const user = auth.currentUser;
-            if(user){
-                token = await user.getIdToken();
-                console.debug('[Kapani push] using persisted Firebase Auth token for push bridge');
-            } else {
-                throw pushSessionError;
-            }
-        } catch(_authFallbackError) {
-            throw pushSessionError;
-        }
-    }
-
-    const response=await fetch(`${base}${path}`,{
-        method:'POST',
-        headers:{'content-type':'application/json','authorization':`Bearer ${token}`},
-        body:JSON.stringify(data)
-    });
-    const text=await response.text(); let json=null; try{json=JSON.parse(text);}catch(_){ }
-    if((response.status===401 || response.status===403) && retry){
-        await ensureCloudflarePushSession(true);
-        return callKapaniPushBridge(path,data,false);
-    }
-    if(!response.ok || !json?.ok) throw new Error(String(json?.error||`Push Bridge ${response.status}: ${text}`));
-    return json;
+    }catch(e){ resultState.status='error'; resultState.error=String(e?.message||e); console.warn('[Kapani FCM] registration failed:',e); return false; }
 }
 
 async function sha256TokenId(token){
@@ -4910,74 +4783,12 @@ function updatePushSettingsUI(){
 }
 
 window.getKapaniPushDiagnostics = async function(){
-    const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
-    let reg = null;
-    let swError = null;
-    try { reg = await getSwReg(); } catch(e){ swError=String(e?.message||e); }
-    let token = null;
-    let tokenError = null;
-    try {
-        const pack = await ensureMessaging();
-        if(pack.messaging && reg) token = await pack.mod.getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
-    } catch(e){ tokenError=String(e?.message||e); }
-    let server = null;
-    let serverError = null;
-    try {
-        server = await callKapaniPushBridge('/diagnostics',{});
-    } catch(e){ serverError=String(e?.message||e); }
-    const localTokenId=token?await sha256TokenId(token):null;
-    const serverTokenRegistered=!!server?.tokens?.some?.(x=>String(x?.tokenId||'')===String(localTokenId||''));
-    let authDiag=null;
-    try{
-        const a=await ensureAuth();
-        authDiag=a.currentUser||await waitForFirebaseAuthUser(3000);
-        if(authDiag){ try{ await authDiag.getIdToken(); }catch(_){} }
-    }catch(e){}
-    const result={
-        checkedAt:new Date().toISOString(),
-        currentNick: currentNick || null,
-        pushBridgeSessionCached: !!(_kapaniPushBridgeToken && _kapaniPushBridgeExpiresAt > Date.now()+60*1000),
-        permission,
-        firebaseAuthUser: !!authDiag,
-        firebaseAuthUid: authDiag?.uid || null,
-        isIOS:isIOSDevice(),
-        isIOSPWA:isIOSPWA(),
-        serviceWorkerRegistered:!!reg,
-        serviceWorkerScope:reg?.scope||null,
-        activeServiceWorker:!!reg?.active,
-        fcmTokenExists:!!token,
-        fcmTokenId:localTokenId,
-        serverRegistered:serverTokenRegistered,
-        serverTokenCount:Number(server?.tokenCount||0),
-        server,
-        swError,
-        tokenError,
-        serverError,
-        state:window._kapaniPushState||null,
-        lastGoodRegistrationAt:window._kapaniPushLastGoodAt||null,
-        lastForegroundMessageAt:window._kapaniPushState?.lastForegroundMessageAt||null,
-        lastServerError:window._kapaniPushState?.lastServerError||null,
-        lastRegisterResponse:window._kapaniPushState?.lastRegisterResponse||null,
-        serviceWorkerScript: reg ? new URL('./firebase-messaging-sw.js', location.href).href : null,
-        cloudflareWorker: String(CONFIG.pushBridgeUrl || '').replace(/\/$/,'') || null,
-        cloudflareHealth: null,
-        queueDiagnostic:server?.queue||null
-    };
-    try {
-        const base = String(CONFIG.pushBridgeUrl || '').replace(/\/$/,'');
-        if(base){
-            const controller = new AbortController();
-            const timer = setTimeout(()=>controller.abort(), 5000);
-            const response = await fetch(`${base}/health`, { cache:'no-store', signal:controller.signal });
-            clearTimeout(timer);
-            const text = await response.text();
-            let json = null; try { json = JSON.parse(text); } catch(_) {}
-            result.cloudflareHealth = { httpStatus:response.status, ok:response.ok && !!json?.ok, response:json || text.slice(0,500) };
-        }
-    } catch(e) {
-        result.cloudflareHealth = { httpStatus:null, ok:false, error:String(e?.message || e) };
-    }
-    return result;
+    const permission=('Notification' in window)?Notification.permission:'unsupported';
+    let authDiag=null, server=null, token=null, tokenError=null;
+    try{const a=await ensureAuth();authDiag=a.currentUser||await waitForFirebaseAuthUser(3000);}catch(e){}
+    try{const pack=await ensureMessaging();const reg=await getSwReg();if(pack.messaging&&reg) token=await pack.mod.getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});}catch(e){tokenError=String(e?.message||e);}
+    try{const fn=await ensureFunctions();const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");server=(await httpsCallable(fn,'getPushDiagnostics')()).data;}catch(e){}
+    return {checkedAt:new Date().toISOString(),currentNick:currentNick||null,permission,firebaseAuthUser:!!authDiag,firebaseAuthUid:authDiag?.uid||null,serviceWorkerRegistered:!!_swReg,serviceWorkerScope:_swReg?.scope||null,activeServiceWorker:!!_swReg?.active,fcmTokenExists:!!token,fcmTokenId:token?await sha256TokenId(token):null,serverRegistered:Boolean(server?.tokenCount),server,tokenError,state:window._kapaniPushState||null,lastGoodRegistrationAt:window._kapaniPushLastGoodAt||null};
 };
 
 window.handlePushBtn=async function(){
@@ -5045,43 +4856,15 @@ if(!window._kapaniChatPresenceUnloadBound){
 // succeeded. A push/session failure here must never look like the underlying
 // operation failed and must never produce an unhandled promise rejection.
 async function pushNotification(nick,text,cat='system'){
-    const targetNick=String(nick||'').trim();
-    const body=String(text||'').trim();
-    if(!targetNick || !body) return { ok:false, notificationFailed:true, error:'invalid-args' };
+    const targetNick=String(nick||'').trim(); const body=String(text||'').trim();
+    if(!targetNick||!body) return {ok:false,notificationFailed:true,error:'invalid-args'};
     try{
-        // Heal the Firebase Auth session first so a freshly restored/reloaded
-        // Kapani session can still create server-side notifications. This reuses
-        // the single-flight lock in requireKapaniServerSession(), so many
-        // notifications fired together never race each other's session healing.
         await requireKapaniServerSession();
-
-        // The notifications node is intentionally not browser-writable. Use the
-        // authenticated Cloud Function as the single canonical notification writer.
         const fn=await ensureFunctions();
-        const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
-        const createNotification=httpsCallable(fn,'createKapaniNotification');
-        const result=await createNotification({nick:targetNick,text:body,cat:String(cat||'system')});
-        const notificationId=String(result?.data?.notificationId||'');
-
-        // Best-effort immediate wake-up. The Cloudflare scheduler remains the
-        // authoritative delivery mechanism, so this request is never required for
-        // queue durability.
-        if(notificationId){
-            try{
-                // /enqueue is only a best-effort wake-up. The notification +
-                // durable queue entry already exist atomically in Firebase.
-                await callKapaniPushBridge('/enqueue',{nick:targetNick,notificationId});
-            }catch(bridgeError){
-                console.debug('[push enqueue wake-up] Cloudflare wake-up недоступен, durable queue сохранена:',bridgeError?.message||bridgeError);
-            }
-        }
-        return { ok:true, notificationId, nick:targetNick };
-    }catch(e){
-        // Diagnostic only — never rethrow. The caller's business operation has
-        // already completed successfully before pushNotification() was invoked.
-        console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e);
-        return { ok:false, notificationFailed:true, error:String(e?.message||e), nick:targetNick };
-    }
+        const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
+        const result=await httpsCallable(fn,'createKapaniNotification')({nick:targetNick,text:body,cat:String(cat||'system')});
+        return {ok:true,notificationId:String(result?.data?.notificationId||''),nick:targetNick};
+    }catch(e){ console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e); return {ok:false,notificationFailed:true,error:String(e?.message||e),nick:targetNick}; }
 }
 window.testKapaniPush = async function(){
     if(!currentNick) throw new Error('Сначала войдите в Капани');
@@ -5092,7 +4875,7 @@ window.testKapaniPush = async function(){
     toast('🧪 Тестовый Push поставлен в очередь','green');
     return {
         ...result,
-        message: 'Уведомление создано через Firebase Functions → pushQueue → Cloudflare → FCM. Закройте сайт для проверки доставки.',
+        message: 'Уведомление создано через Firebase Functions → Firebase Realtime Database → FCM. Внутри сайта оно должно появиться сразу при открытом Kapani.',
         diagnostics: await window.getKapaniPushDiagnostics()
     };
 };

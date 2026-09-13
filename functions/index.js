@@ -631,31 +631,44 @@ function notificationJobId(nick, notificationId) {
         .digest('hex');
 }
 
-// Canonical Cloudflare queue entry used by server-side notification fan-out.
-// The notification itself is still written under users/<nick>/notifications;
-// this second write makes server-created notifications eligible for the same
-// durable retry/dedupe/FCM path as client-created notifications.
-function addCloudflarePushQueue(updates, nick, notificationId, createdAt) {
-    const safeNick = String(nick || '').trim();
-    const safeNotificationId = String(notificationId || '').trim();
-    if (!safeNick || !safeNotificationId) return;
-    const jobId = notificationJobId(safeNick, safeNotificationId);
-    const now = Number(createdAt || Date.now());
-    updates[`pushQueue/${jobId}`] = {
-        jobId,
-        nick: safeNick,
-        notificationId: safeNotificationId,
-        status: 'pending',
-        attempts: 0,
-        createdAt: now,
-        updatedAt: now,
-        retryAt: now,
-        lastError: null
-    };
-    updates[`users/${safeNick}/pushQueueRefs/${jobId}`] = {
-        notificationId: safeNotificationId,
-        updatedAt: now
-    };
+async function sendNotificationPush(nick, notificationId, notification) {
+    try {
+        const userSnap = await db.ref(`users/${nick}`).get();
+        if (!userSnap.exists()) return { sent: 0, skipped: true };
+        const user = userSnap.val() || {};
+        const prefs = sanitizePushPreferences(user.pushPrefs);
+        if (prefs.enabled === false || prefs[notification?.cat || 'system'] === false) return { sent: 0, skipped: true };
+        const tokens = collectFcmTokens(user).map(x => x.token).filter(Boolean);
+        if (!tokens.length) return { sent: 0, skipped: true };
+        const payload = getNotificationPayload({ ...notification, id: notificationId });
+        if (!payload) return { sent: 0, skipped: true };
+        const response = await admin.messaging().sendEachForMulticast({
+            tokens,
+            data: Object.fromEntries(Object.entries(payload).map(([k,v]) => [k, String(v ?? '')]))
+        });
+        const stale = [];
+        response.responses.forEach((r, i) => {
+            if (!r.success) {
+                const code = String(r.error?.code || '');
+                if (/registration-token-not-registered|invalid-registration-token/.test(code)) stale.push(tokens[i]);
+            }
+        });
+        if (stale.length) {
+            const updates = {};
+            for (const token of stale) {
+                const tokenId = tokenKey(token);
+                updates[`users/${nick}/fcmTokens/${tokenId}`] = null;
+                updates[`fcmTokenIndex/${tokenId}`] = null;
+                const legacy = String(user.fcmToken || '');
+                if (legacy === token) updates[`users/${nick}/fcmToken`] = null;
+            }
+            if (Object.keys(updates).length) await db.ref().update(updates);
+        }
+        return { sent: response.successCount, failed: response.failureCount };
+    } catch (error) {
+        pushLog('warn', 'fcm_send_failed', { nick, notificationId, error: String(error?.message || error) });
+        return { sent: 0, failed: 1, error: String(error?.message || error) };
+    }
 }
 
 function getNotificationPayload(notification) {
@@ -689,9 +702,7 @@ function pushLog(level, event, fields = {}) {
 }
 
 // Push delivery is intentionally NOT performed by Firebase Functions.
-// Cloudflare Worker owns the canonical durable push queue and FCM HTTP v1
-// delivery path. The old enqueue/process exports have been removed to prevent
-// duplicate sends from an already-deployed Firebase trigger.
+// Firebase Functions deliver FCM directly. There is no external push bridge or durable queue.
 
 /**
  * Server-authoritative subscription gifting.
@@ -951,17 +962,17 @@ exports.notifyOnChatMessage = onValueCreated(
         sourceMessageId: messageId
       };
 
-      addCloudflarePushQueue(updates, nick, notificationId, now);
-
     }
 
     if (Object.keys(updates).length) {
       await db.ref().update(updates);
+      await Promise.allSettled(Object.entries(users).map(async ([nick, user]) => {
+        if (!user || nick === senderNick) return;
+        const notificationId = `chat_${messageId}`;
+        const notification = updates[`users/${nick}/notifications/${notificationId}`];
+        if (notification) await sendNotificationPush(nick, notificationId, notification);
+      }));
     }
-
-    // Push delivery is handled by the canonical Cloudflare durable queue.
-    // The queue entries are created above atomically with the notification rows,
-    // so closing the publisher's browser cannot interrupt delivery.
 
     return null;
   }
@@ -972,7 +983,7 @@ exports.notifyOnChatMessage = onValueCreated(
  * Legacy duel notification bridge.
  * The game UI historically stores duel events under /notifications/{nick}.
  * Mirror only duel events into the canonical user notification collection so
- * they use the same Cloudflare durable queue/FCM path without removing the legacy UI data.
+ * they use the same Firebase/FCM path without removing the legacy UI data.
  */
 exports.notifyOnLegacyDuelNotification = onValueCreated(
   { ref: '/notifications/{nick}/{notificationId}', region: 'europe-west1' },
@@ -1004,7 +1015,6 @@ exports.notifyOnLegacyDuelNotification = onValueCreated(
       sourceMessageId: notificationId
     });
     const queueUpdates = {};
-    addCloudflarePushQueue(queueUpdates, nick, canonicalId, createdAt);
     await db.ref().update(queueUpdates);
     return null;
   }
@@ -1042,10 +1052,17 @@ exports.notifyOnNewsCreated = onValueCreated(
         source: 'news',
         sourceMessageId: newsId
       };
-      addCloudflarePushQueue(updates, nick, notificationId, createdAt);
     }
 
-    if (Object.keys(updates).length) await db.ref().update(updates);
+    if (Object.keys(updates).length) {
+      await db.ref().update(updates);
+      await Promise.allSettled(Object.keys(users).map(async (nick) => {
+        if (!nick || nick === String(news.author || '')) return;
+        const notificationId = `news_${newsId}`;
+        const notification = updates[`users/${nick}/notifications/${notificationId}`];
+        if (notification) await sendNotificationPush(nick, notificationId, notification);
+      }));
+    }
     pushLog('info', 'news_fanout_created', { newsId, recipients: Object.keys(updates).length });
     return null;
   }
@@ -1057,8 +1074,7 @@ exports.notifyOnNewsCreated = onValueCreated(
  *
  * Client code must not write users/<nick>/notifications directly because that
  * node is intentionally read-only from the browser. This callable uses the
- * authenticated Firebase session, writes the inbox item and durable Cloudflare
- * queue entry atomically, and then the Worker performs the actual FCM delivery.
+ * authenticated Firebase session, writes the inbox item, and sends FCM directly when a device token is registered.
  */
 exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (request) => {
     const senderNick = String(request.auth?.uid || '').trim();
@@ -1100,8 +1116,8 @@ exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (req
     };
     const updates = {};
     updates[`users/${targetNick}/notifications/${notificationId}`] = notification;
-    addCloudflarePushQueue(updates, targetNick, notificationId, createdAt);
     await db.ref().update(updates);
+    const pushResult = await sendNotificationPush(targetNick, notificationId, notification);
 
     pushLog('info', 'client_notification_created', {
         sender: senderNick,
@@ -1110,7 +1126,7 @@ exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (req
         category
     });
 
-    return { ok: true, notificationId, queued: true };
+    return { ok: true, notificationId, pushSent: Number(pushResult?.sent || 0) };
 });
 
 function getDateTime() {
