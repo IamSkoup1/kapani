@@ -70,6 +70,10 @@
         "pushSettings": {
           ".read": "auth != null && auth.uid == $uid",
           ".write": false
+        },
+        "pushSubscriptions": {
+          ".read": "false",
+          ".write": "false"
         }
       }
     },
@@ -136,6 +140,10 @@
           ".write": "auth.token.admin == true"
         }
       }
+    },
+    "pushSubscriptionIndex": {
+      ".read": "false",
+      ".write": "false"
     }
   }
 }

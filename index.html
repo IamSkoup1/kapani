@@ -2503,7 +2503,6 @@ import { getDatabase, ref, set, get, update, push, remove, onValue, off, serverT
 // Messaging / Functions / Storage are initialized only when their functionality is actually used.
 let functions = null;
 let storage = null;
-let messagingInstance = null;
 let authInstance = null;
 let authModule = null;
 async function ensureAuth(){
@@ -2523,13 +2522,6 @@ async function ensureStorage(){
     const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js");
     storage = mod.getStorage(app);
     return storage;
-}
-async function ensureMessaging(){
-    const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js");
-    if(messagingInstance) return {mod, messaging:messagingInstance};
-    if(!(await mod.isSupported())) return {mod, messaging:null};
-    messagingInstance = mod.getMessaging(app);
-    return {mod, messaging:messagingInstance};
 }
 
 const firebaseConfig = CONFIG.firebase;
@@ -2555,7 +2547,7 @@ const MIN_BALANCE_ALLOWED = CONFIG.finance.minBalanceAllowed;
 const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
 const REWARD_CUSTOM_AVATAR = CONFIG.rewards.customAvatar;
 const REWARD_FIRST_WALL = CONFIG.rewards.firstWall;
-const FCM_VAPID_KEY = CONFIG.fcmVapidKey;
+const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -2870,25 +2862,6 @@ async function callFunctionWithFallback(functionName, data, fallbackFn) {
         }
         throw error;
     }
-}
-
-async function establishKapaniServerSession(nick, password){
-    const fn=await ensureFunctions();
-    const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
-    const issueSession=httpsCallable(fn,'issueKapaniSessionToken');
-    const result=await issueSession({nick:String(nick||'').trim(),password:String(password||'')});
-    const token=String(result?.data?.token||'');
-    if(!token) throw new Error('Не удалось получить Firebase-сессию Kapani');
-    const auth=await ensureAuth();
-    if(!authModule?.signInWithCustomToken) return auth.currentUser||null;
-    try{
-        if(authModule?.setPersistence && authModule?.browserLocalPersistence){
-            await authModule.setPersistence(auth,authModule.browserLocalPersistence);
-        }
-    }catch(persistError){ console.warn('[Kapani auth] browser persistence:',persistError); }
-    await authModule.signInWithCustomToken(auth,token);
-    await auth.currentUser?.getIdToken(true);
-    return auth.currentUser;
 }
 
 // Single-flight lock: several callers (e.g. several pushNotification() calls
@@ -4048,21 +4021,16 @@ function startApp() {
         }
     } catch(e) {}
     syncCurrentNick();
+    try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:',e); }
 
     const loStatus = document.getElementById('loStatus');
     const loBar    = document.getElementById('loBar');
     if(loStatus) loStatus.textContent = 'Загружаем ваш профиль…';
     if(loBar) loBar.style.cssText = 'width:45%;transition:width .35s ease;';
 
-    // Restore protected Firebase Auth before attaching user-scoped listeners.
-    // Realtime Database rules require auth for /users/<nick>/notifications.
-    const authReady = requireKapaniServerSession().catch(err=>{
-        console.warn('[Kapani auth] startup session restore:',err?.message||err);
-        return null;
-    });
-
+    // Critical path: only the signed-in user's profile. Heavy/global branches are lazy.
     const criticalProfileLoad = Promise.race([
-        authReady.then(()=>{ try { attachListeners(); } catch(e) { console.error('[Kapani] listeners init:',e); } return get(userRef(currentNick)); }),
+        get(userRef(currentNick)),
         new Promise((_, reject)=>setTimeout(()=>reject(new Error('profile_load_timeout')), 8000))
     ]);
     Promise.resolve()
@@ -4072,34 +4040,15 @@ function startApp() {
           if(loStatus) loStatus.textContent='Готово!';
           if(loBar) loBar.style.cssText='width:100%;transition:width .2s ease;';
           hideLoadingSafe();
+          handleKapaniPushDeepLink();
           setTimeout(()=>showFirstPushPrompt(), 600);
 
-          // Push registration must not depend on reopening Profile and pressing
-          // the enable button. Once the user is signed in and has already granted
-          // notification permission and register
-          // the current FCM token automatically.
+          // If permission was already granted, reuse the persisted browser Web Push
+          // subscription. No permission prompt is shown automatically here.
           setTimeout(async ()=>{
-              try{
-                  if(currentNick && ('Notification' in window) && Notification.permission==='granted'){
-                      const ok = await tryRegisterFcm();
-                      if(!ok) console.warn('[Kapani FCM] automatic startup registration did not complete');
-                  }
-              }catch(e){
-                  console.warn('[Kapani FCM] automatic startup registration:', e);
-              }
+              try { if(currentNick && ('Notification' in window) && Notification.permission==='granted') await ensureWebPushOnStartup(); }
+              catch(e){ console.debug('[Kapani Push] startup restore:', e); }
           }, 900);
-
-          // Firebase Auth restoration can finish after the first startup push
-          // attempt. Give it one additional non-blocking chance to restore the
-          // FCM registration without requiring the Profile screen.
-          setTimeout(async ()=>{
-              try{
-                  if(currentNick && ('Notification' in window) && Notification.permission==='granted'){
-                      const ok = await tryRegisterFcm();
-                      if(!ok) console.debug('[Kapani FCM] secondary startup registration did not complete');
-                  }
-              }catch(e){ console.debug('[Kapani FCM] secondary startup registration:', e); }
-          }, 3500);
 
           const defer = window.requestIdleCallback || ((cb)=>setTimeout(cb, 0));
           defer(()=>{
@@ -4115,6 +4064,18 @@ function startApp() {
       });
 }
 
+function handleKapaniPushDeepLink(){
+    try{
+        const params=new URLSearchParams(location.search);
+        const section=params.get('kpSection');
+        const dm=params.get('kpDm');
+        if(section==='messages'){
+            navTo('messages');
+            if(dm) setTimeout(()=>{ try{ if(typeof openDmChat==='function') openDmChat(decodeURIComponent(dm)); }catch(e){} },150);
+        }
+    }catch(e){}
+}
+
 function revealApp(){
     const h=qs('gHeader'); const b=qs('bottomNav'); const m=qs('mainApp');
     if(h) h.style.display='flex';
@@ -4125,12 +4086,7 @@ function revealApp(){
 
 window.logout = async function() {
     const logoutNick=currentNick;
-    try {
-        if(logoutNick && window._kapaniFcmTokenId) {
-            try { const fn=await ensureFunctions(); const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js'); await httpsCallable(fn,'unregisterFcmToken')({tokenId:window._kapaniFcmTokenId,token:window._kapaniFcmToken||''}); }
-            catch(e){ console.warn('[Kapani FCM] token unregister during logout failed:',e); }
-        }
-    } catch(e) {}
+    try { if(logoutNick) await unregisterWebPushSubscription(); } catch(e) { console.debug('[Kapani Push] logout unregister:', e); }
     try { if(typeof stopTaskLiveListeners==='function') stopTaskLiveListeners(); } catch(e) {}
     stopAllActivity();
     leaveAllServiceServices();
@@ -4140,7 +4096,9 @@ window.logout = async function() {
     listeners={};dmListeners={};
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
     try { if(authInstance?.currentUser) await authModule.signOut(authInstance); } catch(e){ console.warn('[Kapani auth] signOut:',e); }
-    try { localStorage.removeItem('kp_fcm_token_id'); } catch(e) {}
+    try { await unregisterWebPushSubscription(); } catch(e) { console.debug('[Kapani Push] logout unregister:', e); }
+    try { localStorage.removeItem('kp_webpush_subscription_id'); } catch(e) {}
+    window._kapaniWebPushSubscriptionId = null;
     localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; _kapaniSessionPassword = null; syncCurrentNick(); location.reload();
 };
 
@@ -4589,165 +4547,62 @@ function renderHomeStats(){
 
 // ─── PUSH NOTIFICATIONS ───────────────────
 function getPushPrefs(){try{return JSON.parse(localStorage.getItem('kp_push')||'{}');}catch(e){return{};}}
-function syncPushPrefs(){
-    if(!currentNick || !window._kapaniFcmTokenId) return Promise.resolve();
-    return (async()=>{
-        try{
-            const fn=await ensureFunctions();
-            const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
-            await httpsCallable(fn,'updatePushPreferences')({prefs:getPushPrefs(),tokenId:window._kapaniFcmTokenId});
-        }catch(e){ console.warn('[Kapani push prefs]',e); }
-    })();
-}
-function savePushPrefs(p){
-    try{localStorage.setItem('kp_push',JSON.stringify(p));}catch(e){}
-    syncPushPrefs();
-}
 function isPushOn(){const p=getPushPrefs();return p.enabled!==false;}
 function isPushCatEnabled(cat){if(!isPushOn())return false;const p=getPushPrefs();return p[cat]!==false;}
 let _swReg=null;
-// Detect Safari/iOS for notifications
-function isSafariBrowser(){
-    const ua = navigator.userAgent || '';
-    return /Safari\//.test(ua) && !/Chrome\/|CriOS\/|FxiOS\/|OPiOS\//.test(ua);
-}
-function isIOSDevice(){
-    const ua = navigator.userAgent || '';
-    return /iP(hone|od|ad)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-function isIOSPWA(){
-    return (window.navigator.standalone === true) || window.matchMedia('(display-mode: standalone)').matches;
-}
+function isIOSDevice(){const ua=navigator.userAgent||'';return /iP(hone|od|ad)/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+function isIOSPWA(){return navigator.standalone===true||window.matchMedia('(display-mode: standalone)').matches;}
+function base64UrlToUint8Array(base64String){const padding='='.repeat((4-(base64String.length%4))%4);const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(base64);return Uint8Array.from([...raw].map(ch=>ch.charCodeAt(0)));}
 async function getSwReg(){
-    if(_swReg) return _swReg;
-    const isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname === '[::1]';
-    if(location.protocol !== 'https:' && !isLocalDev) {
-        window._kapaniPushState={...(window._kapaniPushState||{}),status:'https_required',error:'service_worker_requires_https'};
-        return null;
-    }
-    if(!('serviceWorker' in navigator)) {
-        window._kapaniPushState={...(window._kapaniPushState||{}),status:'unsupported',error:'service_worker_unsupported'};
-        return null;
-    }
-    try {
-        const swUrl = new URL('./firebase-messaging-sw.js', location.href);
-        const appScope = new URL('./', location.href).pathname;
-        _swReg = await navigator.serviceWorker.register(swUrl.href, { scope:appScope });
-        await navigator.serviceWorker.ready;
-        if(!_swReg.active && !_swReg.waiting && !_swReg.installing) throw new Error('Service Worker registered without an active/installing worker');
-        window._kapaniPushState={...(window._kapaniPushState||{}),serviceWorkerRegistered:true,serviceWorkerScope:_swReg.scope};
-        return _swReg;
-    } catch(err){
-        window._kapaniPushState={...(window._kapaniPushState||{}),status:'sw_failed',error:String(err?.message||err)};
-        console.error('[Kapani FCM] Service Worker registration failed:',err);
-        return null;
-    }
+    if(_swReg)return _swReg;
+    const isLocalDev=location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname==='[::1]';
+    if(location.protocol!=='https:'&&!isLocalDev){window._kapaniPushState={...(window._kapaniPushState||{}),status:'https_required',error:'service_worker_requires_https'};return null;}
+    if(!('serviceWorker' in navigator)){window._kapaniPushState={...(window._kapaniPushState||{}),status:'unsupported',error:'service_worker_unsupported'};return null;}
+    try{const swUrl=new URL('./firebase-messaging-sw.js',location.href);const scope=new URL('./',location.href).pathname;_swReg=await navigator.serviceWorker.register(swUrl.href,{scope});await navigator.serviceWorker.ready;window._kapaniPushState={...(window._kapaniPushState||{}),serviceWorkerRegistered:true,serviceWorkerScope:_swReg.scope};return _swReg;}
+    catch(err){window._kapaniPushState={...(window._kapaniPushState||{}),status:'sw_failed',error:String(err?.message||err)};console.error('[Kapani Push] Service Worker registration failed:',err);return null;}
 }
 async function requestNotificationPermission(){
-    // Cross-browser permission request — handles old Safari callback API and modern Promise API
-    if(!('Notification' in window)) return 'unsupported';
-    if(Notification.permission === 'granted') return 'granted';
-    if(Notification.permission === 'denied') return 'denied';
-    try {
-        // Modern browsers: returns a Promise
-        const result = await Notification.requestPermission();
-        return result;
-    } catch(e) {
-        // Older Safari: requestPermission only supports callback
-        return new Promise(resolve => {
-            try { Notification.requestPermission(resolve); }
-            catch(e2) { resolve('denied'); }
-        });
-    }
+    if(!('Notification' in window))return 'unsupported';
+    if(Notification.permission==='granted')return 'granted';
+    if(Notification.permission==='denied')return 'denied';
+    try{return await Notification.requestPermission();}catch(e){return await new Promise(resolve=>{try{Notification.requestPermission(resolve);}catch(_){resolve('denied');}});}
 }
+async function getWebPushSubscription(createIfMissing=false){
+    const reg=await getSwReg();if(!reg?.pushManager)return null;let subscription=await reg.pushManager.getSubscription();
+    if(!subscription&&createIfMissing){if(!WEB_PUSH_VAPID_PUBLIC_KEY)throw new Error('VAPID public key is not configured');subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY)});}return subscription;
+}
+async function getWebPushSubscriptionPayload(subscription){const json=subscription?.toJSON?.();if(!json)return null;return {endpoint:String(json.endpoint||''),expirationTime:json.expirationTime??null,keys:{p256dh:String(json.keys?.p256dh||''),auth:String(json.keys?.auth||'')}};}
+async function hashWebPushEndpoint(endpoint){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(endpoint||'')));return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);}
+async function registerWebPushSubscription(){
+    if(!currentNick)throw new Error('Пользователь не определён');
+    const sub=await getWebPushSubscription(true);const payload=await getWebPushSubscriptionPayload(sub);if(!payload?.endpoint||!payload.keys.p256dh||!payload.keys.auth)throw new Error('Push Subscription is incomplete');
+    const subscriptionId=await hashWebPushEndpoint(payload.endpoint);const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+    const result=await httpsCallable(fn,'registerWebPushSubscription')({subscription:payload,prefs:getPushPrefs(),userAgent:navigator.userAgent});
+    window._kapaniWebPushSubscriptionId=String(result?.data?.subscriptionId||subscriptionId);try{localStorage.setItem('kp_webpush_subscription_id',window._kapaniWebPushSubscriptionId);}catch(e){}
+    window._kapaniPushState={...(window._kapaniPushState||{}),status:'registered',pushSupported:true,pushSubscriptionExists:true,subscriptionId:window._kapaniWebPushSubscriptionId,subscriptionSaved:true,vapidConfigured:!!WEB_PUSH_VAPID_PUBLIC_KEY,lastGoodRegistrationAt:Date.now(),error:null};return sub;
+}
+async function unregisterWebPushSubscription(){
+    let sub=null;try{sub=await getWebPushSubscription(false);}catch(_){}
+    let id=window._kapaniWebPushSubscriptionId;try{id=id||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}
+    if(!id&&sub?.endpoint)id=await hashWebPushEndpoint(sub.endpoint);
+    if(id){try{const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');await httpsCallable(fn,'unregisterWebPushSubscription')({subscriptionId:id});}catch(e){console.debug('[Kapani Push] unregister subscription failed:',e);}}
+    window._kapaniWebPushSubscriptionId=null;try{localStorage.removeItem('kp_webpush_subscription_id');}catch(e){}
+}
+async function syncPushPrefs(){
+    if(!currentNick)return;let id=window._kapaniWebPushSubscriptionId;try{id=id||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}if(!id)return;
+    try{const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');await httpsCallable(fn,'updateWebPushPreferences')({prefs:getPushPrefs(),subscriptionId:id});}catch(e){console.warn('[Kapani Push prefs]',e);}
+}
+function savePushPrefs(p){try{localStorage.setItem('kp_push',JSON.stringify(p));}catch(e){}void syncPushPrefs();}
 async function requestPushPermission(){
-    if(!('Notification' in window)) return false;
-    // iOS Safari < 16.4: No web push support unless added to home screen
-    if(isIOSDevice() && !isIOSPWA()){
-        const majorVer = parseInt((navigator.userAgent.match(/OS (\d+)_/)||[])[1]||'0', 10);
-        if(majorVer < 16){
-            toast('📲 iOS не поддерживает уведомления в браузере. Добавьте сайт на главный экран.','gold');
-            return false;
-        }
-        // iOS 16.4+: only works as installed PWA
-        toast('📲 Для уведомлений добавьте сайт на главный экран iPhone (Поделиться → На экран «Домой»)','gold');
-        return false;
-    }
-    if(Notification.permission==='granted'){await getSwReg();return await tryRegisterFcm();}
-    if(Notification.permission==='denied') return false;
-    const result = await requestNotificationPermission();
-    if(result==='granted'){const p=getPushPrefs();p.enabled=true;savePushPrefs(p);const ok=await tryRegisterFcm();if(ok){toast('🔔 Push-уведомления включены!','green');return true;}toast('⚠️ Разрешение получено, но регистрация push на сервере не завершилась. Откройте профиль и повторите включение.','gold');return false;}
-    return false;
+    if(!('Notification' in window))return false;
+    if(isIOSDevice()&&!isIOSPWA()){toast('📲 Для уведомлений добавьте сайт на экран «Домой» в Safari, затем откройте его как приложение','gold');return false;}
+    if(Notification.permission==='denied')return false;const result=await requestNotificationPermission();if(result!=='granted')return false;
+    try{await getSwReg();await registerWebPushSubscription();const p=getPushPrefs();p.enabled=true;savePushPrefs(p);toast('🔔 Push-уведомления включены!','green');return true;}catch(e){window._kapaniPushState={...(window._kapaniPushState||{}),status:'error',error:String(e?.message||e)};console.error('[Kapani Push] registration failed:',e);toast('⚠️ Разрешение получено, но Push не зарегистрировался. Проверьте профиль и backend.','gold');return false;}
 }
-async function tryRegisterFcm(){
-    const resultState=window._kapaniPushState=window._kapaniPushState||{};
-    if(!FCM_VAPID_KEY||!currentNick){ resultState.status='not_ready'; resultState.error='missing_user_or_vapid_key'; return false; }
-    try{
-        await requireKapaniServerSession();
-        const pack=await ensureMessaging();
-        if(!pack.messaging){resultState.status='unsupported';resultState.error='firebase_messaging_unsupported';return false;}
-        const {getToken,onMessage}=pack.mod;
-        const reg=await getSwReg();
-        if(!reg){resultState.status='sw_failed';resultState.error='service_worker_registration_failed';return false;}
-        const token=await getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});
-        if(!token){resultState.status='token_missing';resultState.error='fcm_get_token_returned_empty';return false;}
-        const tokenId=await sha256TokenId(token);
-        const fn=await ensureFunctions();
-        const server=await (await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js")).httpsCallable(fn,'registerFcmToken')({token,userAgent:navigator.userAgent,prefs:getPushPrefs()});
-        window._kapaniFcmToken=token; window._kapaniFcmTokenId=server?.data?.tokenId||tokenId;
-        try{localStorage.setItem('kp_fcm_token_id',window._kapaniFcmTokenId);}catch(e){}
-        resultState.status='registered'; resultState.tokenId=window._kapaniFcmTokenId; resultState.lastTokenUpdate=Date.now(); resultState.error=null; resultState.serverRegistered=true; window._kapaniPushLastGoodAt=Date.now();
-        if(!window._kapaniFcmOnMessageBound){
-            onMessage(pack.messaging,(payload)=>{
-                resultState.lastForegroundMessageAt=Date.now();
-                const data=payload?.data||{};
-                const id=String(data.notificationId||'');
-                try{const sw=reg?.active||navigator.serviceWorker?.controller;if(sw) sw.postMessage({type:'KAPANI_FOREGROUND_PUSH',payload:data});}
-                catch(e){console.warn('[Kapani FCM] foreground SW handoff:',e);}
-                // Also refresh the in-app inbox immediately. The RTDB listener remains authoritative.
-                if(currentNick) get(notifRef(currentNick)).then(s=>{if(curPage==='profile') renderNotifications(s.val()||{});}).catch(()=>{});
-                if(id) resultState.lastForegroundNotificationId=id;
-            });
-            window._kapaniFcmOnMessageBound=true;
-        }
-        await syncPushPrefs();
-        return true;
-    }catch(e){ resultState.status='error'; resultState.error=String(e?.message||e); console.warn('[Kapani FCM] registration failed:',e); return false; }
+async function ensureWebPushOnStartup(){
+    if(!currentNick||!('Notification' in window)||Notification.permission!=='granted')return false;try{const sub=await getWebPushSubscription(false);if(!sub)return false;await registerWebPushSubscription();return true;}catch(e){console.debug('[Kapani Push] startup restore:',e?.message||e);return false;}
 }
-
-async function sha256TokenId(token){
-    const text=String(token||'');
-    if(window.crypto?.subtle){
-        const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
-        return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
-    }
-    return text.slice(0,32);
-}
-
-async function waitForFirebaseAuthUser(timeoutMs=8000){
-    const auth=await ensureAuth();
-    if(auth.currentUser) return auth.currentUser;
-    if(!authModule?.onAuthStateChanged) return null;
-    return await new Promise(resolve=>{
-        let settled=false;
-        let timer=null;
-        const finish=(user)=>{
-            if(settled) return;
-            settled=true;
-            if(timer) clearTimeout(timer);
-            try{ unsubscribe?.(); }catch(e){}
-            resolve(user||null);
-        };
-        let unsubscribe=null;
-        try{
-            unsubscribe=authModule.onAuthStateChanged(auth,user=>finish(user));
-            timer=setTimeout(()=>finish(auth.currentUser||null),timeoutMs);
-        }catch(e){
-            finish(null);
-        }
-    });
-}
-
+if(!window._kapaniPushSwMessageBound&&'serviceWorker' in navigator){window._kapaniPushSwMessageBound=true;navigator.serviceWorker.addEventListener('message',event=>{if(event?.data?.type==='KAPANI_PUSHSUBSCRIPTION_CHANGED'&&currentNick)registerWebPushSubscription().catch(e=>console.debug('[Kapani Push] subscription change:',e));});}
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
@@ -4783,22 +4638,15 @@ function updatePushSettingsUI(){
 }
 
 window.getKapaniPushDiagnostics = async function(){
-    const permission=('Notification' in window)?Notification.permission:'unsupported';
-    let authDiag=null, server=null, token=null, tokenError=null;
-    try{const a=await ensureAuth();authDiag=a.currentUser||await waitForFirebaseAuthUser(3000);}catch(e){}
-    try{const pack=await ensureMessaging();const reg=await getSwReg();if(pack.messaging&&reg) token=await pack.mod.getToken(pack.messaging,{vapidKey:FCM_VAPID_KEY,serviceWorkerRegistration:reg});}catch(e){tokenError=String(e?.message||e);}
-    try{const fn=await ensureFunctions();const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");server=(await httpsCallable(fn,'getPushDiagnostics')()).data;}catch(e){}
-    return {checkedAt:new Date().toISOString(),currentNick:currentNick||null,permission,firebaseAuthUser:!!authDiag,firebaseAuthUid:authDiag?.uid||null,serviceWorkerRegistered:!!_swReg,serviceWorkerScope:_swReg?.scope||null,activeServiceWorker:!!_swReg?.active,fcmTokenExists:!!token,fcmTokenId:token?await sha256TokenId(token):null,serverRegistered:Boolean(server?.tokenCount),server,tokenError,state:window._kapaniPushState||null,lastGoodRegistrationAt:window._kapaniPushLastGoodAt||null};
+    const permission=('Notification' in window)?Notification.permission:'unsupported';let reg=null,sub=null,swError=null,subscriptionError=null;
+    try{reg=await getSwReg();}catch(e){swError=String(e?.message||e);}try{sub=await getWebPushSubscription(false);}catch(e){subscriptionError=String(e?.message||e);}
+    let authDiag=null;try{const a=await ensureAuth();authDiag=a.currentUser||await waitForFirebaseAuthUser(2000);}catch(_){ }
+    return {checkedAt:new Date().toISOString(),currentKapaniUser:currentNick||null,permission,pushSupported:!!(window.isSecureContext&&'serviceWorker' in navigator&&'PushManager' in window),serviceWorkerRegistered:!!reg,serviceWorkerScope:reg?.scope||null,activeServiceWorker:!!reg?.active,pushSubscriptionExists:!!sub,pushEndpoint:sub?.endpoint||null,subscriptionId:sub?.endpoint?await hashWebPushEndpoint(sub.endpoint):null,subscriptionSaved:!!(window._kapaniWebPushSubscriptionId||localStorage.getItem('kp_webpush_subscription_id')),firebaseAuthUser:!!authDiag,firebaseAuthUid:authDiag?.uid||null,vapidConfigured:!!WEB_PUSH_VAPID_PUBLIC_KEY,state:window._kapaniPushState||null,lastGoodRegistrationAt:window._kapaniPushState?.lastGoodRegistrationAt||null,swError,subscriptionError,cloudflarePushRemoved:true};
 };
-
 window.handlePushBtn=async function(){
-    // iOS Safari in browser: show install instructions
-    if(isIOSDevice() && !isIOSPWA()){
-        toast('📲 Добавьте сайт на экран «Домой» в Safari (Поделиться → На экран «Домой»), затем откройте из него и включите уведомления','gold');
-        return;
-    }
+    if(isIOSDevice()&&!isIOSPWA()){toast('📲 Добавьте сайт на экран «Домой» в Safari, затем откройте его как приложение','gold');return;}
     if(!('Notification' in window)){toast('❌ Браузер не поддерживает уведомления','red');return;}
-    if(Notification.permission==='denied'){toast('⚠️ Заблокировано — разрешите в настройках браузера → Уведомления','gold');return;}
+    if(Notification.permission==='denied'){toast('⚠️ Уведомления всегда можно включить в профиле.','gold');return;}
     const ok=await requestPushPermission();if(ok)updatePushSettingsUI();
 };
 window.toggleMasterPush=function(){const p=getPushPrefs();p.enabled=p.enabled!==false?false:true;savePushPrefs(p);toast(p.enabled?'🔔 Включены':'🔕 Выключены',p.enabled?'green':'gold');updatePushSettingsUI();};
@@ -4855,16 +4703,12 @@ if(!window._kapaniChatPresenceUnloadBound){
 // verification, transfers, fines, business approvals, etc.) have already
 // succeeded. A push/session failure here must never look like the underlying
 // operation failed and must never produce an unhandled promise rejection.
-async function pushNotification(nick,text,cat='system'){
-    const targetNick=String(nick||'').trim(); const body=String(text||'').trim();
-    if(!targetNick||!body) return {ok:false,notificationFailed:true,error:'invalid-args'};
-    try{
-        await requireKapaniServerSession();
-        const fn=await ensureFunctions();
-        const {httpsCallable}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
-        const result=await httpsCallable(fn,'createKapaniNotification')({nick:targetNick,text:body,cat:String(cat||'system')});
-        return {ok:true,notificationId:String(result?.data?.notificationId||''),nick:targetNick};
-    }catch(e){ console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e); return {ok:false,notificationFailed:true,error:String(e?.message||e),nick:targetNick}; }
+async function pushNotification(nick,text,cat='system',extra={}){
+    const targetNick=String(nick||'').trim(),body=String(text||'').trim();if(!targetNick||!body)return{ok:false,notificationFailed:true,error:'invalid-args'};
+    try{await requireKapaniServerSession();const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+        const result=await httpsCallable(fn,'createKapaniNotification')({nick:targetNick,text:body,cat:String(cat||'system'),title:String(extra?.title||'Капани'),url:String(extra?.url||''),source:String(extra?.source||''),sourceMessageId:String(extra?.sourceMessageId||'')});
+        return{ok:true,notificationId:String(result?.data?.notificationId||''),nick:targetNick};
+    }catch(e){console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e);return{ok:false,notificationFailed:true,error:String(e?.message||e),nick:targetNick};}
 }
 window.testKapaniPush = async function(){
     if(!currentNick) throw new Error('Сначала войдите в Капани');
@@ -4875,7 +4719,7 @@ window.testKapaniPush = async function(){
     toast('🧪 Тестовый Push поставлен в очередь','green');
     return {
         ...result,
-        message: 'Уведомление создано через Firebase Functions → Firebase Realtime Database → FCM. Внутри сайта оно должно появиться сразу при открытом Kapani.',
+        message: 'Уведомление создано через Firebase Functions → Web Push → Service Worker. Закройте вкладку для проверки доставки.',
         diagnostics: await window.getKapaniPushDiagnostics()
     };
 };
@@ -6884,6 +6728,7 @@ window.openDmChat=async function(nick){
     // previous chat are ignored and can no longer replace the new chat.
     const openSeq = (window._dmOpenSeq = (window._dmOpenSeq || 0) + 1);
     currentDmNick = nick;
+    try{ await set(ref(db,`presence/${currentNick}/dmOpenWith`),nick); }catch(e){}
     dmPeerReadTs = 0;
 
     const listView = qs('dmListView');
@@ -7017,6 +6862,7 @@ window.closeDmChat=function(){
     }
     if(dmTypingUnsub){ try{ dmTypingUnsub(); }catch(e){} dmTypingUnsub = null; }
     setDmTypingState('idle');
+    try{ set(ref(db,`presence/${currentNick}/dmOpenWith`),null); }catch(e){}
     currentDmNick=null;dmPeerReadTs=0;dmLoading=false;
     const mv=qs('dmChatView'),lv=qs('dmListView');
     if(mv) mv.style.display='none'; if(lv) lv.style.display='block';
@@ -7049,7 +6895,7 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
     else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
     if(currentDmNick!==currentNick){
-        await pushNotification(currentDmNick,notifText,'messages');
+        await pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:`${key}:${msg.createdAt}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
     }
 }
 
@@ -8973,7 +8819,7 @@ window.publishNews = async function(){
     };
     await set(newsItemRef(id), newsItem);
     // ── Notify residents about the new post (reuses existing notifRef +
-    //    FCM/service-worker plumbing — no parallel notification system) ──
+    //    Web Push/service-worker plumbing — no parallel notification system) ──
     notifyAllUsersOfNews(newsItem).catch(e=>console.error('[news notify]', e));
     toast('📰 Новость опубликована!', 'green');
     qs('newsTitle').value = '';

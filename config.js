@@ -10,7 +10,7 @@ const KAPANI_CONFIG = Object.freeze({
         messagingSenderId: "250125043268",
         appId: "1:250125043268:web:fd82172b96e326b2001e11"
     },
-    fcmVapidKey: "BC1AzcGAzB3u2dDNjMCLtnmOmPx46AXipHPu9rO2et_tyZQFNRBBVr7DQvlZvVYmyIvhoOz1xmneASJtvzcZivc",
+    webPushVapidPublicKey: "BDjXi9EvtInIq_Hip8aLRrf5fapGq8p9P6y6kwqDyROSuFRP3AuWvppOb7vieZxWBU4Y1OtCjNzeuTlhHogHwrE",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },

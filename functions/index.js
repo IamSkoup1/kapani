@@ -1,6 +1,7 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onValueCreated } = require('firebase-functions/v2/database');
 const { getFirestore } = require('firebase-admin/firestore');
+const { defineSecret } = require('firebase-functions/params');
 const { getDatabase } = require('firebase-admin/database');
 const admin = require('firebase-admin');
 
@@ -13,6 +14,135 @@ const SUBSCRIPTIONS = require('./subscription-config');
 const crypto = require('crypto');
 
 const KAPANI_CANONICAL_URL = 'https://iamskoup1.github.io/kapani/';
+const KAPANI_VAPID_PUBLIC_KEY = 'BDjXi9EvtInIq_Hip8aLRrf5fapGq8p9P6y6kwqDyROSuFRP3AuWvppOb7vieZxWBU4Y1OtCjNzeuTlhHogHwrE';
+const KAPANI_VAPID_SUBJECT = KAPANI_CANONICAL_URL;
+const KAPANI_VAPID_PRIVATE_KEY = defineSecret('KAPANI_VAPID_PRIVATE_KEY');
+
+function b64uEncode(value) {
+    return Buffer.from(value).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+function b64uDecode(value) {
+    const s = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+    return Buffer.from(s + '='.repeat((4 - s.length % 4) % 4), 'base64');
+}
+function hkdfExtract(salt, ikm) {
+    return require('crypto').createHmac('sha256', salt).update(ikm).digest();
+}
+function hkdfExpand(prk, info, length) {
+    const crypto = require('crypto');
+    const chunks=[]; let previous=Buffer.alloc(0); let counter=1;
+    while(Buffer.concat(chunks).length < length) {
+        previous=crypto.createHmac('sha256', prk).update(Buffer.concat([previous, Buffer.from(info), Buffer.from([counter])])).digest();
+        chunks.push(previous); counter++;
+    }
+    return Buffer.concat(chunks).subarray(0,length);
+}
+function rawP256ToJwk(raw) {
+    const bytes=Buffer.from(raw); if(bytes.length!==65 || bytes[0]!==4) throw new Error('Invalid P-256 public key');
+    return {kty:'EC',crv:'P-256',x:b64uEncode(bytes.subarray(1,33)),y:b64uEncode(bytes.subarray(33,65))};
+}
+function makeVapidPrivateKey(rawPrivate, publicRaw) {
+    const priv=String(rawPrivate||'').trim(); if(!priv) throw new Error('VAPID private key is missing');
+    return require('crypto').createPrivateKey({key:{...rawP256ToJwk(publicRaw),d:b64uEncode(b64uDecode(priv))},format:'jwk'});
+}
+function makeVapidJwt(endpoint, rawPrivate, publicRaw) {
+    const crypto=require('crypto'); const url=new URL(endpoint);
+    const header=b64uEncode(JSON.stringify({typ:'JWT',alg:'ES256'}));
+    const payload=b64uEncode(JSON.stringify({aud:url.origin,exp:Math.floor(Date.now()/1000)+12*60*60,sub:KAPANI_VAPID_SUBJECT}));
+    const input=`${header}.${payload}`;
+    const key=makeVapidPrivateKey(rawPrivate,publicRaw);
+    const sig=crypto.createSign('SHA256').update(input).sign({key,dsaEncoding:'ieee-p1363'});
+    return `${input}.${b64uEncode(sig)}`;
+}
+function encryptWebPushPayload(subscription, plaintext) {
+    const crypto=require('crypto');
+    const receiverPublic=b64uDecode(subscription.keys.p256dh); const auth=b64uDecode(subscription.keys.auth);
+    if(receiverPublic.length!==65 || receiverPublic[0]!==4 || auth.length<16) throw new Error('Invalid Web Push subscription keys');
+    const ecdh=crypto.createECDH('prime256v1'); ecdh.generateKeys(); const senderPublic=ecdh.getPublicKey(); const shared=ecdh.computeSecret(receiverPublic);
+    const salt=crypto.randomBytes(16);
+    const prk=hkdfExtract(auth,shared);
+    const info=Buffer.concat([Buffer.from('WebPush: info\0','ascii'),receiverPublic,senderPublic]);
+    const ikm=hkdfExpand(prk,info,32);
+    const contentPrk=hkdfExtract(salt,ikm);
+    const cek=hkdfExpand(contentPrk,Buffer.from('Content-Encoding: aes128gcm\0','ascii'),16);
+    const nonce=hkdfExpand(contentPrk,Buffer.from('Content-Encoding: nonce\0','ascii'),12);
+    const cipher=crypto.createCipheriv('aes-128-gcm',cek,nonce);
+    const message=Buffer.concat([Buffer.from(String(plaintext),'utf8'),Buffer.from([2])]);
+    const ciphertext=Buffer.concat([cipher.update(message),cipher.final(),cipher.getAuthTag()]);
+    const recordSize=4096;
+    return Buffer.concat([salt,Buffer.from([recordSize>>>24,(recordSize>>>16)&255,(recordSize>>>8)&255,recordSize&255]),Buffer.from([65]),senderPublic,ciphertext]);
+}
+async function sendWebPush(endpoint, subscription, payload, privateKey, publicKeyRaw) {
+    const body=encryptWebPushPayload(subscription,JSON.stringify(payload));
+    const jwt=makeVapidJwt(endpoint,privateKey,publicKeyRaw);
+    const response=await fetch(endpoint,{method:'POST',headers:{'TTL':'300','Content-Type':'application/octet-stream','Content-Encoding':'aes128gcm','Authorization':`vapid t=${jwt}, k=${b64uEncode(publicKeyRaw)}`},body});
+    const text=await response.text();
+    if(!response.ok){const error=new Error(`Web Push ${response.status}: ${text.slice(0,500)}`);error.statusCode=response.status;throw error;}
+    return {status:response.status,text};
+}
+
+function b64uEncode(value) {
+    return Buffer.from(value).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+function b64uDecode(value) {
+    const s = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+    return Buffer.from(s + '='.repeat((4 - s.length % 4) % 4), 'base64');
+}
+function hkdfExtract(salt, ikm) {
+    return require('crypto').createHmac('sha256', salt).update(ikm).digest();
+}
+function hkdfExpand(prk, info, length) {
+    const crypto = require('crypto');
+    const chunks=[]; let previous=Buffer.alloc(0); let counter=1;
+    while(Buffer.concat(chunks).length < length) {
+        previous=crypto.createHmac('sha256', prk).update(Buffer.concat([previous, Buffer.from(info), Buffer.from([counter])])).digest();
+        chunks.push(previous); counter++;
+    }
+    return Buffer.concat(chunks).subarray(0,length);
+}
+function rawP256ToJwk(raw) {
+    const bytes=Buffer.from(raw); if(bytes.length!==65 || bytes[0]!==4) throw new Error('Invalid P-256 public key');
+    return {kty:'EC',crv:'P-256',x:b64uEncode(bytes.subarray(1,33)),y:b64uEncode(bytes.subarray(33,65))};
+}
+function makeVapidPrivateKey(rawPrivate, publicRaw) {
+    const priv=String(rawPrivate||'').trim(); if(!priv) throw new Error('VAPID private key is missing');
+    return require('crypto').createPrivateKey({key:{...rawP256ToJwk(publicRaw),d:b64uEncode(b64uDecode(priv))},format:'jwk'});
+}
+function makeVapidJwt(endpoint, rawPrivate, publicRaw) {
+    const crypto=require('crypto'); const url=new URL(endpoint);
+    const header=b64uEncode(JSON.stringify({typ:'JWT',alg:'ES256'}));
+    const payload=b64uEncode(JSON.stringify({aud:url.origin,exp:Math.floor(Date.now()/1000)+12*60*60,sub:KAPANI_VAPID_SUBJECT}));
+    const input=`${header}.${payload}`;
+    const key=makeVapidPrivateKey(rawPrivate,publicRaw);
+    const sig=crypto.createSign('SHA256').update(input).sign({key,dsaEncoding:'ieee-p1363'});
+    return `${input}.${b64uEncode(sig)}`;
+}
+function encryptWebPushPayload(subscription, plaintext) {
+    const crypto=require('crypto');
+    const receiverPublic=b64uDecode(subscription.keys.p256dh); const auth=b64uDecode(subscription.keys.auth);
+    if(receiverPublic.length!==65 || receiverPublic[0]!==4 || auth.length<16) throw new Error('Invalid Web Push subscription keys');
+    const ecdh=crypto.createECDH('prime256v1'); ecdh.generateKeys(); const senderPublic=ecdh.getPublicKey(); const shared=ecdh.computeSecret(receiverPublic);
+    const salt=crypto.randomBytes(16);
+    const prk=hkdfExtract(auth,shared);
+    const info=Buffer.concat([Buffer.from('WebPush: info\0','ascii'),receiverPublic,senderPublic]);
+    const ikm=hkdfExpand(prk,info,32);
+    const contentPrk=hkdfExtract(salt,ikm);
+    const cek=hkdfExpand(contentPrk,Buffer.from('Content-Encoding: aes128gcm\0','ascii'),16);
+    const nonce=hkdfExpand(contentPrk,Buffer.from('Content-Encoding: nonce\0','ascii'),12);
+    const cipher=crypto.createCipheriv('aes-128-gcm',cek,nonce);
+    const message=Buffer.concat([Buffer.from(String(plaintext),'utf8'),Buffer.from([2])]);
+    const ciphertext=Buffer.concat([cipher.update(message),cipher.final(),cipher.getAuthTag()]);
+    const recordSize=4096;
+    return Buffer.concat([salt,Buffer.from([recordSize>>>24,(recordSize>>>16)&255,(recordSize>>>8)&255,recordSize&255]),Buffer.from([65]),senderPublic,ciphertext]);
+}
+async function sendWebPush(endpoint, subscription, payload, privateKey, publicKeyRaw) {
+    const body=encryptWebPushPayload(subscription,JSON.stringify(payload));
+    const jwt=makeVapidJwt(endpoint,privateKey,publicKeyRaw);
+    const response=await fetch(endpoint,{method:'POST',headers:{'TTL':'300','Content-Type':'application/octet-stream','Content-Encoding':'aes128gcm','Authorization':`vapid t=${jwt}, k=${b64uEncode(publicKeyRaw)}`},body});
+    const text=await response.text();
+    if(!response.ok){const error=new Error(`Web Push ${response.status}: ${text.slice(0,500)}`);error.statusCode=response.status;throw error;}
+    return {status:response.status,text};
+}
 
 function sanitizePushPreferences(incoming) {
     const source = incoming && typeof incoming === 'object' ? incoming : {};
@@ -45,26 +175,38 @@ function hashPassword(password, salt) {
         .digest('hex');
 }
 
-function tokenKey(token) {
-    return crypto.createHash('sha256').update(String(token), 'utf8').digest('hex').slice(0, 32);
+function subscriptionKey(endpoint) {
+    return crypto.createHash('sha256').update(String(endpoint || ''), 'utf8').digest('hex').slice(0, 32);
 }
 
-function collectFcmTokens(user) {
-    const tokens = [];
-    const seen = new Set();
-    const add = (token, path, pushPrefs = null) => {
-        const value = String(token || '').trim();
-        if (!value || seen.has(value)) return;
-        seen.add(value);
-        tokens.push({ token: value, path, pushPrefs });
-    };
-    add(user?.fcmToken, 'fcmToken', user?.pushPrefs || null);
-    const many = user?.fcmTokens && typeof user.fcmTokens === 'object' ? user.fcmTokens : {};
-    for (const [key, entry] of Object.entries(many)) {
-        if (typeof entry === 'string') add(entry, `fcmTokens/${key}`, user?.pushPrefs || null);
-        else if (entry?.token) add(entry.token, `fcmTokens/${key}`, entry.pushPrefs || user?.pushPrefs || null);
+function sanitizePushPreferences(incoming) {
+    const source = incoming && typeof incoming === 'object' ? incoming : {};
+    const allowedCategories = ['messages', 'money', 'taxi_orders', 'delivery_orders', 'market', 'news', 'system'];
+    const prefs = { enabled: source.enabled !== false };
+    for (const category of allowedCategories) {
+        if (Object.prototype.hasOwnProperty.call(source, category)) prefs[category] = source[category] !== false;
     }
-    return tokens;
+    return prefs;
+}
+
+function pushCategoryEnabled(record, category) {
+    const prefs = record?.pushPrefs || {};
+    return prefs.enabled !== false && prefs[category] !== false;
+}
+
+function makeWebPushPayload(nick, notificationId, notification) {
+    const category = String(notification?.cat || 'system');
+    return {
+        title: String(notification?.title || 'Капани'),
+        body: String(notification?.text || notification?.body || '').trim(),
+        category, notificationId: String(notificationId || ''),
+        url: String(notification?.url || KAPANI_CANONICAL_URL),
+        createdAt: Number(notification?.createdAt || Date.now()),
+        source: String(notification?.source || ''),
+        sourceMessageId: String(notification?.sourceMessageId || ''),
+        newsId: String(notification?.newsId || ''),
+        recipient: String(nick || '')
+    };
 }
 
 // Проверка, что пользователь является администратором
@@ -517,192 +659,78 @@ exports.issueKapaniSessionToken = onCall({ region: 'europe-west1' }, async (requ
 });
 
 /**
- * Registers the current browser FCM token server-side.
+ * Registers the current browser Web Push token server-side.
  * The same token is removed from other Kapani users, preventing delivery
  * to a previous account when the same browser switches users.
  */
-exports.registerFcmToken = onCall({ region: 'europe-west1' }, async (request) => {
-    const uid = request.auth?.uid;
-    const token = String(request.data?.token || '').trim();
-
+exports.registerWebPushSubscription = onCall({ region: 'europe-west1' }, async (request) => {
+    const uid = String(request.auth?.uid || '').trim();
+    const incoming = request.data?.subscription || {};
     if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
-    if (!token || token.length < 20) {
-        throw new HttpsError('invalid-argument', 'Некорректный FCM token');
-    }
-
-    const tokenId = tokenKey(token);
+    const endpoint = String(incoming.endpoint || '').trim();
+    const p256dh = String(incoming.keys?.p256dh || '').trim();
+    const auth = String(incoming.keys?.auth || '').trim();
+    if (!endpoint || !p256dh || !auth) throw new HttpsError('invalid-argument', 'Некорректная Web Push subscription');
+    const subscriptionId = subscriptionKey(endpoint);
     const now = Date.now();
-    const pushPrefs = sanitizePushPreferences(request.data?.prefs);
-    const indexRef = db.ref(`fcmTokenIndex/${tokenId}`);
-    const indexSnap = await indexRef.get();
-    const indexedOwner = indexSnap.exists() ? String(indexSnap.val()?.uid || '') : '';
-    const updates = {};
-
-    // A token belongs to one current Kapani account. Remove it from a previous
-    // account without scanning the entire users collection.
-    if (indexedOwner && indexedOwner !== uid) {
-        updates[`users/${indexedOwner}/fcmTokens/${tokenId}`] = null;
-        if (indexSnap.val()?.token === token) {
-            updates[`users/${indexedOwner}/fcmToken`] = null;
-        }
-    }
-
-    updates[`users/${uid}/fcmTokens/${tokenId}`] = {
-        token,
-        updatedAt: now,
-        userAgent: String(request.data?.userAgent || '').slice(0, 500),
-        pushPrefs
-    };
-    updates[`users/${uid}/fcmToken`] = token;
-    updates[`users/${uid}/fcmUpdatedAt`] = now;
-    updates[`fcmTokenIndex/${tokenId}`] = { uid, token, updatedAt: now };
-
-    await db.ref().update(updates);
-    return { success: true, tokenId };
-});
-
-exports.updatePushPreferences = onCall({ region: 'europe-west1' }, async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
-
     const prefs = sanitizePushPreferences(request.data?.prefs);
-    prefs.updatedAt = Date.now();
-    const tokenId = String(request.data?.tokenId || '').trim();
-    const updates = { [`users/${uid}/pushPrefs`]: prefs };
-
-    if (tokenId) {
-        const tokenSnap = await db.ref(`users/${uid}/fcmTokens/${tokenId}`).get();
-        if (tokenSnap.exists()) updates[`users/${uid}/fcmTokens/${tokenId}/pushPrefs`] = prefs;
-    }
-
+    const indexRef = db.ref(`pushSubscriptionIndex/${subscriptionId}`);
+    const indexSnap = await indexRef.get();
+    const previousOwner = indexSnap.exists() ? String(indexSnap.val()?.uid || '') : '';
+    const updates = {};
+    if (previousOwner && previousOwner !== uid) updates[`users/${previousOwner}/pushSubscriptions/${subscriptionId}`] = null;
+    updates[`users/${uid}/pushSubscriptions/${subscriptionId}`] = { endpoint, expirationTime: incoming.expirationTime ?? null, keys:{p256dh,auth}, updatedAt: now, userAgent:String(request.data?.userAgent||'').slice(0,500), pushPrefs:prefs };
+    updates[`pushSubscriptionIndex/${subscriptionId}`] = { uid, updatedAt: now };
     await db.ref().update(updates);
-    return { success: true, prefs, tokenId: tokenId || null };
+    return { success:true, subscriptionId };
 });
 
-exports.unregisterFcmToken = onCall({ region: 'europe-west1' }, async (request) => {
-    const uid = request.auth?.uid;
-    const tokenId = String(request.data?.tokenId || '').trim();
-    const token = String(request.data?.token || '').trim();
+exports.updateWebPushPreferences = onCall({ region: 'europe-west1' }, async (request) => {
+    const uid = String(request.auth?.uid || '').trim(); const subscriptionId = String(request.data?.subscriptionId || '').trim();
     if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
-    if (!tokenId && !token) throw new HttpsError('invalid-argument', 'Не указан tokenId или token');
-
-    const resolvedTokenId = tokenId || tokenKey(token);
-    const tokenSnap = await db.ref(`users/${uid}/fcmTokens/${resolvedTokenId}`).get();
-    const legacySnap = await db.ref(`users/${uid}/fcmToken`).get();
-    const updates = {
-        [`users/${uid}/fcmTokens/${resolvedTokenId}`]: null,
-        [`fcmTokenIndex/${resolvedTokenId}`]: null
-    };
-    const storedToken = tokenSnap.exists() ? String(tokenSnap.val()?.token || tokenSnap.val() || '') : '';
-    const legacyMatches = legacySnap.exists() && (storedToken && String(legacySnap.val()) === storedToken);
-    if (legacyMatches || (!tokenSnap.exists() && token && String(legacySnap.val()) === token)) {
-        updates[`users/${uid}/fcmToken`] = null;
-        updates[`users/${uid}/fcmUpdatedAt`] = null;
-    }
-    if (!tokenSnap.exists() && !legacySnap.exists()) {
-        return { success: true, tokenId: resolvedTokenId, removed: false };
-    }
-    await db.ref().update(updates);
-    return { success: true, tokenId: resolvedTokenId, removed: true };
+    if (!subscriptionId) throw new HttpsError('invalid-argument', 'Не указан subscriptionId');
+    const snap = await db.ref(`users/${uid}/pushSubscriptions/${subscriptionId}`).get();
+    if (!snap.exists()) throw new HttpsError('not-found', 'Push subscription не найдена');
+    const prefs=sanitizePushPreferences(request.data?.prefs); prefs.updatedAt=Date.now();
+    await db.ref(`users/${uid}/pushSubscriptions/${subscriptionId}/pushPrefs`).set(prefs);
+    return {success:true,prefs,subscriptionId};
 });
 
-exports.getPushDiagnostics = onCall({ region: 'europe-west1' }, async (request) => {
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
-    const snap = await db.ref(`users/${uid}`).get();
-    if (!snap.exists()) throw new HttpsError('not-found', 'Пользователь не найден');
-    const user = snap.val() || {};
-    const tokens = collectFcmTokens(user);
-    return {
-        ok: true,
-        user: uid,
-        tokenCount: tokens.length,
-        tokens: tokens.map((entry) => ({
-            tokenId: tokenKey(entry.token),
-            updatedAt: Number(user?.fcmTokens?.[tokenKey(entry.token)]?.updatedAt || user?.fcmUpdatedAt || 0) || null,
-            pushPrefs: entry.pushPrefs || user.pushPrefs || null
-        }))
-    };
+exports.unregisterWebPushSubscription = onCall({ region: 'europe-west1' }, async (request) => {
+    const uid=String(request.auth?.uid||'').trim(); const subscriptionId=String(request.data?.subscriptionId||'').trim();
+    if(!uid) throw new HttpsError('unauthenticated','Требуется защищённая сессия');
+    if(!subscriptionId) throw new HttpsError('invalid-argument','Не указан subscriptionId');
+    const snap=await db.ref(`users/${uid}/pushSubscriptions/${subscriptionId}`).get();
+    if(!snap.exists()) return {success:true,subscriptionId,removed:false};
+    await db.ref().update({[`users/${uid}/pushSubscriptions/${subscriptionId}`]:null,[`pushSubscriptionIndex/${subscriptionId}`]:null});
+    return {success:true,subscriptionId,removed:true};
 });
 
-function notificationJobId(nick, notificationId) {
-    return crypto.createHash('sha256')
-        .update(`${String(nick)}:${String(notificationId)}`, 'utf8')
-        .digest('hex');
-}
+exports.getPushDiagnostics = onCall({ region: 'europe-west1', secrets: [KAPANI_VAPID_PRIVATE_KEY] }, async (request) => {
+    const uid=String(request.auth?.uid||'').trim();
+    if(!uid) throw new HttpsError('unauthenticated','Требуется защищённая сессия');
+    const snap=await db.ref(`users/${uid}/pushSubscriptions`).get(); const subs=snap.exists()?snap.val()||{}:{};
+    return {ok:true,user:uid,vapidConfigured:!!String(KAPANI_VAPID_PRIVATE_KEY.value()||'').trim(),subscriptionCount:Object.keys(subs).length,subscriptions:Object.entries(subs).map(([id,item])=>({subscriptionId:id,updatedAt:Number(item?.updatedAt||0)||null,endpoint:String(item?.endpoint||'').slice(0,120),pushPrefs:item?.pushPrefs||null}))};
+});
 
-async function sendNotificationPush(nick, notificationId, notification) {
-    try {
-        const userSnap = await db.ref(`users/${nick}`).get();
-        if (!userSnap.exists()) return { sent: 0, skipped: true };
-        const user = userSnap.val() || {};
-        const prefs = sanitizePushPreferences(user.pushPrefs);
-        if (prefs.enabled === false || prefs[notification?.cat || 'system'] === false) return { sent: 0, skipped: true };
-        const tokens = collectFcmTokens(user).map(x => x.token).filter(Boolean);
-        if (!tokens.length) return { sent: 0, skipped: true };
-        const payload = getNotificationPayload({ ...notification, id: notificationId });
-        if (!payload) return { sent: 0, skipped: true };
-        const response = await admin.messaging().sendEachForMulticast({
-            tokens,
-            data: Object.fromEntries(Object.entries(payload).map(([k,v]) => [k, String(v ?? '')]))
-        });
-        const stale = [];
-        response.responses.forEach((r, i) => {
-            if (!r.success) {
-                const code = String(r.error?.code || '');
-                if (/registration-token-not-registered|invalid-registration-token/.test(code)) stale.push(tokens[i]);
-            }
-        });
-        if (stale.length) {
-            const updates = {};
-            for (const token of stale) {
-                const tokenId = tokenKey(token);
-                updates[`users/${nick}/fcmTokens/${tokenId}`] = null;
-                updates[`fcmTokenIndex/${tokenId}`] = null;
-                const legacy = String(user.fcmToken || '');
-                if (legacy === token) updates[`users/${nick}/fcmToken`] = null;
-            }
-            if (Object.keys(updates).length) await db.ref().update(updates);
-        }
-        return { sent: response.successCount, failed: response.failureCount };
-    } catch (error) {
-        pushLog('warn', 'fcm_send_failed', { nick, notificationId, error: String(error?.message || error) });
-        return { sent: 0, failed: 1, error: String(error?.message || error) };
-    }
+function pushLog(level,event,fields={}){const safe={};for(const [k,v] of Object.entries(fields)){if(v===undefined||v===null)continue;const t=typeof v==='string'?v:JSON.stringify(v);safe[k]=t.length>500?t.slice(0,500)+'…':t;}const line=`[KapaniPush] ${event} ${JSON.stringify(safe)}`;if(level==='error')console.error(line);else if(level==='warn')console.warn(line);else console.log(line);}
+async function shouldSuppressNotificationForOpenContext(nick,notification){
+    if(String(notification?.source||'')==='general_chat'){const snap=await db.ref(`presence/${nick}/generalChatOpen`).get();return snap.exists()&&snap.val()===true;}
+    if(String(notification?.source||'')==='dm'&&notification?.from){const snap=await db.ref(`presence/${nick}/dmOpenWith`).get();return snap.exists()&&String(snap.val()||'')===String(notification.from);}
+    return false;
 }
-
-function getNotificationPayload(notification) {
-    const category = String(notification?.cat || 'system');
-    const body = String(notification?.text || notification?.body || '').trim();
-    if (!body) return null;
-    return {
-        title: String(notification?.title || 'Капани'),
-        body,
-        category,
-        notificationId: String(notification?.id || ''),
-        url: String(notification?.url || KAPANI_CANONICAL_URL),
-        createdAt: String(notification?.createdAt || Date.now()),
-        source: String(notification?.source || ''),
-        sourceMessageId: String(notification?.sourceMessageId || ''),
-        newsId: String(notification?.newsId || '')
-    };
-}
-
-function pushLog(level, event, fields = {}) {
-    const safe = {};
-    for (const [key, value] of Object.entries(fields)) {
-        if (value === undefined || value === null) continue;
-        const text = typeof value === 'string' ? value : JSON.stringify(value);
-        safe[key] = text.length > 500 ? text.slice(0, 500) + '…' : text;
-    }
-    const line = `[KapaniPush] ${event} ${JSON.stringify(safe)}`;
-    if (level === 'error') console.error(line);
-    else if (level === 'warn') console.warn(line);
-    else console.log(line);
-}
-
-// Push delivery is intentionally NOT performed by Firebase Functions.
-// Firebase Functions deliver FCM directly. There is no external push bridge or durable queue.
+exports.deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notifications/{notificationId}',region:'europe-west1',secrets:[KAPANI_VAPID_PRIVATE_KEY]},async(event)=>{
+    const nick=String(event.params?.nick||'');const notificationId=String(event.params?.notificationId||'');const notification=event.data?.val()||null;if(!nick||!notificationId||!notification||notification.push===false)return null;
+    const body=String(notification.text||notification.body||'').trim();if(!body)return null;
+    const privateKey=String(KAPANI_VAPID_PRIVATE_KEY.value()||'').trim();if(!privateKey){pushLog('error','vapid_private_key_missing',{nick,notificationId});return null;}
+    if(await shouldSuppressNotificationForOpenContext(nick,notification)){pushLog('info','suppressed_open_context',{nick,notificationId,source:notification.source});return null;}
+    const vapidPublicRaw=b64uDecode(KAPANI_VAPID_PUBLIC_KEY);
+    const snap=await db.ref(`users/${nick}/pushSubscriptions`).get();if(!snap.exists())return null;
+    const payload={title:String(notification.title||'Капани'),body,category:String(notification.cat||'system'),notificationId,url:String(notification.url||KAPANI_CANONICAL_URL),createdAt:Number(notification.createdAt||Date.now()),source:String(notification.source||''),sourceMessageId:String(notification.sourceMessageId||''),newsId:String(notification.newsId||'')};
+    const updates={};let sent=0,removed=0;const entries=Object.entries(snap.val()||{});
+    for(const [subscriptionId,record] of entries){if(!record?.endpoint||!record?.keys?.p256dh||!record?.keys?.auth)continue;if(!pushCategoryEnabled(record,payload.category))continue;try{await sendWebPush(record.endpoint,{endpoint:record.endpoint,expirationTime:record.expirationTime||null,keys:record.keys},payload,privateKey,vapidPublicRaw);sent++;}catch(error){const status=Number(error?.statusCode||0);if(status===404||status===410){updates[`users/${nick}/pushSubscriptions/${subscriptionId}`]=null;updates[`pushSubscriptionIndex/${subscriptionId}`]=null;removed++;}else pushLog('warn','send_failed',{nick,notificationId,subscriptionId,status,error:String(error?.message||error)});}}
+    if(Object.keys(updates).length)await db.ref().update(updates);pushLog('info','webpush_delivery',{nick,notificationId,sent,removed,subscriptions:entries.length});return null;
+});
 
 /**
  * Server-authoritative subscription gifting.
@@ -912,8 +940,8 @@ exports.giftSubscription = onCall({ region: 'europe-west1' }, async (request) =>
 
 /**
  * General-chat notification fan-out.
- * One /chat write -> one deterministic notification per recipient -> FCM.
- * The sender is excluded, and FCM is skipped for users who currently have
+ * One /chat write -> one deterministic notification per recipient -> Web Push.
+ * The sender is excluded, and Web Push is skipped for users who currently have
  * the general chat open. RTDB notification remains available to them.
  */
 exports.notifyOnChatMessage = onValueCreated(
@@ -956,23 +984,22 @@ exports.notifyOnChatMessage = onValueCreated(
         time: new Date(now).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
         cat: 'messages',
         createdAt: now,
-        url: KAPANI_CANONICAL_URL,
+        url: `${KAPANI_CANONICAL_URL}?kpSection=messages`,
         push: true,
         source: 'general_chat',
-        sourceMessageId: messageId
+        sourceMessageId: messageId,
+        from: senderNick
       };
 
     }
 
     if (Object.keys(updates).length) {
       await db.ref().update(updates);
-      await Promise.allSettled(Object.entries(users).map(async ([nick, user]) => {
-        if (!user || nick === senderNick) return;
-        const notificationId = `chat_${messageId}`;
-        const notification = updates[`users/${nick}/notifications/${notificationId}`];
-        if (notification) await sendNotificationPush(nick, notificationId, notification);
-      }));
     }
+
+    // Push delivery is handled by the canonical Web Push delivery.
+    // The queue entries are created above atomically with the notification rows,
+    // so closing the publisher's browser cannot interrupt delivery.
 
     return null;
   }
@@ -983,7 +1010,7 @@ exports.notifyOnChatMessage = onValueCreated(
  * Legacy duel notification bridge.
  * The game UI historically stores duel events under /notifications/{nick}.
  * Mirror only duel events into the canonical user notification collection so
- * they use the same Firebase/FCM path without removing the legacy UI data.
+ * they use the same Web Push delivery/Web Push path without removing the legacy UI data.
  */
 exports.notifyOnLegacyDuelNotification = onValueCreated(
   { ref: '/notifications/{nick}/{notificationId}', region: 'europe-west1' },
@@ -1014,8 +1041,6 @@ exports.notifyOnLegacyDuelNotification = onValueCreated(
       source: 'legacy_duel',
       sourceMessageId: notificationId
     });
-    const queueUpdates = {};
-    await db.ref().update(queueUpdates);
     return null;
   }
 );
@@ -1047,22 +1072,14 @@ exports.notifyOnNewsCreated = onValueCreated(
         cat: 'news',
         newsId,
         createdAt,
-        url: `${KAPANI_CANONICAL_URL}?news=${encodeURIComponent(newsId)}`,
+        url: `${KAPANI_CANONICAL_URL}?kpSection=news&news=${encodeURIComponent(newsId)}`,
         push: true,
         source: 'news',
         sourceMessageId: newsId
       };
     }
 
-    if (Object.keys(updates).length) {
-      await db.ref().update(updates);
-      await Promise.allSettled(Object.keys(users).map(async (nick) => {
-        if (!nick || nick === String(news.author || '')) return;
-        const notificationId = `news_${newsId}`;
-        const notification = updates[`users/${nick}/notifications/${notificationId}`];
-        if (notification) await sendNotificationPush(nick, notificationId, notification);
-      }));
-    }
+    if (Object.keys(updates).length) await db.ref().update(updates);
     pushLog('info', 'news_fanout_created', { newsId, recipients: Object.keys(updates).length });
     return null;
   }
@@ -1074,13 +1091,17 @@ exports.notifyOnNewsCreated = onValueCreated(
  *
  * Client code must not write users/<nick>/notifications directly because that
  * node is intentionally read-only from the browser. This callable uses the
- * authenticated Firebase session, writes the inbox item, and sends FCM directly when a device token is registered.
+ * authenticated Firebase session, writes the inbox item atomically; the notification trigger performs the actual Web Push delivery.
  */
 exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (request) => {
     const senderNick = String(request.auth?.uid || '').trim();
     const targetNick = String(request.data?.nick || '').trim();
     const text = String(request.data?.text || '').trim();
     const category = String(request.data?.cat || 'system').trim() || 'system';
+    const title = String(request.data?.title || 'Капани').trim() || 'Капани';
+    const url = String(request.data?.url || KAPANI_CANONICAL_URL).trim() || KAPANI_CANONICAL_URL;
+    const source = String(request.data?.source || '').trim();
+    const sourceMessageId = String(request.data?.sourceMessageId || '').trim();
 
     if (!senderNick) {
         throw new HttpsError('unauthenticated', 'Требуется защищённая Firebase-сессия');
@@ -1107,17 +1128,19 @@ exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (req
     const createdAt = Date.now();
     const notification = {
         text,
-        title: 'Капани',
+        title,
         time: new Date(createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
         cat: category,
         createdAt,
-        url: KAPANI_CANONICAL_URL,
-        push: true
+        url,
+        push: true,
+        source,
+        sourceMessageId,
+        ...(source === 'dm' && senderNick ? { from: senderNick } : {})
     };
     const updates = {};
     updates[`users/${targetNick}/notifications/${notificationId}`] = notification;
     await db.ref().update(updates);
-    const pushResult = await sendNotificationPush(targetNick, notificationId, notification);
 
     pushLog('info', 'client_notification_created', {
         sender: senderNick,
@@ -1126,7 +1149,7 @@ exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (req
         category
     });
 
-    return { ok: true, notificationId, pushSent: Number(pushResult?.sent || 0) };
+    return { ok: true, notificationId, queued: false, delivery: 'web_push_trigger' };
 });
 
 function getDateTime() {
@@ -1149,5 +1172,5 @@ function getTime() {
  * 1) клиент пишет одно сообщение в /chat;
  * 2) Cloud Function получает событие;
  * 3) сервер записывает уведомление каждому другому пользователю;
- * 4) существующие RTDB-listener'ы и FCM bridge доставляют его без перезагрузки.
+ * 4) существующие RTDB-listener'ы и Web Push bridge доставляют его без перезагрузки.
  */

@@ -1,8 +1,20 @@
-# Kapani Push — production deploy / verification
+# Kapani Web Push — deployment and verification
 
-## 1. Firebase Functions
+Kapani now uses standard Web Push: browser `PushSubscription` → Firebase Realtime Database → existing Firebase Cloud Functions → Web Push protocol → browser Service Worker. Cloudflare Push and FCM are no longer part of the delivery path.
 
-В `functions/index.js` активный Push sender отсутствует: Firebase Functions только создают каноническое уведомление и `pushQueue`. После обновления обязательно задеплойте Functions:
+## 1. Set the VAPID private key
+
+The public key is stored in `config.js`. The private key must exist only in Firebase Functions Secret Manager. Never put it in `index.html`, `config.js`, the Service Worker, localStorage, or GitHub Pages.
+
+Generate a P-256 VAPID key pair locally when needed, then store the private key as the Firebase secret:
+
+```bash
+firebase functions:secrets:set KAPANI_VAPID_PRIVATE_KEY
+```
+
+When prompted, paste the VAPID private key. The deployed Functions use the secret at runtime.
+
+## 2. Deploy existing Functions
 
 ```bash
 cd functions
@@ -11,124 +23,48 @@ cd ..
 firebase deploy --only functions
 ```
 
-Если в уже задеплоенном Firebase проекте всё ещё существует старый sender/queue-процессор, который отправляет через `admin.messaging()`, его нужно удалить вручную после проверки списка функций. В текущем исходнике прямого `admin.messaging()` sender нет.
+Then publish the updated static files to the existing GitHub Pages site.
 
-## 2. Cloudflare Worker
+## 3. Browser registration
 
-```bash
-cd cloudflare-worker
-wrangler login
-wrangler whoami
-wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
-wrangler deploy
-```
+1. Log into Kapani.
+2. Open Profile → Push notifications.
+3. Press “Включить”.
+4. Grant browser notification permission.
+5. Kapani registers one standard Push Subscription for that account/device in `users/<nick>/pushSubscriptions/<subscriptionId>`.
 
-Секрет должен быть полным JSON service account для проекта `kapanisite`. Private key не должен попадать в `config.js`, `index.html`, `wrangler.toml` или Git.
+The subscription survives normal page reloads and browser restarts as long as the browser keeps the subscription.
 
-`wrangler.toml` уже содержит:
-
-- `FIREBASE_PROJECT_ID=kapanisite`
-- `FIREBASE_DATABASE_URL=https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app`
-- `FIREBASE_WEB_API_KEY=<public Firebase web API key>`
-- Cron: `* * * * *`
-
-## 3. Health
-
-После deploy:
-
-```bash
-curl https://kapani-free-push.kapani.workers.dev/health
-```
-
-Ожидается HTTP 200 и JSON с:
-
-```json
-{
-  "ok": true,
-  "service": "kapani-free-push-bridge",
-  "mode": "cloudflare-queue-fcm-v1",
-  "configured": {
-    "serviceAccount": true,
-    "projectId": true,
-    "databaseUrl": true,
-    "cron": true
-  }
-}
-```
-
-Если `ok:false` / HTTP 503 — Worker задеплоен, но production-конфигурация не готова.
-
-## 4. Frontend
-
-Опубликуйте обновлённые:
-
-- `index.html`
-- `config.js`
-- `firebase-messaging-sw.js`
-- `manifest.json`
-- остальные используемые ассеты.
-
-Сайт должен работать по HTTPS.
-
-## 5. Диагностика в браузере
-
-После входа:
-
-```js
-await window.getKapaniPushDiagnostics()
-```
-
-Критичные поля:
+## 4. Delivery path
 
 ```text
-permission               granted
-serviceWorkerRegistered  true
-activeServiceWorker      true
-fcmTokenExists           true
-serverRegistered         true
-serverTokenCount        >= 1
-cloudflareHealth.ok      true
+Kapani event
+  ↓
+users/<nick>/notifications/<notificationId>
+  ↓
+Firebase onValueCreated trigger
+  ↓
+Web Push + VAPID
+  ↓
+Browser Push Service
+  ↓
+firebase-messaging-sw.js (standard Web Push SW)
+  ↓
+showNotification()
 ```
 
-Также проверяйте:
+## 5. Critical closed-tab test
 
-```text
-serviceWorkerScope
-serviceWorkerScript
-lastRegisterResponse
-queueDiagnostic
-```
+Use two accounts/devices. Give the recipient notification permission, verify a Push Subscription exists, then completely close the recipient Kapani tab. Send a DM or a general-chat message from the other account. The browser must show a system notification while Kapani is closed.
 
-## 6. Реальный end-to-end тест
-
-В браузере с разрешёнными уведомлениями:
+Do not treat `Notification.permission === "granted"` as proof of delivery. Use:
 
 ```js
-await window.testKapaniPush()
+await getKapaniPushDiagnostics()
 ```
 
-Это НЕ локальный `showNotification()`. Функция создаёт настоящее Kapani-уведомление через Firebase Function, которое попадает в `pushQueue` и дальше должно быть обработано Cloudflare → FCM.
+and verify the subscription exists and the Service Worker is active. The actual acceptance test is the real notification while the tab is closed.
 
-Для проверки closed-site:
+## 6. Stale subscription cleanup
 
-1. Запустите `await window.testKapaniPush()` и убедитесь, что диагностика показывает `cloudflareHealth.ok: true`.
-2. Закройте вкладку Kapani.
-3. Дождитесь системного Push.
-4. Нажмите Push — Service Worker должен открыть `https://iamskoup1.github.io/kapani/`.
-
-## 7. Локальный тест Cron
-
-```bash
-cd cloudflare-worker
-wrangler dev --test-scheduled
-```
-
-В другом терминале:
-
-```bash
-curl "http://localhost:8787/cdn-cgi/local/scheduled?format=json"
-```
-
-## 8. iOS / iPadOS
-
-Web Push для iOS/iPadOS поддерживается для web apps, добавленных на Home Screen, начиная с iOS/iPadOS 16.4. Разрешение запрашивается через прямое действие пользователя. Обычная вкладка Safari не должна рассматриваться как полноценный эквивалент установленной PWA.
+HTTP 404/410 responses from the browser Push Service remove the dead subscription automatically from both the user branch and `pushSubscriptionIndex`.
