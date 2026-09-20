@@ -113,3 +113,26 @@ wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON < sa.json
 После этого задеплойте обновлённый `worker.js`. В этой версии JWT содержит `kid` из `private_key_id`, а ответ Google OAuth при ошибке больше не скрывается.
 
 Важно: `sa.json` не должен находиться в репозитории или публиковаться.
+
+
+## Быстрый реальный тест Push
+
+После того как `/health` показывает `subscribers >= 1` и `devices >= 1`, можно проверить доставку напрямую, не создавая тестовую запись в RTDB:
+
+```js
+fetch('https://kapani-push.kapani.workers.dev/test', {
+  method: 'POST',
+  headers: {'content-type': 'application/json'},
+  body: JSON.stringify({
+    nick: 'ВАШ_НИК',
+    ph: 'ВАШ_PASSWORD_HASH',
+    title: 'Капани — тест Push',
+    body: 'Если это уведомление появилось, Web Push работает.',
+    category: 'system'
+  })
+}).then(r => r.json()).then(console.log)
+```
+
+Ожидаемый результат при одной рабочей подписке: `ok: true`, `devices: 1`, `sent: 1`.
+
+`/test` требует те же `nick + ph`, что и `/subscribe`, и отправляет тест только устройствам этого пользователя. Приватные ключи в проект не входят и не должны добавляться в архив.

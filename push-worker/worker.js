@@ -375,8 +375,21 @@ async function processJob(env, jobId, budget, preloaded) {
     for (const [nick, id] of dead) if (fresh[nick]) { fresh[nick] = fresh[nick].filter(s => s.id !== id); if (!fresh[nick].length) delete fresh[nick]; }
     await saveSubs(env, fresh);
   }
+
+  // A notification must not be marked pushed before at least one real push succeeds.
+  // Otherwise a transient Web Push/VAPID/network error would permanently lose the notification.
+  if (job.type === 'notification' && plan.nicks.length && sent === 0) {
+    const attempts = Number(job.attempts || 0) + 1;
+    if (attempts >= 30) {
+      await finish({});
+      return { sent: 0, next: null, retryExhausted: true };
+    }
+    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: { ...job, attempts } });
+    return { sent: 0, next: null, retry: true };
+  }
+
   const rest = plan.nicks.slice(i);
-  const extra = { ...plan.marks };                                                // pushDone / pushedAt: written once, so a repeated /event cannot fan out twice
+  const extra = { ...plan.marks };                                                // pushDone / pushedAt: written after the job has actually been processed
   let next = null;
   if (rest.length) {                                                              // over budget: hand the remaining recipients to a continuation job
     next = `${String(jobId).replace(/_c[0-9a-z]+$/, '')}_c${Date.now().toString(36)}`;
@@ -442,6 +455,50 @@ async function handlePrefs(request, env, body) {
   await saveSubs(env, all);
   return json(request, env, { success: true, prefs: sub.prefs });
 }
+async function handleTest(request, env, body) {
+  if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
+
+  const all = await loadSubs(env);
+  const subs = (all[body.nick] || []).filter(s => prefsAllow(s, String(body.category || 'system')));
+  if (!subs.length) return json(request, env, { ok: true, sent: 0, devices: 0, message: 'no active push devices for this user' });
+
+  const payload = {
+    title: String(body.title || 'Капани — тест Push').slice(0, 120),
+    body: String(body.body || 'Тестовое Push-уведомление успешно отправлено.').trim().slice(0, 1000),
+    category: String(body.category || 'system'),
+    notificationId: `test_${Date.now().toString(36)}`,
+    url: String(body.url || appUrl(env)),
+    createdAt: Date.now(),
+    source: 'worker_test',
+    sourceMessageId: ''
+  };
+
+  let sent = 0;
+  const dead = new Set();
+  const results = [];
+  for (const sub of subs) {
+    try {
+      const status = await sendPush(env, sub, payload);
+      results.push({ id: sub.id, status });
+      if (status === 404 || status === 410) dead.add(sub.id);
+      else if (status >= 200 && status < 300) sent++;
+    } catch (e) {
+      results.push({ id: sub.id, error: String(e?.message || e).slice(0, 200) });
+    }
+  }
+
+  if (dead.size) {
+    const fresh = await loadSubs(env);
+    if (fresh[body.nick]) {
+      fresh[body.nick] = fresh[body.nick].filter(s => !dead.has(s.id));
+      if (!fresh[body.nick].length) delete fresh[body.nick];
+      await saveSubs(env, fresh);
+    }
+  }
+
+  return json(request, env, { ok: true, sent, devices: subs.length, results });
+}
+
 async function handleEvent(request, env, body) {
   let jobId = String(body.jobId || '');
   if (body.job) {                                                                 // fallback: the browser could not write the outbox itself
@@ -462,6 +519,13 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request, env) });
     try {
+      if (url.pathname === '/') {
+        return json(request, env, {
+          ok: true,
+          service: 'kapani-push',
+          endpoints: { health: 'GET /health', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', event: 'POST /event', test: 'POST /test' }
+        });
+      }
       if (url.pathname === '/health') {
         const subs = await loadSubs(env);
         return json(request, env, {
@@ -479,6 +543,7 @@ export default {
       if (url.pathname === '/unsubscribe') return await handleUnsubscribe(request, env, body);
       if (url.pathname === '/prefs') return await handlePrefs(request, env, body);
       if (url.pathname === '/event') return await handleEvent(request, env, body);
+      if (url.pathname === '/test') return await handleTest(request, env, body);
       return json(request, env, { error: 'not found' }, 404);
     } catch (e) {
       console.error('worker error', String(e?.message || e));
