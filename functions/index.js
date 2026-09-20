@@ -723,7 +723,6 @@ exports.deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notifications/{n
     const nick=String(event.params?.nick||'');const notificationId=String(event.params?.notificationId||'');const notification=event.data?.val()||null;if(!nick||!notificationId||!notification||notification.push===false)return null;
     const body=String(notification.text||notification.body||'').trim();if(!body)return null;
     const privateKey=String(KAPANI_VAPID_PRIVATE_KEY.value()||'').trim();if(!privateKey){pushLog('error','vapid_private_key_missing',{nick,notificationId});return null;}
-    if(await shouldSuppressNotificationForOpenContext(nick,notification)){pushLog('info','suppressed_open_context',{nick,notificationId,source:notification.source});return null;}
     const vapidPublicRaw=b64uDecode(KAPANI_VAPID_PUBLIC_KEY);
     const snap=await db.ref(`users/${nick}/pushSubscriptions`).get();if(!snap.exists())return null;
     const payload={title:String(notification.title||'Капани'),body,category:String(notification.cat||'system'),notificationId,url:String(notification.url||KAPANI_CANONICAL_URL),createdAt:Number(notification.createdAt||Date.now()),source:String(notification.source||''),sourceMessageId:String(notification.sourceMessageId||''),newsId:String(notification.newsId||'')};

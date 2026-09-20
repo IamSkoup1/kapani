@@ -2517,6 +2517,54 @@ async function ensureFunctions(){
     functions = mod.getFunctions(app, 'europe-west1');
     return functions;
 }
+// Firebase Auth persistence is asynchronous. Kapani keeps the public nickname/password
+// flow separate from Firebase Auth, so these helpers bridge that UI to the protected
+// callable and Realtime Database layers.
+async function waitForFirebaseAuthUser(timeoutMs=5000){
+    const auth = await ensureAuth();
+    if(auth.currentUser) return auth.currentUser;
+    return await new Promise(resolve=>{
+        let settled = false, timer = null, unsubscribe = null;
+        const finish = user => {
+            if(settled) return;
+            settled = true;
+            if(timer) clearTimeout(timer);
+            try{ unsubscribe && unsubscribe(); }catch(_){}
+            resolve(user || null);
+        };
+        try{
+            unsubscribe = authModule.onAuthStateChanged(auth, finish, () => finish(null));
+            timer = setTimeout(() => finish(auth.currentUser || null), Math.max(0, Number(timeoutMs)||0));
+        }catch(_){ finish(auth.currentUser || null); }
+    });
+}
+
+async function establishKapaniServerSession(nick, password){
+    const expectedNick = String(nick || '').trim();
+    const secret = String(password || '');
+    if(!expectedNick || !secret) throw new Error('Для защищённой Firebase-сессии нужны имя и пароль');
+    const auth = await ensureAuth();
+    if(auth.currentUser?.uid === expectedNick) return auth.currentUser;
+
+    const fn = await ensureFunctions();
+    const { httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+    const result = await httpsCallable(fn, 'issueKapaniSessionToken')({nick: expectedNick, password: secret});
+    const token = String(result?.data?.token || '');
+    if(!token) throw new Error('Firebase не выдал защищённый токен сессии');
+    const credential = await authModule.signInWithCustomToken(auth, token);
+    if(!credential?.user || credential.user.uid !== expectedNick) throw new Error('Firebase вернул неверного пользователя');
+    return credential.user;
+}
+
+async function ensureKapaniServerSessionForCurrentUser(timeoutMs=5000){
+    const auth = await ensureAuth();
+    if(auth.currentUser?.uid === String(currentNick || '').trim()) return auth.currentUser;
+    const restored = await waitForFirebaseAuthUser(timeoutMs);
+    if(restored?.uid === String(currentNick || '').trim()) return restored;
+    if(_kapaniSessionPassword && currentNick) return await establishKapaniServerSession(currentNick, _kapaniSessionPassword);
+    throw new Error('Защищённая Firebase-сессия не восстановлена');
+}
+
 async function ensureStorage(){
     if(storage) return storage;
     const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js");
@@ -4180,26 +4228,35 @@ function attachNotificationsListener(){
     let notifInit=false;
     const seen = window._kapaniSeenNotificationIds || new Set();
     window._kapaniSeenNotificationIds = seen;
-    const nRef=notifRef(currentNick);
-    const nFn=(snap)=>{
-        const notifs=snap.val()||{};
-        const arr=Object.entries(notifs).map(([id,n])=>({...n,id}));
-        updateBadge(arr.length);
-        if(curPage==='profile') renderNotifications(notifs);
+    const bind=()=>{
+        if(!currentNick) return;
+        const nRef=notifRef(currentNick);
+        const nFn=(snap)=>{
+            const notifs=snap.val()||{};
+            window._kapaniNotificationsCache = notifs;
+            const arr=Object.entries(notifs).map(([id,n])=>({...n,id}));
+            updateBadge(arr.length);
+            // Render even while Profile is hidden. The previous code skipped the
+            // initial Home-page callback, leaving the Profile inbox at its static
+            // "Нет уведомлений" placeholder until another database change arrived.
+            renderNotifications(notifs);
 
-        if(!notifInit){
-            Object.keys(notifs).forEach(id=>seen.add(id));
-            notifInit=true;
-            return;
-        }
-
-        for(const [id, newest] of Object.entries(notifs)){
-            if(seen.has(id) || !newest) continue;
-            seen.add(id);
-            if(curPage!=='profile') showNotifPopup(newest.text,newest.time);
-        }
+            if(!notifInit){
+                Object.keys(notifs).forEach(id=>seen.add(id));
+                notifInit=true;
+                return;
+            }
+            for(const [id, newest] of Object.entries(notifs)){
+                if(seen.has(id) || !newest) continue;
+                seen.add(id);
+                if(curPage!=='profile') showNotifPopup(newest.text,newest.time);
+            }
+        };
+        addServiceListener('core','notifications',nRef,nFn,err=>console.warn('[Kapani core/notifications] listener',err?.message||err));
     };
-    addServiceListener('core','notifications',nRef,nFn);
+    ensureKapaniServerSessionForCurrentUser(5000).then(bind).catch(err=>{
+        console.warn('[Kapani notifications] auth session unavailable:',err?.message||err);
+    });
 }
 function attachOrderService(){
     const oRef=ordersRef();
@@ -4575,6 +4632,7 @@ async function getWebPushSubscriptionPayload(subscription){const json=subscripti
 async function hashWebPushEndpoint(endpoint){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(endpoint||'')));return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);}
 async function registerWebPushSubscription(){
     if(!currentNick)throw new Error('Пользователь не определён');
+    await ensureKapaniServerSessionForCurrentUser();
     const sub=await getWebPushSubscription(true);const payload=await getWebPushSubscriptionPayload(sub);if(!payload?.endpoint||!payload.keys.p256dh||!payload.keys.auth)throw new Error('Push Subscription is incomplete');
     const subscriptionId=await hashWebPushEndpoint(payload.endpoint);const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
     const result=await httpsCallable(fn,'registerWebPushSubscription')({subscription:payload,prefs:getPushPrefs(),userAgent:navigator.userAgent});
@@ -4601,6 +4659,27 @@ async function requestPushPermission(){
 }
 async function ensureWebPushOnStartup(){
     if(!currentNick||!('Notification' in window)||Notification.permission!=='granted')return false;try{const sub=await getWebPushSubscription(false);if(!sub)return false;await registerWebPushSubscription();return true;}catch(e){console.debug('[Kapani Push] startup restore:',e?.message||e);return false;}
+}
+
+async function showForegroundKapaniPush(payload={}){
+    try{
+        if(!currentNick || !('Notification' in window) || Notification.permission!=='granted' || !isPushOn()) return false;
+        const reg = await getSwReg();
+        const sw = reg?.active || navigator.serviceWorker?.controller;
+        if(!sw) return false;
+        sw.postMessage({type:'KAPANI_FOREGROUND_PUSH',payload:{
+            title:String(payload.title||'Капани'),
+            body:String(payload.body||payload.text||'').trim(),
+            category:String(payload.category||payload.cat||'system'),
+            notificationId:String(payload.notificationId||''),
+            url:String(payload.url||location.href),
+            source:String(payload.source||'foreground')
+        }});
+        return true;
+    }catch(e){
+        console.debug('[Kapani Push] foreground notification failed:',e?.message||e);
+        return false;
+    }
 }
 if(!window._kapaniPushSwMessageBound&&'serviceWorker' in navigator){window._kapaniPushSwMessageBound=true;navigator.serviceWorker.addEventListener('message',event=>{if(event?.data?.type==='KAPANI_PUSHSUBSCRIPTION_CHANGED'&&currentNick)registerWebPushSubscription().catch(e=>console.debug('[Kapani Push] subscription change:',e));});}
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
@@ -4704,11 +4783,37 @@ if(!window._kapaniChatPresenceUnloadBound){
 // succeeded. A push/session failure here must never look like the underlying
 // operation failed and must never produce an unhandled promise rejection.
 async function pushNotification(nick,text,cat='system',extra={}){
-    const targetNick=String(nick||'').trim(),body=String(text||'').trim();if(!targetNick||!body)return{ok:false,notificationFailed:true,error:'invalid-args'};
-    try{await requireKapaniServerSession();const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
-        const result=await httpsCallable(fn,'createKapaniNotification')({nick:targetNick,text:body,cat:String(cat||'system'),title:String(extra?.title||'Капани'),url:String(extra?.url||''),source:String(extra?.source||''),sourceMessageId:String(extra?.sourceMessageId||'')});
-        return{ok:true,notificationId:String(result?.data?.notificationId||''),nick:targetNick};
-    }catch(e){console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e);return{ok:false,notificationFailed:true,error:String(e?.message||e),nick:targetNick};}
+    const targetNick=String(nick||'').trim(),body=String(text||'').trim();
+    if(!targetNick||!body)return{ok:false,notificationFailed:true,error:'invalid-args'};
+    try{
+        await requireKapaniServerSession();
+        const fn=await ensureFunctions();
+        const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+        const result=await httpsCallable(fn,'createKapaniNotification')({
+            nick:targetNick,
+            text:body,
+            cat:String(cat||'system'),
+            title:String(extra?.title||'Капани'),
+            url:String(extra?.url||''),
+            source:String(extra?.source||''),
+            sourceMessageId:String(extra?.sourceMessageId||'')
+        });
+        const notificationId=String(result?.data?.notificationId||'');
+        if(targetNick===currentNick && typeof Notification!=='undefined' && Notification.permission==='granted' && isPushOn()){
+            await showForegroundKapaniPush({
+                title:String(extra?.title||'Капани'),
+                body,
+                category:String(cat||'system'),
+                notificationId,
+                url:String(extra?.url||''),
+                source:String(extra?.source||'foreground')
+            });
+        }
+        return{ok:true,notificationId,nick:targetNick};
+    }catch(e){
+        console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e);
+        return{ok:false,notificationFailed:true,error:String(e?.message||e),nick:targetNick};
+    }
 }
 window.testKapaniPush = async function(){
     if(!currentNick) throw new Error('Сначала войдите в Капани');
@@ -9129,9 +9234,16 @@ window.navTo=function(id){
     if(id==='messages'){ const chatHost=qs('chatMessages');if(chatHost&&!chatHost.innerHTML.trim())chatHost.innerHTML=loadingHtml('Загрузка чата...');const dmHost=qs('dmMessages');if(dmHost&&currentDmNick&&!dmHost.innerHTML.trim())dmHost.innerHTML=loadingHtml('Загрузка сообщений...');chatLoading=true; }
     if(id==='profile'){
         updatePushSettingsUI();
-        // Read notifications against the current nick at navigation time.
-        // This also repairs sessions created before auth identity restoration.
-        get(notifRef(currentNick)).then(s=>renderNotifications(s.val()||{})).catch(e=>console.warn('[Kapani] notifications load:',e));
+        if(window._kapaniNotificationsCache) renderNotifications(window._kapaniNotificationsCache);
+        ensureKapaniServerSessionForCurrentUser(5000)
+          .then(()=>get(notifRef(currentNick)))
+          .then(s=>{
+              const value=s.val()||{};
+              window._kapaniNotificationsCache=value;
+              updateBadge(Object.keys(value).length);
+              renderNotifications(value);
+          })
+          .catch(e=>console.warn('[Kapani] notifications load:',e?.message||e));
         get(wallRef(currentNick)).then(s=>renderWallFeed(s.val()||{}));
         buildWallEmojiIfNeeded();
     }

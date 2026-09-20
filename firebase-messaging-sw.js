@@ -1,7 +1,7 @@
 /* Kapani Web Push Service Worker.
  * One Service Worker only: receives standard Web Push and renders system notifications.
  */
-const SW_VERSION = 'kapani-webpush-2026-09-13-v1';
+const SW_VERSION = 'kapani-webpush-2026-09-20-v2';
 const KAPANI_APP_PATH = '/kapani/';
 
 function resolveNotificationUrl(requestedUrl) {
