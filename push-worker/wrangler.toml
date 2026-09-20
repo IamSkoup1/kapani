@@ -15,7 +15,7 @@ MAX_PUSH_PER_RUN = "10"
 
 [[kv_namespaces]]
 binding = "PUSH_KV"
-id = "PASTE_KV_NAMESPACE_ID_HERE"
+id = "8bef7e30520f4615aa32375cf58870c2"
 
 [triggers]
 crons = ["* * * * *"]
