@@ -13,7 +13,7 @@ const KAPANI_CONFIG = Object.freeze({
     webPushVapidPublicKey: "BNxUOFgcg5VQqwQ4_wwQLkR-howofNzLG6xzOLT7ZsdIFkc-uFRP5JZvw-tP81_63pudVjdv_k3aUegSQiWpmNU",
     // URL of the Cloudflare push worker (push-worker/SETUP.md), e.g. "https://kapani-push.YOURNAME.workers.dev".
     // Empty = keep using the old Firebase Functions push path.
-    pushWorkerUrl: "",
+    pushWorkerUrl: "https://kapani-push.kapani.workers.dev",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
