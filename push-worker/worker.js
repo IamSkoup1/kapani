@@ -211,7 +211,7 @@ const saveSubs = (env, all) => env.PUSH_KV.put('subs', JSON.stringify(all));
 function normalizeNick(value) {
   return String(value ?? '').normalize('NFKC').trim().toLowerCase();
 }
-function subscriptionBucket(all, nick) {
+function subscriptionBucketLocal(all, nick) {
   if (Array.isArray(all?.[nick])) {
     return { key: nick, subs: all[nick], mode: 'exact' };
   }
@@ -219,7 +219,6 @@ function subscriptionBucket(all, nick) {
   const target = normalizeNick(nick);
   if (!target) return { key: null, subs: [], mode: 'none' };
 
-  // First match the actual subscription bucket key.
   const keyMatches = Object.keys(all || {}).filter(k => normalizeNick(k) === target && Array.isArray(all[k]));
   if (keyMatches.length === 1) {
     return { key: keyMatches[0], subs: all[keyMatches[0]], mode: 'normalized' };
@@ -228,10 +227,7 @@ function subscriptionBucket(all, nick) {
     return { key: null, subs: [], mode: 'ambiguous', matches: keyMatches };
   }
 
-  // Kapani uses a separate immutable account key (nick) while the UI may
-  // address a notification by the user's editable displayName. Newer
-  // subscriptions carry both ownerNick and displayName, so resolve the
-  // recipient against those aliases without duplicating the subscription.
+  // Newer subscriptions carry aliases directly in the subscription record.
   const aliasMatches = [];
   for (const [key, list] of Object.entries(all || {})) {
     if (!Array.isArray(list)) continue;
@@ -247,6 +243,53 @@ function subscriptionBucket(all, nick) {
   }
 
   return { key: null, subs: [], mode: aliasMatches.length > 1 ? 'ambiguous-alias' : 'none', matches: aliasMatches };
+}
+
+async function subscriptionBucket(env, all, nick) {
+  const local = subscriptionBucketLocal(all, nick);
+  if (local.key || local.mode === 'ambiguous' || local.mode === 'ambiguous-alias') return local;
+
+  const target = normalizeNick(nick);
+  if (!target) return local;
+
+  // The site can address notifications by an editable display name while the
+  // Push subscription is keyed by the immutable RTDB account key. Resolve the
+  // display name against Firebase, then use that account key in PUSH_KV.
+  // Prefer an indexed exact RTDB query so this remains cheap even with many users.
+  try {
+    const q = `?orderBy=${encodeURIComponent('\"displayName\"')}&equalTo=${encodeURIComponent(JSON.stringify(String(nick)))}`;
+    const users = await rtdbGet(env, 'users', q);
+    const matches = Object.keys(users || {}).filter(k => Array.isArray(all?.[k]) && normalizeNick(users[k]?.displayName) === target);
+    if (matches.length === 1) {
+      return { key: matches[0], subs: all[matches[0]], mode: 'firebase-displayName' };
+    }
+    if (matches.length > 1) {
+      return { key: null, subs: [], mode: 'ambiguous-firebase-displayName', matches };
+    }
+  } catch (e) {
+    console.warn('displayName subscription lookup failed', String(e?.message || e));
+  }
+
+  // Exact RTDB queries do not handle case differences. For the small set of
+  // currently subscribed accounts, fall back to checking each owner's
+  // displayName directly. This still never chooses an arbitrary device.
+  const candidates = [];
+  for (const key of Object.keys(all || {})) {
+    if (!Array.isArray(all[key])) continue;
+    try {
+      const dn = await rtdbGet(env, `users/${enc(key)}/displayName`);
+      if (normalizeNick(dn) === target) candidates.push(key);
+      if (candidates.length > 1) break;
+    } catch {}
+  }
+  if (candidates.length === 1) {
+    return { key: candidates[0], subs: all[candidates[0]], mode: 'firebase-displayName-normalized' };
+  }
+  if (candidates.length > 1) {
+    return { key: null, subs: [], mode: 'ambiguous-firebase-displayName', matches: candidates };
+  }
+
+  return local;
 }
 
 /* ───────────── Web Push: VAPID + aes128gcm (RFC 8291 / 8292) with WebCrypto ───────────── */
@@ -510,7 +553,7 @@ async function processJob(env, jobId, budget, preloaded) {
 
   for (; i < plan.nicks.length; i++) {
     const nick = plan.nicks[i];
-    const bucket = subscriptionBucket(all, nick);
+    const bucket = await subscriptionBucket(env, all, nick);
     const rawSubs = bucket.subs;
     const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category));
 
@@ -641,9 +684,9 @@ async function handleSubscribe(request, env, body) {
   if (!host || !PUSH_HOST_ALLOW.test(host) || !s?.keys?.p256dh || !s?.keys?.auth) return json(request, env, { error: 'bad subscription' }, 400);
   const id = (await sha256Hex(s.endpoint)).slice(0, 32);
   const all = await loadSubs(env);
-  const owner = subscriptionBucket(all, nick);
+  const owner = await subscriptionBucket(env, all, nick);
   const displayNameRaw = await rtdbGet(env, `users/${enc(nick)}/displayName`).catch(() => null);
-  const displayName = String(displayNameRaw || '').trim().slice(0, 120);
+  const displayName = String(displayNameRaw || body.displayName || '').trim().slice(0, 120);
 
   // If an older registration used the same account name with different
   // casing/spacing, migrate that bucket to the exact authenticated nick.
@@ -677,7 +720,8 @@ async function handleSubscribe(request, env, body) {
     ownerNick: nick,
     displayName,
     subscriptionId: id,
-    storedDevices: all[nick].length
+    storedDevices: all[nick].length,
+    bucketKeys: Object.keys(all).slice(0, 20)
   }));
   return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName });
 }
