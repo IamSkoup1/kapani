@@ -1,0 +1,102 @@
+# Push при закрытом сайте — бесплатно, через Cloudflare Worker
+
+Схема: сайт → Worker (Cloudflare) → push-сервис браузера → системное уведомление.
+Firebase остаётся только как база данных (RTDB). Firebase Functions и тариф Blaze не нужны.
+
+Понадобится: Node.js 18+, бесплатный аккаунт Cloudflare, доступ к консоли Firebase.
+
+## 1. Установить wrangler и войти
+```bash
+npm install -g wrangler
+wrangler login
+cd push-worker
+```
+
+## 2. Ключи VAPID
+Публичный ключ в `config.js` (`webPushVapidPublicKey`) и в `wrangler.toml` (`VAPID_PUBLIC_KEY`) должен быть ОДНИМ И ТЕМ ЖЕ и
+соответствовать приватному ключу.
+
+* **Вариант А — у вас сохранился приватный ключ** (тот, что лежал в Firebase Secret `KAPANI_VAPID_PRIVATE_KEY`, формат — base64url, 43 символа).
+  Ничего генерировать не нужно, публичный ключ уже прописан.
+* **Вариант Б — приватного ключа нет.** Сгенерируйте новую пару:
+  ```bash
+  node generate-vapid.mjs
+  ```
+  Публичный ключ вставьте в `wrangler.toml` (`VAPID_PUBLIC_KEY`) и в `../config.js` (`webPushVapidPublicKey`).
+  Приватный понадобится на шаге 5. После этого всем жителям придётся заново нажать «Включить» в профиле.
+
+## 3. Создать хранилище подписок (KV)
+```bash
+wrangler kv namespace create PUSH_KV
+```
+В выводе будет `id = "..."` — вставьте его в `wrangler.toml` вместо `PASTE_KV_NAMESPACE_ID_HERE`.
+
+## 4. Доступ Worker к базе (сервисный аккаунт)
+Firebase Console → ⚙ Project settings → Service accounts → **Generate new private key** → скачается JSON.
+(Если такой JSON у вас уже лежит секретом в старом воркере `kapani-free-push` — можно взять тот же.)
+```bash
+wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
+```
+и вставьте **всё содержимое JSON-файла**. Файл никуда не коммитьте и не выкладывайте — он даёт полный доступ к базе.
+
+## 5. Приватный ключ VAPID
+```bash
+wrangler secret put VAPID_PRIVATE_KEY
+```
+(вставьте приватный ключ: из варианта А или из вывода `generate-vapid.mjs`).
+
+## 6. Задеплоить
+```bash
+wrangler deploy
+```
+В конце будет адрес вида `https://kapani-push.<ваш-поддомен>.workers.dev`.
+
+## 7. Проверить Worker
+Откройте в браузере `https://kapani-push.<...>.workers.dev/health`. Должно быть:
+```json
+{"ok":true,"kv":true,"vapidPublic":true,"vapidPrivate":true,"serviceAccount":true,"subscribers":0,"devices":0}
+```
+Любое `false` — это то, что вы забыли настроить (шаги 2–5).
+
+## 8. Подключить сайт
+В `config.js`:
+```js
+pushWorkerUrl: "https://kapani-push.<ваш-поддомен>.workers.dev",
+```
+Выложите на GitHub Pages **три файла**: `index.html`, `config.js`, `firebase-messaging-sw.js`.
+Затем один раз обновите страницу (Ctrl+F5 / перезапустите приложение на телефоне).
+
+## 9. Включить push на устройстве и проверить
+1. Профиль → «Push-уведомления» → «Включить» → разрешите уведомления.
+2. В консоли браузера: `await getKapaniPushWorkerHealth()` — `devices` должно стать ≥ 1.
+3. Профиль → «🧪 Проверить уведомления», и **сразу закройте вкладку** — должно прийти системное уведомление.
+4. Настоящая проверка: закройте сайт полностью, со второго аккаунта напишите в ЛС и в общий чат — придёт push.
+
+## Что происходит под капотом
+* Сообщение/новость/уведомление → сайт пишет задачу в `pushOutbox/<id>` и дёргает Worker (`POST /event`).
+* Worker сам читает настоящее сообщение из базы (нельзя подделать чужой текст), пишет «🔔 Уведомления» всем адресатам
+  (`users/<ник>/notifications/...`) и шлёт Web Push на все устройства адресатов.
+* Не дошло сразу (обрыв сети и т.п.) — раз в минуту задачу подберёт cron Worker.
+* Большая рассылка режется на пачки автоматически (лимиты бесплатного плана). `MAX_PUSH_PER_RUN` в `wrangler.toml`.
+
+## Firebase Functions
+Больше не нужны. Если они задеплоены — можно оставить (дублей не будет), можно удалить:
+`firebase functions:delete notifyOnChatMessage notifyOnNewsCreated deliverKapaniWebPush ...`
+Старая папка `cloudflare-worker/` (через FCM) — тоже устарела, `push-worker/` её заменяет.
+
+## Если что-то не работает
+| Симптом | Что делать |
+|---|---|
+| `/health` показывает `false` | не заданы секреты/KV: шаги 2–5, затем `wrangler deploy` |
+| «Разрешение получено, но Push не зарегистрировался» | `wrangler tail` и снова «Включить»; ошибка `unauthorized` — зайдите в аккаунт заново (нужен хэш пароля в базе) |
+| Ошибка `bad subscription` | нестандартный push-сервис; напишите мне endpoint из `getKapaniPushDiagnostics()` |
+| Push приходит с задержкой до минуты | сработал cron вместо прямого вызова — смотрите `wrangler tail` |
+| В логах `Exceeded CPU` (код 1102) | уменьшите `MAX_PUSH_PER_RUN` до 5 (или платный план Workers) |
+| iPhone молчит | сайт должен быть добавлен «На экран Домой» и открыт оттуда (iOS 16.4+) |
+| Сообщения в общем чате не попадают в «🔔 Уведомления» | Worker не может писать в базу: проверьте `serviceAccount` в `/health` и `wrangler tail` |
+
+## Безопасность (важно знать)
+* Вход на сайте проверяется на клиенте; Worker проверяет ник + хэш пароля из базы — ровно тот же уровень защиты, что у самого входа.
+  Настоящая защита требует нормальной авторизации (например Firebase Auth), это отдельная задача.
+* Секреты (`VAPID_PRIVATE_KEY`, JSON сервисного аккаунта) хранятся только в Cloudflare и в git не попадают.
+* Сервисный аккаунт обходит правила RTDB. Правила базы Worker не ослабляет.

@@ -2597,6 +2597,9 @@ const DEFAULT_AVATAR_URL = CONFIG.ui.defaultAvatarUrl;
 const REWARD_CUSTOM_AVATAR = CONFIG.rewards.customAvatar;
 const REWARD_FIRST_WALL = CONFIG.rewards.firstWall;
 const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
+// Cloudflare Worker that delivers Web Push (see push-worker/SETUP.md). When empty, the old
+// Firebase Functions delivery path is used instead.
+const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -4860,29 +4863,98 @@ async function requestNotificationPermission(){
 }
 async function getWebPushSubscription(createIfMissing=false){
     const reg=await getSwReg();if(!reg?.pushManager)return null;let subscription=await reg.pushManager.getSubscription();
+    // A subscription created with a different VAPID key (e.g. after switching the push backend)
+    // can never receive our pushes and makes subscribe() throw: drop it and create a fresh one.
+    if(subscription&&WEB_PUSH_VAPID_PUBLIC_KEY){
+        try{
+            const cur=subscription.options?.applicationServerKey;
+            if(cur){
+                const want=base64UrlToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY),have=new Uint8Array(cur);
+                const same=want.length===have.length&&want.every((b,i)=>b===have[i]);
+                if(!same){ await subscription.unsubscribe(); subscription=null; }
+            }
+        }catch(e){ console.debug('[Kapani Push] key check:',e?.message||e); }
+    }
     if(!subscription&&createIfMissing){if(!WEB_PUSH_VAPID_PUBLIC_KEY)throw new Error('VAPID public key is not configured');subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY)});}return subscription;
 }
 async function getWebPushSubscriptionPayload(subscription){const json=subscription?.toJSON?.();if(!json)return null;return {endpoint:String(json.endpoint||''),expirationTime:json.expirationTime??null,keys:{p256dh:String(json.keys?.p256dh||''),auth:String(json.keys?.auth||'')}};}
 async function hashWebPushEndpoint(endpoint){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(endpoint||'')));return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);}
+// ─── Cloudflare push worker client ────────────────────────────────
+// Identity is the site's own (nick + passwordHash stored in RTDB), the same trust level as the login itself.
+async function getPushAuthHash(){
+    let ph=allUsersCache?.[currentNick]?.passwordHash;
+    if(!ph){ try{ ph=(await get(ref(db,`users/${currentNick}/passwordHash`))).val(); }catch(_){} }
+    return String(ph||'');
+}
+async function pushWorkerCall(path,body){
+    const res=await fetch(PUSH_WORKER_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data?.error||data?.detail||('push worker HTTP '+res.status));
+    return data;
+}
+// Wake the worker for a job. The worker returns `next` when it had to split a big fan-out; keep going.
+async function kickPushWorker(jobId,inline){
+    for(let i=0;i<15&&(jobId||inline);i++){
+        let res=null;
+        try{
+            res=await pushWorkerCall('/event',inline?{nick:currentNick,ph:await getPushAuthHash(),job:inline}:{jobId});
+        }catch(e){ console.debug('[Kapani push worker] event:',e?.message||e); return; }
+        inline=null; jobId=res?.next||null;
+    }
+}
+// Durable path: write the job to RTDB (cron will pick it up if this call is lost), then wake the worker.
+// If the browser may not write the outbox, fall back to an authenticated inline job.
+async function enqueuePushJob(job){
+    if(!PUSH_WORKER_URL||!currentNick) return;
+    try{
+        const jRef=push(ref(db,'pushOutbox'));
+        await set(jRef,{...job,ts:Date.now()});
+        void kickPushWorker(String(jRef.key||''));
+    }catch(e){
+        console.debug('[Kapani push worker] outbox write failed, using inline job:',e?.message||e);
+        void kickPushWorker('',job);
+    }
+}
+window.getKapaniPushWorkerHealth=async function(){
+    if(!PUSH_WORKER_URL) return {configured:false,message:'config.js: pushWorkerUrl is empty — the old Firebase path is used'};
+    const res=await fetch(PUSH_WORKER_URL+'/health'); return {configured:true,url:PUSH_WORKER_URL,...(await res.json())};
+};
 async function registerWebPushSubscription(){
     if(!currentNick)throw new Error('Пользователь не определён');
-    await ensureKapaniServerSessionForCurrentUser();
     const sub=await getWebPushSubscription(true);const payload=await getWebPushSubscriptionPayload(sub);if(!payload?.endpoint||!payload.keys.p256dh||!payload.keys.auth)throw new Error('Push Subscription is incomplete');
-    const subscriptionId=await hashWebPushEndpoint(payload.endpoint);const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
-    const result=await httpsCallable(fn,'registerWebPushSubscription')({subscription:payload,prefs:getPushPrefs(),userAgent:navigator.userAgent});
-    window._kapaniWebPushSubscriptionId=String(result?.data?.subscriptionId||subscriptionId);try{localStorage.setItem('kp_webpush_subscription_id',window._kapaniWebPushSubscriptionId);}catch(e){}
-    window._kapaniPushState={...(window._kapaniPushState||{}),status:'registered',pushSupported:true,pushSubscriptionExists:true,subscriptionId:window._kapaniWebPushSubscriptionId,subscriptionSaved:true,vapidConfigured:!!WEB_PUSH_VAPID_PUBLIC_KEY,lastGoodRegistrationAt:Date.now(),error:null};return sub;
+    const subscriptionId=await hashWebPushEndpoint(payload.endpoint);
+    let savedId=subscriptionId;
+    if(PUSH_WORKER_URL){
+        const ph=await getPushAuthHash();if(!ph)throw new Error('Не найден хэш пароля для регистрации push');
+        const result=await pushWorkerCall('/subscribe',{nick:currentNick,ph,subscription:payload,prefs:getPushPrefs(),userAgent:navigator.userAgent});
+        savedId=String(result?.subscriptionId||subscriptionId);
+    }else{
+        await ensureKapaniServerSessionForCurrentUser();
+        const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+        const result=await httpsCallable(fn,'registerWebPushSubscription')({subscription:payload,prefs:getPushPrefs(),userAgent:navigator.userAgent});
+        savedId=String(result?.data?.subscriptionId||subscriptionId);
+    }
+    window._kapaniWebPushSubscriptionId=savedId;try{localStorage.setItem('kp_webpush_subscription_id',window._kapaniWebPushSubscriptionId);}catch(e){}
+    window._kapaniPushState={...(window._kapaniPushState||{}),status:'registered',backend:PUSH_WORKER_URL?'cloudflare':'firebase',pushSupported:true,pushSubscriptionExists:true,subscriptionId:window._kapaniWebPushSubscriptionId,subscriptionSaved:true,vapidConfigured:!!WEB_PUSH_VAPID_PUBLIC_KEY,lastGoodRegistrationAt:Date.now(),error:null};return sub;
 }
 async function unregisterWebPushSubscription(){
     let sub=null;try{sub=await getWebPushSubscription(false);}catch(_){}
     let id=window._kapaniWebPushSubscriptionId;try{id=id||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}
     if(!id&&sub?.endpoint)id=await hashWebPushEndpoint(sub.endpoint);
-    if(id){try{const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');await httpsCallable(fn,'unregisterWebPushSubscription')({subscriptionId:id});}catch(e){console.debug('[Kapani Push] unregister subscription failed:',e);}}
+    if(id){
+        try{
+            if(PUSH_WORKER_URL){ const ph=await getPushAuthHash(); if(ph) await pushWorkerCall('/unsubscribe',{nick:currentNick,ph,subscriptionId:id}); }
+            else{const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');await httpsCallable(fn,'unregisterWebPushSubscription')({subscriptionId:id});}
+        }catch(e){console.debug('[Kapani Push] unregister subscription failed:',e);}
+    }
     window._kapaniWebPushSubscriptionId=null;try{localStorage.removeItem('kp_webpush_subscription_id');}catch(e){}
 }
 async function syncPushPrefs(){
     if(!currentNick)return;let id=window._kapaniWebPushSubscriptionId;try{id=id||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}if(!id)return;
-    try{const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');await httpsCallable(fn,'updateWebPushPreferences')({prefs:getPushPrefs(),subscriptionId:id});}catch(e){console.warn('[Kapani Push prefs]',e);}
+    try{
+        if(PUSH_WORKER_URL){ const ph=await getPushAuthHash(); if(ph) await pushWorkerCall('/prefs',{nick:currentNick,ph,subscriptionId:id,prefs:getPushPrefs()}); }
+        else{const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');await httpsCallable(fn,'updateWebPushPreferences')({prefs:getPushPrefs(),subscriptionId:id});}
+    }catch(e){console.warn('[Kapani Push prefs]',e);}
 }
 function savePushPrefs(p){try{localStorage.setItem('kp_push',JSON.stringify(p));}catch(e){}void syncPushPrefs();}
 async function requestPushPermission(){
@@ -5095,6 +5167,7 @@ async function writeNotificationDirect(targetNick,body,cat,extra){
     };
     if(source==='dm'&&currentNick) record.from=currentNick;
     await set(nRef,record);
+    void enqueuePushJob({type:'notification',to:targetNick,id:String(nRef.key||'')});
     return String(nRef.key||'');
 }
 async function pushNotification(nick,text,cat='system',extra={}){
@@ -5175,6 +5248,7 @@ async function pushLegacyDuelNotification(targetNick,payload){
             source:'legacy_duel',
             sourceMessageId:key
         });
+        void enqueuePushJob({type:'notification',to:targetNick,id:`legacy_${key}`});
     }catch(e){ console.debug('[duel notification mirror]',e?.message||e); }
 }
 
@@ -7021,6 +7095,7 @@ async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
     const pushed = await push(chatRef(),msg);
+    void enqueuePushJob({type:'chat',id:String(pushed.key||''),sender:currentNick});
     // Только Cloud Function fan-out уведомлений по событию /chat/{messageId}.
     // Браузер пишет ровно одно сообщение и не рассылает уведомления сам.
     return pushed;
@@ -9262,6 +9337,7 @@ window.publishNews = async function(){
         time: nowTime()
     };
     await set(newsItemRef(id), newsItem);
+    void enqueuePushJob({type:'news',id:String(id),sender:currentNick});
     // ── Notify residents about the new post (reuses existing notifRef +
     //    Web Push/service-worker plumbing — no parallel notification system) ──
     notifyAllUsersOfNews(newsItem).catch(e=>console.error('[news notify]', e));
