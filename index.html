@@ -1611,6 +1611,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <button class="btn btn-primary" id="pushEnableBtn" onclick="handlePushBtn()">🔔 Включить</button>
         <div style="font-size:11px;text-align:center;margin-top:8px;" id="pushStatusText"></div>
         <div id="pushSettingsContainer" style="display:none;margin-top:12px;"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;" onclick="testKapaniPush().catch(e=>toast('❌ '+(e&&e.message||e),'red'))">🧪 Проверить уведомления</button>
 
     </div>
     <div class="card">
@@ -4112,14 +4113,18 @@ function startApp() {
       });
 }
 
-function handleKapaniPushDeepLink(){
+function handleKapaniPushDeepLink(rawUrl){
     try{
-        const params=new URLSearchParams(location.search);
+        const params=rawUrl?new URL(rawUrl,location.href).searchParams:new URLSearchParams(location.search);
         const section=params.get('kpSection');
         const dm=params.get('kpDm');
         if(section==='messages'){
             navTo('messages');
             if(dm) setTimeout(()=>{ try{ if(typeof openDmChat==='function') openDmChat(decodeURIComponent(dm)); }catch(e){} },150);
+        } else if(section==='news'){
+            navTo('news');
+        } else if(rawUrl){
+            navTo('profile');
         }
     }catch(e){}
 }
@@ -4225,38 +4230,65 @@ function attachUserListener(){
 }
 function attachNotificationsListener(){
     removeServiceListener('core','notifications');
-    let notifInit=false;
-    const seen = window._kapaniSeenNotificationIds || new Set();
-    window._kapaniSeenNotificationIds = seen;
-    const bind=()=>{
-        if(!currentNick) return;
-        const nRef=notifRef(currentNick);
-        const nFn=(snap)=>{
-            const notifs=snap.val()||{};
-            window._kapaniNotificationsCache = notifs;
-            const arr=Object.entries(notifs).map(([id,n])=>({...n,id}));
-            updateBadge(arr.length);
-            // Render even while Profile is hidden. The previous code skipped the
-            // initial Home-page callback, leaving the Profile inbox at its static
-            // "Нет уведомлений" placeholder until another database change arrived.
-            renderNotifications(notifs);
-
-            if(!notifInit){
-                Object.keys(notifs).forEach(id=>seen.add(id));
-                notifInit=true;
-                return;
-            }
-            for(const [id, newest] of Object.entries(notifs)){
-                if(seen.has(id) || !newest) continue;
-                seen.add(id);
-                if(curPage!=='profile') showNotifPopup(newest.text,newest.time);
-            }
-        };
-        addServiceListener('core','notifications',nRef,nFn,err=>console.warn('[Kapani core/notifications] listener',err?.message||err));
+    if(window._kapaniNotifRetryTimer){ clearTimeout(window._kapaniNotifRetryTimer); window._kapaniNotifRetryTimer=null; }
+    const nick=currentNick;
+    if(!nick) return;
+    // "Seen" ids are tracked per nick: chat_/news_ ids are identical for every
+    // recipient, so one shared Set would leak state between accounts.
+    if(!window._kapaniSeenNotifs || window._kapaniSeenNotifs.nick!==nick) window._kapaniSeenNotifs={nick,ids:new Set(),baseline:false};
+    const state=window._kapaniSeenNotifs;
+    let attempt=0;
+    const onSnap=(snap)=>{
+        if(currentNick!==nick) return;
+        attempt=0;
+        const notifs=snap.val()||{};
+        window._kapaniNotificationsCache=notifs;
+        updateBadge(Object.keys(notifs).length);
+        // Always render (even while Profile is hidden) so the inbox is ready when opened.
+        renderNotifications(notifs);
+        if(!state.baseline){
+            // First snapshot of this session = history. Never toast/push it.
+            Object.keys(notifs).forEach(id=>state.ids.add(id));
+            state.baseline=true;
+            return;
+        }
+        const fresh=Object.entries(notifs)
+            .filter(([id,n])=>n && !state.ids.has(id))
+            .map(([id,n])=>(typeof n==='string'?{text:n,id}:{...n,id}))
+            .sort((a,b)=>(Number(a.createdAt)||0)-(Number(b.createdAt)||0));
+        fresh.forEach(n=>{
+            state.ids.add(n.id);
+            try{ announceIncomingNotification(n); }catch(e){ console.warn('[Kapani notifications] announce:',e?.message||e); }
+        });
     };
-    ensureKapaniServerSessionForCurrentUser(5000).then(bind).catch(err=>{
-        console.warn('[Kapani notifications] auth session unavailable:',err?.message||err);
-    });
+    const bind=()=>{
+        if(currentNick!==nick) return;
+        addServiceListener('core','notifications',notifRef(nick),onSnap,onErr);
+    };
+    // The listener is bound immediately. It does NOT wait for the Firebase Auth
+    // session: if the database rules do require it, the first attempt fails with
+    // permission_denied and we retry after (re)establishing the session, with
+    // back-off, instead of silently never binding (the old behaviour).
+    const onErr=(err)=>{
+        console.warn('[Kapani core/notifications] listener error:',err?.message||err);
+        if(currentNick!==nick) return;
+        attempt++;
+        const delay=Math.min(30000,[800,2500,6000,15000][attempt-1]||30000);
+        window._kapaniNotifRetryTimer=setTimeout(async()=>{
+            if(currentNick!==nick) return;
+            try{ await ensureKapaniServerSessionForCurrentUser(4000); }catch(e){ console.debug('[Kapani notifications] session retry:',e?.message||e); }
+            bind();
+        },delay);
+    };
+    bind();
+}
+// Wake-up hooks: re-bind when the tab returns to foreground / network is back
+// and the listener is missing (e.g. cancelled by a permission error earlier).
+if(!window._kapaniNotifWakeBound){
+    window._kapaniNotifWakeBound=true;
+    const wake=()=>{ try{ if(currentNick && appStarted && !serviceListeners.core?.notifications) attachNotificationsListener(); }catch(e){} };
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') wake(); });
+    window.addEventListener('online',wake);
 }
 function attachOrderService(){
     const oRef=ordersRef();
@@ -4662,26 +4694,85 @@ async function ensureWebPushOnStartup(){
 }
 
 async function showForegroundKapaniPush(payload={}){
+    // System (OS-level) notification while the site is open. Uses the same
+    // Service Worker display path as closed-tab Web Push; the shared tag
+    // (kapani-<notificationId>) guarantees a later server push for the same
+    // notification replaces this one instead of stacking a duplicate.
     try{
-        if(!currentNick || !('Notification' in window) || Notification.permission!=='granted' || !isPushOn()) return false;
-        const reg = await getSwReg();
-        const sw = reg?.active || navigator.serviceWorker?.controller;
-        if(!sw) return false;
-        sw.postMessage({type:'KAPANI_FOREGROUND_PUSH',payload:{
+        if(!currentNick || !('Notification' in window) || Notification.permission!=='granted') return false;
+        const category=String(payload.category||payload.cat||'system');
+        if(!isPushCatEnabled(category)) return false;
+        const body=String(payload.body||payload.text||'').trim();
+        if(!body) return false;
+        const data={
             title:String(payload.title||'Капани'),
-            body:String(payload.body||payload.text||'').trim(),
-            category:String(payload.category||payload.cat||'system'),
+            body,
+            category,
             notificationId:String(payload.notificationId||''),
-            url:String(payload.url||location.href),
+            url:String(payload.url||''),
             source:String(payload.source||'foreground')
-        }});
+        };
+        let reg=null;
+        try{ reg=await getSwReg(); }catch(_){}
+        const sw=reg?.active || navigator.serviceWorker?.controller;
+        if(sw){ sw.postMessage({type:'KAPANI_FOREGROUND_PUSH',payload:data}); return true; }
+        const icon=new URL('./image.png',location.href).href;
+        const tag=data.notificationId?`kapani-${data.notificationId}`:`kapani-${category}-${Date.now()}`;
+        if(reg?.showNotification){
+            await reg.showNotification(data.title,{body,icon,badge:icon,tag,data:{...data,category}});
+            return true;
+        }
+        const n=new Notification(data.title,{body,icon,tag});
+        n.onclick=()=>{ try{window.focus();n.close();}catch(_){} };
         return true;
     }catch(e){
         console.debug('[Kapani Push] foreground notification failed:',e?.message||e);
         return false;
     }
 }
-if(!window._kapaniPushSwMessageBound&&'serviceWorker' in navigator){window._kapaniPushSwMessageBound=true;navigator.serviceWorker.addEventListener('message',event=>{if(event?.data?.type==='KAPANI_PUSHSUBSCRIPTION_CHANGED'&&currentNick)registerWebPushSubscription().catch(e=>console.debug('[Kapani Push] subscription change:',e));});}
+function formatNotifTime(n){
+    const ts=Number(n?.createdAt)||0;
+    if(ts>0){
+        try{
+            const d=new Date(ts), now=new Date();
+            const hm=d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+            if(d.toDateString()===now.toDateString()) return hm;
+            return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit'})+' '+hm;
+        }catch(_){}
+    }
+    return String(n?.time||'');
+}
+// True when the user is already looking at the conversation the notification is about.
+function isNotificationContextOpen(n){
+    try{
+        if(document.visibilityState!=='visible' || curPage!=='messages') return false;
+        if(n.source==='general_chat') return !!document.querySelector('#msgPanel0.active');
+        if(n.source==='dm' && n.from) return currentDmNick===n.from;
+    }catch(_){}
+    return false;
+}
+// Single entry point for every notification that arrives while the site is open:
+// in-app banner + OS-level push (when permission is granted and the category is on).
+function announceIncomingNotification(n){
+    const text=String(n?.text||'').trim();
+    if(!text) return;
+    if(isNotificationContextOpen(n)) return;
+    if(curPage!=='profile') showNotifPopup(text,formatNotifTime(n));
+    void showForegroundKapaniPush({
+        title:n.title,
+        body:text,
+        category:n.cat,
+        notificationId:n.id,
+        url:n.url,
+        source:'inbox'
+    });
+}
+if(!window._kapaniPushSwMessageBound&&'serviceWorker' in navigator){window._kapaniPushSwMessageBound=true;navigator.serviceWorker.addEventListener('message',event=>{
+    const type=event?.data?.type;
+    if(type==='KAPANI_PUSHSUBSCRIPTION_CHANGED'&&currentNick)registerWebPushSubscription().catch(e=>console.debug('[Kapani Push] subscription change:',e));
+    // Notification click while the site is already open: navigate in-app, no page reload.
+    if(type==='KAPANI_NOTIFICATION_CLICK'){try{handleKapaniPushDeepLink(event.data.url||'');}catch(e){console.debug('[Kapani Push] click route:',e);}}
+});}
 function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
@@ -4782,9 +4873,39 @@ if(!window._kapaniChatPresenceUnloadBound){
 // verification, transfers, fines, business approvals, etc.) have already
 // succeeded. A push/session failure here must never look like the underlying
 // operation failed and must never produce an unhandled promise rejection.
+// Writes the inbox record straight to Realtime Database (the same way the rest of
+// the app talks to RTDB). The onValueCreated trigger on
+// users/{nick}/notifications/{id} still performs closed-tab Web Push delivery.
+async function writeNotificationDirect(targetNick,body,cat,extra){
+    const nRef=push(notifRef(targetNick));
+    const createdAt=Date.now();
+    const source=String(extra?.source||'');
+    const record={
+        text:body,
+        title:String(extra?.title||'Капани'),
+        time:nowTime(),
+        cat:String(cat||'system'),
+        createdAt,
+        url:String(extra?.url||''),
+        push:true,
+        source,
+        sourceMessageId:String(extra?.sourceMessageId||'')
+    };
+    if(source==='dm'&&currentNick) record.from=currentNick;
+    await set(nRef,record);
+    return String(nRef.key||'');
+}
 async function pushNotification(nick,text,cat='system',extra={}){
     const targetNick=String(nick||'').trim(),body=String(text||'').trim();
     if(!targetNick||!body)return{ok:false,notificationFailed:true,error:'invalid-args'};
+    // 1) direct RTDB write — does not depend on Cloud Functions or Firebase Auth.
+    try{
+        const notificationId=await writeNotificationDirect(targetNick,body,cat,extra);
+        return{ok:true,notificationId,nick:targetNick,via:'rtdb'};
+    }catch(directErr){
+        console.debug('[pushNotification] direct write failed, trying callable:',directErr?.message||directErr);
+    }
+    // 2) fallback: protected callable (works when rules forbid client writes).
     try{
         await requireKapaniServerSession();
         const fn=await ensureFunctions();
@@ -4798,47 +4919,61 @@ async function pushNotification(nick,text,cat='system',extra={}){
             source:String(extra?.source||''),
             sourceMessageId:String(extra?.sourceMessageId||'')
         });
-        const notificationId=String(result?.data?.notificationId||'');
-        if(targetNick===currentNick && typeof Notification!=='undefined' && Notification.permission==='granted' && isPushOn()){
-            await showForegroundKapaniPush({
-                title:String(extra?.title||'Капани'),
-                body,
-                category:String(cat||'system'),
-                notificationId,
-                url:String(extra?.url||''),
-                source:String(extra?.source||'foreground')
-            });
-        }
-        return{ok:true,notificationId,nick:targetNick};
+        return{ok:true,notificationId:String(result?.data?.notificationId||''),nick:targetNick,via:'callable'};
     }catch(e){
         console.warn('[pushNotification] notification failed (non-fatal):',e?.message||e);
         return{ok:false,notificationFailed:true,error:String(e?.message||e),nick:targetNick};
     }
 }
+// The recipient's own realtime listener (attachNotificationsListener) shows the
+// in-app banner and the OS-level push, so there is no second display path here.
 window.testKapaniPush = async function(){
     if(!currentNick) throw new Error('Сначала войдите в Капани');
-    if(!('Notification' in window) || Notification.permission !== 'granted') {
-        throw new Error('Сначала разрешите системные уведомления в профиле');
-    }
-    const result = await pushNotification(currentNick, '🧪 Тестовый Push Капани. Проверьте уведомление даже после закрытия сайта.', 'system');
-    toast('🧪 Тестовый Push поставлен в очередь','green');
-    return {
-        ...result,
-        message: 'Уведомление создано через Firebase Functions → Web Push → Service Worker. Закройте вкладку для проверки доставки.',
-        diagnostics: await window.getKapaniPushDiagnostics()
-    };
+    const result = await pushNotification(currentNick, '🧪 Тестовое уведомление Капани. Если вы видите это в списке и во всплывающем окне — уведомления работают.', 'system');
+    if(!result.ok) throw new Error('Не удалось создать уведомление: '+(result.error||'неизвестная ошибка'));
+    const perm=('Notification' in window)?Notification.permission:'unsupported';
+    toast(perm==='granted'?'🧪 Тестовое уведомление отправлено':'🧪 Уведомление добавлено в список. Разрешите push в браузере, чтобы видеть его как системное','green');
+    return {...result, permission:perm, diagnostics: await window.getKapaniPushDiagnostics()};
 };
 window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
 window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
 function renderNotifications(notifs){
     const el=qs('inboxList');if(!el)return;
-    const arr=Object.entries(notifs||{}).map(([id,n])=>({...n,id})).reverse();
+    const arr=Object.entries(notifs||{})
+        .filter(([,n])=>n)
+        .map(([id,n])=>(typeof n==='string'?{text:n,id}:{...n,id}))
+        .sort((a,b)=>((Number(b.createdAt)||0)-(Number(a.createdAt)||0)) || (a.id<b.id?1:a.id>b.id?-1:0));
     el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет уведомлений</div>':arr.map(n=>{
       const duelActions=n.type==='duel_invite'&&n.duelId?`<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="acceptOnlineDuelFromNotif('${n.duelId}','${n.id}')">✅ Принять</button><button class="btn btn-red btn-sm" onclick="declineOnlineDuelFromNotif('${n.duelId}','${n.id}')">❌ Отклонить</button></div>`:'';
       return `<div class="notif-item" style="${n.type==='duel_invite'?'border-left-color:var(--gold);':''}" onclick="${!duelActions?`deleteNotification('${n.id}')`:''}">`
-        +`<div style="flex:1;"><div class="notif-text">${escHtml(n.text||n)}</div>${duelActions}</div>`
-        +`<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:8px;"><div class="notif-time">${escHtml(n.time||'')}</div>${!duelActions?`<div class="notif-del" onclick="deleteNotification('${n.id}');event.stopPropagation()">✕</div>`:''}</div></div>`;
+        +`<div style="flex:1;min-width:0;"><div class="notif-text" style="white-space:pre-wrap;word-break:break-word;">${escHtml(n.text||'')}</div>${duelActions}</div>`
+        +`<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:8px;"><div class="notif-time">${escHtml(formatNotifTime(n))}</div>${!duelActions?`<div class="notif-del" onclick="deleteNotification('${n.id}');event.stopPropagation()">✕</div>`:''}</div></div>`;
     }).join('');
+}
+
+// Duel events historically live under /notifications/<nick>. Mirror them into the
+// canonical inbox from the client under the SAME id the backend bridge uses
+// (legacy_<key>), so the invite shows up even if the Cloud Function is slow or
+// not deployed; the function's `existing.exists()` check makes this idempotent.
+async function pushLegacyDuelNotification(targetNick,payload){
+    const legacyRef=await push(ref(db,`notifications/${targetNick}`),payload);
+    try{
+        const key=String(legacyRef?.key||''); if(!key) return;
+        await set(ref(db,`users/${targetNick}/notifications/legacy_${key}`),{
+            text:String(payload.text||'Новое уведомление'),
+            title:'Капани',
+            time:nowTime(),
+            cat:'messages',
+            createdAt:Number(payload.ts)||Date.now(),
+            url:'',
+            push:true,
+            type:String(payload.type||''),
+            from:String(payload.from||''),
+            duelId:String(payload.duelId||''),
+            source:'legacy_duel',
+            sourceMessageId:key
+        });
+    }catch(e){ console.debug('[duel notification mirror]',e?.message||e); }
 }
 
 window.acceptOnlineDuelFromNotif=async function(duelId,notifId){
@@ -9958,7 +10093,7 @@ window.sendOnlineDuelInvite=async function(){
   onlineDuelId=duelRef2.key;
   await set(duelRef2,{challenger:currentNick,opponent,stake,mode:onlineDuelMode,status:'waiting',createdAt:Date.now(),challengerMove:null,opponentMove:null,board:null,turn:1});
   // Notify opponent
-  await push(ref(db,`notifications/${opponent}`),{type:'duel_invite',from:currentNick,duelId:onlineDuelId,text:`⚔️ ${currentNick} вызывает тебя на дуэль! Ставка: ${stake}₽`,ts:Date.now(),read:false});
+  await pushLegacyDuelNotification(opponent,{type:'duel_invite',from:currentNick,duelId:onlineDuelId,text:`⚔️ ${currentNick} вызывает тебя на дуэль! Ставка: ${stake}₽`,ts:Date.now(),read:false});
   document.getElementById('onlineDuelStatus').textContent='⏳ Ожидаем соперника...';
   document.getElementById('onlineDuelStatus').style.color='var(--gold)';
   // Listen for opponent accept
@@ -9989,7 +10124,7 @@ window.declineOnlineDuel=async function(duelId){
   await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
   await logTx(d.challenger,{type:'in',who:'Дуэли',amt:d.stake,desc:`Вызов отклонён ${currentNick}`});
   await update(onlineDuelRef(duelId),{status:'declined'});
-  await push(ref(db,`notifications/${d.challenger}`),{type:'duel_declined',from:currentNick,text:`❌ ${currentNick} отклонил вызов. Ставка возвращена.`,ts:Date.now(),read:false});
+  await pushLegacyDuelNotification(d.challenger,{type:'duel_declined',from:currentNick,text:`❌ ${currentNick} отклонил вызов. Ставка возвращена.`,ts:Date.now(),read:false});
   toast('❌ Вызов отклонён','red');
   renderOnlineDuelLobby();
 };

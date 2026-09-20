@@ -1,7 +1,7 @@
 /* Kapani Web Push Service Worker.
  * One Service Worker only: receives standard Web Push and renders system notifications.
  */
-const SW_VERSION = 'kapani-webpush-2026-09-20-v2';
+const SW_VERSION = 'kapani-webpush-2026-09-20-v3';
 const KAPANI_APP_PATH = '/kapani/';
 
 function resolveNotificationUrl(requestedUrl) {
@@ -19,12 +19,16 @@ function resolveNotificationUrl(requestedUrl) {
 }
 
 const shownNotificationIds = new Map();
-function wasShownRecently(notificationId) {
-  const id = String(notificationId || '').trim(); if (!id) return false;
+function pruneShown() {
   const now = Date.now();
   for (const [key, ts] of shownNotificationIds) if (now - ts > 120000) shownNotificationIds.delete(key);
-  if (shownNotificationIds.has(id)) return true;
-  shownNotificationIds.set(id, now); return false;
+}
+/* Check only; the id is recorded AFTER showNotification() succeeds, so a failed
+ * display can still be retried (e.g. by the server push for the same id). */
+function wasShownRecently(notificationId) {
+  const id = String(notificationId || '').trim(); if (!id) return false;
+  pruneShown();
+  return shownNotificationIds.has(id);
 }
 
 async function showKapaniPush(data = {}) {
@@ -42,6 +46,7 @@ async function showKapaniPush(data = {}) {
     renotify: false,
     data: { ...data, url: targetUrl, category, swVersion: SW_VERSION, receivedAt: Date.now() }
   });
+  if (notificationId) shownNotificationIds.set(notificationId, Date.now());
   return true;
 }
 
@@ -99,8 +104,11 @@ self.addEventListener('notificationclick', event => {
       const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of clients) {
         if (!client.url || !isKapaniUrl(client.url)) continue;
-        try { if (client.url !== targetUrl && 'navigate' in client) await client.navigate(targetUrl); } catch (_) {}
+        /* The app is already open: focus it and let the page route in-app (no reload). */
+        let routed = false;
+        try { client.postMessage({ type: 'KAPANI_NOTIFICATION_CLICK', url: targetUrl }); routed = true; } catch (_) {}
         try { await client.focus(); } catch (_) {}
+        if (!routed) { try { if ('navigate' in client) await client.navigate(targetUrl); } catch (_) {} }
         return client;
       }
       if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
