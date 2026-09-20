@@ -284,118 +284,272 @@ function previewOf(m) {
   return p.length > 80 ? p.slice(0, 77) + '...' : p;
 }
 
-/** Turns a job into {payload, nicks, inbox, marks}. Returns null when there is nothing to do. */
+/** Turns a job into a processing plan.
+ * kind = done    -> process normally
+ * kind = retry   -> keep the job; a required RTDB record is not visible yet
+ * kind = discard -> the job is invalid, already handled, or explicitly suppressed
+ */
 async function planJob(env, job) {
   const now = Date.now();
-  if (job.type === 'deliver') return { payload: job.payload, nicks: job.nicks || [], inbox: {}, marks: {} };
+  if (job.type === 'deliver') {
+    return {
+      kind: 'done',
+      payload: job.payload,
+      nicks: job.nicks || [],
+      inbox: {},
+      marks: job.marks || {}
+    };
+  }
 
   if (job.type === 'notification') {
-    if (!validNick(job.to) || !validKey(job.id)) return null;
+    if (!validNick(job.to) || !validKey(job.id)) return { kind: 'discard', reason: 'invalid notification job' };
+
     const path = `users/${job.to}/notifications/${job.id}`;
     const n = await rtdbGet(env, `users/${enc(job.to)}/notifications/${enc(job.id)}`);
-    if (!n || n.pushedAt || n.push === false) return null;
+
+    // The site can create pushOutbox/<jobId> and the notification record in two
+    // separate RTDB writes. If /event arrives first, KEEP the job instead of
+    // deleting it. Cron will retry it after the notification becomes visible.
+    if (!n) return { kind: 'retry', reason: 'notification record not visible yet' };
+
+    if (n.pushedAt) return { kind: 'discard', reason: 'notification already pushed' };
+    if (n.push === false) return { kind: 'discard', reason: 'push disabled for notification' };
+
     const payload = payloadFromNotification(env, job.id, n);
-    if (!payload.body) return null;
+    if (!payload.body) return { kind: 'discard', reason: 'notification has empty body' };
+
     if (n.source === 'dm' && n.from) {
       const open = await rtdbGet(env, `presence/${enc(job.to)}/dmOpenWith`);
-      if (open === n.from) return { payload, nicks: [], inbox: {}, marks: { [`${path}/pushedAt`]: now } };
+      if (open === n.from) {
+        return {
+          kind: 'done',
+          payload,
+          nicks: [],
+          inbox: {},
+          marks: { [`${path}/pushedAt`]: now }
+        };
+      }
     }
-    return { payload, nicks: [job.to], inbox: {}, marks: { [`${path}/pushedAt`]: now } };
+
+    return {
+      kind: 'done',
+      payload,
+      nicks: [job.to],
+      inbox: {},
+      marks: { [`${path}/pushedAt`]: now }
+    };
   }
 
   if (job.type === 'chat' || job.type === 'news') {
-    if (!validKey(job.id) || !validNick(job.sender)) return null;
+    if (!validKey(job.id) || !validNick(job.sender)) return { kind: 'discard', reason: 'invalid fanout job' };
+
     const key = `${job.type}_${job.id}`;
-    if (await rtdbGet(env, `pushDone/${enc(key)}`)) return null;                 // already fanned out
+    if (await rtdbGet(env, `pushDone/${enc(key)}`)) {
+      return { kind: 'discard', reason: 'fanout already completed' };
+    }
+
     const item = await rtdbGet(env, `${job.type === 'chat' ? 'chat' : 'news'}/${enc(job.id)}`);
-    if (!item) return null;
+    // Same race protection as notifications: the source object may appear
+    // milliseconds after pushOutbox/<jobId>.
+    if (!item) return { kind: 'retry', reason: `${job.type} source record not visible yet` };
+
     const author = job.type === 'chat' ? item.nick : item.author;
-    if (author !== job.sender) return null;                                      // cannot fan out someone else's post
-    const users = (await rtdbGet(env, 'users', '?shallow=true')) || {};
+    if (author !== job.sender) {
+      return { kind: 'discard', reason: 'sender does not match source author' };
+    }
+
+    const usersRaw = await rtdbGet(env, 'users', '?shallow=true');
+    if (usersRaw === null) return { kind: 'retry', reason: 'users index not visible yet' };
+    const users = usersRaw || {};
+
     let text, cat, url, source, extra = {};
     if (job.type === 'chat') {
       const name = (await rtdbGet(env, `users/${enc(author)}/displayName`)) || author;
       text = `💬 ${name} написал в общий чат: ${previewOf(item)}`;
-      cat = 'messages'; url = `${appUrl(env)}?kpSection=messages`; source = 'general_chat';
+      cat = 'messages';
+      url = `${appUrl(env)}?kpSection=messages`;
+      source = 'general_chat';
       extra = { from: author };
     } else {
       text = `📰 Новая новость в Капани\n${String(item.title || '').trim() || 'Новая публикация'}`;
-      cat = 'news'; url = `${appUrl(env)}?kpSection=news&news=${enc(job.id)}`; source = 'news';
+      cat = 'news';
+      url = `${appUrl(env)}?kpSection=news&news=${enc(job.id)}`;
+      source = 'news';
       extra = { newsId: job.id };
     }
+
     const createdAt = Number(item.createdAt || now);
-    const record = { text, title: 'Капани', time: moscowTime(createdAt), cat, createdAt, url, push: true, source, sourceMessageId: job.id, ...extra };
+    const record = {
+      text,
+      title: 'Капани',
+      time: moscowTime(createdAt),
+      cat,
+      createdAt,
+      url,
+      push: true,
+      source,
+      sourceMessageId: job.id,
+      ...extra
+    };
+
     const inbox = {}, recipients = [];
     for (const nick of Object.keys(users)) {
       if (nick === author) continue;
       inbox[`users/${nick}/notifications/${key}`] = record;
       recipients.push(nick);
     }
+
     let nicks = recipients;
     if (job.type === 'chat') {
       const presence = (await rtdbGet(env, 'presence')) || {};
-      nicks = recipients.filter(n => presence[n]?.generalChatOpen !== true);      // chat is open on screen -> no push
+      nicks = recipients.filter(n => presence[n]?.generalChatOpen !== true);
     }
-    return { payload: payloadFromNotification(env, key, record), nicks, inbox, marks: { [`pushDone/${key}`]: now } };
+
+    return {
+      kind: 'done',
+      payload: payloadFromNotification(env, key, record),
+      nicks,
+      inbox,
+      // For fanout jobs, delay pushDone until the final continuation job
+      // completes. This prevents a partial send from permanently suppressing retries.
+      marks: nicks.length ? { [`pushDone/${key}`]: now } : { [`pushDone/${key}`]: now },
+      fanoutKey: key
+    };
   }
-  return null;
+
+  return { kind: 'discard', reason: 'unknown job type' };
 }
 
 /** Processes one job. budget.left = how many pushes this invocation may still send. */
 async function processJob(env, jobId, budget, preloaded) {
   const job = preloaded || await rtdbGet(env, `pushOutbox/${enc(jobId)}`);
-  const finish = async (extra = {}) => { await rtdbPatch(env, { [`pushOutbox/${jobId}`]: null, ...extra }); };
-  if (!job || typeof job !== 'object') return { sent: 0, next: null };
-  const plan = await planJob(env, job);
-  if (!plan) { await finish(); return { sent: 0, next: null }; }
+  const finish = async (extra = {}) => {
+    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: null, ...extra });
+  };
+  if (!job || typeof job !== 'object') {
+    console.log('push job missing', jobId);
+    return { sent: 0, next: null };
+  }
 
-  if (Object.keys(plan.inbox).length) await rtdbPatch(env, plan.inbox);          // inbox first: the record exists before the push arrives
+  const plan = await planJob(env, job);
+
+  // IMPORTANT: never delete a job just because the source/notification record
+  // is not visible yet. This is the race that was losing normal Kapani pushes.
+  if (plan?.kind === 'retry') {
+    const attempts = Number(job.attempts || 0) + 1;
+    const nextJob = {
+      ...job,
+      attempts,
+      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
+      ts: Date.now(),
+      lastRetryReason: String(plan.reason || 'temporary condition').slice(0, 160)
+    };
+    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: nextJob });
+    console.log('push job retry', jobId, attempts, plan.reason || 'temporary condition');
+    return { sent: 0, next: null, retry: true, reason: plan.reason };
+  }
+
+  if (plan?.kind === 'discard' || !plan) {
+    await finish();
+    console.log('push job discarded', jobId, plan?.reason || 'no plan');
+    return { sent: 0, next: null, discarded: true, reason: plan?.reason };
+  }
+
+  if (Object.keys(plan.inbox).length) {
+    await rtdbPatch(env, plan.inbox); // inbox first: record exists before the push arrives
+  }
 
   const all = await loadSubs(env);
   const dead = [];
-  let sent = 0, i = 0;
+  let sent = 0, i = 0, hadPushErrors = false, attempted = 0;
+
   for (; i < plan.nicks.length; i++) {
     const nick = plan.nicks[i];
     const subs = (all[nick] || []).filter(s => prefsAllow(s, plan.payload.category));
-    if (subs.length && budget.left < subs.length && sent > 0) break;              // continue in the next invocation
+
+    // If this recipient alone would exceed the remaining budget, defer the
+    // whole recipient to a continuation job. This avoids dropping devices.
+    if (subs.length && budget.left < subs.length && sent > 0) break;
+
     for (const s of subs) {
       if (budget.left <= 0) break;
       budget.left--;
+      attempted++;
+
       try {
         const status = await sendPush(env, s, plan.payload);
-        if (status === 404 || status === 410) dead.push([nick, s.id]);
-        else if (status >= 200 && status < 300) sent++;
-        else console.warn('push status', status, new URL(s.endpoint).host);
-      } catch (e) { console.warn('push error', nick, String(e?.message || e)); }
+        console.log('push send result', jobId, nick, s.id, status);
+
+        if (status === 404 || status === 410) {
+          dead.push([nick, s.id]);
+        } else if (status >= 200 && status < 300) {
+          sent++;
+        } else {
+          hadPushErrors = true;
+          console.warn('push status', status, new URL(s.endpoint).host);
+        }
+      } catch (e) {
+        hadPushErrors = true;
+        console.warn('push error', jobId, nick, String(e?.message || e));
+      }
     }
-    if (budget.left <= 0) { i++; break; }
+
+    if (budget.left <= 0) break;
   }
+
   if (dead.length) {
     const fresh = await loadSubs(env);
-    for (const [nick, id] of dead) if (fresh[nick]) { fresh[nick] = fresh[nick].filter(s => s.id !== id); if (!fresh[nick].length) delete fresh[nick]; }
+    for (const [nick, id] of dead) {
+      if (fresh[nick]) {
+        fresh[nick] = fresh[nick].filter(s => s.id !== id);
+        if (!fresh[nick].length) delete fresh[nick];
+      }
+    }
     await saveSubs(env, fresh);
   }
 
-  // A notification must not be marked pushed before at least one real push succeeds.
-  // Otherwise a transient Web Push/VAPID/network error would permanently lose the notification.
+  // A normal notification is only considered delivered after at least one
+  // real Web Push succeeds. Temporary send failures keep the job alive.
   if (job.type === 'notification' && plan.nicks.length && sent === 0) {
     const attempts = Number(job.attempts || 0) + 1;
-    if (attempts >= 30) {
-      await finish({});
-      return { sent: 0, next: null, retryExhausted: true };
-    }
-    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: { ...job, attempts } });
-    return { sent: 0, next: null, retry: true };
+    const retryJob = {
+      ...job,
+      attempts,
+      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
+      ts: Date.now(),
+      lastRetryReason: attempted ? (hadPushErrors ? 'push delivery failed' : 'no eligible push device') : 'no eligible push device'
+    };
+
+    // If there is still no active device, keep the job until the normal
+    // 24-hour outbox retention limit. This lets a newly-registered device
+    // receive the queued notification instead of losing it immediately.
+    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: retryJob });
+    console.log('notification queued for retry', jobId, retryJob.lastRetryReason);
+    return { sent: 0, next: null, retry: true, reason: retryJob.lastRetryReason };
   }
 
   const rest = plan.nicks.slice(i);
-  const extra = { ...plan.marks };                                                // pushDone / pushedAt: written after the job has actually been processed
   let next = null;
-  if (rest.length) {                                                              // over budget: hand the remaining recipients to a continuation job
+  const extra = {};
+
+  // For fanout jobs, do NOT mark pushDone until all recipients fit in the
+  // current invocation and have been handed off/processed.
+  if (rest.length) {
     next = `${String(jobId).replace(/_c[0-9a-z]+$/, '')}_c${Date.now().toString(36)}`;
-    extra[`pushOutbox/${next}`] = { type: 'deliver', payload: plan.payload, nicks: rest, ts: Date.now() };
+    extra[`pushOutbox/${next}`] = {
+      type: 'deliver',
+      payload: plan.payload,
+      nicks: rest,
+      marks: plan.marks,
+      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
+      ts: Date.now()
+    };
+  } else {
+    Object.assign(extra, plan.marks);
   }
+
   await finish(extra);
+  console.log('push job completed', jobId, { sent, attempted, next });
   return { sent, next };
 }
 
@@ -405,7 +559,7 @@ async function runCron(env) {
   const budget = { left: maxPush(env) };
   for (const [id, job] of Object.entries(jobs)) {
     if (budget.left <= 0) break;
-    const age = Date.now() - Number(job?.ts || 0);
+    const age = Date.now() - Number(job?.queuedAt || job?.ts || 0);
     if (age > 24 * 3600e3) { await rtdbPatch(env, { [`pushOutbox/${id}`]: null }); continue; }
     if (age < 15000) continue;                                                    // the live /event call is probably handling it
     try { await processJob(env, id, budget, job); }
@@ -506,12 +660,28 @@ async function handleEvent(request, env, body) {
     const j = body.job;
     if (!['notification', 'chat', 'news'].includes(j?.type)) return json(request, env, { error: 'bad job' }, 400);
     jobId = `w${Date.now().toString(36)}${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
-    await rtdb(env, 'PUT', `pushOutbox/${jobId}`, { type: j.type, id: String(j.id || ''), to: String(j.to || ''), sender: body.nick, ts: Date.now() });
+    const now = Date.now();
+    await rtdb(env, 'PUT', `pushOutbox/${jobId}`, {
+      type: j.type,
+      id: String(j.id || ''),
+      to: String(j.to || ''),
+      sender: body.nick,
+      queuedAt: now,
+      ts: now
+    });
   }
   if (!validKey(jobId)) return json(request, env, { error: 'bad jobId' }, 400);
   const budget = { left: maxPush(env) };
+  console.log('push event received', jobId, body.job ? 'inline-job' : 'outbox-job');
   const r = await processJob(env, jobId, budget);
-  return json(request, env, { ok: true, sent: r.sent, next: r.next });
+  return json(request, env, {
+    ok: true,
+    sent: r.sent,
+    next: r.next,
+    retry: !!r.retry,
+    discarded: !!r.discarded,
+    reason: r.reason || null
+  });
 }
 
 export default {
