@@ -219,12 +219,34 @@ function subscriptionBucket(all, nick) {
   const target = normalizeNick(nick);
   if (!target) return { key: null, subs: [], mode: 'none' };
 
-  const matches = Object.keys(all || {}).filter(k => normalizeNick(k) === target && Array.isArray(all[k]));
-  if (matches.length === 1) {
-    return { key: matches[0], subs: all[matches[0]], mode: 'normalized' };
+  // First match the actual subscription bucket key.
+  const keyMatches = Object.keys(all || {}).filter(k => normalizeNick(k) === target && Array.isArray(all[k]));
+  if (keyMatches.length === 1) {
+    return { key: keyMatches[0], subs: all[keyMatches[0]], mode: 'normalized' };
+  }
+  if (keyMatches.length > 1) {
+    return { key: null, subs: [], mode: 'ambiguous', matches: keyMatches };
   }
 
-  return { key: null, subs: [], mode: matches.length > 1 ? 'ambiguous' : 'none', matches };
+  // Kapani uses a separate immutable account key (nick) while the UI may
+  // address a notification by the user's editable displayName. Newer
+  // subscriptions carry both ownerNick and displayName, so resolve the
+  // recipient against those aliases without duplicating the subscription.
+  const aliasMatches = [];
+  for (const [key, list] of Object.entries(all || {})) {
+    if (!Array.isArray(list)) continue;
+    for (const sub of list) {
+      if (normalizeNick(sub?.ownerNick) === target || normalizeNick(sub?.displayName) === target) {
+        if (!aliasMatches.includes(key)) aliasMatches.push(key);
+        break;
+      }
+    }
+  }
+  if (aliasMatches.length === 1) {
+    return { key: aliasMatches[0], subs: all[aliasMatches[0]], mode: 'subscription-alias' };
+  }
+
+  return { key: null, subs: [], mode: aliasMatches.length > 1 ? 'ambiguous-alias' : 'none', matches: aliasMatches };
 }
 
 /* ───────────── Web Push: VAPID + aes128gcm (RFC 8291 / 8292) with WebCrypto ───────────── */
@@ -620,6 +642,8 @@ async function handleSubscribe(request, env, body) {
   const id = (await sha256Hex(s.endpoint)).slice(0, 32);
   const all = await loadSubs(env);
   const owner = subscriptionBucket(all, nick);
+  const displayNameRaw = await rtdbGet(env, `users/${enc(nick)}/displayName`).catch(() => null);
+  const displayName = String(displayNameRaw || '').trim().slice(0, 120);
 
   // If an older registration used the same account name with different
   // casing/spacing, migrate that bucket to the exact authenticated nick.
@@ -644,11 +668,18 @@ async function handleSubscribe(request, env, body) {
     prefs: sanitizePrefs(prefs),
     ua: String(userAgent || '').slice(0, 200),
     ownerNick: nick,
+    displayName,
     updatedAt: Date.now()
   });
   all[nick] = mine.slice(0, MAX_DEVICES_PER_USER);
   await saveSubs(env, all);
-  return json(request, env, { success: true, subscriptionId: id });
+  console.log('push subscription saved', JSON.stringify({
+    ownerNick: nick,
+    displayName,
+    subscriptionId: id,
+    storedDevices: all[nick].length
+  }));
+  return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName });
 }
 async function handleUnsubscribe(request, env, body) {
   if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
