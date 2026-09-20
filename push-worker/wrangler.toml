@@ -6,7 +6,7 @@ workers_dev = true
 [vars]
 FIREBASE_DATABASE_URL = "https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app"
 # Must be the SAME key as webPushVapidPublicKey in config.js
-VAPID_PUBLIC_KEY = "BDjXi9EvtInIq_Hip8aLRrf5fapGq8p9P6y6kwqDyROSuFRP3AuWvppOb7vieZxWBU4Y1OtCjNzeuTlhHogHwrE"
+VAPID_PUBLIC_KEY = "BNxUOFgcg5VQqwQ4_wwQLkR-howofNzLG6xzOLT7ZsdIFkc-uFRP5JZvw-tP81_63pudVjdv_k3aUegSQiWpmNU"
 VAPID_SUBJECT = "https://iamskoup1.github.io/kapani/"
 APP_URL = "https://iamskoup1.github.io/kapani/"
 ALLOWED_ORIGINS = "https://iamskoup1.github.io"
