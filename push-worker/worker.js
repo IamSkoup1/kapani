@@ -83,30 +83,100 @@ let tokenCache = { value: null, exp: 0 };
 async function accessToken(env) {
   const now = Math.floor(Date.now() / 1000);
   if (tokenCache.value && tokenCache.exp - now > 120) return tokenCache.value;
+
   let sa;
-  try { sa = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '')); }
-  catch { throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing or not valid JSON'); }
-  if (!sa.client_email || !sa.private_key) throw new Error('service account JSON lacks client_email/private_key');
-  const header = b64uEnc(te.encode(JSON.stringify({ alg: 'RS256', typ: 'JWT' })));
-  const claims = b64uEnc(te.encode(JSON.stringify({
+  try {
+    sa = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || ''));
+  } catch {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing or not valid JSON');
+  }
+  if (!sa || sa.type !== 'service_account' || !sa.client_email || !sa.private_key) {
+    throw new Error('service account JSON lacks type=service_account/client_email/private_key');
+  }
+
+  const tokenUri = String(sa.token_uri || 'https://oauth2.googleapis.com/token');
+  if (tokenUri !== 'https://oauth2.googleapis.com/token') {
+    throw new Error(`Unsupported service-account token_uri: ${tokenUri}`);
+  }
+
+  // Google-documented service-account JWT assertion header.
+  // `kid` selects the exact public key matching `private_key_id`.
+  const headerObj = {
+    alg: 'RS256',
+    typ: 'JWT',
+    ...(sa.private_key_id ? { kid: String(sa.private_key_id) } : {})
+  };
+  const claimsObj = {
     iss: sa.client_email,
     scope: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/firebase.database',
-    aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600
-  })));
-  const pem = sa.private_key.replace(/-----(BEGIN|END) PRIVATE KEY-----/g, '').replace(/\s+/g, '');
-  const der = Uint8Array.from(atob(pem), c => c.charCodeAt(0));
-  const key = await crypto.subtle.importKey('pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
-  const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, te.encode(`${header}.${claims}`)));
-  const res = await fetch('https://oauth2.googleapis.com/token', {
+    aud: tokenUri,
+    iat: now - 5,
+    exp: now + 3595
+  };
+  const header = b64uEnc(te.encode(JSON.stringify(headerObj)));
+  const claims = b64uEnc(te.encode(JSON.stringify(claimsObj)));
+
+  const pem = String(sa.private_key)
+    .replace(/\r/g, '')
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  if (!/^[A-Za-z0-9+/=_-]+$/.test(pem)) throw new Error('service account private_key contains invalid characters');
+
+  let der;
+  try {
+    der = Uint8Array.from(atob(pem.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  } catch {
+    throw new Error('service account private_key is not valid base64');
+  }
+
+  let key;
+  try {
+    key = await crypto.subtle.importKey(
+      'pkcs8', der,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false, ['sign']
+    );
+  } catch (e) {
+    throw new Error(`service account private_key import failed: ${String(e?.message || e)}`);
+  }
+
+  const sig = new Uint8Array(await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5', key, te.encode(`${header}.${claims}`)
+  ));
+  const assertion = `${header}.${claims}.${b64uEnc(sig)}`;
+
+  const res = await fetch(tokenUri, {
     method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${header}.${claims}.${b64uEnc(sig)}` })
+    headers: { 'content-type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion
+    })
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.access_token) throw new Error(`Google OAuth failed: ${res.status}`);
-  tokenCache = { value: data.access_token, exp: now + Number(data.expires_in || 3600) };
+
+  const raw = await res.text();
+  let data = {};
+  try { data = raw ? JSON.parse(raw) : {}; } catch {}
+  if (!res.ok || !data.access_token) {
+    const reason = [data?.error, data?.error_description].filter(Boolean).join(': ') || raw.slice(0, 300);
+    console.error('Google OAuth token exchange failed', {
+      status: res.status,
+      error: data?.error,
+      description: data?.error_description,
+      serviceAccount: sa.client_email,
+      keyId: sa.private_key_id || null
+    });
+    throw new Error(`Google OAuth failed: ${res.status}${reason ? ` — ${reason}` : ''}`);
+  }
+
+  tokenCache = {
+    value: data.access_token,
+    exp: Math.floor(Date.now() / 1000) + Math.max(300, Number(data.expires_in || 3600)) - 120
+  };
   return tokenCache.value;
 }
+
 async function rtdb(env, method, path, body, query = '') {
   const base = String(env.FIREBASE_DATABASE_URL || '').replace(/\/$/, '');
   const res = await fetch(`${base}/${path}.json${query}`, {

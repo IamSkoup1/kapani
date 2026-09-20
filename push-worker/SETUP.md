@@ -100,3 +100,16 @@ pushWorkerUrl: "https://kapani-push.<ваш-поддомен>.workers.dev",
   Настоящая защита требует нормальной авторизации (например Firebase Auth), это отдельная задача.
 * Секреты (`VAPID_PRIVATE_KEY`, JSON сервисного аккаунта) хранятся только в Cloudflare и в git не попадают.
 * Сервисный аккаунт обходит правила RTDB. Правила базы Worker не ослабляет.
+
+
+## OAuth key fix (если `/event` даёт Google OAuth 400)
+
+Создайте НОВЫЙ private key для service account в Firebase Console: Project settings → Service accounts → Generate new private key. Затем замените secret Worker:
+
+```bash
+wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON < sa.json
+```
+
+После этого задеплойте обновлённый `worker.js`. В этой версии JWT содержит `kid` из `private_key_id`, а ответ Google OAuth при ошибке больше не скрывается.
+
+Важно: `sa.json` не должен находиться в репозитории или публиковаться.
