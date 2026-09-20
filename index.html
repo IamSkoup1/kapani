@@ -3163,10 +3163,13 @@ let _onlineStatusInFlight=false;
 async function updateOnlineStatus() {
     if(!currentNick || _onlineStatusInFlight) return;
     _onlineStatusInFlight=true;
-    try { await update(userRef(currentNick), {lastSeen:Date.now()}); } catch(e){} finally { _onlineStatusInFlight=false; }
+    try { _lastOnlineWriteAt=Date.now(); await update(userRef(currentNick), {lastSeen:Date.now()}); } catch(e){} finally { _onlineStatusInFlight=false; }
 }
+let _lastOnlineWriteAt=0;
 function scheduleOnlineStatusUpdate(){
-    if(_onlineStatusTimer) return;
+    // Activity pings are throttled: every click used to write lastSeen (and wake every
+    // other client's listeners). ONLINE_TIMEOUT_MS is 3 min, so 30 s precision is plenty.
+    if(_onlineStatusTimer || Date.now()-_lastOnlineWriteAt<30000) return;
     _onlineStatusTimer=setTimeout(()=>{_onlineStatusTimer=null;updateOnlineStatus();},1500);
 }
 function startOnlineHeartbeat() {
@@ -4102,6 +4105,7 @@ function startApp() {
           const defer = window.requestIdleCallback || ((cb)=>setTimeout(cb, 0));
           defer(()=>{
               try { startOnlineHeartbeat(); } catch(e) { console.error('[Kapani] heartbeat init:',e); }
+              try { startLiveDataLayer(); } catch(e) { console.error('[Kapani] live layer init:',e); }
               try { ensureEconomyFresh({notify:true}).catch(e=>console.warn('[Kapani] economy refresh:',e)); } catch(e) {}
               try {
                   window._economyTimer && clearInterval(window._economyTimer);
@@ -4201,6 +4205,7 @@ function attachUserListener(){
         if(!snap.exists()) return;
         const u=snap.val();
         allUsersCache[currentNick]=u; window.allUsersCache=allUsersCache;
+        try{ liveOwnAccountChanged(u); }catch(e){}
         await syncJanitorTaskState(u);
         updateHeader(u); updateFrozenOverlay(u); updateHeader_balance(u);
         renderHomeStats_users(allUsersCache);
@@ -4388,6 +4393,203 @@ function leaveService(page){
 function attachListeners(){
     attachUserListener();
     attachNotificationsListener();
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// LIVE DATA LAYER
+// Keeps balances, the user list and the data behind each page up to date
+// without reloads.
+//  • Users: `users/<nick>/<field>` LEAF listeners for the hot fields. A listener
+//    on the whole `users` node would stream every user's full subtree (txlog,
+//    notifications, …) on each heartbeat, so it is deliberately avoided. The
+//    user list itself (new/removed accounts, avatars) is re-synced every 3 min.
+//  • Pages: while a page is open, its data paths are listened to and the page's
+//    existing render function is re-run (debounced, and never while the user is
+//    typing inside that page).
+//  • Own account: the existing users/<me> listener also refreshes Bank/Jobs/…
+//  • Opened profile of another resident: live while the profile is on screen.
+// ═══════════════════════════════════════════════════════════════════
+const LIVE_USER_FIELDS=['balance','lastSeen','job','displayJob','displayName','subscription','subscriptionExpiry','accountFrozen','accountVerified','taskBalance','savingsBalance','kveScore','fine','employments','totalEarned','nicknameEmoji','avatarFrame'];
+const LIVE_USERS_FULL_REFRESH_MS=3*60*1000;
+const _liveUserLeafUnsubs=new Map();
+let _liveUsersUiTimer=null,_liveUsersPresenceTimer=null,_liveUsersStale=false,_liveUsersLastFull=0,_liveLayerStarted=false;
+
+function isUserEditingIn(sectionId){
+    try{
+        const a=document.activeElement; if(!a||a===document.body) return false;
+        const sec=qs(sectionId); if(!sec||!sec.contains(a)) return false;
+        if(a.tagName==='TEXTAREA'||a.tagName==='SELECT') return true;
+        if(a.tagName==='INPUT') return !['button','checkbox','radio','submit','file','range'].includes(a.type);
+    }catch(_){}
+    return false;
+}
+function syncLiveUserListeners(){
+    if(!currentNick||!allUsersCacheLoaded) return;
+    const nicks=new Set(Object.keys(allUsersCache||{}));
+    for(const [nick,unsubs] of [..._liveUserLeafUnsubs]){
+        if(!nicks.has(nick)||nick===currentNick){ unsubs.forEach(u=>{try{u();}catch(_){}}); _liveUserLeafUnsubs.delete(nick); }
+    }
+    for(const nick of nicks){
+        if(nick===currentNick||_liveUserLeafUnsubs.has(nick)) continue;
+        const unsubs=LIVE_USER_FIELDS.map(field=>onValue(ref(db,`users/${nick}/${field}`),snap=>{
+            const u=allUsersCache&&allUsersCache[nick]; if(!u) return;
+            const v=snap.val();
+            if(JSON.stringify(u[field])===JSON.stringify(v==null?undefined:v)) return;   // initial event / no change
+            if(v==null) delete u[field]; else u[field]=v;
+            markLiveUsersDirty(field==='lastSeen');
+        },()=>{}));
+        _liveUserLeafUnsubs.set(nick,unsubs);
+    }
+}
+function markLiveUsersDirty(presenceOnly){
+    if(presenceOnly){
+        // lastSeen ticks only affect online dots: refresh at most every 8 s.
+        if(_liveUsersPresenceTimer||_liveUsersUiTimer) return;
+        _liveUsersPresenceTimer=setTimeout(()=>{_liveUsersPresenceTimer=null;refreshLiveUsersUI();},8000);
+        return;
+    }
+    if(_liveUsersPresenceTimer){ clearTimeout(_liveUsersPresenceTimer); _liveUsersPresenceTimer=null; }
+    clearTimeout(_liveUsersUiTimer);
+    _liveUsersUiTimer=setTimeout(()=>{_liveUsersUiTimer=null;refreshLiveUsersUI();},350);
+}
+function refreshLiveUsersUI(){
+    if(document.visibilityState!=='visible'){ _liveUsersStale=true; return; }
+    if(curPage && isUserEditingIn(curPage)){ setTimeout(()=>markLiveUsersDirty(false),1500); return; }
+    const users=allUsersCache||{};
+    try{
+        renderHomeStats_users(users);
+        if(curPage==='ratings') renderLeaderboard(users);
+        else if(curPage==='messages'){ if(document.querySelector('#msgPanel1.active')) renderDmUserList(users); }
+        else if(curPage==='adminPage'){ renderAdminUsers(users); renderAdminUserSelect(users); renderUnverifiedAccounts(); }
+    }catch(e){ console.warn('[Kapani live] users UI refresh:',e?.message||e); }
+}
+async function refreshUsersStructure(){
+    if(document.visibilityState!=='visible'||!currentNick) return;
+    try{
+        await loadAllUsersCache(true);
+        _liveUsersLastFull=Date.now();
+        syncLiveUserListeners();
+        refreshLiveUsersUI();
+    }catch(e){ console.debug('[Kapani live] users structure refresh:',e?.message||e); }
+}
+
+// ---- page-scoped live bindings -----------------------------------------
+const LIVE_PAGE_BINDINGS={
+    news:{q:()=>[newsRef()],render:()=>window.renderNews&&window.renderNews()},
+    rentBuildings:{q:()=>[rentBuildingsRef()],render:()=>window.renderRentBuildings&&window.renderRentBuildings()},
+    hospital:{q:()=>[ref(db,'hospital')],render:()=>renderHospital()},
+    hospitalPanel:{q:()=>[ref(db,'hospital')],render:()=>renderHospitalPanel()},
+    deputySession:{q:()=>[deputyProposalsRef()],render:()=>renderDeputyProposals()},
+    events:{q:()=>[racesRef(),raceDayGroupsRef()],render:()=>window.renderEventsSection&&window.renderEventsSection()},
+    jobs:{q:()=>[appsRef()],render:()=>window.renderJobAppStatus&&window.renderJobAppStatus()},
+    taxi:{q:()=>[query(ref(db,'taxiHistory'),orderByChild('client'),equalTo(currentNick))],render:()=>renderTaxiHistory()},
+    deliveryOrderPage:{q:()=>[deliveryCustomOrdersRef()],render:()=>renderMyDeliveryOrders()},
+    janitorPage:{q:()=>[janitorSubsRef()],render:()=>renderJanitorPage()},
+    profile:{q:()=>[wallRef(currentNick)],render:(snap)=>renderWallFeed((snap&&snap.val&&snap.val())||{})}
+};
+const _livePageState=new Map();
+function detachLivePage(page){
+    const st=_livePageState.get(page); if(!st) return;
+    st.unsubs.forEach(u=>{try{u();}catch(_){}}); clearTimeout(st.timer); _livePageState.delete(page);
+}
+function attachLivePage(page){
+    detachLivePage(page);
+    const b=LIVE_PAGE_BINDINGS[page]; if(!b||!currentNick) return;
+    const st={unsubs:[],timer:null,snap:null}; _livePageState.set(page,st);
+    const run=()=>{
+        st.timer=null;
+        if(curPage!==page||_livePageState.get(page)!==st) return;
+        if(isUserEditingIn(page)){ st.timer=setTimeout(run,1500); return; }   // never clobber typing
+        Promise.resolve().then(()=>b.render(st.snap)).catch(e=>console.debug('[Kapani live]',page,e?.message||e));
+    };
+    let targets=[]; try{ targets=b.q()||[]; }catch(e){ console.debug('[Kapani live] refs',page,e?.message||e); }
+    targets.forEach(r=>{
+        let initial=true;   // the page's own render already handles the first load
+        st.unsubs.push(onValue(r,snap=>{ if(initial){initial=false;return;} st.snap=snap; if(!st.timer) st.timer=setTimeout(run,300); },err=>console.debug('[Kapani live]',page,err?.message||err)));
+    });
+}
+
+// ---- own account: refresh money-related pages when the numbers change ----
+let _liveOwnSig='',_liveOwnTimer=null;
+function liveOwnAccountChanged(u){
+    if(!u) return;
+    const tx=u.txlog||{};
+    const sig=JSON.stringify([u.balance,u.savingsBalance,u.taskBalance,u.casino&&u.casino.balance,Object.keys(tx).length,u.subscription,u.subscriptionExpiry,u.accountFrozen,u.accountVerified,u.job,u.fine,u.employments]);
+    if(sig===_liveOwnSig) return;
+    const first=_liveOwnSig==='';
+    _liveOwnSig=sig;
+    if(first) return;
+    clearTimeout(_liveOwnTimer);
+    _liveOwnTimer=setTimeout(()=>{
+        if(isUserEditingIn(curPage)) return;
+        try{
+            if(curPage==='bank'){ renderRecentTransfers(); renderFinancialStats(); renderSavingsDisplay(); }
+            else if(curPage==='janitorPage'){ renderJanitorPage(); }
+            else if(curPage==='jobs'){ window.renderJobAppStatus&&window.renderJobAppStatus(); }
+            else if(curPage==='rentBuildings'){ window.renderRentBuildings&&window.renderRentBuildings(); }
+            else if(curPage==='hospital'){ renderHospital(); }
+        }catch(e){ console.debug('[Kapani live] own refresh:',e?.message||e); }
+    },400);
+}
+
+// ---- profile of another resident that is currently on screen ----
+let _watchedProfile={nick:null,unsub:null,sig:'',timer:null,initial:true};
+function desiredWatchedProfileNick(){
+    try{
+        const modalOpen=qs('userProfileModal')?.classList.contains('open');
+        let n=null;
+        if(modalOpen&&typeof viewingProfileNick!=='undefined') n=viewingProfileNick;
+        else if(curPage==='visitorProfile') n=window._visitorProfileNick;
+        return n&&n!==currentNick?String(n):null;
+    }catch(_){ return null; }
+}
+function profileSig(u){
+    if(!u) return '';
+    const c={...u}; ['lastSeen','txlog','notifications','pushSubscriptions','pushSettings','notificationTokens'].forEach(k=>delete c[k]);
+    return JSON.stringify(c);
+}
+function syncWatchedProfile(){
+    const want=desiredWatchedProfileNick();
+    if(want===_watchedProfile.nick) return;
+    if(_watchedProfile.unsub){ try{_watchedProfile.unsub();}catch(_){} }
+    clearTimeout(_watchedProfile.timer);
+    _watchedProfile={nick:want,unsub:null,sig:'',timer:null,initial:true};
+    if(!want) return;
+    const w=_watchedProfile;
+    w.unsub=onValue(userRef(want),snap=>{
+        if(!snap.exists()||_watchedProfile!==w) return;
+        const u=snap.val(), sig=profileSig(u);
+        if(w.initial){ w.initial=false; w.sig=sig; return; }
+        if(sig===w.sig) return;   // only lastSeen/txlog moved
+        w.sig=sig;
+        if(allUsersCache) allUsersCache[want]=u;
+        clearTimeout(w.timer);
+        w.timer=setTimeout(()=>{
+            if(_watchedProfile!==w) return;
+            if(qs('userProfileModal')?.classList.contains('open')&&viewingProfileNick===want){
+                if(isUserEditingIn('userProfileModal')) return;
+                Promise.resolve(window.openUserProfile(want)).catch(()=>{});
+            } else if(curPage==='visitorProfile'&&window._visitorProfileNick===want){
+                if(isUserEditingIn('visitorProfile')) return;
+                Promise.resolve(renderVisitorProfilePage(want)).catch(()=>{});
+            }
+        },500);
+    },()=>{});
+}
+
+function startLiveDataLayer(){
+    if(_liveLayerStarted||!currentNick) return;
+    _liveLayerStarted=true;
+    loadAllUsersCache().then(()=>{ _liveUsersLastFull=Date.now(); syncLiveUserListeners(); }).catch(e=>console.debug('[Kapani live] users init:',e?.message||e));
+    registerInterval('liveUsersFullRefresh',setInterval(()=>{ if(Date.now()-_liveUsersLastFull>=LIVE_USERS_FULL_REFRESH_MS-1000) refreshUsersStructure(); },30000));
+    registerInterval('liveWatchedProfile',setInterval(syncWatchedProfile,1200));
+    document.addEventListener('visibilitychange',()=>{
+        if(document.visibilityState!=='visible') return;
+        if(Date.now()-_liveUsersLastFull>=LIVE_USERS_FULL_REFRESH_MS) refreshUsersStructure();
+        else if(_liveUsersStale){ _liveUsersStale=false; refreshLiveUsersUI(); }
+    });
+    window.addEventListener('online',()=>{ refreshUsersStructure(); });
 }
 
 // ─── HEADER ───────────────────────────────
@@ -8125,7 +8327,9 @@ window.switchRatingTab=function(tab, btn){
   currentRatingTab=tab;
   document.querySelectorAll('#ratings .msg-tab').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  get(ref(db,'users')).then(s=>renderLeaderboard(s.val()||{}));
+  // allUsersCache is kept live by the live data layer; only fall back to a fetch if it is empty.
+  if(allUsersCacheLoaded && Object.keys(allUsersCache||{}).length) renderLeaderboard(allUsersCache);
+  else loadAllUsersCache().then(u=>renderLeaderboard(u||{}));
 };
 
 function renderLeaderboard(users){
@@ -9355,6 +9559,7 @@ window.navTo=function(id){
     const previousPage=curPage;
     if(previousPage && previousPage!==id){
         leaveService(previousPage);
+        try{ detachLivePage(previousPage); }catch(e){}
     }
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     const el=qs(id);if(el){el.classList.add('active');curPage=id;}
@@ -9362,6 +9567,7 @@ window.navTo=function(id){
     unlockBodyScroll(true); window.scrollTo(0,0);
     if(el){requestAnimationFrame(()=>{void el.offsetHeight;el.style.pointerEvents='';});}
     enterService(id);
+    try{ attachLivePage(id); }catch(e){ console.debug('[Kapani live] attach:',e?.message||e); }
     if(id==='adminPage') { renderAdmin(); setTimeout(renderAdminAdvertiserStats,50); }
     if(id==='kveExam') renderKveSection();
     if(id==='jobs') renderKveSection();
