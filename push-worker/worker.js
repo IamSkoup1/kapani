@@ -204,6 +204,29 @@ async function loadSubs(env) {
 }
 const saveSubs = (env, all) => env.PUSH_KV.put('subs', JSON.stringify(all));
 
+// Usernames in the site can arrive with harmless formatting differences
+// (case/Unicode normalization/outer whitespace). Keep exact matching first,
+// then allow a single unambiguous normalized match. Never pick arbitrarily if
+// multiple accounts collide after normalization.
+function normalizeNick(value) {
+  return String(value ?? '').normalize('NFKC').trim().toLowerCase();
+}
+function subscriptionBucket(all, nick) {
+  if (Array.isArray(all?.[nick])) {
+    return { key: nick, subs: all[nick], mode: 'exact' };
+  }
+
+  const target = normalizeNick(nick);
+  if (!target) return { key: null, subs: [], mode: 'none' };
+
+  const matches = Object.keys(all || {}).filter(k => normalizeNick(k) === target && Array.isArray(all[k]));
+  if (matches.length === 1) {
+    return { key: matches[0], subs: all[matches[0]], mode: 'normalized' };
+  }
+
+  return { key: null, subs: [], mode: matches.length > 1 ? 'ambiguous' : 'none', matches };
+}
+
 /* ───────────── Web Push: VAPID + aes128gcm (RFC 8291 / 8292) with WebCrypto ───────────── */
 async function hkdf(salt, ikm, info, len) {
   const key = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
@@ -465,7 +488,18 @@ async function processJob(env, jobId, budget, preloaded) {
 
   for (; i < plan.nicks.length; i++) {
     const nick = plan.nicks[i];
-    const subs = (all[nick] || []).filter(s => prefsAllow(s, plan.payload.category));
+    const bucket = subscriptionBucket(all, nick);
+    const rawSubs = bucket.subs;
+    const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category));
+
+    console.log('push device lookup', jobId, JSON.stringify({
+      recipient: nick,
+      matchMode: bucket.mode,
+      matchedKey: bucket.key,
+      storedDevices: rawSubs.length,
+      eligibleDevices: subs.length,
+      category: plan.payload.category
+    }));
 
     // If this recipient alone would exceed the remaining budget, defer the
     // whole recipient to a continuation job. This avoids dropping devices.
@@ -512,13 +546,18 @@ async function processJob(env, jobId, budget, preloaded) {
   // real Web Push succeeds. Temporary send failures keep the job alive.
   if (job.type === 'notification' && plan.nicks.length && sent === 0) {
     const attempts = Number(job.attempts || 0) + 1;
+    const lookupMiss = !attempted && !hadPushErrors;
     const retryJob = {
       ...job,
       attempts,
       queuedAt: Number(job.queuedAt || job.ts || Date.now()),
       ts: Date.now(),
-      lastRetryReason: attempted ? (hadPushErrors ? 'push delivery failed' : 'no eligible push device') : 'no eligible push device'
+      lastRetryReason: attempted ? (hadPushErrors ? 'push delivery failed' : 'push device not delivered') : 'no eligible push device'
     };
+
+    if (lookupMiss) {
+      console.warn('notification has no eligible device', jobId, JSON.stringify({ recipient: plan.nicks[0], category: plan.payload.category }));
+    }
 
     // If there is still no active device, keep the job until the normal
     // 24-hour outbox retention limit. This lets a newly-registered device
@@ -580,13 +619,33 @@ async function handleSubscribe(request, env, body) {
   if (!host || !PUSH_HOST_ALLOW.test(host) || !s?.keys?.p256dh || !s?.keys?.auth) return json(request, env, { error: 'bad subscription' }, 400);
   const id = (await sha256Hex(s.endpoint)).slice(0, 32);
   const all = await loadSubs(env);
+  const owner = subscriptionBucket(all, nick);
+
+  // If an older registration used the same account name with different
+  // casing/spacing, migrate that bucket to the exact authenticated nick.
+  // This repairs existing subscriptions without requiring the browser to
+  // generate a new PushSubscription.
+  if (owner.key && owner.key !== nick && !Array.isArray(all[nick])) {
+    all[nick] = owner.subs.slice();
+    delete all[owner.key];
+    console.log('push subscription owner normalized', owner.key, '=>', nick);
+  }
+
   for (const n of Object.keys(all)) {                                             // a device belongs to one account
     if (n === nick) continue;
     all[n] = all[n].filter(x => x.id !== id);
     if (!all[n].length) delete all[n];
   }
   const mine = (all[nick] || []).filter(x => x.id !== id);
-  mine.unshift({ id, endpoint: s.endpoint, keys: { p256dh: String(s.keys.p256dh), auth: String(s.keys.auth) }, prefs: sanitizePrefs(prefs), ua: String(userAgent || '').slice(0, 200), updatedAt: Date.now() });
+  mine.unshift({
+    id,
+    endpoint: s.endpoint,
+    keys: { p256dh: String(s.keys.p256dh), auth: String(s.keys.auth) },
+    prefs: sanitizePrefs(prefs),
+    ua: String(userAgent || '').slice(0, 200),
+    ownerNick: nick,
+    updatedAt: Date.now()
+  });
   all[nick] = mine.slice(0, MAX_DEVICES_PER_USER);
   await saveSubs(env, all);
   return json(request, env, { success: true, subscriptionId: id });
