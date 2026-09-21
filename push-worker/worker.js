@@ -84,6 +84,9 @@ function sanitizePrefs(src) {
   return p;
 }
 const prefsAllow = (sub, cat) => sub.prefs?.enabled !== false && sub.prefs?.[cat] !== false;
+const vkOf = key => { try { return b64uEnc(decodeKey('VAPID_PUBLIC_KEY', key, 65)).slice(0, 16); } catch { return ''; } };
+/** A device is usable when it is allowed by the user's settings and was created with THIS worker's VAPID key. */
+const staleKey = (sub, env) => !!(sub.vk && vkOf(env.VAPID_PUBLIC_KEY) && sub.vk !== vkOf(env.VAPID_PUBLIC_KEY));
 
 /* ───────────── HTTP plumbing ───────────── */
 function corsHeaders(request, env) {
@@ -556,7 +559,7 @@ async function planJob(env, job) {
 
 
 /** Human-readable reason why a recipient has no usable push device (returned in the /event response). */
-function diagnoseRecipient(entry, totals) {
+function diagnoseRecipient(entry, totals, ctx) {
   const t = totals || { accounts: 0, devices: 0 };
   let hint;
   if (entry.mode === 'ambiguous' || entry.mode === 'ambiguous-alias' || entry.mode === 'ambiguous-firebase-displayName') {
@@ -566,10 +569,14 @@ function diagnoseRecipient(entry, totals) {
   } else if (!entry.stored) {
     hint = `У «${entry.recipient}» нет устройств в Worker (всего аккаунтов с push: ${t.accounts}). Получатель должен войти под своим аккаунтом и нажать «Включить» в профиле. `
       + 'Если он уже включал — устройство могло быть перезаписано другим аккаунтом в том же браузере (одно устройство = один аккаунт).';
+  } else if (!entry.eligible && entry.staleKey) {
+    hint = `Устройство «${entry.recipient}» зарегистрировано со СТАРЫМ ключом VAPID. Получателю достаточно открыть обновлённый сайт — устройство обновится само.`;
   } else if (!entry.eligible) {
     hint = `Устройства есть (${entry.stored}), но push для категории «${entry.category}» у получателя выключен в настройках.`;
   } else {
-    hint = 'Устройства найдены, но ни одно не приняло push — см. statuses.';
+    hint = ctx === 'debug'
+      ? `Устройство «${entry.recipient}» зарегистрировано и разрешено (устройств: ${entry.eligible}). Это проверка записи, отправка не выполнялась — реальную доставку показывает kapaniPushSelfTest() или ответ /event (statuses).`
+      : 'Устройства найдены, но ни одно не приняло push — см. statuses.';
   }
   return { ...entry, totalAccountsWithPush: t.accounts, totalDevices: t.devices, hint };
 }
@@ -622,12 +629,13 @@ async function processJob(env, jobId, budget, preloaded) {
     const nick = plan.nicks[i];
     const bucket = await subscriptionBucket(env, all, nick);
     const rawSubs = bucket.subs;
-    const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category));
+    const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category) && !staleKey(s, env));
 
     lookups.push({
       recipient: nick, mode: bucket.mode, matchedKey: bucket.key,
       stored: rawSubs.length, eligible: subs.length,
-      blockedByPrefs: rawSubs.length - subs.length, category: plan.payload.category
+      blockedByPrefs: rawSubs.filter(s => !prefsAllow(s, plan.payload.category)).length,
+      staleKey: rawSubs.filter(s => staleKey(s, env)).length, category: plan.payload.category
     });
     console.log('push device lookup', jobId, JSON.stringify({
       recipient: nick,
@@ -765,6 +773,12 @@ async function handleSubscribe(request, env, body) {
   try { const u = new URL(String(s?.endpoint || '')); if (u.protocol === 'https:') host = u.hostname; } catch {}
   if (!host || !PUSH_HOST_ALLOW.test(host) || !s?.keys?.p256dh || !s?.keys?.auth) return json(request, env, { error: 'bad subscription' }, 400);
   const id = (await sha256Hex(s.endpoint)).slice(0, 32);
+  const workerVk = vkOf(env.VAPID_PUBLIC_KEY);
+  let deviceVk = '';
+  try { deviceVk = s.applicationServerKey ? b64uEnc(decodeKey('applicationServerKey', s.applicationServerKey, 65)).slice(0, 16) : ''; } catch {}
+  if (deviceVk && workerVk && deviceVk !== workerVk) {
+    return json(request, env, { error: 'vapid key mismatch', workerVapidPrefix: workerVk, deviceVapidPrefix: deviceVk }, 409);
+  }
   const all = await loadSubs(env);
   const owner = await subscriptionBucket(env, all, nick);
   const displayNameRaw = await rtdbGet(env, `users/${enc(nick)}/displayName`).catch(() => null);
@@ -792,9 +806,12 @@ async function handleSubscribe(request, env, body) {
     all[n] = all[n].filter(x => x.id !== id);
     if (!all[n].length) delete all[n];
   }
-  const mine = (all[nick] || []).filter(x => x.id !== id);
+  // Drop devices of this account that can no longer work: created with another VAPID key, or legacy records
+  // (no key recorded) from the same kind of browser that this new registration replaces.
+  const mine = (all[nick] || []).filter(x => x.id !== id && !staleKey(x, env) && !(workerVk && !x.vk && x.ua && x.ua === String(userAgent || '').slice(0, 200)));
   mine.unshift({
     id,
+    vk: deviceVk || workerVk,
     endpoint: s.endpoint,
     keys: { p256dh: String(s.keys.p256dh), auth: String(s.keys.auth) },
     prefs: sanitizePrefs(prefs),
@@ -884,16 +901,16 @@ async function handleDebug(request, env, body) {
   const target = String(body.target || body.nick);
   const b = await subscriptionBucket(env, all, target);
   const subs = b.subs || [];
-  const entry = { recipient: target, mode: b.mode, matchedKey: b.key, stored: subs.length, eligible: subs.filter(s => prefsAllow(s, category)).length, blockedByPrefs: subs.filter(s => !prefsAllow(s, category)).length, category };
+  const entry = { recipient: target, mode: b.mode, matchedKey: b.key, stored: subs.length, eligible: subs.filter(s => prefsAllow(s, category) && !staleKey(s, env)).length, blockedByPrefs: subs.filter(s => !prefsAllow(s, category)).length, staleKey: subs.filter(s => staleKey(s, env)).length, category };
   const mine = (all[body.nick] || []).map(s => ({
     id: s.id, host: (() => { try { return new URL(s.endpoint).host; } catch { return '?'; } })(),
-    prefs: s.prefs, ua: s.ua, updatedAt: s.updatedAt
+    vk: s.vk || null, staleKey: staleKey(s, env), prefs: s.prefs, ua: s.ua, updatedAt: s.updatedAt
   }));
   return json(request, env, {
     ok: true,
     vapidPublicPrefix: String(env.VAPID_PUBLIC_KEY || '').slice(0, 16),
     vapid: await vapidHealth(env),
-    diagnosis: diagnoseRecipient(entry, totals),
+    diagnosis: diagnoseRecipient(entry, totals, 'debug'),
     accountsWithPush: Object.fromEntries(Object.entries(all).map(([k, l]) => [k, Array.isArray(l) ? l.length : 0])),
     yourDevices: mine
   });

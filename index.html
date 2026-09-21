@@ -2602,7 +2602,7 @@ const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 // Cloudflare Worker that delivers Web Push (see push-worker/SETUP.md). When empty, the old
 // Firebase Functions delivery path is used instead.
 const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
-const KAPANI_BUILD = '2026-09-21-c'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
+const KAPANI_BUILD = '2026-09-21-f'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -4880,7 +4880,14 @@ async function getWebPushSubscription(createIfMissing=false){
     }
     if(!subscription&&createIfMissing){if(!WEB_PUSH_VAPID_PUBLIC_KEY)throw new Error('VAPID public key is not configured');subscription=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64UrlToUint8Array(WEB_PUSH_VAPID_PUBLIC_KEY)});}return subscription;
 }
-async function getWebPushSubscriptionPayload(subscription){const json=subscription?.toJSON?.();if(!json)return null;return {endpoint:String(json.endpoint||''),expirationTime:json.expirationTime??null,keys:{p256dh:String(json.keys?.p256dh||''),auth:String(json.keys?.auth||'')}};}
+async function getWebPushSubscriptionPayload(subscription){
+    const json=subscription?.toJSON?.();if(!json)return null;
+    // The VAPID key this subscription was REALLY created with (falls back to the configured one): the worker refuses a
+    // device whose key differs from its own, instead of storing a device it can never push to.
+    let asKey='';
+    try{const k=subscription.options?.applicationServerKey;if(k)asKey=btoa(String.fromCharCode(...new Uint8Array(k))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}catch(_){}
+    return {endpoint:String(json.endpoint||''),expirationTime:json.expirationTime??null,keys:{p256dh:String(json.keys?.p256dh||''),auth:String(json.keys?.auth||'')},applicationServerKey:asKey||String(WEB_PUSH_VAPID_PUBLIC_KEY||'')};
+}
 async function hashWebPushEndpoint(endpoint){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(endpoint||'')));return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);}
 // ─── Cloudflare push worker client ────────────────────────────────
 // Identity is the site's own (nick + passwordHash stored in RTDB), the same trust level as the login itself.
@@ -4959,6 +4966,7 @@ window.kapaniPushSelfTest=async function(){
 function pushErrorText(e){
     const m=String(e?.message||e||'');
     if(/unauthorized/i.test(m)) return 'Worker не принял ваш пароль-хэш: выйдите из аккаунта и войдите снова';
+    if(/vapid key mismatch/i.test(m)) return 'Ключ VAPID на сайте (config.js) и в Worker (wrangler.toml) РАЗНЫЙ. Сделайте одинаковыми: обновите config.js на GitHub Pages или задеплойте Worker';
     if(/bad subscription/i.test(m)) return 'Push-сервис этого браузера не поддерживается Worker («bad subscription»)';
     if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Не удалось связаться с Worker (проверьте pushWorkerUrl в config.js и интернет)';
     if(/хэш пароля/i.test(m)) return m;
@@ -5043,7 +5051,7 @@ async function unregisterWebPushSubscription(){
             else{const fn=await ensureFunctions();const {httpsCallable}=await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');await httpsCallable(fn,'unregisterWebPushSubscription')({subscriptionId:id});}
         }catch(e){console.debug('[Kapani Push] unregister subscription failed:',e);}
     }
-    window._kapaniWebPushSubscriptionId=null;try{localStorage.removeItem('kp_webpush_subscription_id');}catch(e){}
+    window._kapaniWebPushSubscriptionId=null;try{localStorage.removeItem('kp_webpush_subscription_id');localStorage.removeItem('kp_push_reg');}catch(e){}
 }
 async function syncPushPrefs(){
     if(!currentNick)return;let id=window._kapaniWebPushSubscriptionId;try{id=id||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}if(!id)return;
@@ -5070,7 +5078,10 @@ async function ensureWebPushOnStartup(){
         const stamp=`${currentNick}|${PUSH_WORKER_URL||'firebase'}|${String(WEB_PUSH_VAPID_PUBLIC_KEY||'').slice(0,16)}`;
         let last=null;try{last=JSON.parse(localStorage.getItem('kp_push_reg')||'null');}catch(_){}
         const existing=await getWebPushSubscription(false);
-        if(existing&&last&&last.stamp===stamp&&Date.now()-Number(last.at||0)<12*3600e3&&last.subId===await hashWebPushEndpoint(existing.endpoint))return true;   // registered recently
+        // The "registered recently" shortcut also requires the saved subscription id: logout removes it (and unregisters the device
+        // from the worker), so logging out and back in as the same account always registers the device again.
+        let savedId='';try{savedId=localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){}
+        if(existing&&last&&last.stamp===stamp&&savedId&&savedId===last.subId&&Date.now()-Number(last.at||0)<12*3600e3&&last.subId===await hashWebPushEndpoint(existing.endpoint))return true;   // registered recently
         await registerWebPushSubscription();
         try{localStorage.setItem('kp_push_reg',JSON.stringify({stamp,at:Date.now(),subId:window._kapaniWebPushSubscriptionId||''}));}catch(_){}
         return true;
