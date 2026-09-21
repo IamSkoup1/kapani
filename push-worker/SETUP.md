@@ -160,3 +160,16 @@ await kapaniPushSelfTest()                 // реальный push на мои 
 * `pairOk:false` — приватный ключ от ДРУГОЙ пары, чем публичный в `wrangler.toml`/`config.js`. Выполните `node generate-vapid.mjs`,
   впишите публичный ключ в `wrangler.toml` и `config.js`, приватный — в секрет, затем `wrangler deploy` и выложите `config.js`.
   Устройства зарегистрируются заново сами при открытии сайта.
+
+### Быстрое исправление ключей VAPID (рекомендуется, если `/health` показывает `privateOk:false` или `pairOk:false`)
+В папке `push-worker`:
+```
+node generate-vapid.mjs --apply
+```
+Скрипт сам впишет новый публичный ключ в `wrangler.toml` и `../config.js`, а приватный сохранит в `vapid-private.txt` (там ТОЛЬКО ключ).
+Дальше (выберите свою консоль):
+```
+cmd:         wrangler secret put VAPID_PRIVATE_KEY < vapid-private.txt
+PowerShell:  Get-Content vapid-private.txt -Raw | wrangler secret put VAPID_PRIVATE_KEY
+```
+Затем `wrangler deploy`, выложить `config.js` на GitHub Pages и **удалить `vapid-private.txt`**.

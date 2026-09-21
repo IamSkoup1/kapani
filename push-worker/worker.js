@@ -34,14 +34,22 @@ function b64uDec(str) {
   return out;
 }
 /** Decodes a configured key and explains WHICH setting is malformed (instead of a bare atob() error). */
-function decodeKey(name, value, expectedBytes) {
+function decodeKey(name, value, expectedBytes, info) {
   let raw = String(value ?? '').trim();
   if (raw.startsWith('{')) {                                   // a JWK pasted as JSON: use its "d" (private) or x/y (public)
     try { const j = JSON.parse(raw); raw = String(j.d || ''); } catch { /* fall through to the checks below */ }
   }
-  const s = raw.replace(/^["'`]+|["'`]+$/g, '').replace(/\s+/g, '').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  let s = raw.replace(/^["'`]+|["'`]+$/g, '').replace(/\s+/g, '').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
   if (!s) throw new Error(`${name} is empty — set it with "wrangler secret put ${name}"`);
-  if (!/^[A-Za-z0-9_-]+$/.test(s)) throw new Error(`${name} contains characters that are not base64url (a label, PEM text or extra quotes were pasted?)`);
+  if (!/^[A-Za-z0-9_-]+$/.test(s)) {
+    // Salvage a key that was pasted together with its label ("VAPID_PRIVATE_KEY (secret): <key>"): accept it only
+    // when the text holds exactly ONE token of the right length. /health (pairOk) then proves it is the right key.
+    const len = expectedBytes ? Math.ceil(expectedBytes * 4 / 3) : 0;
+    const tokens = len ? [...new Set(raw.match(new RegExp(`(?<![A-Za-z0-9_+/=-])[A-Za-z0-9_-]{${len}}(?![A-Za-z0-9_+/=-])`, 'g')) || [])] : [];
+    if (tokens.length !== 1) throw new Error(`${name} contains characters that are not base64url (a label, PEM text or extra quotes were pasted?)`);
+    s = tokens[0];
+    if (info) info.salvaged = true;
+  }
   if (s.length % 4 === 1) throw new Error(`${name} has an impossible length (${s.length}); it looks truncated or has extra characters`);
   const bytes = b64uDec(s);
   if (expectedBytes && bytes.length !== expectedBytes) throw new Error(`${name} must decode to ${expectedBytes} bytes, got ${bytes.length}`);
@@ -357,7 +365,8 @@ async function vapidHealth(env) {
   const r = { publicOk: false, privateOk: false, pairOk: false };
   let pub, d;
   try { pub = decodeKey('VAPID_PUBLIC_KEY', env.VAPID_PUBLIC_KEY, 65); r.publicOk = true; } catch (e) { r.error = String(e.message); }
-  try { d = decodeKey('VAPID_PRIVATE_KEY', env.VAPID_PRIVATE_KEY, 32); r.privateOk = true; } catch (e) { r.error = r.error ? r.error + ' | ' + e.message : String(e.message); }
+  const info = {};
+  try { d = decodeKey('VAPID_PRIVATE_KEY', env.VAPID_PRIVATE_KEY, 32, info); r.privateOk = true; if (info.salvaged) r.note = 'VAPID_PRIVATE_KEY was pasted with extra text; the key was extracted automatically — re-set the secret with only the key when convenient'; } catch (e) { r.error = r.error ? r.error + ' | ' + e.message : String(e.message); }
   if (r.publicOk && r.privateOk) {
     try {
       const priv = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: b64uEnc(pub.subarray(1, 33)), y: b64uEnc(pub.subarray(33, 65)), d: b64uEnc(d), ext: true }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
