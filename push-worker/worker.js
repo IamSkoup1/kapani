@@ -723,6 +723,13 @@ async function handleSubscribe(request, env, body) {
   const displayNameRaw = await rtdbGet(env, `users/${enc(nick)}/displayName`).catch(() => null);
   const displayName = String(displayNameRaw || body.displayName || '').trim().slice(0, 120);
 
+  // Nothing changed since the last registration: skip the KV write (free plan: ~1000 writes/day).
+  const curSub = (all[nick] || []).find(x => x.id === id);
+  if (curSub && curSub.displayName === displayName && JSON.stringify(curSub.prefs) === JSON.stringify(sanitizePrefs(prefs))
+      && Date.now() - Number(curSub.updatedAt || 0) < 12 * 3600e3) {
+    return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName, unchanged: true });
+  }
+
   // If an older registration used the same account name with different
   // casing/spacing, migrate that bucket to the exact authenticated nick.
   // This repairs existing subscriptions without requiring the browser to

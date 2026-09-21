@@ -4996,7 +4996,21 @@ async function requestPushPermission(){
     try{await getSwReg();await registerWebPushSubscription();const p=getPushPrefs();p.enabled=true;savePushPrefs(p);toast('🔔 Push-уведомления включены!','green');return true;}catch(e){window._kapaniPushState={...(window._kapaniPushState||{}),status:'error',error:String(e?.message||e)};console.error('[Kapani Push] registration failed:',e);toast('⚠️ Разрешение получено, но Push не зарегистрировался. Проверьте профиль и backend.','gold');return false;}
 }
 async function ensureWebPushOnStartup(){
-    if(!currentNick||!('Notification' in window)||Notification.permission!=='granted')return false;try{const sub=await getWebPushSubscription(false);if(!sub)return false;await registerWebPushSubscription();return true;}catch(e){console.debug('[Kapani Push] startup restore:',e?.message||e);return false;}
+    if(!currentNick||!('Notification' in window)||Notification.permission!=='granted')return false;
+    if(!isPushOn())return false;
+    try{
+        // Permission is already granted, so subscribing needs no prompt and nobody has to "re-enable" anything.
+        // The old code returned early when the browser had no subscription — but a subscription made with a
+        // DIFFERENT VAPID key (or by the old Firebase path) is dropped by getWebPushSubscription(false) below,
+        // so those devices were never registered with the push worker.
+        const stamp=`${currentNick}|${PUSH_WORKER_URL||'firebase'}|${String(WEB_PUSH_VAPID_PUBLIC_KEY||'').slice(0,16)}`;
+        let last=null;try{last=JSON.parse(localStorage.getItem('kp_push_reg')||'null');}catch(_){}
+        const existing=await getWebPushSubscription(false);
+        if(existing&&last&&last.stamp===stamp&&Date.now()-Number(last.at||0)<12*3600e3&&last.subId===await hashWebPushEndpoint(existing.endpoint))return true;   // registered recently
+        await registerWebPushSubscription();
+        try{localStorage.setItem('kp_push_reg',JSON.stringify({stamp,at:Date.now(),subId:window._kapaniWebPushSubscriptionId||''}));}catch(_){}
+        return true;
+    }catch(e){console.debug('[Kapani Push] startup restore:',e?.message||e);return false;}
 }
 
 async function showForegroundKapaniPush(payload={}){
