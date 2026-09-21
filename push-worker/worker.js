@@ -26,11 +26,26 @@ function b64uEnc(bytes) {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 function b64uDec(str) {
-  let s = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+  // Tolerant on purpose: secrets pasted by hand often carry CR/LF, spaces, quotes, "=" padding or the standard alphabet.
+  let s = String(str || '').trim().replace(/^["'`]+|["'`]+$/g, '').replace(/\s+/g, '').replace(/=+$/, '').replace(/-/g, '+').replace(/_/g, '/');
   s += '='.repeat((4 - (s.length % 4)) % 4);
   const bin = atob(s), out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
+}
+/** Decodes a configured key and explains WHICH setting is malformed (instead of a bare atob() error). */
+function decodeKey(name, value, expectedBytes) {
+  let raw = String(value ?? '').trim();
+  if (raw.startsWith('{')) {                                   // a JWK pasted as JSON: use its "d" (private) or x/y (public)
+    try { const j = JSON.parse(raw); raw = String(j.d || ''); } catch { /* fall through to the checks below */ }
+  }
+  const s = raw.replace(/^["'`]+|["'`]+$/g, '').replace(/\s+/g, '').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  if (!s) throw new Error(`${name} is empty — set it with "wrangler secret put ${name}"`);
+  if (!/^[A-Za-z0-9_-]+$/.test(s)) throw new Error(`${name} contains characters that are not base64url (a label, PEM text or extra quotes were pasted?)`);
+  if (s.length % 4 === 1) throw new Error(`${name} has an impossible length (${s.length}); it looks truncated or has extra characters`);
+  const bytes = b64uDec(s);
+  if (expectedBytes && bytes.length !== expectedBytes) throw new Error(`${name} must decode to ${expectedBytes} bytes, got ${bytes.length}`);
+  return bytes;
 }
 function concat(...arrs) {
   const out = new Uint8Array(arrs.reduce((n, a) => n + a.length, 0));
@@ -298,8 +313,10 @@ async function hkdf(salt, ikm, info, len) {
   return new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, key, len * 8));
 }
 async function encryptPayload(sub, text) {
-  const uaPub = b64uDec(sub.keys.p256dh), auth = b64uDec(sub.keys.auth);
-  if (uaPub.length !== 65 || uaPub[0] !== 4 || auth.length < 16) throw new Error('invalid subscription keys');
+  let uaPub, auth;
+  try { uaPub = b64uDec(sub.keys.p256dh); auth = b64uDec(sub.keys.auth); }
+  catch (e) { const err = new Error('invalid subscription keys (p256dh/auth are not base64url)'); err.deadSub = true; throw err; }
+  if (uaPub.length !== 65 || uaPub[0] !== 4 || auth.length < 16) { const err = new Error('invalid subscription keys'); err.deadSub = true; throw err; }
   const eph = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
   const asPub = new Uint8Array(await crypto.subtle.exportKey('raw', eph.publicKey));
   const uaKey = await crypto.subtle.importKey('raw', uaPub, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
@@ -321,11 +338,11 @@ async function vapidJwt(env, endpoint) {
   const hit = jwtCache.get(aud);
   if (hit && hit.exp - now > 3600) return hit.jwt;
   if (!vapidKey) {
-    const pub = b64uDec(env.VAPID_PUBLIC_KEY);
-    if (pub.length !== 65) throw new Error('VAPID_PUBLIC_KEY must be a 65-byte uncompressed P-256 key (base64url)');
+    const pub = decodeKey('VAPID_PUBLIC_KEY', env.VAPID_PUBLIC_KEY, 65);
+    const d = decodeKey('VAPID_PRIVATE_KEY', env.VAPID_PRIVATE_KEY, 32);
     vapidKey = crypto.subtle.importKey('jwk',
-      { kty: 'EC', crv: 'P-256', x: b64uEnc(pub.subarray(1, 33)), y: b64uEnc(pub.subarray(33, 65)), d: b64uEnc(b64uDec(env.VAPID_PRIVATE_KEY)), ext: true },
-      { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']).catch(e => { vapidKey = null; throw e; });
+      { kty: 'EC', crv: 'P-256', x: b64uEnc(pub.subarray(1, 33)), y: b64uEnc(pub.subarray(33, 65)), d: b64uEnc(d), ext: true },
+      { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']).catch(e => { vapidKey = null; throw new Error('VAPID_PRIVATE_KEY does not match VAPID_PUBLIC_KEY (or is not a valid P-256 key): ' + String(e?.message || e).slice(0, 80)); });
   }
   const exp = now + 12 * 3600;
   const input = `${b64uEnc(te.encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })))}.${b64uEnc(te.encode(JSON.stringify({ aud, exp, sub: env.VAPID_SUBJECT || env.APP_URL })))}`;
@@ -334,6 +351,26 @@ async function vapidJwt(env, endpoint) {
   jwtCache.set(aud, { jwt, exp });
   return jwt;
 }
+
+/** Real check of the configured VAPID pair (no key material is returned). */
+async function vapidHealth(env) {
+  const r = { publicOk: false, privateOk: false, pairOk: false };
+  let pub, d;
+  try { pub = decodeKey('VAPID_PUBLIC_KEY', env.VAPID_PUBLIC_KEY, 65); r.publicOk = true; } catch (e) { r.error = String(e.message); }
+  try { d = decodeKey('VAPID_PRIVATE_KEY', env.VAPID_PRIVATE_KEY, 32); r.privateOk = true; } catch (e) { r.error = r.error ? r.error + ' | ' + e.message : String(e.message); }
+  if (r.publicOk && r.privateOk) {
+    try {
+      const priv = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: b64uEnc(pub.subarray(1, 33)), y: b64uEnc(pub.subarray(33, 65)), d: b64uEnc(d), ext: true }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+      const pubKey = await crypto.subtle.importKey('raw', pub, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+      const data = te.encode('kapani-vapid-check');
+      const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, priv, data);
+      r.pairOk = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pubKey, sig, data);
+      if (!r.pairOk) r.error = 'VAPID_PRIVATE_KEY does not belong to VAPID_PUBLIC_KEY (they must be one generated pair)';
+    } catch (e) { r.error = 'VAPID_PRIVATE_KEY does not match VAPID_PUBLIC_KEY (or is not a valid P-256 key): ' + String(e?.message || e).slice(0, 80); }
+  }
+  return r;
+}
+
 /** Returns the HTTP status of the push service. 404/410 = subscription is gone. */
 async function sendPush(env, sub, payload) {
   const body = await encryptPayload(sub, JSON.stringify(payload));
@@ -342,7 +379,7 @@ async function sendPush(env, sub, payload) {
     headers: {
       TTL: '86400', Urgency: 'high',
       'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream',
-      Authorization: `vapid t=${await vapidJwt(env, sub.endpoint)}, k=${env.VAPID_PUBLIC_KEY}`
+      Authorization: `vapid t=${await vapidJwt(env, sub.endpoint)}, k=${b64uEnc(decodeKey('VAPID_PUBLIC_KEY', env.VAPID_PUBLIC_KEY, 65))}`
     },
     body
   });
@@ -616,7 +653,8 @@ async function processJob(env, jobId, budget, preloaded) {
         }
       } catch (e) {
         hadPushErrors = true;
-        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), error: String(e?.message || e).slice(0, 160) });
+        if (e?.deadSub) dead.push([nick, s.id]);                                   // keys can never work: drop the device, the browser re-registers it
+        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), error: String(e?.message || e).slice(0, 200) });
         console.warn('push error', jobId, nick, String(e?.message || e));
       }
     }
@@ -845,6 +883,7 @@ async function handleDebug(request, env, body) {
   return json(request, env, {
     ok: true,
     vapidPublicPrefix: String(env.VAPID_PUBLIC_KEY || '').slice(0, 16),
+    vapid: await vapidHealth(env),
     diagnosis: diagnoseRecipient(entry, totals),
     accountsWithPush: Object.fromEntries(Object.entries(all).map(([k, l]) => [k, Array.isArray(l) ? l.length : 0])),
     yourDevices: mine
@@ -902,6 +941,7 @@ export default {
           ok: true,
           kv: !!env.PUSH_KV,
           vapidPublic: !!env.VAPID_PUBLIC_KEY, vapidPrivate: !!env.VAPID_PRIVATE_KEY, vapidPublicPrefix: String(env.VAPID_PUBLIC_KEY || '').slice(0, 16),
+          vapid: await vapidHealth(env),
           serviceAccount: !!env.FIREBASE_SERVICE_ACCOUNT_JSON,
           subscribers: Object.keys(subs).length, devices: Object.values(subs).reduce((n, l) => n + l.length, 0)
         });

@@ -149,3 +149,14 @@ await kapaniPushSelfTest()                 // реальный push на мои 
 2. **Одно устройство = один аккаунт.** Если в одном браузере зайти под двумя аккаунтами и включить push в обоих, устройство остаётся за последним.
 3. Только что нажали «Включить» — хранилище KV обновляется до минуты. Подождите и повторите (задача сама повторится по cron).
 4. Разные ключи VAPID в `config.js` и в `wrangler.toml` (или приватный ключ от другой пары) — `kapaniPushDoctor()` это покажет.
+
+## Ошибка «atob() called with invalid base64-encoded data» / «push delivery failed»
+Так выглядит испорченный секрет `VAPID_PRIVATE_KEY` (при вставке в консоль в конец попадает перенос строки `\r\n`, кавычки или подпись).
+Теперь Worker сам чистит такие символы, а `/health` проверяет ключи по-настоящему:
+```json
+"vapid": {"publicOk":true,"privateOk":true,"pairOk":true}
+```
+* `privateOk:false` — секрет пустой или в нём мусор: `wrangler secret put VAPID_PRIVATE_KEY` и вставьте только 43 символа ключа.
+* `pairOk:false` — приватный ключ от ДРУГОЙ пары, чем публичный в `wrangler.toml`/`config.js`. Выполните `node generate-vapid.mjs`,
+  впишите публичный ключ в `wrangler.toml` и `config.js`, приватный — в секрет, затем `wrangler deploy` и выложите `config.js`.
+  Устройства зарегистрируются заново сами при открытии сайта.

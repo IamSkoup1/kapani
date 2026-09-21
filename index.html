@@ -4940,6 +4940,7 @@ window.kapaniPushDoctor=async function(target){
     if(out.site.permission!=='granted')verdict.push('❌ Браузер не разрешил уведомления (permission='+out.site.permission+')');
     if(typeof out.browser==='string')verdict.push('❌ В этом браузере нет push-подписки — нажмите «Включить» в профиле');
     if(out.worker&&out.worker.vapidPublicPrefix&&out.worker.vapidPublicPrefix!==out.site.configVapidPrefix)verdict.push('❌ Ключ VAPID в config.js и в Worker РАЗНЫЙ — сделайте одинаковыми и заново нажмите «Включить»');
+    if(out.worker&&out.worker.vapid&&!out.worker.vapid.pairOk)verdict.push('❌ Ключи VAPID в Worker: '+(out.worker.vapid.error||'не удалось проверить пару ключей'));
     if(out.debug&&typeof out.debug==='object'){
         if(browserId&&!(out.debug.yourDevices||[]).some(d=>d.id===browserId))verdict.push('❌ Это устройство не записано в Worker под ником «'+currentNick+'» — нажмите «Включить» ещё раз');
         if(out.debug.diagnosis?.hint)verdict.push('ℹ️ '+out.debug.diagnosis.hint);
