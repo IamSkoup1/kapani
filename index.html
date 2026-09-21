@@ -1611,6 +1611,8 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <button class="btn btn-primary" id="pushEnableBtn" onclick="handlePushBtn()">🔔 Включить</button>
         <div style="font-size:11px;text-align:center;margin-top:8px;" id="pushStatusText"></div>
         <div id="pushSettingsContainer" style="display:none;margin-top:12px;"></div>
+        <div id="pushWorkerStatus" style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5;white-space:pre-line;"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%;" onclick="kapaniPushRepair()">🔄 Переподключить push на этом устройстве</button>
         <button class="btn btn-ghost btn-sm" style="margin-top:10px;width:100%;" onclick="testKapaniPush().catch(e=>toast('❌ '+(e&&e.message||e),'red'))">🧪 Проверить уведомления</button>
 
     </div>
@@ -2600,6 +2602,7 @@ const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 // Cloudflare Worker that delivers Web Push (see push-worker/SETUP.md). When empty, the old
 // Firebase Functions delivery path is used instead.
 const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
+const KAPANI_BUILD = '2026-09-21-c'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -4924,7 +4927,7 @@ window.getKapaniPushWorkerHealth=async function(){
 //   await kapaniPushDoctor('ник')       — also explains why 'ник' has no push device
 //   await kapaniPushSelfTest()          — sends a real push to your own devices and shows push-service statuses
 window.kapaniPushDoctor=async function(target){
-    const out={site:{worker:PUSH_WORKER_URL||null,me:currentNick,permission:('Notification' in window)?Notification.permission:'unsupported',configVapidPrefix:String(WEB_PUSH_VAPID_PUBLIC_KEY||'').slice(0,16)}};
+    const out={site:{build:KAPANI_BUILD,worker:PUSH_WORKER_URL||null,me:currentNick,permission:('Notification' in window)?Notification.permission:'unsupported',configVapidPrefix:String(WEB_PUSH_VAPID_PUBLIC_KEY||'').slice(0,16)}};
     let browserId=null;
     try{
         const sub=await getWebPushSubscription(false);
@@ -4950,6 +4953,66 @@ window.kapaniPushSelfTest=async function(){
     const ph=await getPushAuthHash();
     const r=await pushWorkerCall('/test',{nick:currentNick,ph,category:'system'});
     console.log(r);return r;
+};
+// ─── Push status line + one-tap repair (for people who cannot open the console) ───
+function pushErrorText(e){
+    const m=String(e?.message||e||'');
+    if(/unauthorized/i.test(m)) return 'Worker не принял ваш пароль-хэш: выйдите из аккаунта и войдите снова';
+    if(/bad subscription/i.test(m)) return 'Push-сервис этого браузера не поддерживается Worker («bad subscription»)';
+    if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'Не удалось связаться с Worker (проверьте pushWorkerUrl в config.js и интернет)';
+    if(/хэш пароля/i.test(m)) return m;
+    return m||'неизвестная ошибка';
+}
+async function refreshPushWorkerStatus(){
+    const el=qs('pushWorkerStatus'); if(!el) return;
+    if(!PUSH_WORKER_URL){ el.textContent='Сборка '+KAPANI_BUILD+' · Worker не настроен (pushWorkerUrl пуст)'; return; }
+    const lines=['Сборка '+KAPANI_BUILD];
+    const perm=('Notification' in window)?Notification.permission:'unsupported';
+    lines.push('Разрешение браузера: '+perm);
+    let browserId=null;
+    try{ const sub=await getWebPushSubscription(false); if(sub){ browserId=await hashWebPushEndpoint(sub.endpoint); lines.push('Подписка в браузере: есть ('+new URL(sub.endpoint).host+')'); } else lines.push('Подписка в браузере: нет'); }catch(e){ lines.push('Подписка в браузере: ошибка '+pushErrorText(e)); }
+    try{
+        const ph=await getPushAuthHash();
+        if(!ph) lines.push('В Worker: ❌ не найден хэш пароля (выйдите и войдите снова)');
+        else{
+            const d=await pushWorkerCall('/debug',{nick:currentNick,ph,target:currentNick});
+            const ok=browserId&&(d.yourDevices||[]).some(x=>x.id===browserId);
+            lines.push(ok?'В Worker: ✅ это устройство зарегистрировано':'В Worker: ❌ это устройство НЕ зарегистрировано — нажмите «Переподключить»');
+        }
+    }catch(e){ lines.push('В Worker: ❌ '+pushErrorText(e)); }
+    let last=''; try{ last=localStorage.getItem('kp_push_last_error')||''; }catch(_){}
+    if(last) lines.push('Последняя ошибка: '+last);
+    el.textContent=lines.join('\n');
+}
+window.kapaniPushRepair=async function(){
+    try{
+        if(!('Notification' in window)) throw new Error('Браузер не поддерживает уведомления');
+        if(isIOSDevice()&&!isIOSPWA()) throw new Error('На iPhone откройте сайт с иконки «На экран Домой»');
+        if(Notification.permission==='denied') throw new Error('Уведомления заблокированы: значок замка рядом с адресом сайта → Уведомления → Разрешить');
+        toast('🔄 Подключаю push…','gold');
+        if(Notification.permission!=='granted'){ const r=await requestNotificationPermission(); if(r!=='granted') throw new Error('Разрешение на уведомления не выдано'); }
+        const p=getPushPrefs(); p.enabled=true; savePushPrefs(p);
+        await getSwReg();
+        await registerWebPushSubscription();
+        try{ localStorage.setItem('kp_push_reg',JSON.stringify({stamp:`${currentNick}|${PUSH_WORKER_URL||'firebase'}|${String(WEB_PUSH_VAPID_PUBLIC_KEY||'').slice(0,16)}`,at:Date.now(),subId:window._kapaniWebPushSubscriptionId||''})); localStorage.removeItem('kp_push_last_error'); }catch(_){}
+        toast('✅ Push подключён на этом устройстве','green');
+    }catch(e){
+        const msg=pushErrorText(e);
+        try{ localStorage.setItem('kp_push_last_error',msg.slice(0,200)); }catch(_){}
+        toast('❌ '+msg,'red');
+    }
+    void refreshPushWorkerStatus();
+    try{ updatePushSettingsUI(); }catch(_){}
+};
+// Rollout helper for the admin: who has / hasn't registered a device with the worker.   await kapaniPushAccounts()
+window.kapaniPushAccounts=async function(){
+    const ph=await getPushAuthHash();
+    const d=await pushWorkerCall('/debug',{nick:currentNick,ph,target:currentNick});
+    const have=d.accountsWithPush||{};
+    const all=Object.keys(allUsersCache||{});
+    const rows=all.map(n=>({аккаунт:n,устройств:have[n]||0})).sort((a,b)=>a.устройств-b.устройств||a.аккаунт.localeCompare(b.аккаунт));
+    console.table(rows);
+    return {registered:rows.filter(r=>r.устройств>0).length,notRegistered:rows.filter(r=>!r.устройств).map(r=>r.аккаунт)};
 };
 async function registerWebPushSubscription(){
     if(!currentNick)throw new Error('Пользователь не определён');
@@ -5010,7 +5073,7 @@ async function ensureWebPushOnStartup(){
         await registerWebPushSubscription();
         try{localStorage.setItem('kp_push_reg',JSON.stringify({stamp,at:Date.now(),subId:window._kapaniWebPushSubscriptionId||''}));}catch(_){}
         return true;
-    }catch(e){console.debug('[Kapani Push] startup restore:',e?.message||e);return false;}
+    }catch(e){console.warn('[Kapani Push] startup registration failed:',e?.message||e);try{localStorage.setItem('kp_push_last_error',String(e?.message||e).slice(0,200));}catch(_){}return false;}
 }
 
 async function showForegroundKapaniPush(payload={}){
@@ -5097,6 +5160,7 @@ function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const 
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
     if(!container) return;
+    try{ void refreshPushWorkerStatus(); }catch(_){}
     // iOS device in browser (not PWA) — show special message
     if(isIOSDevice() && !isIOSPWA()){
         if(btn){
