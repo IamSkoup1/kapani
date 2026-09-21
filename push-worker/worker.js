@@ -508,6 +508,26 @@ async function planJob(env, job) {
   return { kind: 'discard', reason: 'unknown job type' };
 }
 
+
+/** Human-readable reason why a recipient has no usable push device (returned in the /event response). */
+function diagnoseRecipient(entry, totals) {
+  const t = totals || { accounts: 0, devices: 0 };
+  let hint;
+  if (entry.mode === 'ambiguous' || entry.mode === 'ambiguous-alias' || entry.mode === 'ambiguous-firebase-displayName') {
+    hint = 'Под этим именем подходит несколько аккаунтов — Worker не гадает. Проверьте, какой ник записан в получателе уведомления.';
+  } else if (!t.devices) {
+    hint = 'В Worker нет НИ ОДНОГО зарегистрированного устройства: ни один аккаунт ещё не включил push через Worker (или KV пуст).';
+  } else if (!entry.stored) {
+    hint = `У «${entry.recipient}» нет устройств в Worker (всего аккаунтов с push: ${t.accounts}). Получатель должен войти под своим аккаунтом и нажать «Включить» в профиле. `
+      + 'Если он уже включал — устройство могло быть перезаписано другим аккаунтом в том же браузере (одно устройство = один аккаунт).';
+  } else if (!entry.eligible) {
+    hint = `Устройства есть (${entry.stored}), но push для категории «${entry.category}» у получателя выключен в настройках.`;
+  } else {
+    hint = 'Устройства найдены, но ни одно не приняло push — см. statuses.';
+  }
+  return { ...entry, totalAccountsWithPush: t.accounts, totalDevices: t.devices, hint };
+}
+
 /** Processes one job. budget.left = how many pushes this invocation may still send. */
 async function processJob(env, jobId, budget, preloaded) {
   const job = preloaded || await rtdbGet(env, `pushOutbox/${enc(jobId)}`);
@@ -550,6 +570,7 @@ async function processJob(env, jobId, budget, preloaded) {
   const all = await loadSubs(env);
   const dead = [];
   let sent = 0, i = 0, hadPushErrors = false, attempted = 0;
+  const lookups = [], statuses = [];
 
   for (; i < plan.nicks.length; i++) {
     const nick = plan.nicks[i];
@@ -557,6 +578,11 @@ async function processJob(env, jobId, budget, preloaded) {
     const rawSubs = bucket.subs;
     const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category));
 
+    lookups.push({
+      recipient: nick, mode: bucket.mode, matchedKey: bucket.key,
+      stored: rawSubs.length, eligible: subs.length,
+      blockedByPrefs: rawSubs.length - subs.length, category: plan.payload.category
+    });
     console.log('push device lookup', jobId, JSON.stringify({
       recipient: nick,
       matchMode: bucket.mode,
@@ -577,6 +603,7 @@ async function processJob(env, jobId, budget, preloaded) {
 
       try {
         const status = await sendPush(env, s, plan.payload);
+        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), host: new URL(s.endpoint).host, status });
         console.log('push send result', jobId, nick, s.id, status);
 
         if (status === 404 || status === 410) {
@@ -589,11 +616,14 @@ async function processJob(env, jobId, budget, preloaded) {
         }
       } catch (e) {
         hadPushErrors = true;
+        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), error: String(e?.message || e).slice(0, 160) });
         console.warn('push error', jobId, nick, String(e?.message || e));
       }
     }
 
-    if (budget.left <= 0) break;
+    // This recipient has been handled (fully or up to the budget): the continuation
+    // job must start AFTER it, otherwise its devices get the same push twice.
+    if (budget.left <= 0) { i++; break; }
   }
 
   if (dead.length) {
@@ -629,7 +659,12 @@ async function processJob(env, jobId, budget, preloaded) {
     // receive the queued notification instead of losing it immediately.
     await rtdbPatch(env, { [`pushOutbox/${jobId}`]: retryJob });
     console.log('notification queued for retry', jobId, retryJob.lastRetryReason);
-    return { sent: 0, next: null, retry: true, reason: retryJob.lastRetryReason };
+    const totals = { accounts: Object.keys(all).length, devices: Object.values(all).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0) };
+    return {
+      sent: 0, next: null, retry: true, reason: retryJob.lastRetryReason,
+      detail: lookups[0] ? diagnoseRecipient(lookups[0], totals) : null,
+      statuses
+    };
   }
 
   const rest = plan.nicks.slice(i);
@@ -654,7 +689,7 @@ async function processJob(env, jobId, budget, preloaded) {
 
   await finish(extra);
   console.log('push job completed', jobId, { sent, attempted, next });
-  return { sent, next };
+  return { sent, next, statuses };
 }
 
 async function runCron(env) {
@@ -787,6 +822,28 @@ async function handleTest(request, env, body) {
   return json(request, env, { ok: true, sent, devices: subs.length, results });
 }
 
+async function handleDebug(request, env, body) {
+  if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
+  const all = await loadSubs(env);
+  const totals = { accounts: Object.keys(all).length, devices: Object.values(all).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0) };
+  const category = String(body.category || 'messages');
+  const target = String(body.target || body.nick);
+  const b = await subscriptionBucket(env, all, target);
+  const subs = b.subs || [];
+  const entry = { recipient: target, mode: b.mode, matchedKey: b.key, stored: subs.length, eligible: subs.filter(s => prefsAllow(s, category)).length, blockedByPrefs: subs.filter(s => !prefsAllow(s, category)).length, category };
+  const mine = (all[body.nick] || []).map(s => ({
+    id: s.id, host: (() => { try { return new URL(s.endpoint).host; } catch { return '?'; } })(),
+    prefs: s.prefs, ua: s.ua, updatedAt: s.updatedAt
+  }));
+  return json(request, env, {
+    ok: true,
+    vapidPublicPrefix: String(env.VAPID_PUBLIC_KEY || '').slice(0, 16),
+    diagnosis: diagnoseRecipient(entry, totals),
+    accountsWithPush: Object.fromEntries(Object.entries(all).map(([k, l]) => [k, Array.isArray(l) ? l.length : 0])),
+    yourDevices: mine
+  });
+}
+
 async function handleEvent(request, env, body) {
   let jobId = String(body.jobId || '');
   if (body.job) {                                                                 // fallback: the browser could not write the outbox itself
@@ -814,7 +871,9 @@ async function handleEvent(request, env, body) {
     next: r.next,
     retry: !!r.retry,
     discarded: !!r.discarded,
-    reason: r.reason || null
+    reason: r.reason || null,
+    detail: r.detail || undefined,
+    statuses: r.statuses && r.statuses.length ? r.statuses : undefined
   });
 }
 
@@ -827,7 +886,7 @@ export default {
         return json(request, env, {
           ok: true,
           service: 'kapani-push',
-          endpoints: { health: 'GET /health', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', event: 'POST /event', test: 'POST /test' }
+          endpoints: { health: 'GET /health', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
         });
       }
       if (url.pathname === '/health') {
@@ -835,7 +894,7 @@ export default {
         return json(request, env, {
           ok: true,
           kv: !!env.PUSH_KV,
-          vapidPublic: !!env.VAPID_PUBLIC_KEY, vapidPrivate: !!env.VAPID_PRIVATE_KEY,
+          vapidPublic: !!env.VAPID_PUBLIC_KEY, vapidPrivate: !!env.VAPID_PRIVATE_KEY, vapidPublicPrefix: String(env.VAPID_PUBLIC_KEY || '').slice(0, 16),
           serviceAccount: !!env.FIREBASE_SERVICE_ACCOUNT_JSON,
           subscribers: Object.keys(subs).length, devices: Object.values(subs).reduce((n, l) => n + l.length, 0)
         });
@@ -848,6 +907,7 @@ export default {
       if (url.pathname === '/prefs') return await handlePrefs(request, env, body);
       if (url.pathname === '/event') return await handleEvent(request, env, body);
       if (url.pathname === '/test') return await handleTest(request, env, body);
+      if (url.pathname === '/debug') return await handleDebug(request, env, body);
       return json(request, env, { error: 'not found' }, 404);
     } catch (e) {
       console.error('worker error', String(e?.message || e));

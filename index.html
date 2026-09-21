@@ -4919,6 +4919,38 @@ window.getKapaniPushWorkerHealth=async function(){
     if(!PUSH_WORKER_URL) return {configured:false,message:'config.js: pushWorkerUrl is empty — the old Firebase path is used'};
     const res=await fetch(PUSH_WORKER_URL+'/health'); return {configured:true,url:PUSH_WORKER_URL,...(await res.json())};
 };
+// ─── Push diagnostics (run in the browser console) ──────────────────
+//   await kapaniPushDoctor()            — checks THIS account/device
+//   await kapaniPushDoctor('ник')       — also explains why 'ник' has no push device
+//   await kapaniPushSelfTest()          — sends a real push to your own devices and shows push-service statuses
+window.kapaniPushDoctor=async function(target){
+    const out={site:{worker:PUSH_WORKER_URL||null,me:currentNick,permission:('Notification' in window)?Notification.permission:'unsupported',configVapidPrefix:String(WEB_PUSH_VAPID_PUBLIC_KEY||'').slice(0,16)}};
+    let browserId=null;
+    try{
+        const sub=await getWebPushSubscription(false);
+        if(sub){browserId=await hashWebPushEndpoint(sub.endpoint);out.browser={subscriptionId:browserId,host:new URL(sub.endpoint).host};}
+        else out.browser='нет подписки в этом браузере';
+    }catch(e){out.browser='ошибка: '+(e?.message||e);}
+    try{out.worker=await window.getKapaniPushWorkerHealth();}catch(e){out.worker='Worker недоступен: '+(e?.message||e);}
+    try{const ph=await getPushAuthHash();out.debug=await pushWorkerCall('/debug',{nick:currentNick,ph,target:target||currentNick});}catch(e){out.debug='ошибка /debug: '+(e?.message||e);}
+    const verdict=[];
+    if(out.site.permission!=='granted')verdict.push('❌ Браузер не разрешил уведомления (permission='+out.site.permission+')');
+    if(typeof out.browser==='string')verdict.push('❌ В этом браузере нет push-подписки — нажмите «Включить» в профиле');
+    if(out.worker&&out.worker.vapidPublicPrefix&&out.worker.vapidPublicPrefix!==out.site.configVapidPrefix)verdict.push('❌ Ключ VAPID в config.js и в Worker РАЗНЫЙ — сделайте одинаковыми и заново нажмите «Включить»');
+    if(out.debug&&typeof out.debug==='object'){
+        if(browserId&&!(out.debug.yourDevices||[]).some(d=>d.id===browserId))verdict.push('❌ Это устройство не записано в Worker под ником «'+currentNick+'» — нажмите «Включить» ещё раз');
+        if(out.debug.diagnosis?.hint)verdict.push('ℹ️ '+out.debug.diagnosis.hint);
+    }
+    if(!verdict.length)verdict.push('✅ Всё выглядит правильно');
+    out.verdict=verdict;
+    console.log(verdict.join('\n'));console.log(out);
+    return out;
+};
+window.kapaniPushSelfTest=async function(){
+    const ph=await getPushAuthHash();
+    const r=await pushWorkerCall('/test',{nick:currentNick,ph,category:'system'});
+    console.log(r);return r;
+};
 async function registerWebPushSubscription(){
     if(!currentNick)throw new Error('Пользователь не определён');
     const sub=await getWebPushSubscription(true);const payload=await getWebPushSubscriptionPayload(sub);if(!payload?.endpoint||!payload.keys.p256dh||!payload.keys.auth)throw new Error('Push Subscription is incomplete');
