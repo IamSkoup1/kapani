@@ -10,7 +10,7 @@ const KAPANI_CONFIG = Object.freeze({
         messagingSenderId: "250125043268",
         appId: "1:250125043268:web:fd82172b96e326b2001e11"
     },
-    webPushVapidPublicKey: "BDjd3ms04JUng_tnblADhGC5N9Km7Ddv6U79ExpqTQhxLxYVjwKiNzpNw24wurqXAgTn9HbnlAd4UGldzd_AoXI",
+    webPushVapidPublicKey: "BNxUOFgcg5VQqwQ4_wwQLkR-howofNzLG6xzOLT7ZsdIFkc-uFRP5JZvw-tP81_63pudVjdv_k3aUegSQiWpmNU",
     // URL of the Cloudflare push worker (push-worker/SETUP.md), e.g. "https://kapani-push.YOURNAME.workers.dev".
     // Empty = keep using the old Firebase Functions push path.
     pushWorkerUrl: "https://kapani-push.kapani.workers.dev",
