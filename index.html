@@ -2241,7 +2241,14 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div style="font-size:13px;color:var(--muted);line-height:1.7;">
             Чем выше ваш балл, тем лучше профессия вам доступна. Готовьтесь тщательно — от результата КВЭ зависит ваш путь в Капани!
         </div>
-        <button class="btn btn-primary" style="margin-top:12px;" onclick="navTo('jobs')">🛠 Перейти к работе</button>
+        <a
+            class="btn btn-primary"
+            href="https://onlinetestpad.com/g5jlbnf4gnof6"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="margin-top:12px;display:flex;align-items:center;justify-content:center;text-decoration:none;"
+        >📝 Пройти экзамен</a>
+        <button class="btn btn-primary" style="margin-top:8px;" onclick="navTo('jobs')">🛠 Перейти к работе</button>
     </div>
 </div>
 
@@ -2508,11 +2515,35 @@ let functions = null;
 let storage = null;
 let authInstance = null;
 let authModule = null;
+let authInitPromise = null;
+let kapaniSessionEstablishPromise = null;
+let kapaniSessionEstablishNick = null;
+let kapaniSessionRetryTimer = null;
+
 async function ensureAuth(){
-    if(authInstance) return authInstance;
-    authModule = authModule || await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-    authInstance = authModule.getAuth(app);
-    return authInstance;
+    if(authInstance){
+        if(authInitPromise) await authInitPromise;
+        return authInstance;
+    }
+    if(authInitPromise) return await authInitPromise;
+
+    authInitPromise = (async()=>{
+        authModule = authModule || await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+        authInstance = authModule.getAuth(app);
+
+        // Make persistence explicit before any protected operation can use Auth.
+        // This is browser-local Firebase Auth persistence, not Kapani's own login storage.
+        await authModule.setPersistence(authInstance, authModule.browserLocalPersistence);
+        return authInstance;
+    })();
+
+    try{
+        return await authInitPromise;
+    }catch(e){
+        authInstance = null;
+        authInitPromise = null;
+        throw e;
+    }
 }
 async function ensureFunctions(){
     if(functions) return functions;
@@ -2561,30 +2592,113 @@ async function waitForFirebaseAuthUser(timeoutMs=15000){
     });
 }
 
+function isRetryableKapaniAuthError(error){
+    const code = String(error?.code || '').toLowerCase();
+    const message = String(error?.message || '').toLowerCase();
+    return (
+        code === 'auth/network-request-failed' ||
+        code === 'auth/internal-error' ||
+        code === 'auth/timeout' ||
+        code === 'functions/unavailable' ||
+        code === 'functions/deadline-exceeded' ||
+        code === 'functions/internal' ||
+        code === 'functions/aborted' ||
+        /network|failed to fetch|fetch failed|timeout|timed out|temporar|unavailable|offline|connection/i.test(message)
+    );
+}
+
+async function withKapaniAuthRetry(operation, label, maxAttempts=3){
+    let lastError = null;
+    const delays = [350, 1000];
+    for(let attempt=1; attempt<=maxAttempts; attempt++){
+        try{
+            return await operation();
+        }catch(e){
+            lastError = e;
+            if(attempt >= maxAttempts || !isRetryableKapaniAuthError(e)) throw e;
+            const delay = delays[Math.min(attempt-1, delays.length-1)];
+            console.warn(`[Kapani auth] ${label}: временная ошибка, повтор ${attempt+1}/${maxAttempts} через ${delay}мс`, e?.message || e);
+            await new Promise(resolve=>setTimeout(resolve, delay));
+        }
+    }
+    throw lastError || new Error('Не удалось выполнить защищённую Firebase-операцию');
+}
+
 async function establishKapaniServerSession(nick, password){
     const expectedNick = String(nick || '').trim();
     const secret = String(password || '');
     if(!expectedNick || !secret) throw new Error('Для защищённой Firebase-сессии нужны имя и пароль');
+
     const auth = await ensureAuth();
     if(auth.currentUser?.uid === expectedNick) return auth.currentUser;
 
-    const fn = await ensureFunctions();
-    const { httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
-    const result = await httpsCallable(fn, 'issueKapaniSessionToken')({nick: expectedNick, password: secret});
-    const token = String(result?.data?.token || '');
-    if(!token) throw new Error('Firebase не выдал защищённый токен сессии');
-    const credential = await authModule.signInWithCustomToken(auth, token);
-    if(!credential?.user || credential.user.uid !== expectedNick) throw new Error('Firebase вернул неверного пользователя');
-    return credential.user;
+    // Single-flight for the actual custom-token exchange too. This prevents two
+    // independent callers (login recovery + protected action) from racing
+    // signInWithCustomToken against each other.
+    if(kapaniSessionEstablishPromise && kapaniSessionEstablishNick === expectedNick){
+        return await kapaniSessionEstablishPromise;
+    }
+
+    kapaniSessionEstablishNick = expectedNick;
+    kapaniSessionEstablishPromise = (async()=>{
+        return await withKapaniAuthRetry(async()=>{
+            const latestAuth = await ensureAuth();
+            if(latestAuth.currentUser?.uid === expectedNick) return latestAuth.currentUser;
+
+            const fn = await ensureFunctions();
+            const { httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+            const result = await httpsCallable(fn, 'issueKapaniSessionToken')({
+                nick: expectedNick,
+                password: secret
+            });
+            const token = String(result?.data?.token || '');
+            if(!token) throw new Error('Firebase не выдал защищённый токен сессии');
+
+            const credential = await authModule.signInWithCustomToken(latestAuth, token);
+            if(!credential?.user || credential.user.uid !== expectedNick){
+                throw new Error('Firebase вернул неверного пользователя');
+            }
+            return credential.user;
+        }, 'issueKapaniSessionToken');
+    })();
+
+    try{
+        return await kapaniSessionEstablishPromise;
+    }finally{
+        kapaniSessionEstablishPromise = null;
+        kapaniSessionEstablishNick = null;
+    }
 }
 
 async function ensureKapaniServerSessionForCurrentUser(timeoutMs=5000){
-    const auth = await ensureAuth();
-    if(auth.currentUser?.uid === String(currentNick || '').trim()) return auth.currentUser;
-    const restored = await waitForFirebaseAuthUser(timeoutMs);
-    if(restored?.uid === String(currentNick || '').trim()) return restored;
-    if(_kapaniSessionPassword && currentNick) return await establishKapaniServerSession(currentNick, _kapaniSessionPassword);
-    throw new Error('Защищённая Firebase-сессия не восстановлена');
+    return await requireKapaniServerSession(timeoutMs);
+}
+
+function scheduleKapaniServerSessionRetry(nick, maxAttempts=3){
+    const expectedNick = String(nick || '').trim();
+    if(!expectedNick || !currentNick || currentNick !== expectedNick) return;
+
+    if(kapaniSessionRetryTimer) clearTimeout(kapaniSessionRetryTimer);
+    let attempt = 0;
+    const delays = [1500, 4000];
+
+    const retry = async()=>{
+        if(!currentNick || currentNick !== expectedNick) return;
+        attempt++;
+        try{
+            await requireKapaniServerSession(6000);
+            console.info('[Kapani auth] защищённая сессия восстановлена после повторной попытки');
+            return;
+        }catch(e){
+            console.warn(`[Kapani auth] фоновое восстановление ${attempt}/${maxAttempts}:`, e?.message || e);
+        }
+        if(attempt < maxAttempts && currentNick === expectedNick){
+            kapaniSessionRetryTimer = setTimeout(retry, delays[Math.min(attempt-1, delays.length-1)]);
+        }else{
+            kapaniSessionRetryTimer = null;
+        }
+    };
+    kapaniSessionRetryTimer = setTimeout(retry, delays[0]);
 }
 
 async function ensureStorage(){
@@ -2947,41 +3061,58 @@ async function callFunctionWithFallback(functionName, data, fallbackFn) {
 // starts the healing process and every concurrent caller awaits the same
 // promise and reuses its result.
 let firebaseAuthRestorePromise = null;
+let firebaseAuthRestoreNick = null;
+
 async function requireKapaniServerSession(timeoutMs=15000){
-    const auth = await ensureAuth();
     const nick = String(currentNick || '').trim();
+    if(!nick) throw new Error('Пользователь не определён для защищённой Firebase-сессии');
+
+    const auth = await ensureAuth();
     if(auth.currentUser?.uid === nick) return auth.currentUser;
-    if(firebaseAuthRestorePromise) return await firebaseAuthRestorePromise;
 
+    if(firebaseAuthRestorePromise && firebaseAuthRestoreNick === nick){
+        return await firebaseAuthRestorePromise;
+    }
+
+    // A different nick can only appear after a logout/login race. Do not let the
+    // old recovery promise be reused for a new account.
+    if(firebaseAuthRestorePromise && firebaseAuthRestoreNick !== nick){
+        try{ await firebaseAuthRestorePromise; }catch(_) {}
+    }
+
+    firebaseAuthRestoreNick = nick;
     firebaseAuthRestorePromise = (async()=>{
-        try{
-            // First let Firebase finish its own persisted-session restoration.
-            const restored = await waitForFirebaseAuthUser(timeoutMs);
-            if(restored?.uid === nick) return restored;
+        // 1) Wait for Firebase's own persisted-auth initialization to settle.
+        // Never interpret the pre-initialization null currentUser as final.
+        const restored = await waitForFirebaseAuthUser(timeoutMs);
+        if(restored?.uid === nick) return restored;
 
-            // During the current Kapani session keep the password only in memory so a
-            // transient Firebase Auth loss can be healed without asking the user to log in again.
-            if(_kapaniSessionPassword && nick){
-                try{
-                    const healed = await establishKapaniServerSession(nick, _kapaniSessionPassword);
-                    if(healed?.uid === nick) return healed;
-                }catch(e){ console.warn('[Kapani auth] session healing:',e); }
+        // 2) If the user logged in during this page lifetime, heal via the existing
+        // issueKapaniSessionToken -> signInWithCustomToken flow. The password remains
+        // memory-only and is never persisted by this helper.
+        if(_kapaniSessionPassword){
+            try{
+                const healed = await establishKapaniServerSession(nick, _kapaniSessionPassword);
+                if(healed?.uid === nick) return healed;
+            }catch(e){
+                console.warn('[Kapani auth] session healing:', e?.message || e);
             }
-
-            // Give a just-finished Auth state transition one last chance before surfacing
-            // an error. This removes the old "repeat after a second" race from the gift flow.
-            await new Promise(resolve => setTimeout(resolve, 250));
-            const authNow = await ensureAuth();
-            if(authNow.currentUser?.uid === nick) return authNow.currentUser;
-
-            throw new Error('Защищённая Firebase-сессия не восстановлена. Откройте страницу заново и повторите действие.');
-        } finally {
-            // Release the lock once this attempt settles so a future genuine
-            // reconnect (e.g. after a real network drop) can try again.
-            firebaseAuthRestorePromise = null;
         }
+
+        // 3) Give a just-finished Auth state transition / network initialization
+        // one more short window before surfacing a genuine failure.
+        const secondChance = await waitForFirebaseAuthUser(Math.min(Math.max(timeoutMs, 1500), 5000));
+        if(secondChance?.uid === nick) return secondChance;
+
+        throw new Error('Защищённая Firebase-сессия не готова. Повторите действие через несколько секунд.');
     })();
-    return await firebaseAuthRestorePromise;
+
+    try{
+        return await firebaseAuthRestorePromise;
+    }finally{
+        firebaseAuthRestorePromise = null;
+        firebaseAuthRestoreNick = null;
+    }
 }
 
 // Fallback: Create order directly in database
@@ -4034,7 +4165,10 @@ window.handleAuth = async function() {
             try {
                 await establishKapaniServerSession(nick, password);
             } catch(sessionError) {
-                console.warn('[Kapani auth] server session:', sessionError);
+                // The public Kapani login remains usable during a transient Firebase
+                // Auth/network race, but sensitive actions will wait for recovery.
+                console.warn('[Kapani auth] server session after registration:', sessionError);
+                scheduleKapaniServerSessionRetry(nick);
             }
             if(advertiserReferrer){
                 await incrementAdvertiserReferralCount(advertiserReferrer.nick);
@@ -4070,7 +4204,10 @@ window.handleAuth = async function() {
             try {
                 await establishKapaniServerSession(existing.nick, password);
             } catch(sessionError) {
-                console.warn('[Kapani auth] server session:', sessionError);
+                // Do not make a transient Firebase Auth race look like a failed login.
+                // Sensitive operations call the single recovery helper themselves.
+                console.warn('[Kapani auth] server session after login:', sessionError);
+                scheduleKapaniServerSessionRetry(existing.nick);
             }
             startApp();
         }
@@ -6497,10 +6634,49 @@ window.orderTaxi=async function(){
             await pushNotification(currentNick,`🛵 Такси: ${from} → ${to} — ${priceText}`,'taxi_orders');
             toast(`🛵 Такси вызвано!${discountPercent > 0 ? ` Скидка ${discountPercent}% применена!` : ''}`,'gold');
             try{
-                const driversSnap=await get(query(ref(db,'users'),orderByChild('job'),equalTo('Водитель')));
-                const drivers=driversSnap.val()||{};
-                await Promise.all(Object.keys(drivers).filter(nick=>nick!==currentNick).map(nick=>pushNotification(nick,`🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,'taxi_orders')));
-            }catch(e){console.error('[notification pipeline][taxi order]',e);}
+                // Use the canonical employment model instead of the legacy top-level
+                // `job` field. loadAllUsersCache() is single-flight and reuses the live
+                // user cache, so creating a taxi order does not trigger a new global
+                // read when the cache is already populated.
+                const users = await loadAllUsersCache();
+                const driverNicks = [...new Set(
+                    Object.entries(users || {})
+                        .filter(([nick, user]) =>
+                            nick !== currentNick &&
+                            hasMunicipalJob(user || {}, 'Водитель')
+                        )
+                        .map(([nick]) => nick)
+                )];
+
+                console.info(`[notification pipeline][taxi order] найдено водителей: ${driverNicks.length}`, driverNicks);
+
+                const results = await Promise.allSettled(driverNicks.map(async driverNick=>{
+                    try{
+                        const result = await pushNotification(
+                            driverNick,
+                            `🛵 Новый заказ: ${from} → ${to} — ${finalPrice}₽`,
+                            'taxi_orders'
+                        );
+                        if(result?.ok === false){
+                            throw new Error(result.error || 'pushNotification вернул ok=false');
+                        }
+                        console.info(`[notification pipeline][taxi order] уведомление отправлено: ${driverNick}`);
+                        return {nick:driverNick, result};
+                    }catch(e){
+                        console.warn(`[notification pipeline][taxi order] водитель ${driverNick} не получил уведомление:`, e?.message || e);
+                        throw e;
+                    }
+                }));
+
+                const failed = results.filter(r=>r.status==='rejected');
+                if(failed.length){
+                    console.warn(`[notification pipeline][taxi order] ошибок доставки: ${failed.length}/${driverNicks.length}`);
+                }
+            }catch(e){
+                // Notification delivery is best-effort and must never roll back or
+                // otherwise invalidate the taxi order that was already created.
+                console.error('[notification pipeline][taxi order] recipient discovery failed:', e?.message || e);
+            }
         }
     } catch (error) {
         console.error('Ошибка заказа такси:', error);
@@ -13971,13 +14147,46 @@ if(location.protocol === 'file:'){
     console.warn('[Kapani] file:// detected — use a local server, e.g. npx serve .');
 }
 
-// DO NOT hide on window.load — wait for Firebase data
-if(currentNick){
-    try { startApp(); } catch(e) { console.error('[startApp]', e); hideLoadingSafe(); }
-} else {
-    // Not logged in → show auth form, hide overlay after short delay
-    setTimeout(hideLoadingSafe, 600);
+async function bootstrapKapaniAuthAndApp(){
+    if(!currentNick){
+        setTimeout(hideLoadingSafe, 600);
+        return;
+    }
+
+    try{
+        // Initialize Firebase Auth and wait for its persisted state before the app shell
+        // starts. A null currentUser here is only meaningful after auth initialization.
+        const auth = await ensureAuth();
+        await waitForFirebaseAuthUser(8000);
+
+        if(auth.currentUser?.uid === currentNick){
+            console.info('[Kapani auth] persisted Firebase session restored:', auth.currentUser.uid);
+        }else if(_kapaniSessionPassword){
+            try{
+                await requireKapaniServerSession(8000);
+            }catch(e){
+                console.warn('[Kapani auth] startup session recovery:', e?.message || e);
+                scheduleKapaniServerSessionRetry(currentNick);
+            }
+        }else{
+            console.warn('[Kapani auth] no Firebase session for current Kapani login after restore barrier');
+        }
+    }catch(e){
+        // Do not block the whole application on a temporary Auth initialization race.
+        // Protected actions will use the same single-flight recovery helper later.
+        console.warn('[Kapani auth] startup init:', e?.message || e);
+    }
+
+    try {
+        startApp();
+    } catch(e) {
+        console.error('[startApp]', e);
+        hideLoadingSafe();
+    }
 }
+
+// DO NOT hide on window.load — wait for Firebase Auth initialization + app data
+void bootstrapKapaniAuthAndApp();
 if(curPage==='tasks') renderTasks();
 
 // ─── SAFER STRING HELPERS ─────────────────
@@ -14950,7 +15159,10 @@ window.sendGiftSubscription = async function(){
     if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
 
     try{
-        await requireKapaniServerSession(15000);
+        const authUser = await requireKapaniServerSession(15000);
+        if(!authUser?.uid || authUser.uid !== String(currentNick || '').trim()){
+            throw new Error('Firebase Auth вернул неверного пользователя');
+        }
         const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
         const fn = httpsCallable(await ensureFunctions(), 'giftSubscription');
         const result = await fn({
