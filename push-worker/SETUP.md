@@ -13,17 +13,15 @@ cd push-worker
 ```
 
 ## 2. Ключи VAPID
-Публичный ключ в `config.js` (`webPushVapidPublicKey`) и в `wrangler.toml` (`VAPID_PUBLIC_KEY`) должен быть ОДНИМ И ТЕМ ЖЕ и
-соответствовать приватному ключу.
+Публичный ключ в `config.js` (`webPushVapidPublicKey`) и в `wrangler.toml` (`VAPID_PUBLIC_KEY`) должен быть ОДНИМ И ТЕМ ЖЕ и соответствовать приватному ключу Worker.
 
-* **Вариант А — у вас сохранился приватный ключ** (тот, что лежал в Firebase Secret `KAPANI_VAPID_PRIVATE_KEY`, формат — base64url, 43 символа).
-  Ничего генерировать не нужно, публичный ключ уже прописан.
-* **Вариант Б — приватного ключа нет.** Сгенерируйте новую пару:
-  ```bash
-  node generate-vapid.mjs
-  ```
-  Публичный ключ вставьте в `wrangler.toml` (`VAPID_PUBLIC_KEY`) и в `../config.js` (`webPushVapidPublicKey`).
-  Приватный понадобится на шаге 5. После этого всем жителям придётся заново нажать «Включить» в профиле.
+В этой исправленной сборке новая пара VAPID уже сгенерирована и public key прописан в обоих файлах. Приватная часть находится **вне архива проекта** в отдельном файле `KAPANI_VAPID_PRIVATE_KEY_2026-09-30.txt`; не добавляйте её в GitHub.
+
+Если вы самостоятельно генерируете другую пару, используйте: 
+```bash
+node generate-vapid.mjs --apply
+```
+После этого обязательно запишите новый private key в Cloudflare Secret и опубликуйте изменённый `config.js`. При смене public key старые browser subscriptions будут пересозданы при следующем открытии сайта.
 
 ## 3. Создать хранилище подписок (KV)
 ```bash
@@ -54,7 +52,7 @@ wrangler deploy
 ## 7. Проверить Worker
 Откройте в браузере `https://kapani-push.<...>.workers.dev/health`. Должно быть:
 ```json
-{"ok":true,"kv":true,"vapidPublic":true,"vapidPrivate":true,"serviceAccount":true,"subscribers":0,"devices":0}
+{"ok":true,"kv":true,"vapidPublic":true,"vapidPrivate":true,"vapid":{"publicOk":true,"privateOk":true,"pairOk":true},"serviceAccount":true,"subscribers":0,"devices":0}
 ```
 Любое `false` — это то, что вы забыли настроить (шаги 2–5).
 

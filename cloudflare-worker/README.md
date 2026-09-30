@@ -1,3 +1,7 @@
+# LEGACY — старый Cloudflare → FCM Worker
+
+**Не является текущим production push backend.** Текущая схема: `push-worker/` → прямой Web Push/VAPID → Service Worker. Firebase Functions для push не используются.
+
 # Kapani Cloudflare Push Bridge — ACTIVE PRODUCTION PUSH BRIDGE
 
 Это активная production-система Push Kapani.

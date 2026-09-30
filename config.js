@@ -10,9 +10,9 @@ const KAPANI_CONFIG = Object.freeze({
         messagingSenderId: "250125043268",
         appId: "1:250125043268:web:fd82172b96e326b2001e11"
     },
-    webPushVapidPublicKey: "BNxUOFgcg5VQqwQ4_wwQLkR-howofNzLG6xzOLT7ZsdIFkc-uFRP5JZvw-tP81_63pudVjdv_k3aUegSQiWpmNU",
-    // URL of the Cloudflare push worker (push-worker/SETUP.md), e.g. "https://kapani-push.YOURNAME.workers.dev".
-    // Empty = keep using the old Firebase Functions push path.
+    webPushVapidPublicKey: "BDZSBlWnSNkcfI3r3_MxxhqbYlofuvDw8885kJMR72Z-_jUsjSB_uwBfnM9sRQG6CGkGVBJz9Teal1P4YPNVkP4",
+    // Канонический backend Web Push: Cloudflare Worker из push-worker/.
+    // Не оставляйте пустым: пустой URL включает устаревший Firebase Functions fallback.
     pushWorkerUrl: "https://kapani-push.kapani.workers.dev",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },

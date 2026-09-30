@@ -1,64 +1,72 @@
 # Kapani — Push notifications
 
-В этой версии push-уведомления идут по единому серверному контуру Firebase Cloud Functions + FCM + Service Worker.
+В production push-уведомления идут через **Cloudflare Worker + стандартный Web Push (VAPID)**. Firebase используется как **Realtime Database/Auth-контур**, а Firebase Cloud Functions не участвуют в доставке push. Эта схема не требует перевода Firebase-проекта на Blaze только ради push.
 
 ## Архитектура
 
-`событие → users/{nick}/notifications/{id} + pushQueue/{jobId} → Cloudflare Worker → FCM HTTP v1 → firebase-messaging-sw.js → системное уведомление`
+```text
+Kapani
+  ↓
+users/<nick>/notifications/<notificationId>
+  +
+pushOutbox/<jobId>
+  ↓
+Cloudflare Worker (push-worker/)
+  ↓
+VAPID + Web Push (aes128gcm)
+  ↓
+браузерный Push Service
+  ↓
+firebase-messaging-sw.js
+  ↓
+системное уведомление
+```
 
-Очередь использует детерминированный job ID, transaction-based lock/lease, повторные попытки с exponential backoff+jitter, состояние доставки по каждому токену, очистку недействительных токенов и повторную обработку просроченных `processing` jobs. Это at-least-once серверная доставка.
+Worker хранит подписки в Cloudflare KV, а для защищённого доступа к RTDB использует **server-only service-account secret**. Это не Firebase Cloud Functions и само по себе не переводит Firebase-проект на Blaze. Firebase указывает, что Cloud Messaging (FCM) относится к no-cost продуктам, а Cloud Functions требуют Blaze; Realtime Database на Spark имеет собственную бесплатную квоту.
 
-Одно событие имеет один `notificationId`; Service Worker использует стабильный `tag`, поэтому retry не должен создавать второй видимый alert для того же notification ID.
+## Закрытый сайт
 
-## Token lifecycle
+Ключевой путь для закрытой вкладки — обычное событие `push` в Service Worker. Открытая страница Kapani для показа системного уведомления не нужна; браузерный Push Service доставляет payload Service Worker, а он вызывает `showNotification()`.
 
-FCM token регистрируется только через защищённую Cloud Function после Firebase Auth-сессии. Прямой client-side fallback в `users/{nick}` удалён. Поддерживаются несколько устройств одного пользователя; каждый token хранится в `users/{nick}/fcmTokens/{tokenId}` и индексируется через `fcmTokenIndex/{tokenId}`. Регистрация идёт через Cloudflare bridge; Worker теперь авторизован к RTDB через Google OAuth2.
+## VAPID
 
-При `UNREGISTERED`/`registration-token-not-registered`/`invalid-registration-token` token удаляется. Выход пользователя вызывает `unregisterFcmToken` для текущего устройства.
-
-## Фоновая доставка
-
-Сервер отправляет **data-only FCM**. `firebase-messaging-sw.js` принимает сообщение через `onBackgroundMessage()` и сам вызывает `self.registration.showNotification()`. Поэтому открытая вкладка Kapani не нужна. Firebase отдельно документирует foreground `onMessage` и background Service Worker обработку. citeturn733441search3
-
-`firebase-messaging-sw.js` регистрируется в scope приложения `/kapani/`. HTTPS обязателен для FCM Web. citeturn733441search7
-
-## iOS / PWA
-
-Для iPhone Web Push поддерживается в Home Screen web apps начиная с iOS/iPadOS 16.4; разрешение должно запрашиваться в результате прямого действия пользователя. Поэтому Kapani требует установленный PWA-сценарий для iOS. citeturn733441search0turn733441search1
-
-## Notification sources
-
-- общий чат — `notifyOnChatMessage`;
-- новости — `notifyOnNewsCreated`;
-- подарки подписок — уведомления создаются внутри той же финансовой RTDB-транзакции;
-- legacy-дуэли — `notifyOnLegacyDuelNotification` зеркалит duel events в canonical user notifications;
-- остальные существующие вызовы `pushNotification()` проходят через callable `createKapaniNotification`, который атомарно создаёт inbox-запись и `pushQueue` job.
+`config.js:webPushVapidPublicKey` и `push-worker/wrangler.toml:VAPID_PUBLIC_KEY` должны быть **одинаковыми**, а секрет `VAPID_PRIVATE_KEY` в Cloudflare должен быть приватной частью **той же самой P-256 пары**.
 
 ## Диагностика
 
-В консоли браузера доступно:
+В консоли Kapani:
 
 ```js
-await window.getKapaniPushDiagnostics()
+await kapaniPushDoctor()
+await kapaniPushSelfTest()
+await getKapaniPushWorkerHealth()
 ```
 
-Проверяются permission, Service Worker, FCM token, server token registration и last known push state. Сервер также предоставляет `getPushDiagnostics`.
+`/health` Worker должен показывать:
+
+```json
+"vapid": {"publicOk": true, "privateOk": true, "pairOk": true}
+```
+
+А реальный self-test при одном действующем устройстве должен дать `sent: 1`.
 
 ## Deploy
 
 ```bash
-cd functions
-npm ci
-cd ..
-firebase deploy --only functions
+cd push-worker
+wrangler login
+wrangler kv namespace create PUSH_KV   # только если namespace ещё не создан
+wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
+wrangler secret put VAPID_PRIVATE_KEY
+wrangler deploy
 ```
 
-После деплоя обязательны реальные тесты на устройстве/браузере: queue state `sent`, закрытая вкладка, закрытые окна, background tab, второй браузер/устройство, invalid token cleanup и notification click.
+После деплоя опубликйте на GitHub Pages обновлённые `index.html`, `config.js` и `firebase-messaging-sw.js`. При смене VAPID public key существующая browser subscription пересоздаётся автоматически при следующем открытии сайта.
 
-### Важно про гарантии
+## Firebase Spark
 
-Ни FCM, ни браузерный Web Push не дают приложению атомарный ACK уровня «уведомление увидел человек и сервер уже это записал». Поэтому эта система гарантирует сохранение server-side job до принятия сообщения FCM и безопасные retry на уровне очереди. Фактическую доставку на конкретное физическое устройство нужно подтверждать runtime-тестом после deployment.
+Firebase официально указывает, что Spark — no-cost тариф, а Cloud Functions доступны только на Blaze. Realtime Database при Spark продолжает работать в пределах бесплатной квоты. В этой push-схеме Worker сам выполняет Web Push и использует RTDB через REST API с OAuth2 service account, поэтому Firebase Functions для push не нужны.
 
-### Cloudflare Worker
+## Важно
 
-`cloudflare-worker/worker.js` — текущий production delivery engine. Он читает `pushQueue`, получает FCM OAuth token и доставляет data-only push через FCM HTTP v1. Для RTDB Worker использует server-only service account OAuth2; публичные RTDB rules ослаблять не нужно.
+Не публикуйте `VAPID_PRIVATE_KEY` или JSON service account в GitHub. В архиве проекта эти секреты не хранятся.

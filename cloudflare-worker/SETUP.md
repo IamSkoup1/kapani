@@ -1,3 +1,7 @@
+# LEGACY — НЕ ИСПОЛЬЗУЕТСЯ ДЛЯ ТЕКУЩЕГО PUSH
+
+Текущий push: `push-worker/` → прямой Web Push/VAPID → `firebase-messaging-sw.js`, Firebase остаётся на Spark.
+
 # Kapani Cloudflare Push — production setup
 
 ## Canonical production flow

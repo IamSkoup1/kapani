@@ -1,3 +1,7 @@
+# LEGACY — НЕ ИСПОЛЬЗУЕТСЯ ДЛЯ ТЕКУЩЕГО PUSH
+
+Текущий production push работает через `push-worker/` (прямой Web Push/VAPID) + Firebase Spark. Этот файл описывает старый Cloudflare→FCM HTTP v1 путь и оставлен только как историческая справка. Не деплойте этот Worker для текущей системы.
+
 # Kapani Push — Cloudflare deployment
 
 ## 1. Deploy the Worker

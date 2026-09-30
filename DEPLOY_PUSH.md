@@ -1,70 +1,125 @@
-# Kapani Web Push — deployment and verification
+# Kapani Web Push — Cloudflare Worker + Firebase Spark
 
-Kapani now uses standard Web Push: browser `PushSubscription` → Firebase Realtime Database → existing Firebase Cloud Functions → Web Push protocol → browser Service Worker. Cloudflare Push and FCM are no longer part of the delivery path.
+Эта инструкция относится к **текущему production push-контру**. Firebase Cloud Functions для push не используются. Firebase остаётся в Spark, а Cloudflare Worker выполняет прямой Web Push.
 
-## 1. Set the VAPID private key
+## 1. Что должно быть настроено
 
-The public key is stored in `config.js`. The private key must exist only in Firebase Functions Secret Manager. Never put it in `index.html`, `config.js`, the Service Worker, localStorage, or GitHub Pages.
+- Firebase project: `kapanisite`
+- Realtime Database: `https://kapanisite-default-rtdb.europe-west1.firebasedatabase.app`
+- Cloudflare Worker: `push-worker/`
+- Cloudflare KV binding: `PUSH_KV`
+- одна и та же VAPID public key в `config.js` и `push-worker/wrangler.toml`
+- секреты Worker: `VAPID_PRIVATE_KEY` и `FIREBASE_SERVICE_ACCOUNT_JSON`
 
-Generate a P-256 VAPID key pair locally when needed, then store the private key as the Firebase secret:
+Firebase Spark здесь не мешает: Firebase документирует, что Realtime Database имеет бесплатную квоту на Spark, а Cloud Functions требуют Blaze. REST API RTDB поддерживает Google OAuth2 access token от service account для серверного доступа.
 
-```bash
-firebase functions:secrets:set KAPANI_VAPID_PRIVATE_KEY
+## 2. VAPID private key
+
+В этой исправленной сборке public key уже прописан в `config.js` и `push-worker/wrangler.toml`. Приватная часть лежит **отдельным файлом вне архива**; её нужно записать только в Cloudflare Secret.
+
+```powershell
+cd push-worker
+Get-Content ..\KAPANI_VAPID_PRIVATE_KEY_2026-09-30.txt -Raw | wrangler secret put VAPID_PRIVATE_KEY
 ```
 
-When prompted, paste the VAPID private key. The deployed Functions use the secret at runtime.
+Либо можно сгенерировать другую пару локально через `node generate-vapid.mjs --apply`, после чего обязательно заменить secret и опубликовать новый `config.js`.
 
-## 2. Deploy existing Functions
+## 3. Firebase service account для Worker
 
-```bash
-cd functions
-npm install
-cd ..
-firebase deploy --only functions
+Worker читает/пишет закрытую RTDB через REST API. Поэтому нужен сервисный аккаунт Firebase/Google. Получить JSON можно в Firebase Console → Project settings → Service accounts → Generate new private key.
+
+Сохраняйте JSON только локально и в Cloudflare Secret:
+
+```powershell
+wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
 ```
 
-Then publish the updated static files to the existing GitHub Pages site.
+Это **не** Firebase Cloud Function и не требует размещать функцию. Secret нужен только Worker для серверного REST-доступа к RTDB.
 
-## 3. Browser registration
+## 4. KV
 
-1. Log into Kapani.
-2. Open Profile → Push notifications.
-3. Press “Включить”.
-4. Grant browser notification permission.
-5. Kapani registers one standard Push Subscription for that account/device in `users/<nick>/pushSubscriptions/<subscriptionId>`.
+Если namespace ещё не существует:
 
-The subscription survives normal page reloads and browser restarts as long as the browser keeps the subscription.
+```powershell
+wrangler kv namespace create PUSH_KV
+```
 
-## 4. Delivery path
+ID namespace должен совпадать с `push-worker/wrangler.toml`. В текущем архиве уже стоит существующий ID; менять его не нужно, если это тот namespace, который использует твой Worker.
+
+## 5. Deploy Worker
+
+```powershell
+cd push-worker
+wrangler login
+wrangler deploy
+```
+
+## 6. Проверка Worker
 
 ```text
-Kapani event
-  ↓
-users/<nick>/notifications/<notificationId>
-  ↓
-Firebase onValueCreated trigger
-  ↓
-Web Push + VAPID
-  ↓
-Browser Push Service
-  ↓
-firebase-messaging-sw.js (standard Web Push SW)
-  ↓
-showNotification()
+https://kapani-push.kapani.workers.dev/health
 ```
 
-## 5. Critical closed-tab test
+Критическая часть ответа:
 
-Use two accounts/devices. Give the recipient notification permission, verify a Push Subscription exists, then completely close the recipient Kapani tab. Send a DM or a general-chat message from the other account. The browser must show a system notification while Kapani is closed.
+```json
+{
+  "ok": true,
+  "kv": true,
+  "vapidPublic": true,
+  "vapidPrivate": true,
+  "vapid": {
+    "publicOk": true,
+    "privateOk": true,
+    "pairOk": true
+  }
+}
+```
 
-Do not treat `Notification.permission === "granted"` as proof of delivery. Use:
+`pairOk: false` означает, что `VAPID_PRIVATE_KEY` не соответствует public key.
+
+## 7. Publish frontend
+
+Выложите на GitHub Pages:
+
+```text
+index.html
+config.js
+firebase-messaging-sw.js
+```
+
+После смены VAPID public key существующая PushSubscription на устройстве будет пересоздана при следующем запуске сайта с уже выданным разрешением.
+
+## 8. Реальный тест закрытого сайта
+
+После входа и разрешения уведомлений откройте консоль:
 
 ```js
-await getKapaniPushDiagnostics()
+await getKapaniPushWorkerHealth()
+await kapaniPushDoctor()
+await kapaniPushSelfTest()
 ```
 
-and verify the subscription exists and the Service Worker is active. The actual acceptance test is the real notification while the tab is closed.
+Ожидается примерно:
 
-## 6. Stale subscription cleanup
+```js
+{ ok: true, sent: 1, devices: 1, ... }
+```
 
-HTTP 404/410 responses from the browser Push Service remove the dead subscription automatically from both the user branch and `pushSubscriptionIndex`.
+После `sent: 1` полностью закройте вкладку/окно Kapani и отправьте себе уведомление с другого аккаунта. Системное уведомление должно прийти без открытого `index.html`.
+
+## 9. Что происходит при обычных уведомлениях
+
+Клиент создаёт canonical notification record и job в `pushOutbox`. Worker получает job через `/event`; если браузер/сеть потеряли запрос, ежеминутный cron Worker подбирает оставшиеся jobs. Worker сам шифрует Web Push payload и отправляет его браузерному Push Service.
+
+Firebase Functions не участвуют в этом пути. Папка `functions/` может оставаться в проекте для других функций сайта, но **для push её деплоить не нужно**. Старый `cloudflare-worker/` через FCM также не является production push backend.
+
+## 10. Секреты
+
+Никогда не коммитьте:
+
+- `VAPID_PRIVATE_KEY`
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- локальные `vapid-private.txt` / `sa.json`
+
+В исправленном архиве удалены старые credential-файлы и вложенный zip с такими материалами.

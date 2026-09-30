@@ -1,5 +1,5 @@
 /**
- * Kapani free Web Push — Cloudflare Worker (no Firebase Functions, no FCM SDK).
+ * Kapani free Web Push — Cloudflare Worker + Firebase Spark (no Firebase Functions, no FCM SDK).
  *
  *   site ──► pushOutbox/<job> (RTDB) ──► POST /event ──► this Worker
  *                                                         ├─ reads the real message/notification from RTDB
@@ -766,6 +766,69 @@ async function runCron(env) {
 }
 
 /* ───────────── request handlers ───────────── */
+async function handleNotify(request, env, body) {
+  try {
+    const sender = String(body?.nick || '').trim();
+    const ph = String(body?.ph || '').trim();
+    const targetNick = String(body?.targetNick || body?.to || '').trim();
+    const text = String(body?.text || body?.body || '').trim();
+    if (!(await verifyUser(env, sender, ph))) return json(request, env, { error: 'unauthorized' }, 401);
+    if (!validNick(targetNick)) return json(request, env, { error: 'invalid targetNick' }, 400);
+    if (!text) return json(request, env, { error: 'notification text is empty' }, 400);
+
+    const notificationId = String(body?.notificationId || '').trim();
+    if (!validKey(notificationId)) return json(request, env, { error: 'invalid notificationId' }, 400);
+
+    const createdAt = Number(body?.createdAt || Date.now()) || Date.now();
+    const category = String(body?.category || body?.cat || 'system').slice(0, 40);
+    const record = {
+      text: text.slice(0, 2000),
+      title: String(body?.title || 'Капани').slice(0, 120),
+      time: moscowTime(createdAt),
+      cat: category,
+      createdAt,
+      url: String(body?.url || appUrl(env)).slice(0, 1000),
+      push: body?.push !== false,
+      source: String(body?.source || '').slice(0, 80),
+      sourceMessageId: String(body?.sourceMessageId || '').slice(0, 120)
+    };
+    if (record.source === 'dm') record.from = sender;
+
+    const rnd = Array.from(crypto.getRandomValues(new Uint32Array(2)), x => x.toString(36)).join('');
+    const jobId = `p${Date.now().toString(36)}${rnd}`.slice(0, 60);
+    const job = {
+      type: 'notification',
+      to: targetNick,
+      id: notificationId,
+      sender,
+      queuedAt: Date.now(),
+      ts: Date.now()
+    };
+
+    // Notification + durable push job are created in ONE authenticated server-side
+    // RTDB patch. The browser therefore never needs write access to protected inbox paths,
+    // and Firebase Cloud Functions are not needed for push on the Spark plan.
+    await rtdbPatch(env, {
+      [`users/${enc(targetNick)}/notifications/${enc(notificationId)}`]: record,
+      [`pushOutbox/${enc(jobId)}`]: job
+    });
+
+    const result = await processJob(env, jobId, { left: maxPush(env) });
+    return json(request, env, {
+      ok: true,
+      notificationId,
+      jobId,
+      sent: Number(result?.sent || 0),
+      retry: !!result?.retry,
+      reason: result?.reason || null,
+      detail: result?.detail || null,
+      statuses: result?.statuses || []
+    });
+  } catch (error) {
+    console.error('notify handler failed', String(error?.message || error));
+    return json(request, env, { ok: false, error: String(error?.message || error).slice(0, 300) }, 500);
+  }
+}
 async function handleSubscribe(request, env, body) {
   const { nick, ph, subscription: s, prefs, userAgent } = body;
   if (!(await verifyUser(env, nick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
@@ -958,7 +1021,7 @@ export default {
         return json(request, env, {
           ok: true,
           service: 'kapani-push',
-          endpoints: { health: 'GET /health', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
+          endpoints: { health: 'GET /health', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
         });
       }
       if (url.pathname === '/health') {
@@ -975,6 +1038,7 @@ export default {
       if (request.method !== 'POST') return json(request, env, { error: 'not found' }, 404);
       const body = await request.json().catch(() => null);
       if (!body || typeof body !== 'object') return json(request, env, { error: 'bad json' }, 400);
+      if (url.pathname === '/notify') return await handleNotify(request, env, body);
       if (url.pathname === '/subscribe') return await handleSubscribe(request, env, body);
       if (url.pathname === '/unsubscribe') return await handleUnsubscribe(request, env, body);
       if (url.pathname === '/prefs') return await handlePrefs(request, env, body);
