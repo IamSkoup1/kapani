@@ -217,100 +217,6 @@ async function rtdb(env, method, path, body, query = '') {
 const rtdbGet = (env, path, query) => rtdb(env, 'GET', path, undefined, query);
 const rtdbPatch = (env, patch) => (Object.keys(patch).length ? rtdb(env, 'PATCH', '', patch) : null);
 
-async function rtdbGetWithEtag(env, path = '') {
-  const base = String(env.FIREBASE_DATABASE_URL || '').replace(/\/$/, '');
-  const clean = String(path || '').replace(/^\/+/, '').replace(/\/+$/, '');
-  const url = clean ? `${base}/${clean}.json` : `${base}/.json`;
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${await accessToken(env)}`, 'X-Firebase-ETag': 'true' }
-  });
-  const raw = await res.text();
-  if (!res.ok) throw new Error(`RTDB GET+ETag ${path || '<root>'}: ${res.status} ${raw.slice(0, 200)}`);
-  let value = null;
-  try { value = raw ? JSON.parse(raw) : null; } catch { value = null; }
-  return { value, etag: res.headers.get('ETag') || 'null_etag' };
-}
-
-async function rtdbPutIfMatch(env, path, value, etag) {
-  const base = String(env.FIREBASE_DATABASE_URL || '').replace(/\/$/, '');
-  const clean = String(path || '').replace(/^\/+/, '').replace(/\/+$/, '');
-  const url = clean ? `${base}/${clean}.json` : `${base}/.json`;
-  return await fetch(url, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${await accessToken(env)}`,
-      'content-type': 'application/json',
-      'If-Match': String(etag || 'null_etag')
-    },
-    body: JSON.stringify(value)
-  });
-}
-
-async function rtdbRootTransaction(env, updater, maxAttempts = 6) {
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const snap = await rtdbGetWithEtag(env, '');
-    const decision = await updater(snap.value || {});
-    if (!decision || decision.abort) return { committed: false, reason: decision?.reason || 'rejected' };
-
-    const res = await rtdbPutIfMatch(env, '', decision.value, snap.etag);
-    const raw = await res.text();
-    if (res.status === 412 || res.status === 409) continue;
-    if (!res.ok) throw new Error(`RTDB root conditional PUT: ${res.status} ${raw.slice(0, 240)}`);
-    return { committed: true, attempts: attempt };
-  }
-  return { committed: false, reason: 'concurrent-write-retry-exhausted' };
-}
-
-let customTokenKeyCache = null;
-async function createFirebaseCustomToken(env, uid) {
-  let sa;
-  try { sa = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '')); }
-  catch { throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing or not valid JSON'); }
-  if (!sa || sa.type !== 'service_account' || !sa.client_email || !sa.private_key) {
-    throw new Error('service account JSON lacks type=service_account/client_email/private_key');
-  }
-
-  if (!customTokenKeyCache || customTokenKeyCache.privateKeyId !== String(sa.private_key_id || '')) {
-    const pem = String(sa.private_key).replace(/\r/g, '').replace(/-----BEGIN PRIVATE KEY-----/g, '').replace(/-----END PRIVATE KEY-----/g, '').replace(/\s+/g, '');
-    const der = Uint8Array.from(atob(pem.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-    const key = await crypto.subtle.importKey('pkcs8', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
-    customTokenKeyCache = { privateKeyId: String(sa.private_key_id || ''), email: sa.client_email, key };
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  const header = b64uEnc(te.encode(JSON.stringify({ alg: 'RS256', typ: 'JWT', ...(customTokenKeyCache.privateKeyId ? { kid: customTokenKeyCache.privateKeyId } : {}) })));
-  const payload = b64uEnc(te.encode(JSON.stringify({
-    iss: customTokenKeyCache.email,
-    sub: customTokenKeyCache.email,
-    aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
-    iat: now,
-    exp: now + 3600,
-    uid: String(uid),
-    claims: {}
-  })));
-  const input = `${header}.${payload}`;
-  const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', customTokenKeyCache.key, te.encode(input)));
-  return `${input}.${b64uEnc(sig)}`;
-}
-
-const SUBSCRIPTIONS = Object.freeze({
-  plus:  { rank: 1, price: 299,  name: 'Kapani Plus',  durationDays: 7 },
-  ultra: { rank: 2, price: 899,  name: 'Kapani Ultra', durationDays: 7 },
-  prime: { rank: 3, price: 1499, name: 'Kapani Prime', durationDays: 7 }
-});
-function normalizeSubscriptionType(value) {
-  const v = String(value || '').trim().toLowerCase();
-  return Object.prototype.hasOwnProperty.call(SUBSCRIPTIONS, v) ? v : 'none';
-}
-function subscriptionRank(user) {
-  return Number(SUBSCRIPTIONS[normalizeSubscriptionType(user?.subscription)]?.rank || 0);
-}
-function giftIdPart(prefix = 'g') {
-  const a = crypto.getRandomValues(new Uint32Array(2));
-  return `${prefix}_${Date.now().toString(36)}_${a[0].toString(36)}${a[1].toString(36)}`;
-}
-
 /* Identity model = the site's own: nick + passwordHash that the site keeps in RTDB. */
 async function verifyUser(env, nick, ph) {
   if (!validNick(nick) || typeof ph !== 'string' || ph.length < 32) return false;
@@ -520,7 +426,7 @@ function previewOf(m) {
  * kind = retry   -> keep the job; a required RTDB record is not visible yet
  * kind = discard -> the job is invalid, already handled, or explicitly suppressed
  */
-async function planJob(env, job, preloadedNotification) {
+async function planJob(env, job) {
   const now = Date.now();
   if (job.type === 'deliver') {
     return {
@@ -536,11 +442,14 @@ async function planJob(env, job, preloadedNotification) {
     if (!validNick(job.to) || !validKey(job.id)) return { kind: 'discard', reason: 'invalid notification job' };
 
     const path = `users/${job.to}/notifications/${job.id}`;
-    const n = preloadedNotification || await rtdbGet(env, `users/${enc(job.to)}/notifications/${enc(job.id)}`);
+    // /notify embeds the exact record it just wrote, eliminating the RTDB
+    // read-after-write race. Older/externally-created jobs still resolve it from RTDB.
+    const n = job.notification && typeof job.notification === 'object'
+      ? job.notification
+      : await rtdbGet(env, `users/${enc(job.to)}/notifications/${enc(job.id)}`);
 
-    // The site can create pushOutbox/<jobId> and the notification record in two
-    // separate RTDB writes. If /event arrives first, KEEP the job instead of
-    // deleting it. Cron will retry it after the notification becomes visible.
+    // For legacy jobs created without an embedded record, keep the retry behavior
+    // rather than dropping the notification when RTDB replication is momentarily stale.
     if (!n) return { kind: 'retry', reason: 'notification record not visible yet' };
 
     if (n.pushedAt) return { kind: 'discard', reason: 'notification already pushed' };
@@ -676,7 +585,7 @@ function diagnoseRecipient(entry, totals, ctx) {
 }
 
 /** Processes one job. budget.left = how many pushes this invocation may still send. */
-async function processJob(env, jobId, budget, preloaded, preloadedNotification) {
+async function processJob(env, jobId, budget, preloaded) {
   const job = preloaded || await rtdbGet(env, `pushOutbox/${enc(jobId)}`);
   const finish = async (extra = {}) => {
     await rtdbPatch(env, { [`pushOutbox/${jobId}`]: null, ...extra });
@@ -686,7 +595,7 @@ async function processJob(env, jobId, budget, preloaded, preloadedNotification) 
     return { sent: 0, next: null };
   }
 
-  const plan = await planJob(env, job, preloadedNotification);
+  const plan = await planJob(env, job);
 
   // IMPORTANT: never delete a job just because the source/notification record
   // is not visible yet. This is the race that was losing normal Kapani pushes.
@@ -859,117 +768,56 @@ async function runCron(env) {
   }
 }
 
-/* ───────────── request handlers ───────────── */
+/* ───────────── Firebase custom-token session ───────────── */
+async function signJwtRs256(env, claimsObj) {
+  let sa;
+  try { sa = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '')); }
+  catch { throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing or not valid JSON'); }
+  if (!sa?.client_email || !sa?.private_key) throw new Error('service account lacks client_email/private_key');
+
+  const headerObj = { alg: 'RS256', typ: 'JWT', ...(sa.private_key_id ? { kid: String(sa.private_key_id) } : {}) };
+  const b64 = x => b64uEnc(te.encode(JSON.stringify(x)));
+  const header = b64(headerObj);
+  const claims = b64(claimsObj);
+  const pem = String(sa.private_key)
+    .replace(/\r/g, '')
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  let der;
+  try { der = Uint8Array.from(atob(pem.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)); }
+  catch { throw new Error('service account private_key is not valid base64'); }
+  const key = await crypto.subtle.importKey('pkcs8', der, { name:'RSASSA-PKCS1-v1_5', hash:'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, te.encode(`${header}.${claims}`)));
+  return `${header}.${claims}.${b64uEnc(sig)}`;
+}
+
 async function handleSession(request, env, body) {
   const nick = String(body?.nick || '').trim();
   const ph = String(body?.ph || '').trim();
-  if (!(await verifyUser(env, nick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
-  const token = await createFirebaseCustomToken(env, nick);
-  return json(request, env, { ok: true, token, uid: nick });
-}
+  if (!validNick(nick) || ph.length < 32) return json(request, env, { error:'bad credentials' }, 401);
+  if (!(await verifyUser(env, nick, ph))) return json(request, env, { error:'unauthorized' }, 401);
 
-async function handleGift(request, env, body) {
-  const giverNick = String(body?.nick || '').trim();
-  const ph = String(body?.ph || '').trim();
-  const recipientNick = String(body?.recipientNick || '').trim();
-  const type = normalizeSubscriptionType(body?.subscriptionType);
-
-  if (!(await verifyUser(env, giverNick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
-  if (!validNick(giverNick) || !validNick(recipientNick) || recipientNick === giverNick) {
-    return json(request, env, { error: 'Некорректный получатель' }, 400);
-  }
-  if (type === 'none') return json(request, env, { error: 'Некорректная подписка' }, 400);
-
-  const plan = SUBSCRIPTIONS[type];
-  const price = Number(plan.price);
-  const giftRank = Number(plan.rank);
-  const committedAt = Date.now();
-  const giftId = giftIdPart('gift');
-  const giverTxId = giftIdPart('tx');
-  const recipientTxId = giftIdPart('tx');
-  const giverJobId = giftIdPart('push');
-  const recipientJobId = giftIdPart('push');
-
-  const tx = await rtdbRootTransaction(env, async (root) => {
-    const users = root?.users && typeof root.users === 'object' ? root.users : {};
-    const giver = users[giverNick];
-    const recipient = users[recipientNick];
-    if (!giver || !recipient) return { abort: true, reason: 'Пользователь не найден' };
-
-    const balance = Number(giver.balance || 0);
-    if (!Number.isFinite(balance) || balance < price) return { abort: true, reason: `Недостаточно средств. Нужно ${price}₽` };
-
-    const recipientRank = subscriptionRank(recipient);
-    if (recipientRank >= giftRank) return { abort: true, reason: 'Нельзя подарить эту подписку. У пользователя уже есть подписка более высокого уровня.' };
-
-    const currentExpiry = recipient.subscriptionExpiry ? new Date(recipient.subscriptionExpiry) : null;
-    const activeSameType = normalizeSubscriptionType(recipient.subscription) === type
-      && currentExpiry && !Number.isNaN(currentExpiry.getTime()) && currentExpiry.getTime() > committedAt;
-    const expiry = activeSameType
-      ? new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000)
-      : new Date(committedAt + 7 * 24 * 60 * 60 * 1000);
-    const now = new Date(committedAt);
-    const startDate = activeSameType ? String(recipient.subscriptionStart || now.toISOString()) : now.toISOString();
-    const date = now.toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' });
-    const time = moscowTime(committedAt);
-    const ts = now.toISOString();
-
-    const next = { ...root, users: { ...users } };
-    next.users[giverNick] = {
-      ...giver,
-      balance: balance - price,
-      txlog: { ...(giver.txlog || {}), [giverTxId]: { type: 'out', who: 'Подарок подписки', amt: price, desc: `Подарок ${plan.name} для ${recipientNick}`, date, time, ts } },
-      notifications: { ...(giver.notifications || {}), [`gift_${giftId}`]: {
-        createdAt: committedAt, url: appUrl(env), cat: 'system', push: true, title: 'Капани', time,
-        text: `🎁 Вы подарили ${plan.name} пользователю ${recipientNick}!`, source: 'subscription_gift', sourceMessageId: giftId
-      }}
-    };
-    next.users[recipientNick] = {
-      ...recipient, subscription: type, subscriptionStatus: 'active', subscriptionExpiry: expiry.toISOString(),
-      subscriptionStart: startDate, subscriptionGiftedBy: giverNick, subscriptionGiftedAt: now.toISOString(),
-      totalEarned: Number(recipient.totalEarned || 0),
-      txlog: { ...(recipient.txlog || {}), [recipientTxId]: { type: 'in', who: 'Подарок подписки', amt: 0, desc: `Получена ${plan.name} от ${giverNick}`, date, time, ts } },
-      notifications: { ...(recipient.notifications || {}), [`gift_${giftId}`]: {
-        createdAt: committedAt, url: appUrl(env), cat: 'system', push: true, title: 'Капани', time,
-        text: `🎁 ${giverNick} подарил вам ${plan.name}!`, source: 'subscription_gift', sourceMessageId: giftId
-      }}
-    };
-
-    next.subscriptionGifts = { ...(root.subscriptionGifts || {}), [giftId]: { id: giftId, from: giverNick, to: recipientNick, subscription: type, price, createdAt: committedAt, status: 'completed' } };
-    const treasury = root.municipalTreasury && typeof root.municipalTreasury === 'object' ? root.municipalTreasury : { balance: 0 };
-    next.municipalTreasury = { ...treasury, balance: Number(treasury.balance || 0) + price, updatedAt: committedAt };
-    const treasuryHistory = treasury.history && typeof treasury.history === 'object' ? treasury.history : {};
-    next.municipalTreasury.history = { ...(next.municipalTreasury.history || {}), [giftIdPart('treasury')]: {
-      type: 'in', amount: price, reason: `Подаренная подписка ${plan.name} от ${giverNick}`, sourceNick: giverNick, sourceType: 'subscription_gift', date, time, ts
-    }};
-
-    next.pushOutbox = { ...(root.pushOutbox || {}),
-      [giverJobId]: { type: 'notification', to: giverNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt },
-      [recipientJobId]: { type: 'notification', to: recipientNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt }
-    };
-    return { value: next };
+  const now = Math.floor(Date.now() / 1000);
+  const projectId = String(env.FIREBASE_PROJECT_ID || 'kapanisite').trim();
+  const serviceAccount = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}'));
+  const uid = nick;
+  // Firebase custom tokens have a documented JWT shape. In particular,
+  // `firebase` is NOT a custom-token claim; using it here makes Firebase reject
+  // the token during signInWithCustomToken(). Optional custom claims belong in
+  // `claims`. We do not need any custom claims for Kapani.
+  const token = await signJwtRs256(env, {
+    iss: String(serviceAccount.client_email),
+    sub: String(serviceAccount.client_email),
+    aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
+    iat: now,
+    exp: now + 3600,
+    uid
   });
-
-  if (!tx.committed) {
-    const reason = String(tx.reason || 'Операция не подтверждена').trim();
-    const status = /Недостаточно средств|более высокого уровня|Некорректн/.test(reason) ? 400 : 409;
-    return json(request, env, { ok: false, error: reason }, status);
-  }
-
-  const deliveries = [];
-  for (const jobId of [giverJobId, recipientJobId]) {
-    try {
-      const result = await processJob(env, jobId, { left: maxPush(env) });
-      deliveries.push({ jobId, sent: Number(result?.sent || 0), retry: !!result?.retry, statuses: result?.statuses || [] });
-    } catch (e) {
-      console.warn('gift push job failed', jobId, String(e?.message || e));
-      deliveries.push({ jobId, error: String(e?.message || e).slice(0, 200) });
-    }
-  }
-
-  return json(request, env, { ok: true, success: true, giftId, subscription: type, price, deliveries });
+  return json(request, env, { ok:true, token, expiresIn:3600 });
 }
 
+/* ───────────── request handlers ───────────── */
 async function handleNotify(request, env, body) {
   try {
     const sender = String(body?.nick || '').trim();
@@ -1006,7 +854,12 @@ async function handleNotify(request, env, body) {
       id: notificationId,
       sender,
       queuedAt: Date.now(),
-      ts: Date.now()
+      ts: Date.now(),
+      // Keep the freshly-authenticated record in the job itself. RTDB REST can
+      // briefly return the old value immediately after a write; the live /notify
+      // request must not depend on a second read seeing this record. Cron jobs can
+      // still fall back to RTDB through planJob() when this field is absent.
+      notification: record
     };
 
     // Notification + durable push job are created in ONE authenticated server-side
@@ -1017,7 +870,10 @@ async function handleNotify(request, env, body) {
       [`pushOutbox/${enc(jobId)}`]: job
     });
 
-    const result = await processJob(env, jobId, { left: maxPush(env) }, job, record);
+    // Do not re-read the just-created pushOutbox item here. Pass the exact job
+    // we already have in memory; otherwise an immediate RTDB GET can return null
+    // and produce the misleading {sent:0,retry:false,reason:null,statuses:[]} response.
+    const result = await processJob(env, jobId, { left: maxPush(env) }, job);
     return json(request, env, {
       ok: true,
       notificationId,
@@ -1225,7 +1081,7 @@ export default {
         return json(request, env, {
           ok: true,
           service: 'kapani-push',
-          endpoints: { health: 'GET /health', session: 'POST /session', gift: 'POST /gift', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
+          endpoints: { health: 'GET /health', session: 'POST /session', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
         });
       }
       if (url.pathname === '/health') {
@@ -1243,7 +1099,6 @@ export default {
       const body = await request.json().catch(() => null);
       if (!body || typeof body !== 'object') return json(request, env, { error: 'bad json' }, 400);
       if (url.pathname === '/session') return await handleSession(request, env, body);
-      if (url.pathname === '/gift') return await handleGift(request, env, body);
       if (url.pathname === '/notify') return await handleNotify(request, env, body);
       if (url.pathname === '/subscribe') return await handleSubscribe(request, env, body);
       if (url.pathname === '/unsubscribe') return await handleUnsubscribe(request, env, body);
