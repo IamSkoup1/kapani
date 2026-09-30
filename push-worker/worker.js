@@ -1,7 +1,7 @@
 /**
  * Kapani free Web Push — Cloudflare Worker + Firebase Spark (no Firebase Functions, no FCM SDK).
  *
- *   site ──► pushOutbox/<job> (RTDB) ──► POST /event ──► this Worker
+ *   site ──► POST /event or /notify ──► this Worker ──► pushOutbox/<job> (RTDB)
  *                                                         ├─ reads the real message/notification from RTDB
  *                                                         ├─ writes inbox records users/<nick>/notifications/*
  *                                                         └─ sends Web Push (VAPID + aes128gcm, WebCrypto)
@@ -222,6 +222,60 @@ async function verifyUser(env, nick, ph) {
   if (!validNick(nick) || typeof ph !== 'string' || ph.length < 32) return false;
   const real = await rtdbGet(env, `users/${enc(nick)}/passwordHash`);
   return typeof real === 'string' && safeEqual(real, ph);
+}
+
+const FIREBASE_CUSTOM_TOKEN_AUD = 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit';
+function normalizePublicName(value) {
+  return String(value ?? '').normalize('NFKC').trim().toLowerCase();
+}
+async function signJwtRS256(serviceAccount, headerObj, payloadObj) {
+  const header = b64uEnc(te.encode(JSON.stringify(headerObj)));
+  const payload = b64uEnc(te.encode(JSON.stringify(payloadObj)));
+  const unsigned = `${header}.${payload}`;
+  const pem = String(serviceAccount.private_key || '')
+    .replace(/-----BEGIN PRIVATE KEY-----/g, '')
+    .replace(/-----END PRIVATE KEY-----/g, '')
+    .replace(/\s+/g, '');
+  const der = Uint8Array.from(atob(pem.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey('pkcs8', der, {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'}, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, te.encode(unsigned)));
+  return `${unsigned}.${b64uEnc(sig)}`;
+}
+async function createFirebaseCustomToken(env, uid, additionalClaims={}) {
+  let sa;
+  try { sa = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '')); }
+  catch (_) { throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is invalid JSON'); }
+  if (!sa?.client_email || !sa?.private_key) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is missing client_email or private_key');
+  const normalizedUid=String(uid||'').trim();
+  if(!normalizedUid || normalizedUid.length>128) throw new Error('Invalid Firebase UID');
+  const now=Math.floor(Date.now()/1000);
+  return signJwtRS256(sa, {alg:'RS256',typ:'JWT'}, {
+    iss:String(sa.client_email),
+    sub:String(sa.client_email),
+    aud:FIREBASE_CUSTOM_TOKEN_AUD,
+    iat:now,
+    exp:now+3600,
+    uid:normalizedUid,
+    claims:{...additionalClaims,provider:'kapani-cloudflare'}
+  });
+}
+
+async function handleSession(request, env, body) {
+  const nick=String(body?.nick||'').trim();
+  const password=String(body?.password||'');
+  if(!validNick(nick) || !password) return json(request, env, {ok:false,error:'nick and password are required'},400);
+  const user=await rtdbGet(env, `users/${enc(nick)}`);
+  if(!user) return json(request, env, {ok:false,error:'Invalid credentials'},401);
+  const expected=String(user.passwordHash||'');
+  if(!expected) return json(request, env, {ok:false,error:'Account does not have a password configured'},403);
+  const salt=String(user.passwordHashSalt||user.nick||nick);
+  const actual=await sha256Hex(`kapani::${normalizePublicName(salt)}::${password}`);
+  if(!safeEqual(actual,expected)) return json(request, env, {ok:false,error:'Invalid credentials'},401);
+  const token=await createFirebaseCustomToken(env,nick,{
+    nick:String(user.nick||nick),
+    displayName:String(user.displayName||nick)
+  });
+  return json(request, env, {ok:true,token,uid:nick,expiresIn:3600},200);
 }
 
 /* ───────────── subscriptions in KV (single key) ───────────── */
@@ -981,7 +1035,7 @@ async function handleDebug(request, env, body) {
 
 async function handleEvent(request, env, body) {
   let jobId = String(body.jobId || '');
-  if (body.job) {                                                                 // fallback: the browser could not write the outbox itself
+  if (body.job) {                                                                 // authenticated inline job: Worker owns the durable outbox
     if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
     const j = body.job;
     if (!['notification', 'chat', 'news'].includes(j?.type)) return json(request, env, { error: 'bad job' }, 400);
@@ -1021,7 +1075,7 @@ export default {
         return json(request, env, {
           ok: true,
           service: 'kapani-push',
-          endpoints: { health: 'GET /health', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
+          endpoints: { health: 'GET /health', session: 'POST /session', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
         });
       }
       if (url.pathname === '/health') {
@@ -1038,6 +1092,7 @@ export default {
       if (request.method !== 'POST') return json(request, env, { error: 'not found' }, 404);
       const body = await request.json().catch(() => null);
       if (!body || typeof body !== 'object') return json(request, env, { error: 'bad json' }, 400);
+      if (url.pathname === '/session') return await handleSession(request, env, body);
       if (url.pathname === '/notify') return await handleNotify(request, env, body);
       if (url.pathname === '/subscribe') return await handleSubscribe(request, env, body);
       if (url.pathname === '/unsubscribe') return await handleUnsubscribe(request, env, body);

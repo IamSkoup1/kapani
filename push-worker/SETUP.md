@@ -1,7 +1,7 @@
 # Push при закрытом сайте — бесплатно, через Cloudflare Worker
 
 Схема: сайт → Worker (Cloudflare) → push-сервис браузера → системное уведомление.
-Firebase остаётся только как база данных (RTDB). Firebase Functions и тариф Blaze не нужны.
+Firebase используется как RTDB/Auth-контур. Push и выдача защищённой Firebase-сессии выполняются через этот Worker; Firebase Functions и тариф Blaze не нужны для этих путей.
 
 Понадобится: Node.js 18+, бесплатный аккаунт Cloudflare, доступ к консоли Firebase.
 
@@ -57,6 +57,8 @@ wrangler deploy
 Любое `false` — это то, что вы забыли настроить (шаги 2–5).
 
 ## 8. Подключить сайт
+
+> В этой версии Worker также имеет `POST /session`: клиент использует его для выдачи Firebase custom token и больше не зависит от старого callable `issueKapaniSessionToken`. Для этого используется тот же `FIREBASE_SERVICE_ACCOUNT_JSON`, который уже нужен Worker для RTDB.
 В `config.js`:
 ```js
 pushWorkerUrl: "https://kapani-push.<ваш-поддомен>.workers.dev",
@@ -71,7 +73,7 @@ pushWorkerUrl: "https://kapani-push.<ваш-поддомен>.workers.dev",
 4. Настоящая проверка: закройте сайт полностью, со второго аккаунта напишите в ЛС и в общий чат — придёт push.
 
 ## Что происходит под капотом
-* Сообщение/новость/уведомление → сайт пишет задачу в `pushOutbox/<id>` и дёргает Worker (`POST /event`).
+* Сообщение/новость/уведомление → сайт отправляет Worker (`POST /event` или `/notify`). Worker сам создаёт задачу `pushOutbox/<id>` перед обработкой.
 * Worker сам читает настоящее сообщение из базы (нельзя подделать чужой текст), пишет «🔔 Уведомления» всем адресатам
   (`users/<ник>/notifications/...`) и шлёт Web Push на все устройства адресатов.
 * Не дошло сразу (обрыв сети и т.п.) — раз в минуту задачу подберёт cron Worker.

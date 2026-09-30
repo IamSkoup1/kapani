@@ -937,7 +937,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:20px;">
             <div class="avatar-wrap" id="upmAvatarWrap">
-                <img id="upmAv" src="" style="width:80px;height:80px;border-radius:22px;object-fit:cover;border:3px solid var(--primary);box-shadow:0 0 0 6px var(--pri-dim);cursor:pointer;" onclick="openImgViewer(this.src)" title="Открыть в полный экран"><video id="upmAvVideo" style="width:80px;height:80px;border-radius:22px;object-fit:cover;border:3px solid var(--primary);box-shadow:0 0 0 6px var(--pri-dim);cursor:pointer;display:none;position:absolute;inset:0;" muted autoplay loop playsinline onclick="openVideoViewer(this.currentSrc||this.src)"></video>
+                <img id="upmAv" style="width:80px;height:80px;border-radius:22px;object-fit:cover;border:3px solid var(--primary);box-shadow:0 0 0 6px var(--pri-dim);cursor:pointer;" onclick="openImgViewer(this.src)" title="Открыть в полный экран"><video id="upmAvVideo" style="width:80px;height:80px;border-radius:22px;object-fit:cover;border:3px solid var(--primary);box-shadow:0 0 0 6px var(--pri-dim);cursor:pointer;display:none;position:absolute;inset:0;" muted autoplay loop playsinline onclick="openVideoViewer(this.currentSrc||this.src)"></video>
                 <div class="online-dot"></div>
             </div>
             <div style="font-weight:900;font-size:22px;" id="upmNick"></div>
@@ -957,7 +957,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
 <div id="imgViewer" onclick="if(event.target===this)closeImgViewer()">
     <button class="img-viewer-close" onclick="closeImgViewer()">✕</button>
     <div class="img-zoom-wrap" id="imgZoomWrap" onclick="event.stopPropagation()">
-        <img id="imgViewerImg" src="" alt="" style="max-width:95vw;max-height:85vh;object-fit:contain;touch-action:none;user-select:none;-webkit-user-select:none;">
+        <img id="imgViewerImg" alt="" style="max-width:95vw;max-height:85vh;object-fit:contain;touch-action:none;user-select:none;-webkit-user-select:none;">
     </div>
     <div class="img-zoom-bar" onclick="event.stopPropagation()">
         <button type="button" class="btn btn-ghost btn-sm" onclick="adjustImgZoom(-0.5)" style="font-size:18px;padding:8px 16px;">−</button>
@@ -1001,7 +1001,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
 <div id="gHeader" style="display:none" class="g-header">
     <div class="h-left" onclick="navTo('profile')">
         <div class="avatar-wrap" id="headerAvatarWrap">
-            <img id="hAv" src="" class="h-avatar" loading="lazy"><video id="hAvVideo" class="h-avatar" style="display:none;position:absolute;inset:0;object-fit:cover;border-radius:12px;" muted autoplay loop playsinline></video>
+            <img id="hAv" class="h-avatar" loading="lazy"><video id="hAvVideo" class="h-avatar" style="display:none;position:absolute;inset:0;object-fit:cover;border-radius:12px;" muted autoplay loop playsinline></video>
             <div class="online-dot" style="border-color:rgba(12,17,23,0.88)"></div>
         </div>
         <div><div class="h-name" id="hNick">...</div><div class="h-job" id="hJob">Житель</div></div>
@@ -1217,7 +1217,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
                 <button class="dm-back" onclick="closeDmChat()">← Назад</button>
                 <div class="dm-header-row">
                     <div class="av-wrap-sm" id="dmChatAvWrap" style="cursor:pointer;" onclick="openCurrentDmProfile()">
-                        <img id="dmChatAv" src="" style="width:38px;height:38px;border-radius:11px;object-fit:cover;"><video id="dmChatAvVideo" style="width:38px;height:38px;border-radius:11px;object-fit:cover;display:none;position:absolute;inset:0;" muted autoplay loop playsinline></video>
+                        <img id="dmChatAv" style="width:38px;height:38px;border-radius:11px;object-fit:cover;"><video id="dmChatAvVideo" style="width:38px;height:38px;border-radius:11px;object-fit:cover;display:none;position:absolute;inset:0;" muted autoplay loop playsinline></video>
                         <div class="online-dot"></div>
                     </div>
                     <div style="flex:1;cursor:pointer;" onclick="openCurrentDmProfile()">
@@ -1570,9 +1570,9 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div id="profileBgEffect" style="position:absolute;inset:0;pointer-events:none;z-index:-1;overflow:hidden;border-radius:var(--r);"></div>
         <div style="position:relative;z-index:1;">
             <div id="avatarFrameContainer" style="position:relative;display:inline-block;">
-                <img id="uAv" src="" class="p-av" style="cursor:pointer;position:relative;z-index:1;" onclick="openImgViewer(this.src)" title="Открыть в полный экран (можно увеличить)">
+                <img id="uAv" class="p-av" style="cursor:pointer;position:relative;z-index:1;" onclick="openImgViewer(this.src)" title="Открыть в полный экран (можно увеличить)">
                 <div id="avatarFrame" style="position:absolute;inset:-6px;border-radius:32px;pointer-events:none;z-index:2;display:none;"></div>
-                <video id="uAvVideo" src="" class="p-av" style="cursor:pointer;position:absolute;inset:0;z-index:1;display:none;object-fit:cover;border-radius:26px;" autoplay muted loop playsinline onclick="openImgViewer(this.currentSrc||this.src)"></video>
+                <video id="uAvVideo" class="p-av" style="cursor:pointer;position:absolute;inset:0;z-index:1;display:none;object-fit:cover;border-radius:26px;" autoplay muted loop playsinline onclick="openImgViewer(this.currentSrc||this.src)"></video>
             </div>
             <div class="p-name" id="uNick"></div>
             <div class="p-job" id="uJobDisp"></div>
@@ -1651,7 +1651,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div id="vpfProfileBgEffect" style="position:absolute;inset:0;pointer-events:none;z-index:-1;overflow:hidden;border-radius:var(--r);"></div>
         <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;">
             <div id="vpfAvWrap" style="position:relative;display:inline-block;">
-                <img id="vpfAv" src="" class="p-av" style="cursor:pointer;" onclick="openImgViewer(this.src)" alt=""><video id="vpfAvVideo" class="p-av" style="cursor:pointer;position:absolute;inset:0;display:none;object-fit:cover;border-radius:26px;" muted autoplay loop playsinline onclick="openVideoViewer(this.currentSrc||this.src)"></video>
+                <img id="vpfAv" class="p-av" style="cursor:pointer;" onclick="openImgViewer(this.src)" alt=""><video id="vpfAvVideo" class="p-av" style="cursor:pointer;position:absolute;inset:0;display:none;object-fit:cover;border-radius:26px;" muted autoplay loop playsinline onclick="openVideoViewer(this.currentSrc||this.src)"></video>
                 <div id="vpfAvatarFrame" class="avatar-frame" style="display:none;position:absolute;inset:-2px;border-radius:inherit;pointer-events:none;z-index:2;"></div>
             </div>
             <div class="p-name" id="vpfName" style="text-align:center;"></div>
@@ -2380,7 +2380,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
     <label class="btn btn-ghost" for="raceFormMapFile" style="width:100%;text-align:center;cursor:pointer;display:block;padding:12px;font-size:13px;font-weight:800;">📷 Выбрать изображение карты</label>
     <input type="file" id="raceFormMapFile" accept="image/*" style="display:none;" onchange="handleRaceMapPhoto(event)">
     <div id="raceFormMapPreview" style="margin-top:8px;display:none;">
-      <img id="raceFormMapImg" src="" style="width:100%;border-radius:var(--r-sm);max-height:200px;object-fit:cover;cursor:pointer;" onclick="openImgViewer(this.src)">
+      <img id="raceFormMapImg" style="width:100%;border-radius:var(--r-sm);max-height:200px;object-fit:cover;cursor:pointer;" onclick="openImgViewer(this.src)">
       <button class="btn btn-ghost btn-sm" onclick="clearRaceMapPhoto()" style="margin-top:6px;">🗑 Удалить фото</button>
     </div>
     <div style="margin:16px 0 8px;padding:14px;background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.2);border-radius:var(--r-sm);">
@@ -2645,13 +2645,19 @@ async function establishKapaniServerSession(nick, password){
             const latestAuth = await ensureAuth();
             if(latestAuth.currentUser?.uid === expectedNick) return latestAuth.currentUser;
 
-            const fn = await ensureFunctions();
-            const { httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
-            const result = await httpsCallable(fn, 'issueKapaniSessionToken')({
-                nick: expectedNick,
-                password: secret
-            });
-            const token = String(result?.data?.token || '');
+            let token='';
+            if(PUSH_WORKER_URL){
+                const result=await pushWorkerCall('/session',{nick:expectedNick,password:secret},{timeoutMs:10000});
+                token=String(result?.token||'');
+            }else{
+                const fn = await ensureFunctions();
+                const { httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+                const result = await httpsCallable(fn, 'issueKapaniSessionToken')({
+                    nick: expectedNick,
+                    password: secret
+                });
+                token = String(result?.data?.token || '');
+            }
             if(!token) throw new Error('Firebase не выдал защищённый токен сессии');
 
             const credential = await authModule.signInWithCustomToken(latestAuth, token);
@@ -2659,7 +2665,7 @@ async function establishKapaniServerSession(nick, password){
                 throw new Error('Firebase вернул неверного пользователя');
             }
             return credential.user;
-        }, 'issueKapaniSessionToken');
+        }, 'protected server session');
     })();
 
     try{
@@ -2735,7 +2741,7 @@ const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 // Canonical push backend: direct Web Push through the Cloudflare Worker in push-worker/.
 // Firebase Functions are not part of the push delivery path.
 const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
-const KAPANI_BUILD = '2026-09-30-cloudflare-spark'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
+const KAPANI_BUILD = '2026-09-30-cloudflare-spark-fixes'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -3088,7 +3094,7 @@ async function requireKapaniServerSession(timeoutMs=15000){
         if(restored?.uid === nick) return restored;
 
         // 2) If the user logged in during this page lifetime, heal via the existing
-        // issueKapaniSessionToken -> signInWithCustomToken flow. The password remains
+        // Worker /session -> Firebase signInWithCustomToken flow. The password remains
         // memory-only and is never persisted by this helper.
         if(_kapaniSessionPassword){
             try{
@@ -4314,22 +4320,32 @@ function revealApp(){
     try { navTo('home'); } catch(e) { console.error('[Kapani] home navigation:',e); }
 }
 
-window.logout = async function() {
-    const logoutNick=currentNick;
-    try { if(logoutNick) await unregisterWebPushSubscription(); } catch(e) { console.debug('[Kapani Push] logout unregister:', e); }
+window.logout = function() {
+    const logoutNick=String(currentNick||'').trim();
+    let logoutSubscriptionId='';
+    let logoutPasswordHash='';
+    try{ logoutSubscriptionId=String(window._kapaniWebPushSubscriptionId||localStorage.getItem('kp_webpush_subscription_id')||''); }catch(_){ }
+    logoutPasswordHash=String(allUsersCache?.[logoutNick]?.passwordHash||'');
+
+    // Unregister remotely without making the button wait for network/Firebase.
+    if(logoutNick && PUSH_WORKER_URL){
+        void unregisterWebPushSubscription(logoutNick,logoutSubscriptionId,{phOverride:logoutPasswordHash,keepalive:true,timeoutMs:1500});
+    }
     try { if(typeof stopTaskLiveListeners==='function') stopTaskLiveListeners(); } catch(e) {}
-    stopAllActivity();
-    leaveAllServiceServices();
-    Object.values(listeners).forEach(({ref:r,fn})=>off(r,'value',fn));
-    if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);}
-    if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);}
+    try { stopAllActivity(); } catch(e) {}
+    try { leaveAllServiceServices(); } catch(e) {}
+    Object.values(listeners).forEach(({ref:r,fn})=>{ try{ off(r,'value',fn); }catch(_){} });
+    if(dmListeners.current){try{if(dmListeners.current.unsub) dmListeners.current.unsub(); else off(dmListeners.current.ref,'value',dmListeners.current.fn);}catch(_){} }
+    if(dmListeners.read){try{if(dmListeners.read.unsub) dmListeners.read.unsub(); else off(dmListeners.read.ref,'value',dmListeners.read.fn);}catch(_){} }
     listeners={};dmListeners={};
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
-    try { if(authInstance?.currentUser) await authModule.signOut(authInstance); } catch(e){ console.warn('[Kapani auth] signOut:',e); }
-    try { await unregisterWebPushSubscription(); } catch(e) { console.debug('[Kapani Push] logout unregister:', e); }
-    try { localStorage.removeItem('kp_webpush_subscription_id'); } catch(e) {}
-    window._kapaniWebPushSubscriptionId = null;
-    localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); currentNick = null; _kapaniSessionPassword = null; syncCurrentNick(); location.reload();
+    // Firebase sign-out is local state cleanup; fire it without blocking mobile taps/navigation.
+    try { if(authInstance?.currentUser && authModule?.signOut) void authModule.signOut(authInstance).catch(e=>console.debug('[Kapani auth] signOut:',e)); } catch(e) { console.debug('[Kapani auth] signOut:', e); }
+    try { localStorage.removeItem('kp_webpush_subscription_id'); localStorage.removeItem('kp_push_reg'); } catch(e) {}
+    window._kapaniWebPushSubscriptionId=null;
+    try { localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); } catch(e) {}
+    currentNick=null; _kapaniSessionPassword=null; syncCurrentNick();
+    location.reload();
 };
 
 // ─── REAL-TIME LISTENERS ──────────────────
@@ -5058,16 +5074,27 @@ async function getWebPushSubscriptionPayload(subscription){
 async function hashWebPushEndpoint(endpoint){const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(endpoint||'')));return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);}
 // ─── Cloudflare push worker client ────────────────────────────────
 // Identity is the site's own (nick + passwordHash stored in RTDB), the same trust level as the login itself.
-async function getPushAuthHash(){
-    let ph=allUsersCache?.[currentNick]?.passwordHash;
-    if(!ph){ try{ ph=(await get(ref(db,`users/${currentNick}/passwordHash`))).val(); }catch(_){} }
+async function getPushAuthHash(nickOverride=currentNick){
+    const nick=String(nickOverride||'').trim();
+    if(!nick)return '';
+    let ph=allUsersCache?.[nick]?.passwordHash;
+    if(!ph){ try{ ph=(await get(ref(db,`users/${nick}/passwordHash`))).val(); }catch(_){} }
     return String(ph||'');
 }
-async function pushWorkerCall(path,body){
-    const res=await fetch(PUSH_WORKER_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data?.error||data?.detail||('push worker HTTP '+res.status));
-    return data;
+async function pushWorkerCall(path,body,options={}){
+    if(!PUSH_WORKER_URL) throw new Error('Cloudflare push worker is not configured');
+    const controller=new AbortController();
+    const timeoutMs=Math.max(1000,Number(options?.timeoutMs||12000));
+    const timer=setTimeout(()=>controller.abort(),timeoutMs);
+    try{
+        const res=await fetch(PUSH_WORKER_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),signal:controller.signal,keepalive:!!options?.keepalive});
+        const data=await res.json().catch(()=>({}));
+        if(!res.ok) throw new Error(data?.error||data?.detail||('push worker HTTP '+res.status));
+        return data;
+    }catch(e){
+        if(e?.name==='AbortError') throw new Error(`Cloudflare push worker timeout (${timeoutMs}ms)`);
+        throw e;
+    }finally{ clearTimeout(timer); }
 }
 // Wake the worker for a job. The worker returns `next` when it had to split a big fan-out; keep going.
 async function kickPushWorker(jobId,inline){
@@ -5079,17 +5106,17 @@ async function kickPushWorker(jobId,inline){
         inline=null; jobId=res?.next||null;
     }
 }
-// Durable path: write the job to RTDB (cron will pick it up if this call is lost), then wake the worker.
-// If the browser may not write the outbox, fall back to an authenticated inline job.
+// Send the job directly to the Worker as an authenticated POST. The Worker creates
+// the durable pushOutbox record before processing it, so the browser never needs
+// direct write access to pushOutbox (which is intentionally denied by RTDB rules).
 async function enqueuePushJob(job){
     if(!PUSH_WORKER_URL||!currentNick) return;
+    // The Worker owns the durable outbox now. Send the event as an authenticated POST
+    // immediately instead of first attempting a client RTDB write that is denied by rules.
     try{
-        const jRef=push(ref(db,'pushOutbox'));
-        await set(jRef,{...job,ts:Date.now()});
-        void kickPushWorker(String(jRef.key||''));
+        await kickPushWorker('',{...job,ts:Date.now()});
     }catch(e){
-        console.debug('[Kapani push worker] outbox write failed, using inline job:',e?.message||e);
-        void kickPushWorker('',job);
+        console.debug('[Kapani push worker] event enqueue failed:',e?.message||e);
     }
 }
 window.getKapaniPushWorkerHealth=async function(){
@@ -5204,13 +5231,16 @@ async function registerWebPushSubscription(){
     window._kapaniWebPushSubscriptionId=savedId;try{localStorage.setItem('kp_webpush_subscription_id',window._kapaniWebPushSubscriptionId);}catch(e){}
     window._kapaniPushState={...(window._kapaniPushState||{}),status:'registered',backend:PUSH_WORKER_URL?'cloudflare-webpush':null,pushSupported:true,pushSubscriptionExists:true,subscriptionId:window._kapaniWebPushSubscriptionId,subscriptionSaved:true,vapidConfigured:!!WEB_PUSH_VAPID_PUBLIC_KEY,lastGoodRegistrationAt:Date.now(),error:null};return sub;
 }
-async function unregisterWebPushSubscription(){
+async function unregisterWebPushSubscription(nickOverride=currentNick,idOverride='',options={}){
+    const nick=String(nickOverride||'').trim();
     let sub=null;try{sub=await getWebPushSubscription(false);}catch(_){}
-    let id=window._kapaniWebPushSubscriptionId;try{id=id||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}
+    let id=String(idOverride||'').trim();
+    if(!id){try{id=window._kapaniWebPushSubscriptionId||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}}
     if(!id&&sub?.endpoint)id=await hashWebPushEndpoint(sub.endpoint);
-    if(id){
+    if(id && PUSH_WORKER_URL && nick){
         try{
-            if(PUSH_WORKER_URL){ const ph=await getPushAuthHash(); if(ph) await pushWorkerCall('/unsubscribe',{nick:currentNick,ph,subscriptionId:id}); }
+            const ph=String(options?.phOverride||'') || await getPushAuthHash(nick);
+            if(ph) await pushWorkerCall('/unsubscribe',{nick,ph,subscriptionId:id},{keepalive:!!options?.keepalive,timeoutMs:Number(options?.timeoutMs||12000)});
         }catch(e){console.debug('[Kapani Push] unregister subscription failed:',e);}
     }
     window._kapaniWebPushSubscriptionId=null;try{localStorage.removeItem('kp_webpush_subscription_id');localStorage.removeItem('kp_push_reg');}catch(e){}
@@ -7156,7 +7186,7 @@ window.openCallModal = function(){
         const u = allUsersCache[currentNick];
         nameEl.value = (u && (u.displayName || u.name)) || currentNick || '';
     }
-    const prev = qs('callPhotoPreview'); if(prev){ prev.style.display='none'; prev.src=''; }
+    const prev = qs('callPhotoPreview'); if(prev){ prev.style.display='none'; prev.removeAttribute('src'); }
     m.style.display = 'flex';
 };
 window.closeCallModal = function(){
@@ -7187,7 +7217,7 @@ window.submitCall = async function(){
         if(qs('callDesc')) qs('callDesc').value='';
         if(qs('callAddress')) qs('callAddress').value='';
         _callPhotoData = null;
-        const prev = qs('callPhotoPreview'); if(prev){ prev.style.display='none'; prev.src=''; }
+        const prev = qs('callPhotoPreview'); if(prev){ prev.style.display='none'; prev.removeAttribute('src'); }
         closeCallModal();
         toast('✅ Вызов отправлен! КСБ и полиция уведомлены.','green');
     }catch(err){ console.error('call error', err); toast('❌ Не удалось отправить вызов','red'); }
@@ -7722,7 +7752,7 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
     else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
     if(currentDmNick!==currentNick){
-        await pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:`${key}:${msg.createdAt}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
+        void pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:`${key}:${msg.createdAt}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
     }
 }
 
@@ -8729,7 +8759,7 @@ function renderLeaderboard(users){
     const frameHtml = frameClass
         ? `<div class="avatar-frame ${frameClass}" style="position:absolute;inset:-4px;border-radius:inherit;pointer-events:none;z-index:1;"></div>`
         : '';
-        return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||'')}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div>${valHtml}</div>`;
+        return `<div class="lb-row" style="cursor:pointer;${u.nick===currentNick?'border-color:var(--primary);background:var(--pri-dim)':''}" onclick="openUserProfile('${escHtml(u.nick)}')"><div class="lb-rank">${medals[i]||`#${i+1}`}</div><div class="av-wrap-sm ${online?'online':''}" style="position:relative;">${frameHtml}<img class="lb-av" src="${escHtml(u.avatar||DEFAULT_AVATAR_URL)}" loading="lazy"><div class="online-dot"></div></div><div class="lb-info"><div class="lb-name">${escHtml(dn)}${u.nick===ADMIN?' 👑':''}</div><div class="lb-job" style="color:${online?'#22c55e':'var(--muted)'};">${online?'🟢 В сети':escHtml(getUserBusinessRoleLabel(u, u.nick || ''))}</div></div>${valHtml}</div>`;
   };
 
   const lbEl=qs('lbList'); if(!lbEl) return;
@@ -8887,7 +8917,7 @@ window.submitJanitorDone=async function(){
     await update(userRef(currentNick),{janitorSubmissionId:id,janitorSubmissionStatus:'pending'});
     window._janitorProofData=null;
     const prev=qs('janitorProofPreview');if(prev)prev.style.display='none';
-    const im=qs('janitorProofImg');if(im)im.src='';
+    const im=qs('janitorProofImg');if(im)im.removeAttribute('src');
     const c=qs('janitorProofComment');if(c)c.value='';
     const fi=qs('janitorProofFile');if(fi)fi.value='';
     const doneBtn=qs('janitorDoneBtn');if(doneBtn)doneBtn.disabled=true;
@@ -13714,7 +13744,7 @@ window.handleRaceMapPhoto = async function(e){
 };
 window.clearRaceMapPhoto = function(){
   _raceMapPhotoData = null;
-  const img = qs('raceFormMapImg'); if(img) img.src='';
+  const img = qs('raceFormMapImg'); if(img) img.removeAttribute('src');
   const preview = qs('raceFormMapPreview'); if(preview) preview.style.display='none';
   const fileInput = qs('raceFormMapFile'); if(fileInput) fileInput.value='';
 };
@@ -16243,7 +16273,7 @@ function escAttr(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&qu
 function renderHospitalPhotoCards(photos,canDelete){
     const list=Object.entries(photos||{}).sort((a,b)=>(b[1]?.createdAt||0)-(a[1]?.createdAt||0));
     if(!list.length)return '<div style="color:var(--muted);font-size:13px;">Фотографий пока нет.</div>';
-    return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${list.map(([id,p])=>`<div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;"><img src="${escAttr(p.data||'')}" alt="Фото больницы" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:pointer;" onclick="openImageFullscreen('${escAttr(p.data||'')}')">${canDelete?`<button class="btn btn-red btn-sm" style="position:absolute;right:6px;top:6px;min-width:0;padding:7px 9px;" onclick="deleteHospitalPhoto('${escAttr(id)}')">🗑</button>`:''}<div style="font-size:10px;color:var(--muted);padding:7px 8px;">${escHtml(p.authorNick||'Врач')}</div></div>`).join('')}</div>`;
+    return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${list.map(([id,p])=>`<div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;">${p.data?`<img src="${escAttr(p.data)}" alt="Фото больницы" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:pointer;" onclick="openImageFullscreen('${escAttr(p.data)}')">`:''}${canDelete?`<button class="btn btn-red btn-sm" style="position:absolute;right:6px;top:6px;min-width:0;padding:7px 9px;" onclick="deleteHospitalPhoto('${escAttr(id)}')">🗑</button>`:''}<div style="font-size:10px;color:var(--muted);padding:7px 8px;">${escHtml(p.authorNick||'Врач')}</div></div>`).join('')}</div>`;
 }
 function renderHospitalPhotosGallery(photos){const el=qs('hospitalPhotosGallery');if(el)el.innerHTML=renderHospitalPhotoCards(photos,false);}
 function renderHospitalPanelPhotos(photos,canDelete){const el=qs('hospitalPanelPhotos');if(el)el.innerHTML=renderHospitalPhotoCards(photos,canDelete);}
@@ -17338,7 +17368,9 @@ ready(function(){
       <input type="number" id="rlPrice" placeholder="Цена аренды (₽/неделю)" min="1" step="1">
       <input type="text" id="rlAddress" placeholder="Адрес / район" maxlength="120">
       <textarea id="rlDesc" placeholder="Описание (комнаты, этаж, мебель...)" style="min-height:60px;" maxlength="500"></textarea>
-      <input type="url" id="rlPhoto" placeholder="Фото URL (необязательно)">
+      <label class="file-upload-btn" for="rlPhotoFile">📷 Выбрать фото из галереи</label>
+      <input type="file" id="rlPhotoFile" accept="image/*" onchange="handleMarketRentPhoto(event)">
+      <div id="rlPhotoPreview" style="display:none;margin-top:8px;"><img alt="Предпросмотр фото здания" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid var(--border);"></div>
       <button class="btn btn-gold" onclick="publishRentListing()" style="margin-top:6px;">🏘️ Выставить на аренду</button>
       <div id="myRentListings" style="margin-top:14px;"></div>
     `;
@@ -17346,17 +17378,38 @@ ready(function(){
     ensureRentListener();
   }
 
+  let _marketRentPhotoData='';
+  window.handleMarketRentPhoto = async function(e){
+    const file=e?.target?.files?.[0];
+    if(!file)return;
+    try{
+      if(!String(file.type||'').startsWith('image/')) throw new Error('Нужен файл изображения');
+      toast('📷 Обрабатываем фото…','gold');
+      _marketRentPhotoData=await compressImage(file,900,0.85);
+      const preview=qs('rlPhotoPreview');
+      const img=preview?.querySelector('img');
+      if(img){ img.src=_marketRentPhotoData; }
+      if(preview)preview.style.display='block';
+      toast('✅ Фото здания выбрано','green');
+    }catch(err){
+      _marketRentPhotoData='';
+      toast('❌ Не удалось обработать фото','red');
+      console.error('[market rent photo]',err);
+    }finally{ try{e.target.value='';}catch(_){} }
+  };
   window.publishRentListing = async function(){
     const title = qs('rlTitle')?.value.trim();
     const price = parseInt(qs('rlPrice')?.value||'0',10)||0;
     const address = qs('rlAddress')?.value.trim();
     const desc = qs('rlDesc')?.value.trim();
-    const photo = qs('rlPhoto')?.value.trim();
+    const photo = String(_marketRentPhotoData||'');
     if(!title || !price || !desc) return toast('⚠️ Заполните название, цену, описание','gold');
     const id = 'rl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
     await set(marketRentRef(id), { id, owner: window.currentNick, title, price, address, desc, photo, status:'active', createdAt: Date.now() });
     toast('✅ Объявление об аренде опубликовано','green');
-    qs('rlTitle').value=''; qs('rlPrice').value=''; qs('rlAddress').value=''; qs('rlDesc').value=''; qs('rlPhoto').value='';
+    qs('rlTitle').value=''; qs('rlPrice').value=''; qs('rlAddress').value=''; qs('rlDesc').value='';
+    _marketRentPhotoData='';
+    const preview=qs('rlPhotoPreview'); if(preview){ preview.style.display='none'; const img=preview.querySelector('img'); if(img)img.removeAttribute('src'); }
     renderRentListingsOnMarket();
   };
 
@@ -17901,7 +17954,7 @@ ready(function(){
       const usersSnap=await get(ref(db,'users')); const users=usersSnap.val()||{};
       const rows=Object.entries(users).map(([nick,u])=>({nick,u,app:u?.scooterLicenseApplication||{}})).filter(x=>x.app.status==='pending').sort((a,b)=>(b.app.createdAt||0)-(a.app.createdAt||0));
       host.innerHTML=rows.length?rows.map(({nick,u,app})=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${esc(window.safeAvatar?window.safeAvatar(nick):u.avatar||'')}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(app.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(app.firstName||'—')} ${esc(app.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(app.createdAt)} · ${esc(app.status)}</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${escHtml(safeAvatar(u, DEFAULT_AVATAR_URL))}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(app.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(app.firstName||'—')} ${esc(app.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(app.createdAt)} · ${esc(app.status)}</div></div></div>
         <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(nick)}')">💬 Связаться</button><button class="btn btn-primary btn-sm" onclick="kapaniReviewScooter('${jsEsc(nick)}',true)">✅ Одобрить</button><button class="btn btn-red btn-sm" onclick="kapaniReviewScooter('${jsEsc(nick)}',false)">❌ Отказать</button></div>
       </div>`).join(''):'<div style="color:var(--muted);font-size:13px;">Заявок нет</div>';
     }
@@ -18003,7 +18056,7 @@ ready(function(){
       const users=(await get(ref(db,'users'))).val()||{};
       const rows=Object.entries(users).map(([nick,u])=>({nick,u,p:u?.kEducationPurchase||{}})).filter(x=>x.p.status==='submitted'||x.p.status==='paid').sort((a,b)=>(b.p.createdAt||0)-(a.p.createdAt||0));
       host.innerHTML=rows.length?rows.map(({nick,u,p})=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${esc(window.safeAvatar?window.safeAvatar(nick):u.avatar||'')}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(p.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(p.firstName||'—')} ${esc(p.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(p.createdAt)} · ${esc(p.status||'submitted')}</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${escHtml(safeAvatar(u, DEFAULT_AVATAR_URL))}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(p.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(p.firstName||'—')} ${esc(p.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(p.createdAt)} · ${esc(p.status||'submitted')}</div></div></div>
         <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-ghost btn-sm" onclick="goToChat('${jsEsc(nick)}')">💬 Связаться</button></div></div>`).join(''):'<div style="color:var(--muted);font-size:13px;">Заявок нет</div>';
     }
 
