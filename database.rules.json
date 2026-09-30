@@ -86,7 +86,11 @@
     },
     "chat": {
       ".read": "auth != null",
-      ".write": "auth != null"
+      ".write": "auth != null",
+      ".indexOn": [
+        "nick",
+        "createdAt"
+      ]
     },
     "dms": {
       "$key": {
@@ -95,7 +99,10 @@
         "messages": {
           "$msgId": {
             ".write": "auth != null && $key.contains(auth.uid)"
-          }
+          },
+          ".indexOn": [
+            "createdAt"
+          ]
         },
         "lastRead": {
           "$uid": {
@@ -144,6 +151,11 @@
     "pushSubscriptionIndex": {
       ".read": "false",
       ".write": "false"
+    },
+    "marketplace": {
+      ".indexOn": [
+        "seller"
+      ]
     }
   }
 }

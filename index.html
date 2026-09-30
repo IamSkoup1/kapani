@@ -2033,9 +2033,9 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div class="card-title">🏘️ Здания для аренды</div>
         <input type="text" id="rentBuildName" placeholder="Название здания" maxlength="80">
         <input type="number" id="rentBuildPrice" placeholder="Цена в неделю (₽)" min="1" step="1">
-        <input type="url" id="rentBuildPhoto" placeholder="Фото URL (необязательно)" style="margin-top:0;">
-        <label class="file-upload-btn" for="rentBuildPhotoFile">📷 Выбрать фото</label>
+        <label class="file-upload-btn" for="rentBuildPhotoFile">📷 Выбрать фото из галереи</label>
         <input type="file" id="rentBuildPhotoFile" accept="image/*" onchange="handleRentBuildingPhoto(event)">
+        <div id="rentBuildPhotoStatus" style="font-size:11px;color:var(--muted);margin-top:6px;">Фото необязательно</div>
         <button class="btn btn-gold" onclick="addRentBuilding()" style="margin-top:4px;">➕ Добавить здание</button>
         <div id="adminRentBuildings" style="margin-top:12px;"></div>
     </div>
@@ -2645,26 +2645,23 @@ async function establishKapaniServerSession(nick, password){
             const latestAuth = await ensureAuth();
             if(latestAuth.currentUser?.uid === expectedNick) return latestAuth.currentUser;
 
-            // Kapani's protected session no longer depends on a deployed Firebase
-            // callable. The push Worker already has the service-account capability
-            // needed to mint a Firebase custom token, so use the same backend path
-            // that is known to be reachable from GitHub Pages.
-            const ph = _kapaniPushAuthHash || await (async()=>{
-                const record = allUsersCache?.[expectedNick];
-                const salt = String(record?.passwordHashSalt || expectedNick);
-                return await hashPassword(secret, salt);
-            })();
-            if(!ph) throw new Error('Не удалось подготовить защищённый хэш сессии');
-            const result = await pushWorkerCall('/session', { nick: expectedNick, ph });
+            // Firebase Cloud Functions are intentionally NOT used here: Kapani runs on
+            // Firebase Spark. The existing Cloudflare Worker already has the service
+            // account needed to mint the same Firebase custom token.
+            const passwordHash = await hashPassword(secret, expectedNick);
+            const result = await pushWorkerCall('/session', {
+                nick: expectedNick,
+                ph: passwordHash
+            });
             const token = String(result?.token || '');
-            if(!token) throw new Error('Push Worker не выдал защищённый токен сессии');
+            if(!token) throw new Error('Worker не выдал защищённый Firebase-токен');
 
             const credential = await authModule.signInWithCustomToken(latestAuth, token);
             if(!credential?.user || credential.user.uid !== expectedNick){
                 throw new Error('Firebase вернул неверного пользователя');
             }
             return credential.user;
-        }, 'kapani-session-worker');
+        }, 'cloudflare-session');
     })();
 
     try{
@@ -2740,7 +2737,7 @@ const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 // Canonical push backend: direct Web Push through the Cloudflare Worker in push-worker/.
 // Firebase Functions are not part of the push delivery path.
 const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
-const KAPANI_BUILD = '2026-09-30-hotfix-2'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
+const KAPANI_BUILD = '2026-09-30-noblaze-worker'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -2822,7 +2819,6 @@ const ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
 
 let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
 let _kapaniSessionPassword = null;
-let _kapaniPushAuthHash = '';
 function syncCurrentNick(){ window.currentNick = currentNick; return currentNick; }
 syncCurrentNick();
 let appStarted = false;
@@ -3094,7 +3090,7 @@ async function requireKapaniServerSession(timeoutMs=15000){
         if(restored?.uid === nick) return restored;
 
         // 2) If the user logged in during this page lifetime, heal via the existing
-        // issueKapaniSessionToken -> signInWithCustomToken flow. The password remains
+        // Cloudflare Worker /session -> signInWithCustomToken flow. The password remains
         // memory-only and is never persisted by this helper.
         if(_kapaniSessionPassword){
             try{
@@ -4167,7 +4163,6 @@ window.handleAuth = async function() {
             window.allUsersCache=allUsersCache;
             renderHomeStats_users(allUsersCache);
             _kapaniSessionPassword = password;
-            _kapaniPushAuthHash = String(passwordHash || '');
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(nick, password);
@@ -4207,7 +4202,6 @@ window.handleAuth = async function() {
             localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
             currentNick = existing.nick;
             _kapaniSessionPassword = password;
-            _kapaniPushAuthHash = String(existing.passwordHash || enteredHash || '');
             syncCurrentNick();
             try {
                 await establishKapaniServerSession(existing.nick, password);
@@ -4323,54 +4317,27 @@ function revealApp(){
 }
 
 window.logout = function() {
-    if(window.__kapaniLogoutInProgress) return false;
-    window.__kapaniLogoutInProgress = true;
     const logoutNick=currentNick;
 
-    // Do all visible/local logout work synchronously so one tap is enough on mobile.
-    // Network cleanup is deliberately best-effort and runs after the account identity
-    // has already been removed from local/session storage.
+    // Do not block the button on network/Firebase operations. The visible
+    // account state is cleared immediately; cleanup continues best-effort.
+    try { if(logoutNick) void unregisterWebPushSubscription().catch(e => console.debug('[Kapani Push] logout unregister:', e)); } catch(e) {}
     try { if(typeof stopTaskLiveListeners==='function') stopTaskLiveListeners(); } catch(e) {}
     try { stopAllActivity(); } catch(e) {}
     try { leaveAllServiceServices(); } catch(e) {}
-    Object.values(listeners||{}).forEach(({ref:r,fn})=>{ try{ off(r,'value',fn); }catch(e){} });
-    try{ if(dmListeners.current){ if(dmListeners.current.timeoutId) clearTimeout(dmListeners.current.timeoutId); if(dmListeners.current.unsub) dmListeners.current.unsub(); else off(dmListeners.current.ref,'value',dmListeners.current.fn); } }catch(e){}
-    try{ if(dmListeners.read){ if(dmListeners.read.unsub) dmListeners.read.unsub(); else off(dmListeners.read.ref,'value',dmListeners.read.fn); } }catch(e){}
+    try { Object.values(listeners).forEach(({ref:r,fn})=>off(r,'value',fn)); } catch(e) {}
+    try { if(dmListeners.current){off(dmListeners.current.ref,'value',dmListeners.current.fn);} } catch(e) {}
+    try { if(dmListeners.read){off(dmListeners.read.ref,'value',dmListeners.read.fn);} } catch(e) {}
     listeners={}; dmListeners={};
     _callsListenerStarted=false; _callsSeen=false; _lastCalls={};
+    try { if(authInstance?.currentUser) void authModule.signOut(authInstance).catch(e=>console.debug('[Kapani auth] signOut:',e)); } catch(e) {}
 
-    try { localStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); localStorage.removeItem('kp_webpush_subscription_id'); localStorage.removeItem('kp_push_reg'); } catch(e) {}
-    try { sessionStorage.removeItem('kp_s'); } catch(e) {}
+    try { localStorage.removeItem('kp_webpush_subscription_id'); } catch(e) {}
     window._kapaniWebPushSubscriptionId = null;
-    currentNick = null;
-    _kapaniSessionPassword = null;
-    _kapaniPushAuthHash = '';
-    syncCurrentNick();
-
-    const oldAuth=authInstance;
-    const oldAuthModule=authModule;
-    // Fire cleanup in the background; neither operation may delay navigation.
-    void (async()=>{
-        try { if(logoutNick) await unregisterWebPushSubscriptionForUser(logoutNick); } catch(e) { console.debug('[Kapani Push] logout unregister:',e); }
-        try { if(oldAuth?.currentUser && oldAuthModule?.signOut) await oldAuthModule.signOut(oldAuth); } catch(e) { console.debug('[Kapani auth] signOut:',e); }
-    })();
-
+    try { localStorage.removeItem('kp_s'); sessionStorage.removeItem('kp_s'); localStorage.removeItem('kp_auth'); } catch(e) {}
+    currentNick = null; _kapaniSessionPassword = null; syncCurrentNick();
     location.reload();
-    return false;
 };
-
-// Same Worker-backed unsubscribe as the normal helper, but independent from
-// currentNick so logout can clear the local identity before cleanup finishes.
-async function unregisterWebPushSubscriptionForUser(nick){
-    let sub=null; try{sub=await getWebPushSubscription(false);}catch(_){}
-    let id=''; try{id=localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){}
-    if(!id && sub?.endpoint) id=await hashWebPushEndpoint(sub.endpoint);
-    if(!id || !PUSH_WORKER_URL || !nick) return;
-    let ph='';
-    if(_kapaniPushAuthHash) ph=_kapaniPushAuthHash;
-    if(!ph){ try{ ph=String((await get(ref(db,`users/${nick}/passwordHash`))).val()||''); }catch(_){} }
-    if(ph) await pushWorkerCall('/unsubscribe',{nick,ph,subscriptionId:id});
-}
 
 // ─── REAL-TIME LISTENERS ──────────────────
 const serviceListeners = Object.create(null);
@@ -5099,22 +5066,8 @@ async function hashWebPushEndpoint(endpoint){const digest=await crypto.subtle.di
 // ─── Cloudflare push worker client ────────────────────────────────
 // Identity is the site's own (nick + passwordHash stored in RTDB), the same trust level as the login itself.
 async function getPushAuthHash(){
-    if(_kapaniPushAuthHash) return String(_kapaniPushAuthHash);
     let ph=allUsersCache?.[currentNick]?.passwordHash;
-    if(ph){ _kapaniPushAuthHash=String(ph); return _kapaniPushAuthHash; }
-    try{
-        ph=(await get(ref(db,`users/${currentNick}/passwordHash`))).val();
-        if(ph){ _kapaniPushAuthHash=String(ph); return _kapaniPushAuthHash; }
-    }catch(_){}
-    // Last-resort recovery for a just-completed login before the user cache
-    // has finished synchronizing. The password is memory-only.
-    if(_kapaniSessionPassword && currentNick){
-        try{
-            const salt=String(allUsersCache?.[currentNick]?.passwordHashSalt || currentNick);
-            ph=await hashPassword(_kapaniSessionPassword,salt);
-            if(ph) _kapaniPushAuthHash=String(ph);
-        }catch(_){}
-    }
+    if(!ph){ try{ ph=(await get(ref(db,`users/${currentNick}/passwordHash`))).val(); }catch(_){} }
     return String(ph||'');
 }
 async function pushWorkerCall(path,body){
@@ -7776,13 +7729,7 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
     else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
     if(currentDmNick!==currentNick){
-        const recipientNick = currentDmNick;
-        const pushExtra = {source:'dm',sourceMessageId:`${key}:${msg.createdAt}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(recipientNick)}`};
-        // Notification delivery is a side effect. Start the Worker request immediately
-        // but never hold the message send/UI on push auth, Worker latency, or a transient outage.
-        void pushNotification(recipientNick,notifText,'messages',pushExtra)
-            .then(result=>{ if(!result?.ok) console.debug('[Kapani DM push] not delivered:',result?.error||'unknown'); })
-            .catch(e=>console.debug('[Kapani DM push] request failed:',e?.message||e));
+        await pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:`${key}:${msg.createdAt}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
     }
 }
 
@@ -13540,14 +13487,26 @@ window.adminRevokeRent = async function(buildingId, renterNick, buildingName){
 };
 window.handleRentBuildingPhoto = async function(e){
     const f = e.target.files[0]; if(!f) return;
-    _rentBuildingPhotoData = await compressImage(f, 900, 0.85);
-    toast('🖼 Фото здания выбрано','green');
+    if(!f.type.startsWith('image/')){
+        e.target.value='';
+        _rentBuildingPhotoData=null;
+        return toast('❌ Выберите именно изображение','red');
+    }
+    try{
+        _rentBuildingPhotoData = await compressImage(f, 900, 0.82);
+        const st=qs('rentBuildPhotoStatus'); if(st) st.textContent='✅ Фото выбрано из галереи';
+        toast('🖼 Фото здания выбрано','green');
+    }catch(err){
+        _rentBuildingPhotoData=null;
+        e.target.value='';
+        console.error('[rent photo]',err);
+        toast('❌ Не удалось обработать фото','red');
+    }
 };
 window.addRentBuilding = async function(){
     const name = (qs('rentBuildName')?.value||'').trim();
     const price = parseInt(qs('rentBuildPrice')?.value||'0',10);
-    const url = (qs('rentBuildPhoto')?.value||'').trim();
-    const photo = _rentBuildingPhotoData || url || '';
+    const photo = _rentBuildingPhotoData || '';
     if(!name) return toast('⚠️ Укажите название','gold');
     if(!price || price <= 0) return toast('⚠️ Укажите цену в неделю','gold');
     const id = genId();
@@ -13557,7 +13516,8 @@ window.addRentBuilding = async function(){
     });
     if(qs('rentBuildName')) qs('rentBuildName').value = '';
     if(qs('rentBuildPrice')) qs('rentBuildPrice').value = '';
-    if(qs('rentBuildPhoto')) qs('rentBuildPhoto').value = '';
+    if(qs('rentBuildPhotoStatus')) qs('rentBuildPhotoStatus').textContent = 'Фото необязательно';
+    if(qs('rentBuildPhotoFile')) qs('rentBuildPhotoFile').value = '';
     _rentBuildingPhotoData = null;
     await renderAdminRentBuildings((await get(rentBuildingsRef())).val()||{});
     toast('✅ Здание добавлено','green');
@@ -14256,7 +14216,7 @@ function mediaHtml(m){
         const vsrc = escHtml(m.mediaData || '');
         html += `<div class="msg-media-wrap" onclick="event.stopPropagation()">
             <div style="position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:#0b1220;cursor:pointer;" onclick="openVideoViewer('${jsEsc(m.mediaData)}')">
-                <video class="msg-media-video" muted playsinline webkit-playsinline preload="metadata" style="max-height:260px;pointer-events:none;" poster>
+                <video class="msg-media-video" muted playsinline webkit-playsinline preload="metadata" style="max-height:260px;pointer-events:none;">
                     <source src="${vsrc}#t=0.1">
                 </video>
                 <div class="vc-play-overlay" style="border-radius:12px;">▶</div>
@@ -15201,23 +15161,17 @@ window.sendGiftSubscription = async function(){
     if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
 
     try{
-        // Gift purchase is authorized by the same Kapani password hash used by the
-        // site/Push Worker. It must NOT depend on the auxiliary Firebase Auth
-        // session being restored first: that session is only a backend identity
-        // layer, while giftSubscription itself performs its own server-side
-        // authorization and atomic financial transaction.
+        // Gift is handled by the same Cloudflare Worker that already powers
+        // Kapani Push. This keeps the feature available on Firebase Spark and
+        // removes the broken Cloud Functions/session dependency entirely.
         const ph = await getPushAuthHash();
         if(!ph) throw new Error('Не найден хэш пароля текущего аккаунта');
-        const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
-        const fn = httpsCallable(await ensureFunctions(), 'giftSubscription');
-        const result = await fn({
+        const data = await pushWorkerCall('/gift', {
             nick: String(currentNick || '').trim(),
             ph,
             recipientNick: recipient,
             subscriptionType: giftSubscriptionType
         });
-
-        const data = result?.data || {};
         if(!data.success) throw new Error(data.message || 'Подарок не выполнен');
 
         toast(`🎁 ${name} подарен ${recipient}!`, 'green');
@@ -16405,7 +16359,6 @@ try {
   window.txLogRef = txLogRef;
   window.fullDateTimeStr = fullDateTimeStr;
   window.parseMoneyValue = parseMoneyValue;
-  window.compressImage = compressImage;
   window.bizItemRef = bizItemRef;
   window.JANITOR_TASK_TEXT = JANITOR_TASK_TEXT;
   // updateHeader/updateHeader_balance are called from the classic (non-module)
@@ -17378,26 +17331,6 @@ ready(function(){
   // ═══════════════════════════════════════════
   // 5) MARKETPLACE: building rentals
   // ═══════════════════════════════════════════
-  let _marketRentPhotoData = '';
-  window.handleMarketRentPhoto = async function(e){
-    const file = e?.target?.files?.[0];
-    if(!file) return;
-    if(!/^image\//i.test(file.type || '')){
-      e.target.value='';
-      return toast('⚠️ Выберите изображение','gold');
-    }
-    try{
-      _marketRentPhotoData = await compressImage(file, 1400, 0.82);
-      const label = qs('rlPhotoName');
-      if(label) label.textContent = `🖼 ${file.name}`;
-      toast('🖼 Фото выбрано из галереи','green');
-    }catch(err){
-      _marketRentPhotoData='';
-      e.target.value='';
-      console.error('[market rent photo]',err);
-      toast('❌ Не удалось обработать фото','red');
-    }
-  };
   function injectMarketRentUI(){
     const marketSection = qs('market'); if(!marketSection) return;
     const ensureRentListener = ()=>{
@@ -17424,9 +17357,7 @@ ready(function(){
       <input type="number" id="rlPrice" placeholder="Цена аренды (₽/неделю)" min="1" step="1">
       <input type="text" id="rlAddress" placeholder="Адрес / район" maxlength="120">
       <textarea id="rlDesc" placeholder="Описание (комнаты, этаж, мебель...)" style="min-height:60px;" maxlength="500"></textarea>
-      <label class="btn btn-ghost" for="rlPhoto" style="display:flex;align-items:center;justify-content:center;margin-top:6px;cursor:pointer;">🖼 Выбрать фото из галереи</label>
-      <input type="file" id="rlPhoto" accept="image/*" onchange="handleMarketRentPhoto(event)" style="display:none;">
-      <div id="rlPhotoName" style="font-size:11px;color:var(--muted);margin-top:6px;"></div>
+      <input type="url" id="rlPhoto" placeholder="Фото URL (необязательно)">
       <button class="btn btn-gold" onclick="publishRentListing()" style="margin-top:6px;">🏘️ Выставить на аренду</button>
       <div id="myRentListings" style="margin-top:14px;"></div>
     `;
@@ -17439,14 +17370,12 @@ ready(function(){
     const price = parseInt(qs('rlPrice')?.value||'0',10)||0;
     const address = qs('rlAddress')?.value.trim();
     const desc = qs('rlDesc')?.value.trim();
-    const photo = _marketRentPhotoData || '';
+    const photo = qs('rlPhoto')?.value.trim();
     if(!title || !price || !desc) return toast('⚠️ Заполните название, цену, описание','gold');
     const id = 'rl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
     await set(marketRentRef(id), { id, owner: window.currentNick, title, price, address, desc, photo, status:'active', createdAt: Date.now() });
     toast('✅ Объявление об аренде опубликовано','green');
     qs('rlTitle').value=''; qs('rlPrice').value=''; qs('rlAddress').value=''; qs('rlDesc').value=''; qs('rlPhoto').value='';
-    _marketRentPhotoData='';
-    const photoLabel=qs('rlPhotoName'); if(photoLabel) photoLabel.textContent='';
     renderRentListingsOnMarket();
   };
 
