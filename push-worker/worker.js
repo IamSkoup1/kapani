@@ -520,7 +520,7 @@ function previewOf(m) {
  * kind = retry   -> keep the job; a required RTDB record is not visible yet
  * kind = discard -> the job is invalid, already handled, or explicitly suppressed
  */
-async function planJob(env, job) {
+async function planJob(env, job, preloadedNotification) {
   const now = Date.now();
   if (job.type === 'deliver') {
     return {
@@ -536,7 +536,7 @@ async function planJob(env, job) {
     if (!validNick(job.to) || !validKey(job.id)) return { kind: 'discard', reason: 'invalid notification job' };
 
     const path = `users/${job.to}/notifications/${job.id}`;
-    const n = await rtdbGet(env, `users/${enc(job.to)}/notifications/${enc(job.id)}`);
+    const n = preloadedNotification || await rtdbGet(env, `users/${enc(job.to)}/notifications/${enc(job.id)}`);
 
     // The site can create pushOutbox/<jobId> and the notification record in two
     // separate RTDB writes. If /event arrives first, KEEP the job instead of
@@ -676,7 +676,7 @@ function diagnoseRecipient(entry, totals, ctx) {
 }
 
 /** Processes one job. budget.left = how many pushes this invocation may still send. */
-async function processJob(env, jobId, budget, preloaded) {
+async function processJob(env, jobId, budget, preloaded, preloadedNotification) {
   const job = preloaded || await rtdbGet(env, `pushOutbox/${enc(jobId)}`);
   const finish = async (extra = {}) => {
     await rtdbPatch(env, { [`pushOutbox/${jobId}`]: null, ...extra });
@@ -686,7 +686,7 @@ async function processJob(env, jobId, budget, preloaded) {
     return { sent: 0, next: null };
   }
 
-  const plan = await planJob(env, job);
+  const plan = await planJob(env, job, preloadedNotification);
 
   // IMPORTANT: never delete a job just because the source/notification record
   // is not visible yet. This is the race that was losing normal Kapani pushes.
@@ -1017,7 +1017,7 @@ async function handleNotify(request, env, body) {
       [`pushOutbox/${enc(jobId)}`]: job
     });
 
-    const result = await processJob(env, jobId, { left: maxPush(env) });
+    const result = await processJob(env, jobId, { left: maxPush(env) }, job, record);
     return json(request, env, {
       ok: true,
       notificationId,
