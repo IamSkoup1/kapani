@@ -5494,7 +5494,7 @@ async function writeNotificationViaWorker(targetNick,body,cat,extra){
     if(!ph) throw new Error('Не найден хэш пароля для регистрации push');
     // Firebase push() only generates a local key here; the actual protected RTDB write
     // is performed atomically by the authenticated Cloudflare Worker.
-    const nRef=push(ref(notifRef(targetNick)));
+    const nRef=push(notifRef(targetNick));
     const notificationId=String(nRef?.key||'');
     if(!notificationId) throw new Error('Не удалось создать ID уведомления');
     const result=await pushWorkerCall('/notify',{
@@ -15201,13 +15201,18 @@ window.sendGiftSubscription = async function(){
     if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
 
     try{
-        const authUser = await requireKapaniServerSession(15000);
-        if(!authUser?.uid || authUser.uid !== String(currentNick || '').trim()){
-            throw new Error('Firebase Auth вернул неверного пользователя');
-        }
+        // Gift purchase is authorized by the same Kapani password hash used by the
+        // site/Push Worker. It must NOT depend on the auxiliary Firebase Auth
+        // session being restored first: that session is only a backend identity
+        // layer, while giftSubscription itself performs its own server-side
+        // authorization and atomic financial transaction.
+        const ph = await getPushAuthHash();
+        if(!ph) throw new Error('Не найден хэш пароля текущего аккаунта');
         const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
         const fn = httpsCallable(await ensureFunctions(), 'giftSubscription');
         const result = await fn({
+            nick: String(currentNick || '').trim(),
+            ph,
             recipientNick: recipient,
             subscriptionType: giftSubscriptionType
         });

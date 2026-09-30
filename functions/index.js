@@ -740,7 +740,30 @@ exports.deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notifications/{n
  * no balance/subscription/transaction/gift record is changed.
  */
 exports.giftSubscription = onCall({ region: 'europe-west1' }, async (request) => {
-    const giverNick = String(request.auth?.uid || '').trim();
+    // Primary authorization: Firebase Auth when the auxiliary server session is
+    // already available. Fallback authorization: Kapani's own password hash,
+    // supplied by the already-authenticated Kapani UI. This keeps gifting usable
+    // even when Firebase Auth persistence is temporarily unavailable.
+    let giverNick = String(request.auth?.uid || '').trim();
+    const suppliedNick = String(request.data?.nick || '').trim();
+    const suppliedPh = String(request.data?.ph || '').trim();
+
+    if (!giverNick) {
+        if (!suppliedNick || !/^[a-f0-9]{64}$/i.test(suppliedPh)) {
+            throw new HttpsError('unauthenticated', 'Требуется защищённая сессия или подтверждение пароля');
+        }
+        const authSnapshot = await db.ref(`users/${suppliedNick}`).get();
+        const authUser = authSnapshot.exists() ? (authSnapshot.val() || {}) : null;
+        const expectedHash = String(authUser?.passwordHash || '').trim();
+        if (!expectedHash || expectedHash.length !== suppliedPh.length ||
+            !crypto.timingSafeEqual(Buffer.from(expectedHash, 'utf8'), Buffer.from(suppliedPh, 'utf8'))) {
+            throw new HttpsError('permission-denied', 'Неверное подтверждение аккаунта');
+        }
+        giverNick = suppliedNick;
+    } else if (suppliedNick && suppliedNick !== giverNick) {
+        throw new HttpsError('permission-denied', 'Несоответствие аккаунта отправителя');
+    }
+
     const recipientNick = String(request.data?.recipientNick || '').trim();
     const type = normalizeSubscriptionType(request.data?.subscriptionType);
 
@@ -776,7 +799,6 @@ exports.giftSubscription = onCall({ region: 'europe-west1' }, async (request) =>
         const recipient = users[recipientNick];
 
         if (!giver || !recipient) return;
-        if (String(giverNick) !== String(request.auth.uid)) return;
 
         const balance = Number(giver.balance || 0);
         if (!Number.isFinite(balance) || balance < price) return;

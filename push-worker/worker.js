@@ -799,14 +799,17 @@ async function handleSession(request, env, body) {
   const projectId = String(env.FIREBASE_PROJECT_ID || 'kapanisite').trim();
   const serviceAccount = JSON.parse(String(env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}'));
   const uid = nick;
+  // Firebase custom tokens have a documented JWT shape. In particular,
+  // `firebase` is NOT a custom-token claim; using it here makes Firebase reject
+  // the token during signInWithCustomToken(). Optional custom claims belong in
+  // `claims`. We do not need any custom claims for Kapani.
   const token = await signJwtRs256(env, {
     iss: String(serviceAccount.client_email),
     sub: String(serviceAccount.client_email),
     aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
     iat: now,
     exp: now + 3600,
-    uid,
-    ...(projectId ? { firebase: { sign_in_provider: 'custom' } } : {})
+    uid
   });
   return json(request, env, { ok:true, token, expiresIn:3600 });
 }
