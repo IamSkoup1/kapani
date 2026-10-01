@@ -2624,10 +2624,10 @@ async function withKapaniAuthRetry(operation, label, maxAttempts=3){
     throw lastError || new Error('Не удалось выполнить защищённую Firebase-операцию');
 }
 
-async function establishKapaniServerSession(nick, password){
+async function establishKapaniServerSession(nick, password=''){
     const expectedNick = String(nick || '').trim();
     const secret = String(password || '');
-    if(!expectedNick || !secret) throw new Error('Для защищённой Firebase-сессии нужны имя и пароль');
+    if(!expectedNick) throw new Error('Для защищённой Firebase-сессии не задан пользователь');
 
     const auth = await ensureAuth();
     if(auth.currentUser?.uid === expectedNick) return auth.currentUser;
@@ -2649,12 +2649,14 @@ async function establishKapaniServerSession(nick, password){
             // callable. The push Worker already has the service-account capability
             // needed to mint a Firebase custom token, so use the same backend path
             // that is known to be reachable from GitHub Pages.
-            const ph = _kapaniPushAuthHash || await (async()=>{
+            let ph = String(_kapaniPushAuthHash || '').trim();
+            if(!ph && secret){
                 const record = allUsersCache?.[expectedNick];
                 const salt = String(record?.passwordHashSalt || expectedNick);
-                return await hashPassword(secret, salt);
-            })();
-            if(!ph) throw new Error('Не удалось подготовить защищённый хэш сессии');
+                ph = await hashPassword(secret, salt);
+            }
+            if(!/^[a-f0-9]{64}$/i.test(ph)) throw new Error('Не удалось подготовить защищённый хэш сессии');
+            _kapaniPushAuthHash = ph;
             const result = await pushWorkerCall('/session', { nick: expectedNick, ph });
             const token = String(result?.token || '');
             if(!token) throw new Error('Push Worker не выдал защищённый токен сессии');
@@ -2740,7 +2742,7 @@ const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 // Canonical push backend: direct Web Push through the Cloudflare Worker in push-worker/.
 // Firebase Functions are not part of the push delivery path.
 const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
-const KAPANI_BUILD = '2026-09-30-hotfix-2'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
+const KAPANI_BUILD = '2026-10-01-hotfix-3'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -2820,14 +2822,17 @@ const BUSINESS_DEFAULT_LAT = 52.628433;
 const BUSINESS_DEFAULT_LNG = 38.417049;
 const ONLINE_TIMEOUT_MS = 3 * 60 * 1000;
 
+let rememberedAuth = null;
+try { rememberedAuth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); } catch(e) { rememberedAuth = null; }
 let currentNick = localStorage.getItem('kp_s') || sessionStorage.getItem('kp_s') || null;
 let _kapaniSessionPassword = null;
-let _kapaniPushAuthHash = '';
+let _kapaniPushAuthHash = (
+    rememberedAuth && rememberedAuth.nick && String(rememberedAuth.nick) === String(currentNick || '') &&
+    /^[a-f0-9]{64}$/i.test(String(rememberedAuth.passwordHash || ''))
+) ? String(rememberedAuth.passwordHash) : '';
 function syncCurrentNick(){ window.currentNick = currentNick; return currentNick; }
 syncCurrentNick();
 let appStarted = false;
-let rememberedAuth = null;
-try { rememberedAuth = JSON.parse(localStorage.getItem('kp_auth') || 'null'); } catch(e) { rememberedAuth = null; }
 let curPage = 'home';
 let listeners = {};
 let onlineHeartbeatInterval = null;
@@ -3093,16 +3098,14 @@ async function requireKapaniServerSession(timeoutMs=15000){
         const restored = await waitForFirebaseAuthUser(timeoutMs);
         if(restored?.uid === nick) return restored;
 
-        // 2) If the user logged in during this page lifetime, heal via the existing
-        // issueKapaniSessionToken -> signInWithCustomToken flow. The password remains
-        // memory-only and is never persisted by this helper.
-        if(_kapaniSessionPassword){
-            try{
-                const healed = await establishKapaniServerSession(nick, _kapaniSessionPassword);
-                if(healed?.uid === nick) return healed;
-            }catch(e){
-                console.warn('[Kapani auth] session healing:', e?.message || e);
-            }
+        // 2) Heal through the existing Worker /session endpoint. On a fresh login the
+        // memory-only password can derive the hash; after reload the persisted passwordHash
+        // from kp_auth is enough to perform the same already-protected nick + ph exchange.
+        try{
+            const healed = await establishKapaniServerSession(nick, _kapaniSessionPassword || '');
+            if(healed?.uid === nick) return healed;
+        }catch(e){
+            console.warn('[Kapani auth] session healing:',e?.message || e);
         }
 
         // 3) Give a just-finished Auth state transition / network initialization
@@ -4160,7 +4163,7 @@ window.handleAuth = async function() {
             await set(userRef(nick), userData);
             localStorage.setItem('kp_s', nick);
             sessionStorage.setItem('kp_s', nick);
-            localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
+            localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput, passwordHash }));
             currentNick = nick;
             allUsersCache[nick]=userData;
             allUsersCacheLoaded=true;
@@ -4204,7 +4207,7 @@ window.handleAuth = async function() {
             toast('👋 С возвращением!','green');
             localStorage.setItem('kp_s', existing.nick);
             sessionStorage.setItem('kp_s', existing.nick);
-            localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
+            localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing), passwordHash: String(existing.passwordHash || enteredHash || '') }));
             currentNick = existing.nick;
             _kapaniSessionPassword = password;
             _kapaniPushAuthHash = String(existing.passwordHash || enteredHash || '');
@@ -5495,7 +5498,7 @@ async function writeNotificationViaWorker(targetNick,body,cat,extra){
     if(!ph) throw new Error('Не найден хэш пароля для регистрации push');
     // Firebase push() only generates a local key here; the actual protected RTDB write
     // is performed atomically by the authenticated Cloudflare Worker.
-    const nRef=push(ref(notifRef(targetNick)));
+    const nRef=push(notifRef(targetNick));
     const notificationId=String(nRef?.key||'');
     if(!notificationId) throw new Error('Не удалось создать ID уведомления');
     const result=await pushWorkerCall('/notify',{
@@ -6455,6 +6458,11 @@ window.changePassword=async function(){
     if(next !== confirmNext) return toast('❌ Пароли не совпадают','red');
     const newHash = await hashPassword(next, currentNick);
     await update(userRef(currentNick), { passwordHash: newHash });
+    _kapaniPushAuthHash = String(newHash);
+    try{
+        const auth = JSON.parse(localStorage.getItem('kp_auth') || 'null') || {};
+        localStorage.setItem('kp_auth', JSON.stringify({...auth, nick:currentNick, passwordHash:newHash}));
+    }catch(e){}
     toast('✅ Пароль обновлён','green');
 };
 window.saveDisplayJob=async function(){
@@ -14224,15 +14232,14 @@ async function bootstrapKapaniAuthAndApp(){
 
         if(auth.currentUser?.uid === currentNick){
             console.info('[Kapani auth] persisted Firebase session restored:', auth.currentUser.uid);
-        }else if(_kapaniSessionPassword){
+        }else{
             try{
                 await requireKapaniServerSession(8000);
+                console.info('[Kapani auth] protected Firebase session restored for current Kapani login');
             }catch(e){
                 console.warn('[Kapani auth] startup session recovery:', e?.message || e);
                 scheduleKapaniServerSessionRetry(currentNick);
             }
-        }else{
-            console.warn('[Kapani auth] no Firebase session for current Kapani login after restore barrier');
         }
     }catch(e){
         // Do not block the whole application on a temporary Auth initialization race.
@@ -15222,16 +15229,23 @@ window.sendGiftSubscription = async function(){
     if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
 
     try{
-        const authUser = await requireKapaniServerSession(15000);
-        if(!authUser?.uid || authUser.uid !== String(currentNick || '').trim()){
-            throw new Error('Firebase Auth вернул неверного пользователя');
-        }
+        const nick = String(currentNick || '').trim();
+        if(!nick) throw new Error('Пользователь не определён');
+        const ph = await getPushAuthHash();
+        const payload = {
+            recipientNick: recipient,
+            subscriptionType: giftSubscriptionType,
+            nick,
+            ...(ph ? { ph } : {})
+        };
+
+        // Firebase Auth remains the primary authorization path, but is not a hard
+        // prerequisite here: giftSubscription already validates nick + ph server-side.
+        try{ await waitForFirebaseAuthUser(5000); }catch(_){ }
+
         const { httpsCallable } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js");
         const fn = httpsCallable(await ensureFunctions(), 'giftSubscription');
-        const result = await fn({
-            recipientNick: recipient,
-            subscriptionType: giftSubscriptionType
-        });
+        const result = await fn(payload);
 
         const data = result?.data || {};
         if(!data.success) throw new Error(data.message || 'Подарок не выполнен');
