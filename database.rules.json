@@ -86,7 +86,7 @@
     },
     "chat": {
       ".read": "auth != null",
-      ".write": "auth != null",
+      ".write": "false",
       ".indexOn": [
         "nick",
         "createdAt"
@@ -153,9 +153,48 @@
       ".write": "false"
     },
     "marketplace": {
+      ".read": "auth != null",
       ".indexOn": [
-        "seller"
-      ]
+        "seller",
+        "status",
+        "createdAt"
+      ],
+      "$listingId": {
+        ".validate": "!data.exists() ? (newData.hasChildren(['seller','title','pickupAddress']) && newData.child('pickupAddress/lat').isNumber() && newData.child('pickupAddress/lng').isNumber() && newData.child('pickupAddress/text').isString() && newData.child('pickupAddress/text').val().length > 0) : true",
+        ".write": "auth != null && (!data.exists() ? newData.child('seller').val() == auth.uid : (data.child('seller').val() == auth.uid || auth.token.admin == true))",
+        "status": {
+          ".write": "auth != null && (data.parent().child('seller').val() == auth.uid || data.parent().child('buyer').val() == auth.uid || auth.token.admin == true)"
+        },
+        "buyer": {
+          ".write": "auth != null && (data.parent().child('seller').val() == auth.uid || data.parent().child('buyer').val() == auth.uid || auth.token.admin == true)"
+        },
+        "pickupAddress": {
+          ".write": "auth != null && (data.parent().child('seller').val() == auth.uid || auth.token.admin == true)",
+          ".validate": "newData.hasChildren(['lat','lng','text']) && newData.child('lat').isNumber() && newData.child('lng').isNumber() && newData.child('text').isString() && newData.child('text').val().length > 0"
+        }
+      }
+    },
+    "businessApps": {
+      ".read": "auth != null",
+      "$appId": {
+        ".write": "auth != null && (!data.exists() ? newData.child('owner').val() == auth.uid : (data.child('owner').val() == auth.uid || auth.token.admin == true))",
+        ".validate": "!data.exists() ? (newData.child('owner').isString() && newData.child('address').isString() && newData.child('address').val().length > 0 && newData.child('lat').isNumber() && newData.child('lng').isNumber() && newData.child('location/lat').isNumber() && newData.child('location/lng').isNumber() && newData.child('location/text').isString() && newData.child('location/text').val().length > 0) : true"
+      }
+    },
+    "businesses": {
+      ".read": "auth != null",
+      "$bizId": {
+        ".write": "auth != null && (data.child('owner').val() == auth.uid || (!data.exists() && newData.child('owner').val() == auth.uid) || auth.token.admin == true)",
+        ".validate": "!data.exists() ? (newData.child('owner').isString() && newData.child('address').isString() && newData.child('address').val().length > 0 && newData.child('lat').isNumber() && newData.child('lng').isNumber() && newData.child('location/lat').isNumber() && newData.child('location/lng').isNumber() && newData.child('location/text').isString() && newData.child('location/text').val().length > 0) : true"
+      }
+    },
+    "pushOutbox": {
+      ".read": "false",
+      ".write": "false"
+    },
+    "notificationTombstones": {
+      ".read": "false",
+      ".write": "false"
     }
   }
 }

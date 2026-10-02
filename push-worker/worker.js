@@ -18,6 +18,10 @@ const enc = encodeURIComponent;
 const PUSH_HOST_ALLOW = /(^|\.)(googleapis\.com|mozilla\.com|mozaws\.net|apple\.com|windows\.com)$/i;
 const MAX_DEVICES_PER_USER = 8;
 const CATEGORIES = ['messages', 'money', 'taxi_orders', 'delivery_orders', 'market', 'news', 'system'];
+const JOB_LEASE_MS = 2 * 60 * 1000;
+const MAX_JOB_ATTEMPTS = 12;
+const MAX_RETRY_DELAY_MS = 10 * 60 * 1000;
+
 
 /* ───────────── small helpers ───────────── */
 function b64uEnc(bytes) {
@@ -303,8 +307,46 @@ function normalizeSubscriptionType(value) {
   const v = String(value || '').trim().toLowerCase();
   return Object.prototype.hasOwnProperty.call(SUBSCRIPTIONS, v) ? v : 'none';
 }
+function isActiveSubscription(user) {
+  const type = normalizeSubscriptionType(user?.subscription);
+  const expiry = new Date(user?.subscriptionExpiry || 0);
+  return type !== 'none' && !Number.isNaN(expiry.getTime()) && expiry.getTime() > Date.now();
+}
 function subscriptionRank(user) {
-  return Number(SUBSCRIPTIONS[normalizeSubscriptionType(user?.subscription)]?.rank || 0);
+  const type = normalizeSubscriptionType(user?.subscription);
+  if (!isActiveSubscription(user)) return 0;
+  return Number(SUBSCRIPTIONS[type]?.rank || 0);
+}
+function retryDelayMs(attempts) {
+  const n = Math.max(1, Number(attempts || 1));
+  const base = Math.min(MAX_RETRY_DELAY_MS, 5000 * (2 ** Math.min(n - 1, 8)));
+  const jitter = Math.floor(Math.random() * Math.max(250, Math.floor(base * 0.25)));
+  return Math.min(MAX_RETRY_DELAY_MS, base + jitter);
+}
+async function claimJob(env, jobId) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const snap = await rtdbGetWithEtag(env, `pushOutbox/${enc(jobId)}`);
+    const job = snap.value;
+    if (!job || typeof job !== 'object') return { missing: true };
+    const now = Date.now();
+    const status = String(job.status || 'pending');
+    if (['sent', 'skipped', 'dead'].includes(status)) return { done: true, job };
+    if (status === 'processing' && Number(job.leaseUntil || 0) > now) return { busy: true, job };
+    if (status === 'retry' && Number(job.nextAttemptAt || 0) > now) return { busy: true, job };
+    const next = {
+      ...job,
+      status: 'processing',
+      leaseUntil: now + JOB_LEASE_MS,
+      updatedAt: now,
+      attempts: Number(job.attempts || 0)
+    };
+    const res = await rtdbPutIfMatch(env, `pushOutbox/${enc(jobId)}`, next, snap.etag);
+    const raw = await res.text();
+    if (res.status === 412 || res.status === 409) continue;
+    if (!res.ok) throw new Error(`RTDB job claim: ${res.status} ${raw.slice(0, 200)}`);
+    return { claimed: true, job: next };
+  }
+  return { busy: true, reason: 'claim-conflict' };
 }
 function giftIdPart(prefix = 'g') {
   const a = crypto.getRandomValues(new Uint32Array(2));
@@ -536,6 +578,9 @@ async function planJob(env, job) {
     if (!validNick(job.to) || !validKey(job.id)) return { kind: 'discard', reason: 'invalid notification job' };
 
     const path = `users/${job.to}/notifications/${job.id}`;
+    if (await rtdbGet(env, `notificationTombstones/${enc(job.to)}/${enc(job.id)}`)) {
+      return { kind: 'discard', reason: 'notification deleted/tombstoned' };
+    }
     const n = await rtdbGet(env, `users/${enc(job.to)}/notifications/${enc(job.id)}`);
 
     // The site can create pushOutbox/<jobId> and the notification record in two
@@ -620,12 +665,15 @@ async function planJob(env, job) {
       push: true,
       source,
       sourceMessageId: job.id,
+      readAt: null, deletedAt: null, pushedAt: null,
       ...extra
     };
 
     const inbox = {}, recipients = [];
+    const tombstones = (await rtdbGet(env, 'notificationTombstones')) || {};
     for (const nick of Object.keys(users)) {
       if (nick === author) continue;
+      if (tombstones?.[nick]?.[key]) continue;
       inbox[`users/${nick}/notifications/${key}`] = record;
       recipients.push(nick);
     }
@@ -675,103 +723,110 @@ function diagnoseRecipient(entry, totals, ctx) {
   return { ...entry, totalAccountsWithPush: t.accounts, totalDevices: t.devices, hint };
 }
 
-/** Processes one job. budget.left = how many pushes this invocation may still send. */
+/** Processes one durable outbox job with an RTDB ETag lease/claim. */
 async function processJob(env, jobId, budget, preloaded) {
-  const job = preloaded || await rtdbGet(env, `pushOutbox/${enc(jobId)}`);
-  const finish = async (extra = {}) => {
-    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: null, ...extra });
+  const claim = await claimJob(env, jobId);
+  if (claim.missing) return { sent: 0, next: null, missing: true };
+  if (claim.done) return { sent: 0, next: null, discarded: true, reason: `job already ${claim.job.status}` };
+  if (claim.busy) return { sent: 0, next: null, busy: true, retryAt: claim.job?.nextAttemptAt || null };
+  const job = claim.job;
+  const state = (status, extra = {}) => ({
+    [`pushOutbox/${enc(jobId)}`]: {
+      ...job,
+      ...extra,
+      status,
+      leaseUntil: null,
+      updatedAt: Date.now()
+    }
+  });
+  const finish = async (status, extra = {}) => { await rtdbPatch(env, state(status, extra)); };
+  const retry = async (reason) => {
+    const attempts = Number(job.attempts || 0) + 1;
+    if (attempts >= MAX_JOB_ATTEMPTS) {
+      await finish('dead', { attempts, lastError: String(reason || 'retry limit reached').slice(0, 300), nextAttemptAt: null });
+      return { sent: 0, next: null, retry: false, dead: true, reason };
+    }
+    const now = Date.now();
+    await finish('retry', {
+      attempts,
+      nextAttemptAt: now + retryDelayMs(attempts),
+      queuedAt: Number(job.queuedAt || job.ts || now),
+      lastError: String(reason || 'temporary condition').slice(0, 300)
+    });
+    return { sent: 0, next: null, retry: true, reason };
   };
-  if (!job || typeof job !== 'object') {
-    console.log('push job missing', jobId);
-    return { sent: 0, next: null };
-  }
 
   const plan = await planJob(env, job);
-
-  // IMPORTANT: never delete a job just because the source/notification record
-  // is not visible yet. This is the race that was losing normal Kapani pushes.
-  if (plan?.kind === 'retry') {
-    const attempts = Number(job.attempts || 0) + 1;
-    const nextJob = {
-      ...job,
-      attempts,
-      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
-      ts: Date.now(),
-      lastRetryReason: String(plan.reason || 'temporary condition').slice(0, 160)
-    };
-    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: nextJob });
-    console.log('push job retry', jobId, attempts, plan.reason || 'temporary condition');
-    return { sent: 0, next: null, retry: true, reason: plan.reason };
-  }
-
+  if (plan?.kind === 'retry') return retry(plan.reason || 'temporary condition');
   if (plan?.kind === 'discard' || !plan) {
-    await finish();
-    console.log('push job discarded', jobId, plan?.reason || 'no plan');
+    await finish('skipped', { lastError: plan?.reason ? String(plan.reason).slice(0, 300) : null, nextAttemptAt: null });
+    console.log('push job skipped', jobId, plan?.reason || 'no plan');
     return { sent: 0, next: null, discarded: true, reason: plan?.reason };
   }
 
-  if (Object.keys(plan.inbox).length) {
-    await rtdbPatch(env, plan.inbox); // inbox first: record exists before the push arrives
+  // A delete can race with planJob() after it read the source but before the
+  // inbox fan-out is written. Re-check tombstones immediately before that write
+  // and remove deleted recipients from BOTH the inbox patch and push recipient list.
+  if (plan.payload?.notificationId && (plan.nicks?.length || Object.keys(plan.inbox || {}).length)) {
+    const tombstonesNow = (await rtdbGet(env, 'notificationTombstones')) || {};
+    const notificationId = String(plan.payload.notificationId);
+    plan.nicks = (plan.nicks || []).filter(nick => !tombstonesNow?.[nick]?.[notificationId]);
+    plan.inbox = Object.fromEntries(Object.entries(plan.inbox || {}).filter(([path]) => {
+      const m = String(path).match(/^users\/([^/]+)\/notifications\/([^/]+)$/);
+      return !m || !tombstonesNow?.[m[1]]?.[m[2]];
+    }));
   }
+  if (Object.keys(plan.inbox || {}).length) await rtdbPatch(env, plan.inbox);
 
   const all = await loadSubs(env);
-  const dead = [];
+  const dead = [], statuses = [], lookups = [];
   let sent = 0, i = 0, hadPushErrors = false, attempted = 0;
-  const lookups = [], statuses = [];
 
   for (; i < plan.nicks.length; i++) {
     const nick = plan.nicks[i];
     const bucket = await subscriptionBucket(env, all, nick);
-    const rawSubs = bucket.subs;
+    const rawSubs = bucket.subs || [];
     const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category) && !staleKey(s, env));
-
     lookups.push({
-      recipient: nick, mode: bucket.mode, matchedKey: bucket.key,
-      stored: rawSubs.length, eligible: subs.length,
-      blockedByPrefs: rawSubs.filter(s => !prefsAllow(s, plan.payload.category)).length,
+      recipient: nick, mode: bucket.mode, matchedKey: bucket.key, stored: rawSubs.length,
+      eligible: subs.length, blockedByPrefs: rawSubs.filter(s => !prefsAllow(s, plan.payload.category)).length,
       staleKey: rawSubs.filter(s => staleKey(s, env)).length, category: plan.payload.category
     });
-    console.log('push device lookup', jobId, JSON.stringify({
-      recipient: nick,
-      matchMode: bucket.mode,
-      matchedKey: bucket.key,
-      storedDevices: rawSubs.length,
-      eligibleDevices: subs.length,
-      category: plan.payload.category
-    }));
-
-    // If this recipient alone would exceed the remaining budget, defer the
-    // whole recipient to a continuation job. This avoids dropping devices.
     if (subs.length && budget.left < subs.length && sent > 0) break;
 
-    for (const s of subs) {
+    for (const sub of subs) {
       if (budget.left <= 0) break;
-      budget.left--;
-      attempted++;
-
-      try {
-        const status = await sendPush(env, s, plan.payload);
-        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), host: new URL(s.endpoint).host, status });
-        console.log('push send result', jobId, nick, s.id, status);
-
-        if (status === 404 || status === 410) {
-          dead.push([nick, s.id]);
-        } else if (status >= 200 && status < 300) {
-          sent++;
-        } else {
-          hadPushErrors = true;
-          console.warn('push status', status, new URL(s.endpoint).host);
+      // A notification may be deleted after planJob() and while a job is being processed.
+      // Re-check the server-side tombstone immediately before the actual Web Push call so a
+      // concurrent delete cannot leak a just-removed notification onto the device.
+      const tombstoneId = plan.payload.notificationId;
+      const tombstonePath = tombstoneId && plan.payload?.source === 'general_chat'
+        ? `notificationTombstones/${enc(nick)}/${enc(tombstoneId)}`
+        : tombstoneId && plan.payload?.source === 'news'
+          ? `notificationTombstones/${enc(nick)}/${enc(tombstoneId)}`
+          : tombstoneId && job.type === 'notification'
+            ? `notificationTombstones/${enc(nick)}/${enc(tombstoneId)}`
+            : null;
+      if (tombstonePath && await rtdbGet(env, tombstonePath)) {
+        if (job.type === 'notification') {
+          await finish('skipped', { lastError: 'notification deleted during processing', nextAttemptAt: null });
+          return { sent: 0, next: null, discarded: true, reason: 'notification deleted during processing' };
         }
+        continue;
+      }
+      budget.left--; attempted++;
+      try {
+        const status = await sendPush(env, sub, plan.payload);
+        statuses.push({ recipient: nick, device: String(sub.id).slice(0, 8), host: new URL(sub.endpoint).host, status });
+        if (status === 404 || status === 410) dead.push([nick, sub.id]);
+        else if (status >= 200 && status < 300) sent++;
+        else hadPushErrors = true;
       } catch (e) {
         hadPushErrors = true;
-        if (e?.deadSub) dead.push([nick, s.id]);                                   // keys can never work: drop the device, the browser re-registers it
-        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), error: String(e?.message || e).slice(0, 200) });
-        console.warn('push error', jobId, nick, String(e?.message || e));
+        if (e?.deadSub) dead.push([nick, sub.id]);
+        statuses.push({ recipient: nick, device: String(sub.id).slice(0, 8), error: String(e?.message || e).slice(0, 200) });
       }
     }
-
-    // This recipient has been handled (fully or up to the budget): the continuation
-    // job must start AFTER it, otherwise its devices get the same push twice.
     if (budget.left <= 0) { i++; break; }
   }
 
@@ -779,82 +834,67 @@ async function processJob(env, jobId, budget, preloaded) {
     const fresh = await loadSubs(env);
     for (const [nick, id] of dead) {
       if (fresh[nick]) {
-        fresh[nick] = fresh[nick].filter(s => s.id !== id);
+        fresh[nick] = fresh[nick].filter(x => x.id !== id);
         if (!fresh[nick].length) delete fresh[nick];
       }
     }
     await saveSubs(env, fresh);
   }
 
-  // A normal notification is only considered delivered after at least one
-  // real Web Push succeeds. Temporary send failures keep the job alive.
   if (job.type === 'notification' && plan.nicks.length && sent === 0) {
-    const attempts = Number(job.attempts || 0) + 1;
-    const lookupMiss = !attempted && !hadPushErrors;
-    const retryJob = {
-      ...job,
-      attempts,
-      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
-      ts: Date.now(),
-      lastRetryReason: attempted ? (hadPushErrors ? 'push delivery failed' : 'push device not delivered') : 'no eligible push device'
-    };
-
-    if (lookupMiss) {
-      console.warn('notification has no eligible device', jobId, JSON.stringify({ recipient: plan.nicks[0], category: plan.payload.category }));
-    }
-
-    // If there is still no active device, keep the job until the normal
-    // 24-hour outbox retention limit. This lets a newly-registered device
-    // receive the queued notification instead of losing it immediately.
-    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: retryJob });
-    console.log('notification queued for retry', jobId, retryJob.lastRetryReason);
+    const reason = attempted ? (hadPushErrors ? 'push delivery failed' : 'push device not delivered') : 'no eligible push device';
     const totals = { accounts: Object.keys(all).length, devices: Object.values(all).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0) };
-    return {
-      sent: 0, next: null, retry: true, reason: retryJob.lastRetryReason,
-      detail: lookups[0] ? diagnoseRecipient(lookups[0], totals) : null,
-      statuses
-    };
+    const r = await retry(reason);
+    return { ...r, detail: lookups[0] ? diagnoseRecipient(lookups[0], totals) : null, statuses };
   }
 
   const rest = plan.nicks.slice(i);
   let next = null;
   const extra = {};
-
-  // For fanout jobs, do NOT mark pushDone until all recipients fit in the
-  // current invocation and have been handed off/processed.
   if (rest.length) {
     next = `${String(jobId).replace(/_c[0-9a-z]+$/, '')}_c${Date.now().toString(36)}`;
     extra[`pushOutbox/${next}`] = {
-      type: 'deliver',
-      payload: plan.payload,
-      nicks: rest,
-      marks: plan.marks,
-      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
-      ts: Date.now()
+      type: 'deliver', payload: plan.payload, nicks: rest, marks: plan.marks,
+      status: 'pending', attempts: 0, leaseUntil: null, updatedAt: Date.now(),
+      queuedAt: Number(job.queuedAt || job.ts || Date.now()), ts: Date.now()
     };
+    await finish('sent', extra);
   } else {
-    Object.assign(extra, plan.marks);
+    await finish(plan.nicks.length ? 'sent' : 'skipped', Object.assign({}, plan.marks));
   }
-
-  await finish(extra);
   console.log('push job completed', jobId, { sent, attempted, next });
   return { sent, next, statuses };
 }
 
 async function runCron(env) {
-  const jobs = await rtdbGet(env, 'pushOutbox', '?orderBy=%22%24key%22&limitToFirst=10');
+  const jobs = await rtdbGet(env, 'pushOutbox', '?orderBy=%22%24key%22&limitToFirst=25');
   if (!jobs) return;
   const budget = { left: maxPush(env) };
   for (const [id, job] of Object.entries(jobs)) {
     if (budget.left <= 0) break;
-    const age = Date.now() - Number(job?.queuedAt || job?.ts || 0);
-    if (age > 24 * 3600e3) { await rtdbPatch(env, { [`pushOutbox/${id}`]: null }); continue; }
-    if (age < 15000) continue;                                                    // the live /event call is probably handling it
+    if (!job || typeof job !== 'object') continue;
+    const now = Date.now();
+    const age = now - Number(job?.queuedAt || job?.ts || now);
+    if (age > 24 * 3600e3) {
+      await rtdbPatch(env, { [`pushOutbox/${enc(id)}`]: { ...job, status: 'dead', leaseUntil: null, updatedAt: now, lastError: 'outbox retention exceeded' } });
+      continue;
+    }
+    const status = String(job.status || 'pending');
+    if (['sent','skipped','dead'].includes(status)) continue;
+    if (status === 'processing' && Number(job.leaseUntil || 0) > now) continue;
+    if (status === 'retry' && Number(job.nextAttemptAt || 0) > now) continue;
     try { await processJob(env, id, budget, job); }
     catch (e) {
-      const attempts = Number(job.attempts || 0) + 1;
       console.warn('job failed', id, String(e?.message || e));
-      await rtdbPatch(env, { [`pushOutbox/${id}`]: attempts >= 5 ? null : { ...job, attempts } }).catch(() => {});
+      const attempts = Number(job.attempts || 0) + 1;
+      const dead = attempts >= MAX_JOB_ATTEMPTS;
+      await rtdbPatch(env, {
+        [`pushOutbox/${enc(id)}`]: {
+          ...job, status: dead ? 'dead' : 'retry', attempts, leaseUntil: null, updatedAt: now,
+          nextAttemptAt: dead ? null : now + retryDelayMs(attempts),
+          lastError: String(e?.message || e).slice(0,300)
+        }
+      }).catch(() => {});
     }
   }
 }
@@ -900,11 +940,12 @@ async function handleGift(request, env, body) {
     if (!Number.isFinite(balance) || balance < price) return { abort: true, reason: `Недостаточно средств. Нужно ${price}₽` };
 
     const recipientRank = subscriptionRank(recipient);
-    if (recipientRank >= giftRank) return { abort: true, reason: 'Нельзя подарить эту подписку. У пользователя уже есть подписка более высокого уровня.' };
-
     const currentExpiry = recipient.subscriptionExpiry ? new Date(recipient.subscriptionExpiry) : null;
     const activeSameType = normalizeSubscriptionType(recipient.subscription) === type
       && currentExpiry && !Number.isNaN(currentExpiry.getTime()) && currentExpiry.getTime() > committedAt;
+    if (recipientRank > giftRank || (recipientRank === giftRank && !activeSameType)) {
+      return { abort: true, reason: 'Нельзя подарить эту подписку. У пользователя уже есть подписка более высокого уровня.' };
+    }
     const expiry = activeSameType
       ? new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000)
       : new Date(committedAt + 7 * 24 * 60 * 60 * 1000);
@@ -944,8 +985,8 @@ async function handleGift(request, env, body) {
     }};
 
     next.pushOutbox = { ...(root.pushOutbox || {}),
-      [giverJobId]: { type: 'notification', to: giverNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt },
-      [recipientJobId]: { type: 'notification', to: recipientNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt }
+      [giverJobId]: { type: 'notification', to: giverNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt, status:'pending', attempts:0, leaseUntil:null, updatedAt:committedAt },
+      [recipientJobId]: { type: 'notification', to: recipientNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt, status:'pending', attempts:0, leaseUntil:null, updatedAt:committedAt }
     };
     return { value: next };
   });
@@ -982,6 +1023,9 @@ async function handleNotify(request, env, body) {
 
     const notificationId = String(body?.notificationId || '').trim();
     if (!validKey(notificationId)) return json(request, env, { error: 'invalid notificationId' }, 400);
+    if (await rtdbGet(env, `notificationTombstones/${enc(targetNick)}/${enc(notificationId)}`)) {
+      return json(request, env, { ok: false, skipped: true, reason: 'notification deleted' }, 409);
+    }
 
     const createdAt = Number(body?.createdAt || Date.now()) || Date.now();
     const category = String(body?.category || body?.cat || 'system').slice(0, 40);
@@ -994,9 +1038,13 @@ async function handleNotify(request, env, body) {
       url: String(body?.url || appUrl(env)).slice(0, 1000),
       push: body?.push !== false,
       source: String(body?.source || '').slice(0, 80),
-      sourceMessageId: String(body?.sourceMessageId || '').slice(0, 120)
+      sourceMessageId: String(body?.sourceMessageId || '').slice(0, 120),
+      readAt: null, deletedAt: null, pushedAt: null
     };
     if (record.source === 'dm') record.from = sender;
+    if (body?.type != null) record.type = String(body.type).slice(0, 80);
+    if (body?.from != null) record.from = String(body.from).slice(0, 80);
+    if (body?.duelId != null) record.duelId = String(body.duelId).slice(0, 120);
 
     const rnd = Array.from(crypto.getRandomValues(new Uint32Array(2)), x => x.toString(36)).join('');
     const jobId = `p${Date.now().toString(36)}${rnd}`.slice(0, 60);
@@ -1006,7 +1054,8 @@ async function handleNotify(request, env, body) {
       id: notificationId,
       sender,
       queuedAt: Date.now(),
-      ts: Date.now()
+      ts: Date.now(),
+      status: 'pending', attempts: 0, leaseUntil: null, updatedAt: Date.now()
     };
 
     // Notification + durable push job are created in ONE authenticated server-side
@@ -1033,6 +1082,87 @@ async function handleNotify(request, env, body) {
     return json(request, env, { ok: false, error: String(error?.message || error).slice(0, 300) }, 500);
   }
 }
+
+async function handleChat(request, env, body) {
+  const nick = String(body?.nick || '').trim();
+  const ph = String(body?.ph || '').trim();
+  const id = String(body?.id || '').trim();
+  const msg = body?.message && typeof body.message === 'object' ? body.message : null;
+  if (!(await verifyUser(env, nick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
+  if (!validKey(id) || !msg || String(msg.nick || '').trim() !== nick) return json(request, env, { error: 'bad chat message' }, 400);
+  const now = Date.now();
+  const jobId = `chat_${id}`;
+  const current = await rtdbGet(env, `chat/${enc(id)}`);
+  if (current) return json(request, env, { ok: true, id, duplicate: true });
+  const job = { type:'chat', id, sender:nick, status:'pending', attempts:0, leaseUntil:null, updatedAt:now, queuedAt:now, ts:now };
+  await rtdbPatch(env, { [`chat/${enc(id)}`]: msg, [`pushOutbox/${enc(jobId)}`]: job });
+  const result = await processJob(env, jobId, { left: maxPush(env) });
+  return json(request, env, { ok:true, id, jobId, sent:Number(result?.sent||0), next:result?.next||null, retry:!!result?.retry, statuses:result?.statuses||[] });
+}
+
+async function handleNews(request, env, body) {
+  const nick = String(body?.nick || '').trim();
+  const ph = String(body?.ph || '').trim();
+  const id = String(body?.id || '').trim();
+  const item = body?.news && typeof body.news === 'object' ? body.news : null;
+  if (!(await verifyUser(env, nick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
+  if (!validKey(id) || !item || String(item.author || '').trim() !== nick) return json(request, env, { error: 'bad news' }, 400);
+  const now = Date.now();
+  const jobId = `news_${id}`;
+  const current = await rtdbGet(env, `news/${enc(id)}`);
+  if (current) return json(request, env, { ok: true, id, duplicate: true });
+  const job = { type:'news', id, sender:nick, status:'pending', attempts:0, leaseUntil:null, updatedAt:now, queuedAt:now, ts:now };
+  await rtdbPatch(env, { [`news/${enc(id)}`]: item, [`pushOutbox/${enc(jobId)}`]: job });
+  const result = await processJob(env, jobId, { left: maxPush(env) });
+  return json(request, env, { ok:true, id, jobId, sent:Number(result?.sent||0), next:result?.next||null, retry:!!result?.retry, statuses:result?.statuses||[] });
+}
+
+async function handleNotificationRead(request, env, body, mode='one') {
+  const nick = String(body?.nick || '').trim();
+  const ph = String(body?.ph || '').trim();
+  if (!(await verifyUser(env, nick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
+  const now = Date.now();
+  if (mode === 'all') {
+    const current = (await rtdbGet(env, `users/${enc(nick)}/notifications`)) || {};
+    const patch = {};
+    for (const id of Object.keys(current)) patch[`users/${enc(nick)}/notifications/${enc(id)}/readAt`] = now;
+    if (Object.keys(patch).length) await rtdbPatch(env, patch);
+    return json(request, env, { ok:true, read:Object.keys(patch).length });
+  }
+  const id = String(body?.notificationId || body?.id || '').trim();
+  if (!validKey(id)) return json(request, env, { error:'invalid notificationId' }, 400);
+  await rtdbPatch(env, { [`users/${enc(nick)}/notifications/${enc(id)}/readAt`]: now });
+  return json(request, env, { ok:true, notificationId:id, readAt:now });
+}
+
+async function handleNotificationDelete(request, env, body, mode='one') {
+  const nick = String(body?.nick || '').trim();
+  const ph = String(body?.ph || '').trim();
+  if (!(await verifyUser(env, nick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
+  const current = (await rtdbGet(env, `users/${enc(nick)}/notifications`)) || {};
+  const ids = mode === 'all' ? Object.keys(current) : [String(body?.notificationId || body?.id || '').trim()];
+  if (mode !== 'all' && !validKey(ids[0])) return json(request, env, { error:'invalid notificationId' }, 400);
+  const patch = {};
+  const now = Date.now();
+  for (const id of ids) {
+    if (!validKey(id)) continue;
+    patch[`users/${enc(nick)}/notifications/${enc(id)}`] = null;
+    patch[`notificationTombstones/${enc(nick)}/${enc(id)}`] = { deletedAt: now };
+  }
+  if (Object.keys(patch).length) await rtdbPatch(env, patch);
+  const outbox = (await rtdbGet(env, 'pushOutbox')) || {};
+  for (const [jobId, job] of Object.entries(outbox)) {
+    if (job?.type === 'notification' && job?.to === nick && ids.includes(String(job.id || ''))) {
+      patch[`pushOutbox/${enc(jobId)}/status`] = 'skipped';
+      patch[`pushOutbox/${enc(jobId)}/updatedAt`] = now;
+      patch[`pushOutbox/${enc(jobId)}/leaseUntil`] = null;
+      patch[`pushOutbox/${enc(jobId)}/lastError`] = 'notification deleted';
+    }
+  }
+  if (Object.keys(patch).length) await rtdbPatch(env, patch);
+  return json(request, env, { ok:true, deleted:ids.length, notificationIds:ids });
+}
+
 async function handleSubscribe(request, env, body) {
   const { nick, ph, subscription: s, prefs, userAgent } = body;
   if (!(await verifyUser(env, nick, ph))) return json(request, env, { error: 'unauthorized' }, 401);
@@ -1197,7 +1327,8 @@ async function handleEvent(request, env, body) {
       to: String(j.to || ''),
       sender: body.nick,
       queuedAt: now,
-      ts: now
+      ts: now,
+      status: 'pending', attempts: 0, leaseUntil: null, updatedAt: now
     });
   }
   if (!validKey(jobId)) return json(request, env, { error: 'bad jobId' }, 400);
@@ -1225,7 +1356,7 @@ export default {
         return json(request, env, {
           ok: true,
           service: 'kapani-push',
-          endpoints: { health: 'GET /health', session: 'POST /session', gift: 'POST /gift', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
+          endpoints: { health: 'GET /health', session: 'POST /session', gift: 'POST /gift', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', chat: 'POST /chat', news: 'POST /news', event: 'POST /event', notificationRead: 'POST /notification/read', notificationReadAll: 'POST /notification/read-all', notificationDelete: 'POST /notification/delete', notificationClear: 'POST /notification/clear', test: 'POST /test', debug: 'POST /debug' }
         });
       }
       if (url.pathname === '/health') {
@@ -1245,6 +1376,12 @@ export default {
       if (url.pathname === '/session') return await handleSession(request, env, body);
       if (url.pathname === '/gift') return await handleGift(request, env, body);
       if (url.pathname === '/notify') return await handleNotify(request, env, body);
+      if (url.pathname === '/chat') return await handleChat(request, env, body);
+      if (url.pathname === '/news') return await handleNews(request, env, body);
+      if (url.pathname === '/notification/read') return await handleNotificationRead(request, env, body, 'one');
+      if (url.pathname === '/notification/read-all') return await handleNotificationRead(request, env, body, 'all');
+      if (url.pathname === '/notification/delete') return await handleNotificationDelete(request, env, body, 'one');
+      if (url.pathname === '/notification/clear') return await handleNotificationDelete(request, env, body, 'all');
       if (url.pathname === '/subscribe') return await handleSubscribe(request, env, body);
       if (url.pathname === '/unsubscribe') return await handleUnsubscribe(request, env, body);
       if (url.pathname === '/prefs') return await handlePrefs(request, env, body);

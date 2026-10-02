@@ -719,7 +719,7 @@ async function shouldSuppressNotificationForOpenContext(nick,notification){
     if(String(notification?.source||'')==='dm'&&notification?.from){const snap=await db.ref(`presence/${nick}/dmOpenWith`).get();return snap.exists()&&String(snap.val()||'')===String(notification.from);}
     return false;
 }
-exports.deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notifications/{notificationId}',region:'europe-west1',secrets:[KAPANI_VAPID_PRIVATE_KEY]},async(event)=>{
+const deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notifications/{notificationId}',region:'europe-west1',secrets:[KAPANI_VAPID_PRIVATE_KEY]},async(event)=>{
     const nick=String(event.params?.nick||'');const notificationId=String(event.params?.notificationId||'');const notification=event.data?.val()||null;if(!nick||!notificationId||!notification||notification.push===false)return null;
     const body=String(notification.text||notification.body||'').trim();if(!body)return null;
     const privateKey=String(KAPANI_VAPID_PRIVATE_KEY.value()||'').trim();if(!privateKey){pushLog('error','vapid_private_key_missing',{nick,notificationId});return null;}
@@ -804,14 +804,14 @@ exports.giftSubscription = onCall({ region: 'europe-west1' }, async (request) =>
         if (!Number.isFinite(balance) || balance < price) return;
 
         const recipientRank = subscriptionRank(recipient);
-        if (recipientRank >= giftRank) return;
-
-        const now = new Date(committedAt);
         const currentExpiry = recipient.subscriptionExpiry ? new Date(recipient.subscriptionExpiry) : null;
         const activeSameType = normalizeSubscriptionType(recipient.subscription) === type
             && currentExpiry
             && !Number.isNaN(currentExpiry.getTime())
             && currentExpiry.getTime() > committedAt;
+        if (recipientRank > giftRank || (recipientRank === giftRank && !activeSameType)) return;
+
+        const now = new Date(committedAt);
 
         const expiry = activeSameType
             ? new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000)
@@ -965,7 +965,7 @@ exports.giftSubscription = onCall({ region: 'europe-west1' }, async (request) =>
  * The sender is excluded, and Web Push is skipped for users who currently have
  * the general chat open. RTDB notification remains available to them.
  */
-exports.notifyOnChatMessage = onValueCreated(
+const notifyOnChatMessage = onValueCreated(
   {
     ref: '/chat/{messageId}',
     region: 'europe-west1'
@@ -1033,7 +1033,7 @@ exports.notifyOnChatMessage = onValueCreated(
  * Mirror only duel events into the canonical user notification collection so
  * they use the same Web Push delivery/Web Push path without removing the legacy UI data.
  */
-exports.notifyOnLegacyDuelNotification = onValueCreated(
+const notifyOnLegacyDuelNotification = onValueCreated(
   { ref: '/notifications/{nick}/{notificationId}', region: 'europe-west1' },
   async (event) => {
     const nick = String(event.params?.nick || '');
@@ -1070,7 +1070,7 @@ exports.notifyOnLegacyDuelNotification = onValueCreated(
  * Server-side news fan-out. This replaces the old client-side best-effort
  * fan-out, so a publisher closing their tab cannot interrupt delivery.
  */
-exports.notifyOnNewsCreated = onValueCreated(
+const notifyOnNewsCreated = onValueCreated(
   { ref: '/news/{newsId}', region: 'europe-west1' },
   async (event) => {
     const newsId = String(event.params?.newsId || '');
@@ -1114,7 +1114,7 @@ exports.notifyOnNewsCreated = onValueCreated(
  * node is intentionally read-only from the browser. This callable uses the
  * authenticated Firebase session, writes the inbox item atomically; the notification trigger performs the actual Web Push delivery.
  */
-exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (request) => {
+const createKapaniNotification = onCall({ region: 'europe-west1' }, async (request) => {
     const senderNick = String(request.auth?.uid || '').trim();
     const targetNick = String(request.data?.nick || '').trim();
     const text = String(request.data?.text || '').trim();

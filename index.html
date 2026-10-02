@@ -1314,6 +1314,16 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
                 <option value="work">💼 Работа / вакансия</option>
                 <option value="service">🤝 Услуга</option>
             </select>
+            <div class="card" style="margin-top:10px;padding:10px;background:var(--surface2);">
+                <div style="font-size:12px;font-weight:900;margin-bottom:7px;">📍 Где находится товар</div>
+                <div id="mktLocationPreview" style="font-size:12px;color:var(--primary);margin-bottom:7px;">Точка не выбрана</div>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-ghost btn-sm" type="button" style="flex:1;" onclick="detectMarketLocation()">📍 Определить моё местоположение</button>
+                    <button class="btn btn-ghost btn-sm" type="button" style="flex:1;" onclick="openMarketLocationPicker()">🗺 Выбрать на карте</button>
+                </div>
+                <input type="text" id="mktAddress" placeholder="Адрес товара" maxlength="180" style="margin-top:8px;">
+                <input type="hidden" id="mktLat"><input type="hidden" id="mktLng">
+            </div>
             <button class="btn btn-gold" onclick="publishListing()" style="margin-top:8px;">📢 Опубликовать</button>
         </div>
     </div>
@@ -2321,7 +2331,7 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div id="deliveryBusinessMapCard" class="card" style="display:none;margin-top:10px;padding:8px;"><div style="font-size:12px;font-weight:900;margin-bottom:7px;">🗺 Маршрут доставки</div><div id="deliveryBusinessMap" style="width:100%;height:280px;border-radius:12px;overflow:hidden;"></div><div id="deliveryBusinessMapInfo" style="margin-top:8px;font-size:13px;color:var(--muted);"></div></div>
         <div class="total-row" style="margin-top:10px;">
             <span>Стоимость доставки</span>
-            <span class="total-val" style="font-size:16px;">Определяет доставщик</span>
+            <span class="total-val" style="font-size:16px;"><span id="deliveryAutoPrice">0</span> ₽</span>
         </div>
         <button class="btn btn-primary" onclick="placeDeliveryOrder()" style="margin-top:4px;">📤 Разместить заказ на доставку</button>
     </div>
@@ -4428,7 +4438,7 @@ function attachNotificationsListener(){
         attempt=0;
         const notifs=snap.val()||{};
         window._kapaniNotificationsCache=notifs;
-        updateBadge(Object.keys(notifs).length);
+        updateBadge(Object.values(notifs).filter(n=>n && !n.readAt).length);
         // Always render (even while Profile is hidden) so the inbox is ready when opened.
         renderNotifications(notifs);
         if(!state.baseline){
@@ -5087,17 +5097,12 @@ async function kickPushWorker(jobId,inline){
     }
 }
 // Durable path: write the job to RTDB (cron will pick it up if this call is lost), then wake the worker.
-// If the browser may not write the outbox, fall back to an authenticated inline job.
+// Canonical push path: the browser never writes protected pushOutbox directly.
+// The Worker creates durable jobs server-side and cron retries them if the live request is lost.
 async function enqueuePushJob(job){
     if(!PUSH_WORKER_URL||!currentNick) return;
-    try{
-        const jRef=push(ref(db,'pushOutbox'));
-        await set(jRef,{...job,ts:Date.now()});
-        void kickPushWorker(String(jRef.key||''));
-    }catch(e){
-        console.debug('[Kapani push worker] outbox write failed, using inline job:',e?.message||e);
-        void kickPushWorker('',job);
-    }
+    try{ await kickPushWorker('',{...job,ts:Date.now()}); }
+    catch(e){ console.debug('[Kapani push worker] inline job failed:',e?.message||e); }
 }
 window.getKapaniPushWorkerHealth=async function(){
     if(!PUSH_WORKER_URL) return {configured:false,message:'config.js: pushWorkerUrl is empty — Cloudflare Web Push backend is not configured'};
@@ -5132,9 +5137,11 @@ window.kapaniPushDoctor=async function(target){
     return out;
 };
 window.kapaniPushSelfTest=async function(){
-    const ph=await getPushAuthHash();
-    const r=await pushWorkerCall('/test',{nick:currentNick,ph,category:'system'});
-    console.log(r);return r;
+    // Self-test must exercise the same canonical chain as a real notification:
+    // /notify -> users/<nick>/notifications -> pushOutbox -> Worker -> Web Push.
+    const r=await window.testKapaniPush();
+    console.log(r);
+    return r;
 };
 // ─── Push status line + one-tap repair (for people who cannot open the console) ───
 function pushErrorText(e){
@@ -5321,14 +5328,7 @@ function announceIncomingNotification(n){
     if(!text) return;
     if(isNotificationContextOpen(n)) return;
     if(curPage!=='profile') showNotifPopup(text,formatNotifTime(n));
-    void showForegroundKapaniPush({
-        title:n.title,
-        body:text,
-        category:n.cat,
-        notificationId:n.id,
-        url:n.url,
-        source:'inbox'
-    });
+    // OS-level display is owned by Web Push + Service Worker.
 }
 if(!window._kapaniPushSwMessageBound&&'serviceWorker' in navigator){window._kapaniPushSwMessageBound=true;navigator.serviceWorker.addEventListener('message',event=>{
     const type=event?.data?.type;
@@ -5447,8 +5447,9 @@ async function writeNotificationViaWorker(targetNick,body,cat,extra){
     if(!ph) throw new Error('Не найден хэш пароля для регистрации push');
     // Firebase push() only generates a local key here; the actual protected RTDB write
     // is performed atomically by the authenticated Cloudflare Worker.
-    const nRef=push(notifRef(targetNick));
-    const notificationId=String(nRef?.key||'');
+    const providedId=String(extra?.notificationId||'').trim();
+    const nRef=providedId?null:push(notifRef(targetNick));
+    const notificationId=providedId||String(nRef?.key||'');
     if(!notificationId) throw new Error('Не удалось создать ID уведомления');
     const result=await pushWorkerCall('/notify',{
         nick:currentNick,
@@ -5461,6 +5462,9 @@ async function writeNotificationViaWorker(targetNick,body,cat,extra){
         url:String(extra?.url||''),
         source:String(extra?.source||''),
         sourceMessageId:String(extra?.sourceMessageId||''),
+        type: extra?.type != null ? String(extra.type).slice(0, 80) : undefined,
+        from: extra?.from != null ? String(extra.from).slice(0, 80) : undefined,
+        duelId: extra?.duelId != null ? String(extra.duelId).slice(0, 120) : undefined,
         createdAt:Date.now()
     });
     return {notificationId,...result};
@@ -5488,8 +5492,22 @@ window.testKapaniPush = async function(){
     toast(perm==='granted'?'🧪 Тестовое уведомление отправлено':'🧪 Уведомление добавлено в список. Разрешите push в браузере, чтобы видеть его как системное','green');
     return {...result, permission:perm, diagnostics: await window.getKapaniPushDiagnostics()};
 };
-window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
-window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
+window.markNotificationRead=async function(notifId){
+    if(!currentNick||!notifId) return;
+    try{ await pushWorkerCall('/notification/read',{nick:currentNick,ph:await getPushAuthHash(),notificationId:String(notifId)}); }
+    catch(e){ console.warn('[notifications] read:',e?.message||e); }
+};
+window.deleteNotification=async function(notifId){
+    if(!currentNick||!notifId) return;
+    try{ await pushWorkerCall('/notification/delete',{nick:currentNick,ph:await getPushAuthHash(),notificationId:String(notifId)}); toast('🗑 Уведомление удалено','green'); }
+    catch(e){ toast('❌ Не удалось удалить уведомление: '+(e?.message||e),'red'); }
+};
+window.clearAllNotifications=async function(){
+    if(!currentNick) return;
+    try{ await pushWorkerCall('/notification/clear',{nick:currentNick,ph:await getPushAuthHash()}); toast('✅ Уведомления очищены','green'); }
+    catch(e){ toast('❌ Не удалось очистить уведомления: '+(e?.message||e),'red'); }
+};
+
 function renderNotifications(notifs){
     const el=qs('inboxList');if(!el)return;
     const arr=Object.entries(notifs||{})
@@ -5498,35 +5516,28 @@ function renderNotifications(notifs){
         .sort((a,b)=>((Number(b.createdAt)||0)-(Number(a.createdAt)||0)) || (a.id<b.id?1:a.id>b.id?-1:0));
     el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет уведомлений</div>':arr.map(n=>{
       const duelActions=n.type==='duel_invite'&&n.duelId?`<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="acceptOnlineDuelFromNotif('${n.duelId}','${n.id}')">✅ Принять</button><button class="btn btn-red btn-sm" onclick="declineOnlineDuelFromNotif('${n.duelId}','${n.id}')">❌ Отклонить</button></div>`:'';
-      return `<div class="notif-item" style="${n.type==='duel_invite'?'border-left-color:var(--gold);':''}" onclick="${!duelActions?`deleteNotification('${n.id}')`:''}">`
+      return `<div class="notif-item" style="${n.type==='duel_invite'?'border-left-color:var(--gold);':''}" onclick="${!duelActions?`markNotificationRead('${n.id}')`:''}">`
         +`<div style="flex:1;min-width:0;"><div class="notif-text" style="white-space:pre-wrap;word-break:break-word;">${escHtml(n.text||'')}</div>${duelActions}</div>`
         +`<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:8px;"><div class="notif-time">${escHtml(formatNotifTime(n))}</div>${!duelActions?`<div class="notif-del" onclick="deleteNotification('${n.id}');event.stopPropagation()">✕</div>`:''}</div></div>`;
     }).join('');
 }
 
-// Duel events historically live under /notifications/<nick>. Mirror them into the
-// canonical inbox from the client under the SAME id the backend bridge uses
-// (legacy_<key>), so the invite shows up even if the Cloud Function is slow or
-// not deployed; the function's `existing.exists()` check makes this idempotent.
+// Duel notifications now use the canonical notification pipeline. Keep the old
+// /notifications mirror only as a best-effort legacy write because the active
+// RTDB rules intentionally block direct client writes to that protected node.
 async function pushLegacyDuelNotification(targetNick,payload){
-    const legacyRef=await push(ref(db,`notifications/${targetNick}`),payload);
+    let legacyKey='';
     try{
-        const key=String(legacyRef?.key||''); if(!key) return;
-        await set(ref(db,`users/${targetNick}/notifications/legacy_${key}`),{
-            text:String(payload.text||'Новое уведомление'),
-            title:'Капани',
-            time:nowTime(),
-            cat:'messages',
-            createdAt:Number(payload.ts)||Date.now(),
-            url:'',
-            push:true,
-            type:String(payload.type||''),
-            from:String(payload.from||''),
-            duelId:String(payload.duelId||''),
-            source:'legacy_duel',
-            sourceMessageId:key
+        const legacyRef=await push(ref(db,`notifications/${targetNick}`),payload);
+        legacyKey=String(legacyRef?.key||'');
+    }catch(e){ console.debug('[duel legacy notification disabled]',e?.message||e); }
+    try{
+        const key=legacyKey || `${String(payload.duelId||'duel')}_${Number(payload.ts||Date.now())}`;
+        await pushNotification(targetNick,String(payload.text||'Новое уведомление'),'messages',{
+            notificationId:`legacy_${key}`,
+            source:'legacy_duel', sourceMessageId:key,
+            title:'Капани', url:'', type:String(payload.type||''), from:String(payload.from||''), duelId:String(payload.duelId||'')
         });
-        void enqueuePushJob({type:'notification',to:targetNick,id:`legacy_${key}`});
     }catch(e){ console.debug('[duel notification mirror]',e?.message||e); }
 }
 
@@ -7411,11 +7422,11 @@ async function sendChatMsg(text,mediaData,msgType,cameraFacing){
     if(msgType) msg.msgType=msgType;
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
-    const pushed = await push(chatRef(),msg);
-    void enqueuePushJob({type:'chat',id:String(pushed.key||''),sender:currentNick});
-    // Только Cloud Function fan-out уведомлений по событию /chat/{messageId}.
-    // Браузер пишет ровно одно сообщение и не рассылает уведомления сам.
-    return pushed;
+    const id=String(push(chatRef()).key||'');
+    if(!id) throw new Error('Не удалось создать ID сообщения');
+    const result=await pushWorkerCall('/chat',{nick:currentNick,ph:await getPushAuthHash(),id,message:msg});
+    if(!result?.ok) throw new Error(result?.error||'Worker не создал сообщение');
+    return {key:id,val:()=>msg,...result};
 }
 
 // ─── DM MESSENGER ─────────────────────────
@@ -7719,7 +7730,10 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(msgType) msg.msgType=msgType;
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     const key=dmKey(currentNick,currentDmNick);
-    await push(dmRef(key),msg);
+    const msgRef=push(dmRef(key));
+    const msgId=String(msgRef?.key||'');
+    if(!msgId) throw new Error('Не удалось создать ID сообщения');
+    await set(msgRef,msg);
     const latestMeta={lastTs:msg.createdAt,latest:{nick:msg.nick,avatar:msg.avatar,text:msg.text||'',msgType:msg.msgType||null,time:msg.time,createdAt:msg.createdAt}};
     try{await update(dmIndexRef(currentNick),{[currentDmNick]:{...latestMeta,unread:false}});await update(dmIndexRef(currentDmNick),{[currentNick]:{...latestMeta,unread:true}});}catch(e){console.warn('[DM index update]',e);}
     let notifText;
@@ -7729,7 +7743,7 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
     else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
     if(currentDmNick!==currentNick){
-        await pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:`${key}:${msg.createdAt}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
+        await pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:msgId,notificationId:`dm_${msgId}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
     }
 }
 
@@ -8535,9 +8549,12 @@ window.publishListing=async function(){
     const cat=qs('mktCategory').value;
     const price=cat==='work' ? 0 : (negotiable?0:(parseInt(qs('mktPrice').value)||0));
     const salaryHint=(qs('mktSalaryHint')?.value||'').trim();
+    const pickupText=(qs('mktAddress')?.value||'').trim();
+    const pickupLat=Number(qs('mktLat')?.value), pickupLng=Number(qs('mktLng')?.value);
     if(!title)return toast('⚠️ Название','gold');
     if(cat!=='work' && !negotiable && price<=0)return toast('⚠️ Укажите цену или отметьте «договорная»','gold');
     if(cat==='work' && !salaryHint)return toast('⚠️ Для вакансии укажите оплату','gold');
+    if(!pickupText || !Number.isFinite(pickupLat) || !Number.isFinite(pickupLng)) return toast('📍 Укажите адрес товара, чтобы покупатель и курьер знали, откуда его забирать.','gold');
     
     // Проверяем лимит объявлений в месяц
     const snap=await get(userRef(currentNick));
@@ -8572,7 +8589,7 @@ window.publishListing=async function(){
     
     const photo=window._mktPhotoData||qs('mktPhoto').value.trim();
     const id=genId();
-    await set(listingRef(id),{id,seller:currentNick,title,desc:qs('mktDesc').value.trim(),price,priceNegotiable:cat!=='work' && !!negotiable,salaryHint,photo,category:cat,status:'active',buyer:null});
+    await set(listingRef(id),{id,seller:currentNick,title,desc:qs('mktDesc').value.trim(),price,priceNegotiable:cat!=='work' && !!negotiable,salaryHint,photo,category:cat,status:'active',buyer:null,pickupAddress:{lat:pickupLat,lng:pickupLng,text:pickupText},location:{lat:pickupLat,lng:pickupLng,text:pickupText}});
     
     // Обновляем счетчик объявлений
     await update(userRef(currentNick),{
@@ -8585,7 +8602,7 @@ window.publishListing=async function(){
         await logTx(currentNick,{type:'in',who:'Задания',amt:60,desc:'Одноразовое задание: первое объявление'});
         toast('🎁 +60 ₽ на счёт заданий за первое объявление','gold');
     }
-    qs('mktTitle').value='';qs('mktDesc').value='';qs('mktPrice').value='';if(qs('mktNegotiable'))qs('mktNegotiable').checked=false;if(qs('mktSalaryHint'))qs('mktSalaryHint').value='';
+    qs('mktTitle').value='';qs('mktDesc').value='';qs('mktPrice').value='';if(qs('mktAddress'))qs('mktAddress').value='';if(qs('mktLat'))qs('mktLat').value='';if(qs('mktLng'))qs('mktLng').value='';if(qs('mktLocationPreview'))qs('mktLocationPreview').textContent='Точка не выбрана';if(qs('mktNegotiable'))qs('mktNegotiable').checked=false;if(qs('mktSalaryHint'))qs('mktSalaryHint').value='';
     qs('mktPhoto').value='';qs('mktPhotoPreview').style.display='none';window._mktPhotoData=null;toggleMktPriceFields();toast('✅ Опубликовано!','green');switchMarketTab(0);
 };
 window.requestMeeting=async function(id){
@@ -9653,11 +9670,7 @@ window.publishNews = async function(){
         date: new Date().toLocaleDateString('ru'),
         time: nowTime()
     };
-    await set(newsItemRef(id), newsItem);
-    void enqueuePushJob({type:'news',id:String(id),sender:currentNick});
-    // ── Notify residents about the new post (reuses existing notifRef +
-    //    Web Push/service-worker plumbing — no parallel notification system) ──
-    notifyAllUsersOfNews(newsItem).catch(e=>console.error('[news notify]', e));
+    await pushWorkerCall('/news',{nick:currentNick,ph:await getPushAuthHash(),id,news:newsItem});
     toast('📰 Новость опубликована!', 'green');
     qs('newsTitle').value = '';
     qs('newsContent').value = '';
@@ -11912,6 +11925,7 @@ async function ensureMapModal(id,title,initialLat,initialLng,saveFn){
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b style="font-size:16px;">${title}</b><button class="btn btn-ghost btn-sm" onclick="this.closest('#${id}').style.display='none'">✕</button></div>
             <div id="${id}Map" style="height:360px;border-radius:14px;overflow:hidden;"></div>
             <div id="${id}Coords" style="font-size:11px;color:var(--muted);margin:8px 0;"></div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;"><button type="button" class="btn btn-ghost btn-sm" data-location-geolocate="1" style="flex:1;">📍 Определить моё местоположение</button></div>
             <div style="display:flex;gap:8px;"><button type="button" class="btn btn-primary" data-location-save="1" style="flex:1;">✅ Сохранить точку</button><button type="button" class="btn btn-ghost" style="flex:1;" onclick="this.closest('#${id}').style.display='none'">Отмена</button></div>
         </div>`;
         document.body.appendChild(modal);
@@ -11931,6 +11945,24 @@ async function ensureMapModal(id,title,initialLat,initialLng,saveFn){
             catch(e){ console.error('[location picker save]',e); toast('❌ Не удалось сохранить точку: '+(e?.message||'ошибка'),'red'); }
         });
     }
+    const geoBtn=modal.querySelector('[data-location-geolocate="1"]');
+    if(geoBtn && !geoBtn.dataset.bound){
+        geoBtn.dataset.bound='1';
+        geoBtn.addEventListener('click',()=>{
+            if(!navigator.geolocation) return toast('❌ Геолокация недоступна','red');
+            toast('📍 Определяем местоположение…','gold');
+            navigator.geolocation.getCurrentPosition(async pos=>{
+                const la=pos.coords.latitude, lo=pos.coords.longitude;
+                const st=modal._locationState||{}; st.lat=la; st.lng=lo; modal._locationState=st;
+                const mk=globalThis[markerVar]; if(mk) mk.setLatLng([la,lo]);
+                const mp=globalThis[mapVar]; if(mp) mp.setView([la,lo],17);
+                let address=''; try{ address=await reverseGeocode(la,lo); }catch(_){ }
+                st.address=address||`${la.toFixed(6)}, ${lo.toFixed(6)}`;
+                const c=qs(id+'Coords'); if(c)c.textContent=`📍 ${st.address}`;
+                toast('✅ Местоположение определено','green');
+            },err=>toast('❌ Не удалось определить местоположение: '+(err?.message||'проверьте разрешение браузера'),'red'),{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+        });
+    }
     const lat=Number.isFinite(Number(initialLat))?Number(initialLat):fallbackLat;
     const lng=Number.isFinite(Number(initialLng))?Number(initialLng):fallbackLng;
     const state={lat,lng};
@@ -11941,20 +11973,47 @@ async function ensureMapModal(id,title,initialLat,initialLng,saveFn){
     globalThis[mapVar]=L.map(host,{center:[lat,lng],zoom:(Number.isFinite(Number(initialLat))&&Number.isFinite(Number(initialLng)))?17:14});
     addSatelliteLayer(globalThis[mapVar]);
     globalThis[markerVar]=L.marker([lat,lng],{draggable:true}).addTo(globalThis[mapVar]);
-    const update=()=>{
+    const update=(clearAddress=true)=>{
         const ll=globalThis[markerVar].getLatLng(); state.lat=ll.lat; state.lng=ll.lng;
+        if(clearAddress) state.address='';
         const c=qs(id+"Coords"); if(c)c.textContent=`📍 ${ll.lat.toFixed(6)}, ${ll.lng.toFixed(6)}`;
     };
-    globalThis[mapVar].on('click',e=>{globalThis[markerVar].setLatLng(e.latlng);update();});
-    globalThis[markerVar].on('dragend',update);
-    update();
+    globalThis[mapVar].on('click',e=>{globalThis[markerVar].setLatLng(e.latlng);update(true);});
+    globalThis[markerVar].on('dragend',()=>update(true));
+    update(false);
 }
+async function setMarketLocationPoint(lat,lng,addressText){
+    const la=Number(lat), lo=Number(lng); if(!Number.isFinite(la)||!Number.isFinite(lo)) return false;
+    let text=String(addressText||'').trim();
+    if(!text){ try{ text=await reverseGeocode(la,lo); }catch(_){} }
+    if(!text) text=`${la.toFixed(6)}, ${lo.toFixed(6)}`;
+    if(qs('mktLat')) qs('mktLat').value=String(la);
+    if(qs('mktLng')) qs('mktLng').value=String(lo);
+    if(qs('mktAddress')) qs('mktAddress').value=text;
+    if(qs('mktLocationPreview')) qs('mktLocationPreview').textContent=`📍 ${text}`;
+    return true;
+}
+window.detectMarketLocation=async function(){
+    if(!navigator.geolocation) return toast('❌ Геолокация недоступна','red');
+    toast('📍 Определяем местоположение…','gold');
+    navigator.geolocation.getCurrentPosition(async pos=>{ await setMarketLocationPoint(pos.coords.latitude,pos.coords.longitude); toast('✅ Адрес товара определён','green'); },err=>toast('❌ Не удалось определить местоположение: '+(err?.message||'проверьте разрешение браузера'),'red'),{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+};
+window.openMarketLocationPicker=async function(){
+    const la=Number(qs('mktLat')?.value), lo=Number(qs('mktLng')?.value);
+    await ensureMapModal('marketLocationPicker','🗺 Точка товара',Number.isFinite(la)?la:BUSINESS_DEFAULT_LAT,Number.isFinite(lo)?lo:BUSINESS_DEFAULT_LNG,'saveMarketLocationPicker');
+};
+window.saveMarketLocationPicker=async function(){
+    const modal=qs('marketLocationPicker'), st=modal?._locationState; if(!st) return;
+    await setMarketLocationPoint(st.lat,st.lng,String(qs('mktAddress')?.value||''));
+    if(modal) modal.style.display='none';
+};
+
 window.openBusinessLocationPicker=async function(mode){
     _businessLocationMode=mode||'create';
-    // Business location picker always opens at the Kapani base point requested by the project.
-    // Existing saved coordinates are not overwritten until the user explicitly presses Save.
-    const lat=BUSINESS_DEFAULT_LAT;
-    const lng=BUSINESS_DEFAULT_LNG;
+    const sourceLat=_businessLocationMode==='edit'?Number(qs('bizEditLat')?.value):Number(qs('bapLat')?.value);
+    const sourceLng=_businessLocationMode==='edit'?Number(qs('bizEditLng')?.value):Number(qs('bapLng')?.value);
+    const lat=Number.isFinite(sourceLat)?sourceLat:BUSINESS_DEFAULT_LAT;
+    const lng=Number.isFinite(sourceLng)?sourceLng:BUSINESS_DEFAULT_LNG;
     await ensureMapModal('bizLocationPicker','🗺 Точка бизнеса',lat,lng,'saveBusinessLocationPicker');
 };
 window.saveBusinessLocationPicker=async function(){
@@ -11965,11 +12024,12 @@ window.saveBusinessLocationPicker=async function(){
     if(marker?.getLatLng){ const ll=marker.getLatLng(); state.lat=ll.lat; state.lng=ll.lng; modal._locationState=state; }
     const lat=Number(state.lat), lng=Number(state.lng);
     if(!Number.isFinite(lat)||!Number.isFinite(lng)) return toast('⚠️ Сначала выберите точку на карте','gold');
+    if(!String(state.address||'').trim()){ try{ state.address=await reverseGeocode(lat,lng); }catch(_){ } }
     const ids=_businessLocationMode==='edit'?['bizEditLat','bizEditLng','bizEditLocationPreview']:['bapLat','bapLng','bapLocationPreview'];
     const latEl=qs(ids[0]), lngEl=qs(ids[1]), preview=qs(ids[2]);
     if(!latEl||!lngEl) return toast('❌ Поля координат бизнеса не найдены','red');
     latEl.value=String(lat); lngEl.value=String(lng);
-    if(preview) preview.textContent=`📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    if(preview) preview.textContent=`📍 ${String(state.address||`${lat.toFixed(6)}, ${lng.toFixed(6)}`)}`;
 
     // In edit mode persist the point immediately to the real business record.
     // This avoids the old situation where coordinates only lived in hidden inputs
@@ -11978,7 +12038,7 @@ window.saveBusinessLocationPicker=async function(){
         const bizId=currentBizId || window.currentBizId;
         if(!bizId) return toast('❌ Не выбран бизнес для сохранения точки','red');
         try{
-            await update(bizItemRef(bizId), {lat, lng, address: (qs('bizEditAddress')?.value||'').trim() || `${lat.toFixed(6)}, ${lng.toFixed(6)}`});
+            await update(bizItemRef(bizId), {lat, lng, address: (qs('bizEditAddress')?.value||'').trim() || String(state.address||''), location:{lat,lng,text:(qs('bizEditAddress')?.value||'').trim() || String(state.address||'') }});
             if(allBusinessesCache) allBusinessesCache[bizId] = {...(allBusinessesCache[bizId]||{}), lat, lng};
             currentBizDetailData = currentBizDetailData ? {...currentBizDetailData, lat, lng} : currentBizDetailData;
             modal.style.display='none';
@@ -11996,19 +12056,18 @@ window.saveBusinessLocationPicker=async function(){
     toast('✅ Точка сохранена в форме бизнеса','green');
 };
 window.openDeliveryLocationPicker=async function(){
-    // Delivery picker opens at the same fixed Kapani point as the business picker.
-    // The selected point is written only when the user confirms the picker.
-    const lat=BUSINESS_DEFAULT_LAT;
-    const lng=BUSINESS_DEFAULT_LNG;
-    if(qs('deliveryOrderLat')) qs('deliveryOrderLat').value=String(lat);
-    if(qs('deliveryOrderLng')) qs('deliveryOrderLng').value=String(lng);
+    const sourceLat=Number(qs('deliveryOrderLat')?.value), sourceLng=Number(qs('deliveryOrderLng')?.value);
+    const lat=Number.isFinite(sourceLat)?sourceLat:BUSINESS_DEFAULT_LAT;
+    const lng=Number.isFinite(sourceLng)?sourceLng:BUSINESS_DEFAULT_LNG;
     await ensureMapModal('deliveryLocationPicker','🗺 Точка доставки',lat,lng,'saveDeliveryLocationPicker');
 };
-window.saveDeliveryLocationPicker=function(){
+window.saveDeliveryLocationPicker=async function(){
     const state=qs('deliveryLocationPicker')?._locationState; if(!state) return;
+    if(!String(state.address||'').trim()){ try{ state.address=await reverseGeocode(Number(state.lat),Number(state.lng)); }catch(_){ } }
     qs('deliveryOrderLat').value=state.lat; qs('deliveryOrderLng').value=state.lng;
-    qs('deliveryLocationPreview').textContent=`📍 ${state.lat.toFixed(6)}, ${state.lng.toFixed(6)}`;
-    const addr=qs('deliveryOrderAddr'); if(addr&&!addr.value.trim()) addr.value=`${state.lat.toFixed(6)}, ${state.lng.toFixed(6)}`;
+    const resolved=String(state.address||`${state.lat.toFixed(6)}, ${state.lng.toFixed(6)}`);
+    qs('deliveryLocationPreview').textContent=`📍 ${resolved}`;
+    const addr=qs('deliveryOrderAddr'); if(addr&&!addr.value.trim()) addr.value=resolved;
     qs('deliveryLocationPicker').style.display='none';
     updateDeliverySummary();
     renderBusinessDeliveryMap().catch(e=>console.warn('[delivery business map]',e));
@@ -12064,7 +12123,8 @@ window.submitBizApply = async function(){
     if(!name) return toast('⚠️ Укажите название','gold');
     if(!desc) return toast('⚠️ Укажите описание','gold');
     if(!Number.isFinite(lat) || !Number.isFinite(lng)) return toast('🗺 Выберите точку бизнеса на карте','gold');
-    const normalizedAddress = address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    if(!address) return toast('📍 Укажите адрес бизнеса.','gold');
+    const normalizedAddress = address;
     const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
     const limit = getBusinessLimitForUser(u);
@@ -12082,7 +12142,7 @@ window.submitBizApply = async function(){
     await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -50%)' : (hasUltraForBiz ? ' (Ultra -20%)' : '')}` });
     await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasPrimeForBiz ? ' (скидка Prime)' : (hasUltraForBiz ? ' (скидка Ultra)' : '')}`, 'money');
     await set(bizAppRef(id), {
-        id, owner: currentNick, name, desc, address: normalizedAddress, lat, lng, category, services,
+        id, owner: currentNick, name, desc, address: normalizedAddress, lat, lng, location:{lat,lng,text:normalizedAddress}, category, services,
         status: 'pending', createdAt: Date.now(), feePaid: actualFee
     });
     await pushNotification(ADMIN, `🏪 Новая заявка на бизнес от ${currentNick}: «${name}»`, 'system');
@@ -12210,9 +12270,12 @@ window.adminApproveBiz = async function(id){
     const snap = await get(bizAppRef(id)); if(!snap.exists()) return;
     const a = snap.val();
     const bizId = genId();
+    const approvalLat=Number(a.lat), approvalLng=Number(a.lng);
+    const approvalAddress=String(a.address||a.location?.text||'').trim();
+    if(!Number.isFinite(approvalLat)||!Number.isFinite(approvalLng)||!approvalAddress) return toast('❌ Нельзя одобрить бизнес без корректного адреса и координат','red');
     await set(bizItemRef(bizId), {
         id: bizId, owner: a.owner, name: a.name, desc: a.desc,
-        address: a.address, ...(Number.isFinite(Number(a.lat))&&Number.isFinite(Number(a.lng))?{lat:Number(a.lat),lng:Number(a.lng)}:{}), category: a.category, services: a.services,
+        address: approvalAddress, lat: approvalLat, lng: approvalLng, location:{lat:approvalLat,lng:approvalLng,text:approvalAddress}, category: a.category, services: a.services,
         icon: '', banner: '', balance: 0, delivery: false,
         roles: {}, employees: {}, products: {},
         createdAt: Date.now(), bizWeeklyFeeAt: Date.now(), status: 'active'
@@ -13357,7 +13420,9 @@ window.saveBizEdit = async function(){
     };
     const editLat = Number(qs('bizEditLat')?.value);
     const editLng = Number(qs('bizEditLng')?.value);
-    if(Number.isFinite(editLat) && Number.isFinite(editLng)){ patch.lat=editLat; patch.lng=editLng; }
+    if(!Number.isFinite(editLat) || !Number.isFinite(editLng)) return toast('🗺 Выберите точку бизнеса на карте','gold');
+    if(!patch.address) return toast('📍 Укажите адрес бизнеса','gold');
+    patch.lat=editLat; patch.lng=editLng; patch.location={lat:editLat,lng:editLng,text:patch.address};
     if(!patch.name) return toast('⚠️ Укажите название','gold');
     if(_bizEditIconData){ patch.icon = _bizEditIconData; _bizEditIconData = null; }
     if(_bizEditBannerData){ patch.banner = _bizEditBannerData; _bizEditBannerData = null; }
@@ -15328,7 +15393,7 @@ function deliveryBusinessOptions() {
 
 function deliveryMarketplaceOptions() {
     return Object.values(lastMarketListings || {})
-        .filter(l => l && !l.archived && l.status !== 'sold' && l.category !== 'work' && l.category !== 'service')
+        .filter(l => l && !l.archived && l.status !== 'sold' && l.category !== 'work' && l.category !== 'service' && Number.isFinite(Number(l.pickupAddress?.lat)) && Number.isFinite(Number(l.pickupAddress?.lng)) && String(l.pickupAddress?.text||l.pickupAddress?.address||'').trim())
         .sort((a, b) => (b.pinnedUntil || 0) - (a.pinnedUntil || 0) || (b.createdAt || 0) - (a.createdAt || 0));
 }
 
@@ -15382,35 +15447,56 @@ async function renderBusinessDeliveryMap(){
     const card=qs('deliveryBusinessMapCard'), host=qs('deliveryBusinessMap');
     if(!card||!host) return;
     const source=qs('deliveryOrderSource')?.value||'business';
-    if(source!=='business'){ card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return; }
-    const bizId=qs('deliveryOrderBiz')?.value||'', b=(allBusinessesCache||{})[bizId];
+    let fromLat=NaN, fromLng=NaN, fromLabel='Источник', fromAddress='';
+    if(source==='business'){
+        const bizId=qs('deliveryOrderBiz')?.value||'', b=(allBusinessesCache||{})[bizId];
+        fromLat=Number(b?.lat ?? b?.location?.lat); fromLng=Number(b?.lng ?? b?.location?.lng); fromLabel=b?.name||'Бизнес'; fromAddress=String(b?.address||b?.location?.text||'').trim();
+    } else {
+        const listingId=qs('deliveryOrderMarketItem')?.value||'', l=(lastMarketListings||{})[listingId];
+        fromLat=Number(l?.pickupAddress?.lat); fromLng=Number(l?.pickupAddress?.lng); fromLabel=l?.title||'Товар'; fromAddress=String(l?.pickupAddress?.text||l?.pickupAddress?.address||'').trim();
+    }
     const dLat=Number(qs('deliveryOrderLat')?.value), dLng=Number(qs('deliveryOrderLng')?.value);
-    const bLat=Number(b?.lat), bLng=Number(b?.lng);
-    if(!b||!Number.isFinite(bLat)||!Number.isFinite(bLng)||!Number.isFinite(dLat)||!Number.isFinite(dLng)){ card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return; }
+    if(!String(fromAddress||'').trim() || !Number.isFinite(fromLat)||!Number.isFinite(fromLng)||!Number.isFinite(dLat)||!Number.isFinite(dLng)){
+        card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return;
+    }
     card.style.display='block';
+    const titleEl=card.querySelector('.card-title'); if(titleEl) titleEl.textContent='🗺 Маршрут доставки';
     await window.kapaniLoadLeaflet();
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){}}
-    deliveryBusinessMapObj=L.map(host,{center:[bLat,bLng],zoom:14});
+    deliveryBusinessMapObj=L.map(host,{center:[fromLat,fromLng],zoom:14});
     addSatelliteLayer(deliveryBusinessMapObj);
-    deliveryBusinessMapBusinessMarker=L.marker([bLat,bLng]).addTo(deliveryBusinessMapObj).bindPopup(`<b>🏪 ${escHtml(b.name||'Бизнес')}</b><br>📍 Бизнес`);
-    deliveryBusinessMapClientMarker=L.marker([dLat,dLng]).addTo(deliveryBusinessMapObj).bindPopup('<b>📍 Точка доставки</b>');
-    deliveryBusinessMapLine=L.polyline([[bLat,bLng],[dLat,dLng]],{weight:4,dashArray:'8 8'}).addTo(deliveryBusinessMapObj);
-    deliveryBusinessMapObj.fitBounds([[bLat,bLng],[dLat,dLng]],{padding:[35,35],maxZoom:16});
-    const km=haversineKm(bLat,bLng,dLat,dLng), price=deliveryDistancePrice(km), info=qs('deliveryBusinessMapInfo');
-    if(info) info.innerHTML=`🏪 <b>${escHtml(b.name||'Бизнес')}</b> → 📍 доставка · 📏 Расстояние: <b style="color:var(--primary)">${km.toFixed(2)} км</b> · 🚚 Цена доставки: <b style="color:var(--gold)">${price.toLocaleString()} ₽</b>`;
+    deliveryBusinessMapBusinessMarker=L.marker([fromLat,fromLng]).addTo(deliveryBusinessMapObj).bindPopup(`<b>📦 ${escHtml(fromLabel)}</b><br>📍 ${escHtml(fromAddress)}`);
+    deliveryBusinessMapClientMarker=L.marker([dLat,dLng]).addTo(deliveryBusinessMapObj).bindPopup(`<b>📍 Доставка</b>`);
+    deliveryBusinessMapLine=L.polyline([[fromLat,fromLng],[dLat,dLng]],{weight:4,dashArray:'8 8'}).addTo(deliveryBusinessMapObj);
+    deliveryBusinessMapObj.fitBounds([[fromLat,fromLng],[dLat,dLng]],{padding:[35,35],maxZoom:16});
+    const km=haversineKm(fromLat,fromLng,dLat,dLng), price=deliveryDistancePrice(km), info=qs('deliveryBusinessMapInfo');
+    if(info) info.innerHTML=`📦 <b>${escHtml(fromLabel)}</b><br>📍 Откуда: ${escHtml(fromAddress)}<br>📍 Куда: доставка · 📏 <b>${km.toFixed(2)} км</b> · 🚚 <b>${price.toLocaleString()} ₽</b>`;
+    const auto=qs('deliveryAutoPrice'); if(auto) auto.textContent=price.toLocaleString();
 }
 
 window.updateDeliverySummary = function() {
     renderBusinessDeliveryMap().catch(e=>console.warn('[delivery business map]',e));
     const summary = qs('deliverySelectionSummary');
-    if (!summary) return;
+    const auto = qs('deliveryAutoPrice');
+    const dLat=Number(qs('deliveryOrderLat')?.value), dLng=Number(qs('deliveryOrderLng')?.value);
     const source = qs('deliveryOrderSource')?.value || 'business';
+    let pickup=null;
+    if(source==='business'){
+        const b=(allBusinessesCache||{})[qs('deliveryOrderBiz')?.value||''];
+        pickup=b?{lat:Number(b.lat??b.location?.lat),lng:Number(b.lng??b.location?.lng),text:String(b.address||b.location?.text||'').trim()}:null;
+    }else{
+        const item=deliveryMarketplaceOptions().find(x=>x.id===(qs('deliveryOrderMarketItem')?.value||''));
+        pickup=item?{lat:Number(item.pickupAddress?.lat),lng:Number(item.pickupAddress?.lng),text:String(item.pickupAddress?.text||item.pickupAddress?.address||'').trim()}:null;
+    }
+    if(auto){
+        const km=pickup&&Number.isFinite(pickup.lat)&&Number.isFinite(pickup.lng)&&Number.isFinite(dLat)&&Number.isFinite(dLng)?haversineKm(pickup.lat,pickup.lng,dLat,dLng):0;
+        auto.textContent=km>0?deliveryDistancePrice(km).toLocaleString():'0';
+    }
+    if (!summary) return;
     if (source === 'business') {
-        const bizSel = qs('deliveryOrderBiz');
-        const prodSel = qs('deliveryOrderBizProduct');
-        const b = (allBusinessesCache || {})[bizSel?.value || ''];
-        const p = b?.products?.[prodSel?.value || ''];
+        const bizSel = qs('deliveryOrderBiz'); const prodSel = qs('deliveryOrderBizProduct');
+        const b = (allBusinessesCache || {})[bizSel?.value || '']; const p = b?.products?.[prodSel?.value || ''];
         if (b && p) {
             summary.style.display = 'block';
             summary.innerHTML = `Выбрано: <b>${escHtml(b.name || 'Бизнес')}</b> → <b>${escHtml(p.name || 'Товар')}</b>${p.price ? ` · ${Number(p.price).toLocaleString()} ₽` : ''}`;
@@ -15421,12 +15507,11 @@ window.updateDeliverySummary = function() {
         if (item) {
             const seller = allUsersCache?.[item.seller]?.displayName || item.seller || 'Продавец';
             summary.style.display = 'block';
-            summary.innerHTML = `Выбрано: <b>${escHtml(item.title || 'Объявление')}</b> от <b>${escHtml(seller)}</b>${item.price ? ` · ${Number(item.price).toLocaleString()} ₽` : ''}`;
+            summary.innerHTML = `Выбрано: <b>${escHtml(item.title || 'Объявление')}</b> от <b>${escHtml(seller)}</b>${item.price ? ` · ${Number(item.price).toLocaleString()} ₽` : ''}<br><span style="font-size:11px;color:var(--muted)">📦 Забор: ${escHtml(item.pickupAddress?.text||item.pickupAddress?.address||'')}</span>`;
             return;
         }
     }
-    summary.style.display = 'none';
-    summary.innerHTML = '';
+    summary.style.display = 'none'; summary.innerHTML = '';
 };
 
 window.renderDeliveryOrderOptions = async function(forceFetch = false) {
@@ -15509,24 +15594,25 @@ window.placeDeliveryOrder = async function() {
             if(!Number.isFinite(blat)||!Number.isFinite(blng)) return toast('❌ У бизнеса не задана точка на карте','red');
             const distanceKm=haversineKm(blat,blng,deliveryLat,deliveryLng), deliveryPrice=deliveryDistancePrice(distanceKm);
             from=b.name||'Бизнес'; items=p.name||'Товар'; summaryText=`🏪 ${from} → ${items}`;
-            payload={...payload,bizId,businessName:b.name||'',businessLat:blat,businessLng:blng,productId,productName:p.name||'',productPrice:Number(p.price||0),itemKind:'business_product',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km'};
+            payload={...payload,bizId,businessName:b.name||'',businessLat:blat,businessLng:blng,pickupAddress:{lat:blat,lng:blng,text:String(b.address||b.location?.text||b.name||'')},productId,productName:p.name||'',productPrice:Number(p.price||0),itemKind:'business_product',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km'};
         } else {
             const listingId=qs('deliveryOrderMarketItem')?.value||'', l=(lastMarketListings||{})[listingId];
             if(!listingId||!l) return toast('⚠️ Выберите объявление с маркетплейса','gold');
-            // Purchase the one-of-one listing before creating a delivery request.
+            const pickupLat=Number(l.pickupAddress?.lat), pickupLng=Number(l.pickupAddress?.lng), pickupText=String(l.pickupAddress?.text||l.pickupAddress?.address||'').trim();
+            if(!Number.isFinite(pickupLat)||!Number.isFinite(pickupLng)||!pickupText) return toast('❌ У товара не указан корректный адрес забора','red');
+            const distanceKm=haversineKm(pickupLat,pickupLng,deliveryLat,deliveryLng), deliveryPrice=deliveryDistancePrice(distanceKm);
+            from=l.seller||'Продавец'; items=l.title||'Объявление'; summaryText=`🛍 ${items}: ${pickupText} → ${addr||`${deliveryLat.toFixed(6)}, ${deliveryLng.toFixed(6)}`}`;
             const bought=await purchaseMarketplaceListingForDelivery(listingId);
             if(!bought) return;
-            const sellerSnap=await get(userRef(l.seller)), seller=sellerSnap.val()||{};
-            from=l.seller||'Продавец'; items=l.title||'Объявление'; summaryText=`🛍 ${items} → ${from}`;
-            const sellerLat=Number(l.sellerLat ?? seller.lat), sellerLng=Number(l.sellerLng ?? seller.lng);
-            if(!Number.isFinite(sellerLat)||!Number.isFinite(sellerLng)) return toast('❌ У продавца не указано местоположение — доставка невозможна','red');
-            const distanceKm=haversineKm(sellerLat,sellerLng,deliveryLat,deliveryLng), deliveryPrice=deliveryDistancePrice(distanceKm);
-            payload={...payload,listingId,listingTitle:l.title||'',listingPrice:Number(l.price||0),sellerNick:l.seller||'',sellerLat,sellerLng,itemKind:'marketplace_listing',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km',priceMode:'fixed_200_per_km'};
+            payload={...payload,listingId,listingTitle:l.title||'',listingPrice:Number(l.price||0),sellerNick:l.seller||'',pickupAddress:{lat:pickupLat,lng:pickupLng,text:pickupText},itemKind:'marketplace_listing',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km',priceMode:'fixed_200_per_km'};
         }
 
         const id=genId();
+        const deliveryText=addr||`${deliveryLat.toFixed(6)}, ${deliveryLng.toFixed(6)}`;
+        const pickupAddress=payload.pickupAddress || (source==='business' ? {lat:Number(payload.businessLat),lng:Number(payload.businessLng),text:String(payload.businessName||from)} : null);
+        if(!pickupAddress || !Number.isFinite(Number(pickupAddress.lat)) || !Number.isFinite(Number(pickupAddress.lng)) || !String(pickupAddress.text||'').trim()) return toast('❌ Не удалось определить адрес забора','red');
         const order={
-            id,...payload,from,items,notes,address:addr||`${deliveryLat.toFixed(6)}, ${deliveryLng.toFixed(6)}`,
+            id,...payload,from,items,notes,address:deliveryText,pickupAddress:{lat:Number(pickupAddress.lat),lng:Number(pickupAddress.lng),text:String(pickupAddress.text||'')},deliveryAddress:{lat:deliveryLat,lng:deliveryLng,text:deliveryText},
             deliveryLat,deliveryLng,contact,client:currentNick,status:'waiting',
             priceOffer:Number(payload.deliveryPrice||0),clientConfirmed:false,workerConfirmed:false,clientReceived:false,
             escrowAmount:0,payoutDone:false,date:new Date().toLocaleDateString('ru'),time:nowTime(),createdAt:Date.now()
@@ -15574,7 +15660,7 @@ async function renderMyDeliveryOrders(){
             let actions='';
             if(o.status==='price_proposed'&&o.client===currentNick) actions=`<div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="confirmCustomDeliveryPrice('${o.id}',true)">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="confirmCustomDeliveryPrice('${o.id}',false)">❌ Отказаться</button></div>`;
             if(o.status==='delivered'&&!o.clientReceived) actions=`<button class="btn btn-primary btn-sm" onclick="confirmCustomDeliveryReceived('${o.id}')">✅ Получил</button>`;
-            return `<div class="work-order" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;"><b>${escHtml(line||o.from)}</b><span class="status-badge badge-wait">${labels[o.status]||o.status}</span></div><div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>${extra}${o.worker?`<div style="font-size:12px;color:var(--primary);">🛵 ${escHtml(o.worker)}</div>`:''}${o.notes?`<div style="font-size:12px;color:var(--muted);">📝 ${escHtml(o.notes)}</div>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${actions}${['waiting','client_confirmed','price_proposed'].includes(o.status)?`<button class="btn btn-red btn-sm" onclick="cancelCustomDelivery('${o.id}')">❌ Отменить</button>`:''}</div></div>`;
+            return `<div class="work-order" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;"><b>${escHtml(line||o.from)}</b><span class="status-badge badge-wait">${labels[o.status]||o.status}</span></div><div style="font-size:12px;color:var(--muted);">📦 Забрать: ${escHtml(o.pickupAddress?.text||o.from||'—')}</div><div style="font-size:12px;color:var(--muted);">📍 Доставить: ${escHtml(o.deliveryAddress?.text||o.address||'—')}</div>${extra}${o.worker?`<div style="font-size:12px;color:var(--primary);">🛵 ${escHtml(o.worker)}</div>`:''}${o.notes?`<div style="font-size:12px;color:var(--muted);">📝 ${escHtml(o.notes)}</div>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${actions}${['waiting','client_confirmed','price_proposed'].includes(o.status)?`<button class="btn btn-red btn-sm" onclick="cancelCustomDelivery('${o.id}')">❌ Отменить</button>`:''}</div></div>`;
         }).join('');
     }catch(e){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>';}
 }
@@ -15659,12 +15745,34 @@ async function renderDeliveryCustomOrders(){
         if(!isMine&&o.status==='waiting'&&['business','marketplace'].includes(o.source)) priceControl=`<div style="margin-top:7px;"><div style="font-size:12px;color:var(--gold);font-weight:900;margin-bottom:5px;">🚚 Цена доставки: ${Number(o.deliveryPrice||deliveryDistancePrice(Number(o.distanceKm||0))||0).toLocaleString()} ₽</div><button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">🛵 Взять заказ</button></div>`;
         if(!isMine&&o.status==='waiting'&&o.source==='business') priceControl=`<button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">✅ Взять заказ (${Number(o.deliveryPrice||0).toLocaleString()} ₽)</button>`;
         const mineActions=isMine?`<div style="display:flex;gap:6px;flex-wrap:wrap;">${o.status==='client_confirmed'?`<button class="btn btn-primary btn-sm" onclick="startCustomDelivery('${o.id}')">🛵 Начать доставку</button>`:''}${o.status==='in_progress'?`<button class="btn btn-gold btn-sm" onclick="completeCustomDelivery('${o.id}')">✅ Доставлено</button>`:''}${o.status==='delivered'&&!o.workerConfirmed?`<button class="btn btn-gold btn-sm" onclick="confirmCustomDeliveryDone('${o.id}')">✅ Завершить</button>`:''}</div>`:'';
-        html+=`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:900;font-size:14px;">${escHtml(o.sourceLabel||'')} «${escHtml(o.from)}»</div><div style="font-size:12px;color:var(--muted);">📋 ${escHtml(o.items)}</div><div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div><div style="font-size:12px;color:var(--muted);">👤 ${escHtml(o.client)}</div>${o.contact?`<div style="font-size:12px;color:var(--muted);">📞 ${escHtml(o.contact)}</div>`:''}${o.distanceKm!=null?`<div style="font-size:12px;color:var(--muted);">📏 ${Number(o.distanceKm).toFixed(2)} км</div>`:''}${o.priceOffer!=null?`<div style="font-size:12px;color:var(--gold);font-weight:900;">💰 ${Number(o.priceOffer).toLocaleString()} ₽</div>`:''}${priceControl}${mineActions}</div>`;
+        html+=`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:900;font-size:14px;">${escHtml(o.sourceLabel||'')} «${escHtml(o.from)}»</div><div style="font-size:12px;color:var(--muted);">📋 ${escHtml(o.items)}</div><div style="font-size:12px;color:var(--muted);">📦 Забрать: ${escHtml(o.pickupAddress?.text||o.from||'—')}</div><div style="font-size:12px;color:var(--muted);">📍 Доставить: ${escHtml(o.deliveryAddress?.text||o.address||'—')}</div><div style="font-size:12px;color:var(--muted);">👤 ${escHtml(o.client)}</div><button class="btn btn-ghost btn-sm" onclick="openCustomDeliveryRoute('${o.id}')">🗺 Маршрут</button>${o.contact?`<div style="font-size:12px;color:var(--muted);">📞 ${escHtml(o.contact)}</div>`:''}${o.distanceKm!=null?`<div style="font-size:12px;color:var(--muted);">📏 ${Number(o.distanceKm).toFixed(2)} км</div>`:''}${o.priceOffer!=null?`<div style="font-size:12px;color:var(--gold);font-weight:900;">💰 ${Number(o.priceOffer).toLocaleString()} ₽</div>`:''}${priceControl}${mineActions}</div>`;
     });
     delivList.insertAdjacentHTML('beforeend',html);
 }
 
 window.proposeCustomDeliveryPrice=async function(){ return toast('ℹ️ Цена доставки фиксирована: 200 ₽/км','gold'); };
+
+window.openCustomDeliveryRoute=async function(orderId){
+    const snap=await get(deliveryCustomOrderRef(orderId)); const o=snap.val()||{};
+    const a=o.pickupAddress, b=o.deliveryAddress||{lat:o.deliveryLat,lng:o.deliveryLng,text:o.address};
+    if(!a||!b||!Number.isFinite(Number(a.lat))||!Number.isFinite(Number(a.lng))||!Number.isFinite(Number(b.lat))||!Number.isFinite(Number(b.lng))) return toast('❌ В заказе нет обеих координат','red');
+    const id='customDeliveryRoutePicker';
+    let modal=qs(id);
+    if(!modal){
+        modal=document.createElement('div'); modal.id=id; modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px;';
+        modal.innerHTML='<div style="width:100%;max-width:650px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b>🗺 Маршрут заказа</b><button class="btn btn-ghost btn-sm" onclick="this.closest('#customDeliveryRoutePicker').style.display='none'">✕</button></div><div id="customDeliveryRouteMap" style="height:380px;border-radius:14px;overflow:hidden;"></div><div id="customDeliveryRouteInfo" style="margin-top:8px;font-size:12px;color:var(--muted);"></div></div>';
+        document.body.appendChild(modal);
+    }
+    modal.style.display='flex'; await window.kapaniLoadLeaflet(); await new Promise(r=>requestAnimationFrame(r));
+    if(modal._map){try{modal._map.remove()}catch(_){}}
+    const map=L.map(qs('customDeliveryRouteMap'),{center:[Number(a.lat),Number(a.lng)],zoom:14}); modal._map=map; addSatelliteLayer(map);
+    L.marker([Number(a.lat),Number(a.lng)]).addTo(map).bindPopup(`<b>📦 Забрать</b><br>${escHtml(String(a.text||''))}`).openPopup();
+    L.marker([Number(b.lat),Number(b.lng)]).addTo(map).bindPopup(`<b>📍 Доставить</b><br>${escHtml(String(b.text||''))}`);
+    L.polyline([[Number(a.lat),Number(a.lng)],[Number(b.lat),Number(b.lng)]],{weight:4,dashArray:'8 8'}).addTo(map);
+    map.fitBounds([[Number(a.lat),Number(a.lng)],[Number(b.lat),Number(b.lng)]],{padding:[35,35],maxZoom:16});
+    const km=haversineKm(Number(a.lat),Number(a.lng),Number(b.lat),Number(b.lng));
+    const info=qs('customDeliveryRouteInfo'); if(info) info.innerHTML=`📦 ${escHtml(String(a.text||''))}<br>📍 ${escHtml(String(b.text||''))}<br>📏 ${km.toFixed(2)} км · 🚚 ${deliveryDistancePrice(km).toLocaleString()} ₽`;
+};
 
 window.takeCustomDelivery=async function(orderId){
     const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{

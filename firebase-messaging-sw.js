@@ -1,7 +1,7 @@
 /* Kapani Web Push Service Worker.
  * One Service Worker only: receives standard Web Push and renders system notifications.
  */
-const SW_VERSION = 'kapani-webpush-2026-09-30-v4';
+const SW_VERSION = 'kapani-webpush-2026-10-02-idb-v1';
 const KAPANI_APP_PATH = '/kapani/';
 
 function resolveNotificationUrl(requestedUrl) {
@@ -18,22 +18,43 @@ function resolveNotificationUrl(requestedUrl) {
   } catch (_) { return new URL(KAPANI_APP_PATH, self.location.origin).href; }
 }
 
-const shownNotificationIds = new Map();
-function pruneShown() {
-  const now = Date.now();
-  for (const [key, ts] of shownNotificationIds) if (now - ts > 120000) shownNotificationIds.delete(key);
+const PUSH_DB_NAME = 'KapaniPushDB';
+const PUSH_DB_VERSION = 1;
+const PUSH_STORE = 'shownNotifications';
+const PUSH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+function openPushDb(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(PUSH_DB_NAME,PUSH_DB_VERSION);
+    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(PUSH_STORE)) db.createObjectStore(PUSH_STORE); };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('IndexedDB unavailable'));
+  });
 }
-/* Check only; the id is recorded AFTER showNotification() succeeds, so a failed
- * display can still be retried (e.g. by the server push for the same id). */
-function wasShownRecently(notificationId) {
-  const id = String(notificationId || '').trim(); if (!id) return false;
-  pruneShown();
-  return shownNotificationIds.has(id);
+async function shownNotification(id){
+  if(!id) return false;
+  try{
+    const db=await openPushDb();
+    const value=await new Promise((resolve,reject)=>{ const tx=db.transaction(PUSH_STORE,'readonly'); const r=tx.objectStore(PUSH_STORE).get(id); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error); });
+    db.close();
+    return Number(value||0)>Date.now()-PUSH_TTL_MS;
+  }catch(_){ return false; }
+}
+async function rememberNotification(id){
+  if(!id) return;
+  try{
+    const db=await openPushDb();
+    await new Promise((resolve,reject)=>{ const tx=db.transaction(PUSH_STORE,'readwrite'); tx.objectStore(PUSH_STORE).put(Date.now(),id); tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error); });
+    const db2=await openPushDb();
+    const tx=db2.transaction(PUSH_STORE,'readwrite'), store=tx.objectStore(PUSH_STORE), req=store.openCursor(), cutoff=Date.now()-PUSH_TTL_MS;
+    req.onsuccess=()=>{ const c=req.result; if(!c) return; if(Number(c.value||0)<cutoff) c.delete(); c.continue(); };
+    tx.oncomplete=()=>db2.close();
+    db.close();
+  }catch(_){ /* push must still display even if the local cache is unavailable */ }
 }
 
 async function showKapaniPush(data = {}) {
   const notificationId = String(data.notificationId || '').trim();
-  if (notificationId && wasShownRecently(notificationId)) return false;
+  if (notificationId && await shownNotification(notificationId)) return false;
   const body = String(data.body || data.text || '').trim(); if (!body) return false;
   const category = String(data.category || 'system');
   const title = String(data.title || 'Капани');
@@ -46,7 +67,7 @@ async function showKapaniPush(data = {}) {
     renotify: false,
     data: { ...data, url: targetUrl, category, swVersion: SW_VERSION, receivedAt: Date.now() }
   });
-  if (notificationId) shownNotificationIds.set(notificationId, Date.now());
+  if (notificationId) await rememberNotification(notificationId);
   return true;
 }
 
