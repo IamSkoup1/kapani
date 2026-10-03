@@ -1,4 +1,3 @@
-import '../functions/subscription-config.js';
 /**
  * Kapani free Web Push — Cloudflare Worker + Firebase Spark (no Firebase Functions, no FCM SDK).
  *
@@ -288,17 +287,25 @@ async function createFirebaseCustomToken(env, uid) {
     iat: now,
     exp: now + 3600,
     uid: String(uid),
-    claims: {admin:String(uid)===String(env.ADMIN_NICK||'Денис')}
+    claims: {}
   })));
   const input = `${header}.${payload}`;
   const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', customTokenKeyCache.key, te.encode(input)));
   return `${input}.${b64uEnc(sig)}`;
 }
 
-const SUBSCRIPTIONS = globalThis.KAPANI_SUBSCRIPTIONS;
-function normalizeSubscriptionType(value){ return SUBSCRIPTIONS.normalizeType(value); }
-function isActiveSubscription(user,now=Date.now()){ return SUBSCRIPTIONS.isActiveSubscription(user,now); }
-function subscriptionRank(user){ return SUBSCRIPTIONS.activeRank(user); }
+const SUBSCRIPTIONS = Object.freeze({
+  plus:  { rank: 1, price: 299,  name: 'Kapani Plus',  durationDays: 7 },
+  ultra: { rank: 2, price: 899,  name: 'Kapani Ultra', durationDays: 7 },
+  prime: { rank: 3, price: 1499, name: 'Kapani Prime', durationDays: 7 }
+});
+function normalizeSubscriptionType(value) {
+  const v = String(value || '').trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(SUBSCRIPTIONS, v) ? v : 'none';
+}
+function subscriptionRank(user) {
+  return Number(SUBSCRIPTIONS[normalizeSubscriptionType(user?.subscription)]?.rank || 0);
+}
 function giftIdPart(prefix = 'g') {
   const a = crypto.getRandomValues(new Uint32Array(2));
   return `${prefix}_${Date.now().toString(36)}_${a[0].toString(36)}${a[1].toString(36)}`;
@@ -313,30 +320,9 @@ async function verifyUser(env, nick, ph) {
 
 /* ───────────── subscriptions in KV (single key) ───────────── */
 async function loadSubs(env) {
-  const current=await rtdbGet(env,'pushDevices');
-  if(current?.accounts) return current.accounts;
-  // One-time atomic migration from the legacy KV map (or an earlier flat RTDB map).
-  const legacy=current||await env.PUSH_KV.get('subs','json')||{};
-  const accounts=Object.fromEntries(Object.entries(legacy).filter(([,value])=>Array.isArray(value)));
-  const snap=await rtdbGetWithEtag(env,'pushDevices');
-  if(snap.value?.accounts) return snap.value.accounts;
-  const res=await rtdbPutIfMatch(env,'pushDevices',{accounts,migratedAt:Date.now()},snap.etag);
-  if(res.status===412) return await loadSubs(env);
-  if(!res.ok) throw new Error('device migration failed');
-  return accounts;
+  try { return (await env.PUSH_KV.get('subs', 'json')) || {}; } catch { return {}; }
 }
-async function mutateSubs(env,updater){
-  await loadSubs(env);
-  for(let i=0;i<6;i++) {
-    const snap=await rtdbGetWithEtag(env,'pushDevices'),record=snap.value||{accounts:{},migratedAt:Date.now()},all=record.accounts||{};
-    await updater(all);
-    const res=await rtdbPutIfMatch(env,'pushDevices',{...record,accounts:all},snap.etag);
-    if(res.status===412) continue;
-    if(!res.ok) throw new Error('device update failed');
-    return all;
-  }
-  throw new Error('concurrent device update exhausted');
-}
+const saveSubs = (env, all) => env.PUSH_KV.put('subs', JSON.stringify(all));
 
 // Usernames in the site can arrive with harmless formatting differences
 // (case/Unicode normalization/outer whitespace). Keep exact matching first,
@@ -494,7 +480,7 @@ async function vapidHealth(env) {
 /** Returns the HTTP status of the push service. 404/410 = subscription is gone. */
 async function sendPush(env, sub, payload) {
   const body = await encryptPayload(sub, JSON.stringify(payload));
-  const res = await fetch(sub.endpoint, {signal:AbortSignal.timeout(15000),
+  const res = await fetch(sub.endpoint, {
     method: 'POST',
     headers: {
       TTL: '86400', Urgency: 'high',
@@ -508,7 +494,7 @@ async function sendPush(env, sub, payload) {
 }
 
 /* ───────────── jobs (pushOutbox/<jobId>) ───────────── */
-const maxPush = env => Math.max(1, Math.min(3, Number(env.MAX_PUSH_PER_RUN) || 3));
+const maxPush = env => Math.max(1, Math.min(40, Number(env.MAX_PUSH_PER_RUN) || 10));
 const appUrl = env => String(env.APP_URL || 'https://iamskoup1.github.io/kapani/');
 
 function payloadFromNotification(env, id, n) {
@@ -550,7 +536,6 @@ async function planJob(env, job) {
     if (!validNick(job.to) || !validKey(job.id)) return { kind: 'discard', reason: 'invalid notification job' };
 
     const path = `users/${job.to}/notifications/${job.id}`;
-    if (await rtdbGet(env, `notificationTombstones/${enc(job.to)}/${enc(job.id)}`)) return {kind:'discard',reason:'deleted notification'};
     const n = await rtdbGet(env, `users/${enc(job.to)}/notifications/${enc(job.id)}`);
 
     // The site can create pushOutbox/<jobId> and the notification record in two
@@ -558,16 +543,15 @@ async function planJob(env, job) {
     // deleting it. Cron will retry it after the notification becomes visible.
     if (!n) return { kind: 'retry', reason: 'notification record not visible yet' };
 
-    if (n.pushedAt && !Object.keys(job.delivered||{}).length) return {kind:'discard',reason:'notification already delivered'};
-    if (n.deletedAt) return {kind:'discard',reason:'deleted notification'};
+    if (n.pushedAt) return { kind: 'discard', reason: 'notification already pushed' };
     if (n.push === false) return { kind: 'discard', reason: 'push disabled for notification' };
 
     const payload = payloadFromNotification(env, job.id, n);
     if (!payload.body) return { kind: 'discard', reason: 'notification has empty body' };
 
     if (n.source === 'dm' && n.from) {
-      const presence = await rtdbGet(env, `presence/${enc(job.to)}`);
-      if (presence?.dmOpenWith === n.from && now-Number(presence.updatedAt||0)<90000) {
+      const open = await rtdbGet(env, `presence/${enc(job.to)}/dmOpenWith`);
+      if (open === n.from) {
         return {
           kind: 'done',
           payload,
@@ -585,20 +569,6 @@ async function planJob(env, job) {
       inbox: {},
       marks: { [`${path}/pushedAt`]: now }
     };
-  }
-
-  if (job.type === 'dm') {
-    if (!validNick(job.to) || !validNick(job.sender) || !validKey(job.id) || !validKey(job.dmKey)) return {kind:'discard',reason:'invalid dm job'};
-    const key = [job.sender,job.to].sort().join('__dm__');
-    if (key !== job.dmKey) return {kind:'discard',reason:'invalid dm participants'};
-    const msg = await rtdbGet(env, `dms/${enc(key)}/messages/${enc(job.id)}`);
-    if (!msg) return {kind:'retry',reason:'dm missing'};
-    if (msg.nick !== job.sender) return {kind:'discard',reason:'dm author mismatch'};
-    const id = `dm_${job.id}`, path = `users/${job.to}/notifications/${id}`;
-    const record = {title:'Капани',text:`💬 ${job.sender}: ${previewOf(msg)}`,cat:'messages',createdAt:Number(msg.createdAt||now),time:moscowTime(msg.createdAt||now),push:true,source:'dm',sourceMessageId:job.id,from:job.sender,url:`${appUrl(env)}?kpSection=messages&kpDm=${enc(job.sender)}`};
-    const open = await rtdbGet(env, `presence/${enc(job.to)}`);
-    const suppressed = open?.dmOpenWith === job.sender && now-Number(open.updatedAt||0)<90000;
-    return {kind:'done',payload:payloadFromNotification(env,id,record),nicks:suppressed?[]:[job.to],inbox:{[path]:record},marks:{}};
   }
 
   if (job.type === 'chat' || job.type === 'news') {
@@ -663,7 +633,7 @@ async function planJob(env, job) {
     let nicks = recipients;
     if (job.type === 'chat') {
       const presence = (await rtdbGet(env, 'presence')) || {};
-      nicks = recipients.filter(n => !(presence[n]?.generalChatOpen === true && now - Number(presence[n]?.updatedAt || 0) < 90000));
+      nicks = recipients.filter(n => presence[n]?.generalChatOpen !== true);
     }
 
     return {
@@ -706,193 +676,190 @@ function diagnoseRecipient(entry, totals, ctx) {
 }
 
 /** Processes one job. budget.left = how many pushes this invocation may still send. */
-const LEASE_MS = 120000;
-const MAX_ATTEMPTS = 8;
-const TERMINAL = new Set(['sent','skipped','dead']);
-async function claimJob(env, jobId) {
-  const path = `pushOutbox/${enc(jobId)}`;
-  for (let i=0;i<4;i++) {
-    const snap = await rtdbGetWithEtag(env,path), job=snap.value, now=Date.now();
-    if (!job || TERMINAL.has(job.state) || Number(job.nextAttemptAt||0)>now || Number(job.leaseUntil||0)>now) return null;
-    const claimed={...job,state:'processing',leaseOwner:crypto.randomUUID(),leaseUntil:now+LEASE_MS,nextAttemptAt:now+LEASE_MS,updatedAt:now,attempts:Number(job.attempts||0)+1};
-    const res=await rtdbPutIfMatch(env,path,claimed,snap.etag);
-    if(res.status===412) continue;
-    if(!res.ok) throw new Error(`claim: ${res.status}`);
-    return claimed;
+async function processJob(env, jobId, budget, preloaded) {
+  const job = preloaded || await rtdbGet(env, `pushOutbox/${enc(jobId)}`);
+  const finish = async (extra = {}) => {
+    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: null, ...extra });
+  };
+  if (!job || typeof job !== 'object') {
+    console.log('push job missing', jobId);
+    return { sent: 0, next: null };
   }
-  return null;
-}
-async function processJob(env, jobId, budget) {
-  const job=await claimJob(env,jobId);
-  if(!job) return {sent:0,next:null,reason:'missing, terminal, backoff or claimed'};
-  const path=`pushOutbox/${enc(jobId)}`, owner=job.leaseOwner;
-  // Every progress/finish is conditional on ownership; an expired invocation cannot overwrite a new claimant.
-  const save=async(fields)=>{
-    const snap=await rtdbGetWithEtag(env,path);
-    if(snap.value?.leaseOwner!==owner) throw new Error('lease lost');
-    Object.assign(job,fields,{updatedAt:Date.now()});
-    const res=await rtdbPutIfMatch(env,path,job,snap.etag);
-    if(!res.ok) throw new Error('lease progress conflict');
-  };
-  const complete=async(state,error='')=>save({state,lastError:error,leaseUntil:0,nextAttemptAt:-1,leaseOwner:null});
-  const retry=async(reason)=>{
-    if(job.attempts>=MAX_ATTEMPTS || Date.now()-Number(job.queuedAt||job.ts||Date.now())>86400000) {
-      await complete('dead',reason); return {sent:0,next:null,reason,dead:true};
-    }
-    const next=Date.now()+Math.min(3600000,15000*2**Math.max(0,job.attempts-1))+Math.floor(Math.random()*5000);
-    await save({state:'retry',leaseUntil:0,leaseOwner:null,nextAttemptAt:next,lastError:reason});
-    return {sent:0,next:null,retry:true,reason};
-  };
-  let sent=0;
-  const statuses=[];
-  try {
-    const plan=await planJob(env,job);
-    if(!plan || plan.kind==='discard') {await complete('skipped',plan?.reason||'no plan');return {sent:0,next:null,discarded:true,reason:plan?.reason};}
-    if(plan.kind==='retry') return await retry(plan.reason);
-    // Root CAS makes creation + tombstone checking indivisible, and never overwrites readAt/pushedAt.
-    if(Object.keys(plan.inbox).length) {
-      const result=await rtdbRootTransaction(env,root=>{
-        for(const [p,n] of Object.entries(plan.inbox)) {
-          const [,nick,,id]=p.split('/');
-          if(root.notificationTombstones?.[nick]?.[id]) continue;
-          if(!root.users?.[nick]) continue;
-          root.users[nick].notifications ||= {};
-          root.users[nick].notifications[id] ||= n;
-        }
-        return {value:root};
-      });
-      if(!result.committed) throw new Error('inbox conflict');
-    }
-    const all=await loadSubs(env), delivered=job.delivered||{};
-    let pending=false, transient=false;
-    for(const nick of plan.nicks) {
-      const id=plan.payload.notificationId;
-      if(await rtdbGet(env,`notificationTombstones/${enc(nick)}/${enc(id)}`)) continue;
-      const inbox=await rtdbGet(env,`users/${enc(nick)}/notifications/${enc(id)}`);
-      if(inbox?.deletedAt) continue;
-      const bucket={key:nick,mode:'exact',subs:Array.isArray(all[nick])?all[nick]:[]};
-      const stale=bucket.subs.filter(s=>staleKey(s,env));
-      if(stale.length) await mutateSubs(env,all=>{if(Array.isArray(all[bucket.key])) all[bucket.key]=all[bucket.key].filter(s=>!stale.some(old=>old.endpoint===s.endpoint));});
-      const subs=bucket.subs.filter(s=>prefsAllow(s,plan.payload.category)&&!staleKey(s,env));
-      for(const sub of subs) {
-        const deviceKey=await sha256Hex(nick+':'+sub.endpoint);
-        if(delivered[deviceKey]) continue;
-        if(budget.left<=0) {pending=true;continue;}
-        await save({delivered,leaseUntil:Date.now()+LEASE_MS,nextAttemptAt:Date.now()+LEASE_MS});
-        budget.left--;
-        let status;
-        try {status=await sendPush(env,sub,{...plan.payload,recipientNick:nick});}
-        catch(e) {if(e.deadSub) status=410;else {transient=true;statuses.push({recipient:nick,device:sub.id,error:String(e.message||e)});continue;}}
-        statuses.push({recipient:nick,device:sub.id,status});
-        if(status>=200&&status<300) {sent++;delivered[deviceKey]={status,at:Date.now(),recipient:nick};}
-        else if(status===404||status===410) {
-          // Re-read before pruning so a newly rotated endpoint isn't removed.
-          const key=bucket.key;
-          await mutateSubs(env,fresh=>{if(key&&Array.isArray(fresh[key])) fresh[key]=fresh[key].filter(s=>s.endpoint!==sub.endpoint);});
-          delivered[deviceKey]={status,at:Date.now(),recipient:nick};
-        } else if(status===429||status>=500) transient=true;
-        else {delivered[deviceKey]={status,at:Date.now(),recipient:nick,permanent:true};}
-        await save({delivered});
-      }
-    }
-    if(transient) return {...await retry('temporary push failure'),sent,statuses};
-    if(pending) {
-      // Keep the SAME logical job + per-device ledger; next invocation never skips remaining devices.
-      await save({state:'pending',attempts:Math.max(0,job.attempts-1),leaseUntil:0,leaseOwner:null,nextAttemptAt:Date.now()});
-      return {sent,next:jobId,statuses};
-    }
-    // Mark only extant records: deleting an inbox must not recreate pushedAt children.
-    const result=await rtdbRootTransaction(env,root=>{
-      for(const nick of plan.nicks) {
-        const n=root.users?.[nick]?.notifications?.[plan.payload.notificationId];
-        if(n && !root.notificationTombstones?.[nick]?.[plan.payload.notificationId] && Object.values(delivered).some(d=>d.recipient===nick&&d.status>=200&&d.status<300)) n.pushedAt ||= Date.now();
-      }
-      if(plan.fanoutKey) {root.pushDone ||= {};root.pushDone[plan.fanoutKey]=Date.now();}
-      return {value:root};
+
+  const plan = await planJob(env, job);
+
+  // IMPORTANT: never delete a job just because the source/notification record
+  // is not visible yet. This is the race that was losing normal Kapani pushes.
+  if (plan?.kind === 'retry') {
+    const attempts = Number(job.attempts || 0) + 1;
+    const nextJob = {
+      ...job,
+      attempts,
+      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
+      ts: Date.now(),
+      lastRetryReason: String(plan.reason || 'temporary condition').slice(0, 160)
+    };
+    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: nextJob });
+    console.log('push job retry', jobId, attempts, plan.reason || 'temporary condition');
+    return { sent: 0, next: null, retry: true, reason: plan.reason };
+  }
+
+  if (plan?.kind === 'discard' || !plan) {
+    await finish();
+    console.log('push job discarded', jobId, plan?.reason || 'no plan');
+    return { sent: 0, next: null, discarded: true, reason: plan?.reason };
+  }
+
+  if (Object.keys(plan.inbox).length) {
+    await rtdbPatch(env, plan.inbox); // inbox first: record exists before the push arrives
+  }
+
+  const all = await loadSubs(env);
+  const dead = [];
+  let sent = 0, i = 0, hadPushErrors = false, attempted = 0;
+  const lookups = [], statuses = [];
+
+  for (; i < plan.nicks.length; i++) {
+    const nick = plan.nicks[i];
+    const bucket = await subscriptionBucket(env, all, nick);
+    const rawSubs = bucket.subs;
+    const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category) && !staleKey(s, env));
+
+    lookups.push({
+      recipient: nick, mode: bucket.mode, matchedKey: bucket.key,
+      stored: rawSubs.length, eligible: subs.length,
+      blockedByPrefs: rawSubs.filter(s => !prefsAllow(s, plan.payload.category)).length,
+      staleKey: rawSubs.filter(s => staleKey(s, env)).length, category: plan.payload.category
     });
-    if(!result.committed) throw new Error('completion conflict');
-    const success=Object.values(delivered).some(d=>d.status>=200&&d.status<300);
-    await complete(success?'sent':'skipped',success?'':'no eligible device, permanent error or context suppressed');
-    return {sent,next:null,statuses,reason:job.lastError||null};
-  } catch(e) {
-    if(/lease/.test(String(e.message))) return {sent,next:null,reason:e.message};
-    return {...await retry(String(e.message||e).slice(0,240)),sent,statuses};
+    console.log('push device lookup', jobId, JSON.stringify({
+      recipient: nick,
+      matchMode: bucket.mode,
+      matchedKey: bucket.key,
+      storedDevices: rawSubs.length,
+      eligibleDevices: subs.length,
+      category: plan.payload.category
+    }));
+
+    // If this recipient alone would exceed the remaining budget, defer the
+    // whole recipient to a continuation job. This avoids dropping devices.
+    if (subs.length && budget.left < subs.length && sent > 0) break;
+
+    for (const s of subs) {
+      if (budget.left <= 0) break;
+      budget.left--;
+      attempted++;
+
+      try {
+        const status = await sendPush(env, s, plan.payload);
+        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), host: new URL(s.endpoint).host, status });
+        console.log('push send result', jobId, nick, s.id, status);
+
+        if (status === 404 || status === 410) {
+          dead.push([nick, s.id]);
+        } else if (status >= 200 && status < 300) {
+          sent++;
+        } else {
+          hadPushErrors = true;
+          console.warn('push status', status, new URL(s.endpoint).host);
+        }
+      } catch (e) {
+        hadPushErrors = true;
+        if (e?.deadSub) dead.push([nick, s.id]);                                   // keys can never work: drop the device, the browser re-registers it
+        statuses.push({ recipient: nick, device: String(s.id).slice(0, 8), error: String(e?.message || e).slice(0, 200) });
+        console.warn('push error', jobId, nick, String(e?.message || e));
+      }
+    }
+
+    // This recipient has been handled (fully or up to the budget): the continuation
+    // job must start AFTER it, otherwise its devices get the same push twice.
+    if (budget.left <= 0) { i++; break; }
   }
+
+  if (dead.length) {
+    const fresh = await loadSubs(env);
+    for (const [nick, id] of dead) {
+      if (fresh[nick]) {
+        fresh[nick] = fresh[nick].filter(s => s.id !== id);
+        if (!fresh[nick].length) delete fresh[nick];
+      }
+    }
+    await saveSubs(env, fresh);
+  }
+
+  // A normal notification is only considered delivered after at least one
+  // real Web Push succeeds. Temporary send failures keep the job alive.
+  if (job.type === 'notification' && plan.nicks.length && sent === 0) {
+    const attempts = Number(job.attempts || 0) + 1;
+    const lookupMiss = !attempted && !hadPushErrors;
+    const retryJob = {
+      ...job,
+      attempts,
+      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
+      ts: Date.now(),
+      lastRetryReason: attempted ? (hadPushErrors ? 'push delivery failed' : 'push device not delivered') : 'no eligible push device'
+    };
+
+    if (lookupMiss) {
+      console.warn('notification has no eligible device', jobId, JSON.stringify({ recipient: plan.nicks[0], category: plan.payload.category }));
+    }
+
+    // If there is still no active device, keep the job until the normal
+    // 24-hour outbox retention limit. This lets a newly-registered device
+    // receive the queued notification instead of losing it immediately.
+    await rtdbPatch(env, { [`pushOutbox/${jobId}`]: retryJob });
+    console.log('notification queued for retry', jobId, retryJob.lastRetryReason);
+    const totals = { accounts: Object.keys(all).length, devices: Object.values(all).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0) };
+    return {
+      sent: 0, next: null, retry: true, reason: retryJob.lastRetryReason,
+      detail: lookups[0] ? diagnoseRecipient(lookups[0], totals) : null,
+      statuses
+    };
+  }
+
+  const rest = plan.nicks.slice(i);
+  let next = null;
+  const extra = {};
+
+  // For fanout jobs, do NOT mark pushDone until all recipients fit in the
+  // current invocation and have been handed off/processed.
+  if (rest.length) {
+    next = `${String(jobId).replace(/_c[0-9a-z]+$/, '')}_c${Date.now().toString(36)}`;
+    extra[`pushOutbox/${next}`] = {
+      type: 'deliver',
+      payload: plan.payload,
+      nicks: rest,
+      marks: plan.marks,
+      queuedAt: Number(job.queuedAt || job.ts || Date.now()),
+      ts: Date.now()
+    };
+  } else {
+    Object.assign(extra, plan.marks);
+  }
+
+  await finish(extra);
+  console.log('push job completed', jobId, { sent, attempted, next });
+  return { sent, next, statuses };
 }
+
 async function runCron(env) {
-  const budget={left:maxPush(env)};
-  // null nextAttemptAt of terminal jobs is excluded, so old jobs cannot starve the queue.
-  const query=`?orderBy=%22nextAttemptAt%22&startAt=1&endAt=${Date.now()}&limitToFirst=4`;
-  // One-time lazy migration of pre-upgrade jobs without nextAttemptAt.
-  const legacy=await rtdbGet(env,'pushOutbox','?orderBy=%22nextAttemptAt%22&equalTo=null&limitToFirst=5');
-  for(const [id] of Object.entries(legacy||{})) {
-    const snap=await rtdbGetWithEtag(env,`pushOutbox/${enc(id)}`);
-    if(snap.value && snap.value.nextAttemptAt==null) await rtdbPutIfMatch(env,`pushOutbox/${enc(id)}`,{...snap.value,nextAttemptAt:TERMINAL.has(snap.value.state)?-1:Date.now()},snap.etag);
-  }
-  const jobs=await rtdbGet(env,'pushOutbox',query);
-  for(const [id] of Object.entries(jobs||{})) {
-    if(budget.left<=0) break;
-    await processJob(env,id,budget);
-    // Free Workers have a subrequest budget; continue the remaining queue next minute.
-    break;
+  const jobs = await rtdbGet(env, 'pushOutbox', '?orderBy=%22%24key%22&limitToFirst=10');
+  if (!jobs) return;
+  const budget = { left: maxPush(env) };
+  for (const [id, job] of Object.entries(jobs)) {
+    if (budget.left <= 0) break;
+    const age = Date.now() - Number(job?.queuedAt || job?.ts || 0);
+    if (age > 24 * 3600e3) { await rtdbPatch(env, { [`pushOutbox/${id}`]: null }); continue; }
+    if (age < 15000) continue;                                                    // the live /event call is probably handling it
+    try { await processJob(env, id, budget, job); }
+    catch (e) {
+      const attempts = Number(job.attempts || 0) + 1;
+      console.warn('job failed', id, String(e?.message || e));
+      await rtdbPatch(env, { [`pushOutbox/${id}`]: attempts >= 5 ? null : { ...job, attempts } }).catch(() => {});
+    }
   }
 }
 
 /* ───────────── request handlers ───────────── */
-async function handleAuth(request,env,body){
-  const name=String(body.name||'').trim(),password=String(body.password||'');
-  if(!name || name.length>100 || password.length<4 || password.length>256) return json(request,env,{error:'Введите имя и пароль (от 4 символов)'},400);
-  let authenticated,created=false;
-  const tx=await rtdbRootTransaction(env,async root=>{
-    const users=root.users||{},query=normalizeNick(name);
-    const matches=Object.entries(users).filter(([nick,u])=>normalizeNick(nick)===query||normalizeNick(u.displayName||nick)===query);
-    if(matches.length>1) return {abort:true,reason:'Неоднозначное имя. Введите точный ник аккаунта'};
-    if(matches.length) {
-      const [nick,user]=matches[0];
-      if(!user.passwordHash) return {abort:true,reason:'У старого аккаунта нет пароля. Попросите мэрию восстановить доступ'};
-      const hash=await sha256Hex(`kapani::${String(user.passwordHashSalt||nick).trim().toLowerCase()}::${password}`);
-      if(!safeEqual(user.passwordHash,hash)) return {abort:true,reason:'Неверный пароль'};
-      authenticated={...user,nick};created=false;
-      return {abort:true,reason:'authenticated'};
-    }
-    let nick=name.replace(/\s+/g,'_').replace(/[^\wа-яА-ЯёЁ_-]/gi,'').slice(0,24)||'user';
-    const base=nick;let i=1;while(users[nick]) nick=`${base.slice(0,20)}_${i++}`;
-    const now=Date.now();
-    const user={nick,displayName:name,passwordHash:await sha256Hex(`kapani::${nick.toLowerCase()}::${password}`),passwordHashSalt:nick,balance:0,savingsBalance:0,taskBalance:0,totalEarned:0,job:'Житель',avatar:'https://cdn-icons-png.flaticon.com/512/149/149071.png',vehicle:'',accountFrozen:false,accountVerified:false,rewardedAvatar:false,rewardedWall:false,createdAt:now,lastSeen:now,economyLastProcessedAt:now,savingsLastInterestAt:now,employments:[],joinDate:new Date().toLocaleDateString('ru-RU'),referralCode:'KP-'+crypto.randomUUID().replace(/-/g,'').slice(0,10).toUpperCase()};
-    const inviter=String(body.inviter||'').trim();
-    if(inviter) {
-      const found=Object.entries(users).filter(([n,u])=>normalizeNick(n)===normalizeNick(inviter)||normalizeNick(u.displayName)===normalizeNick(inviter)||normalizeNick(u.referralCode)===normalizeNick(inviter));
-      if(found.length!==1||found[0][1].job!=='Рекламщик') return {abort:true,reason:'Рекламщик не найден'};
-      user.invitedBy=found[0][0];user.invitedByName=found[0][1].displayName||found[0][0];user.referralCreatedAt=now;
-      const d=new Date();d.setDate(d.getDate()-((d.getDay()+6)%7));user.referralWeekKey=d.toLocaleDateString('sv-SE');
-    }
-    root.users ||= {};root.users[nick]=user;authenticated=user;created=true;
-    appendNotification(root,String(env.ADMIN_NICK||'Денис'),`register_${now}`,`🆕 Новый аккаунт: ${name}`,'system',nick);
-    return {value:root};
-  });
-  if(!tx.committed&&tx.reason!=='authenticated') return json(request,env,{error:tx.reason},401);
-  const token=await createFirebaseCustomToken(env,authenticated.nick);
-  return json(request,env,{ok:true,user:authenticated,created,token});
-}
-async function handleDirectory(request,env,body){
-  if(!(await verifyUser(env,body.nick,body.ph))) return json(request,env,{error:'unauthorized'},401);
-  if(body.target && !validNick(body.target)) return json(request,env,{error:'invalid target'},400);
-  if(body.resource==='businessApps') {
-    const apps=await rtdbGet(env,'businessApps')||{};
-    const filtered=body.nick===String(env.ADMIN_NICK||'Денис')?apps:Object.fromEntries(Object.entries(apps).filter(([,a])=>a.owner===body.nick));
-    return json(request,env,{ok:true,apps:filtered});
-  }
-  const users=body.target?{[body.target]:await rtdbGet(env,`users/${enc(String(body.target))}`)}:await rtdbGet(env,'users')||{};
-  for(const [nick,u] of Object.entries(users)) {
-    if(!u) {delete users[nick];continue;}
-    if(nick===body.nick) continue;
-    // Only data actually used by public profiles, rosters and ratings.
-    const publicFields=new Set(['nick','displayName','avatar','joinDate','createdAt','lastSeen','job','displayJob','vehicle','balance','taskBalance','savingsBalance','subscription','subscriptionExpiry','accountVerified','accountFrozen','kveScore','fine','employments','totalEarned','nicknameEmoji','avatarFrame','profileBgEffect','chatBubbleStyle','profileDescription','businessIds','businessId','employerBizId','referralCode','invitedBy','referralWeekKey','referralCreatedAt','policeRole','licenses']);
-    for(const key of Object.keys(u)) if(!publicFields.has(key)) delete u[key];
-  }
-  return json(request,env,{ok:true,users});
-}
-
 async function handleSession(request, env, body) {
   const nick = String(body?.nick || '').trim();
   const ph = String(body?.ph || '').trim();
@@ -917,16 +884,13 @@ async function handleGift(request, env, body) {
   const price = Number(plan.price);
   const giftRank = Number(plan.rank);
   const committedAt = Date.now();
-  const requestId = String(body.requestId || giftIdPart('request'));
-  if (!validKey(requestId)) return json(request, env, {error:'invalid requestId'}, 400);
-  const giftId = `gift_${await sha256Hex(giverNick + ':' + requestId)}`;
+  const giftId = giftIdPart('gift');
   const giverTxId = giftIdPart('tx');
   const recipientTxId = giftIdPart('tx');
   const giverJobId = giftIdPart('push');
   const recipientJobId = giftIdPart('push');
 
   const tx = await rtdbRootTransaction(env, async (root) => {
-    if (root.subscriptionGifts?.[giftId]) return {abort:true, reason:'already-completed'};
     const users = root?.users && typeof root.users === 'object' ? root.users : {};
     const giver = users[giverNick];
     const recipient = users[recipientNick];
@@ -936,14 +900,14 @@ async function handleGift(request, env, body) {
     if (!Number.isFinite(balance) || balance < price) return { abort: true, reason: `Недостаточно средств. Нужно ${price}₽` };
 
     const recipientRank = subscriptionRank(recipient);
-    if (recipientRank > giftRank) return { abort: true, reason: 'Нельзя подарить эту подписку. У пользователя уже есть подписка более высокого уровня.' };
+    if (recipientRank >= giftRank) return { abort: true, reason: 'Нельзя подарить эту подписку. У пользователя уже есть подписка более высокого уровня.' };
 
     const currentExpiry = recipient.subscriptionExpiry ? new Date(recipient.subscriptionExpiry) : null;
     const activeSameType = normalizeSubscriptionType(recipient.subscription) === type
       && currentExpiry && !Number.isNaN(currentExpiry.getTime()) && currentExpiry.getTime() > committedAt;
     const expiry = activeSameType
-      ? new Date(currentExpiry.getTime() + plan.durationDays * 24 * 60 * 60 * 1000)
-      : new Date(committedAt + plan.durationDays * 24 * 60 * 60 * 1000);
+      ? new Date(currentExpiry.getTime() + 7 * 24 * 60 * 60 * 1000)
+      : new Date(committedAt + 7 * 24 * 60 * 60 * 1000);
     const now = new Date(committedAt);
     const startDate = activeSameType ? String(recipient.subscriptionStart || now.toISOString()) : now.toISOString();
     const date = now.toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' });
@@ -980,13 +944,12 @@ async function handleGift(request, env, body) {
     }};
 
     next.pushOutbox = { ...(root.pushOutbox || {}),
-      [giverJobId]: { type: 'notification', to: giverNick, id: `gift_${giftId}`, sender: giverNick, state:'pending', attempts:0, nextAttemptAt:committedAt, queuedAt: committedAt, ts: committedAt },
-      [recipientJobId]: { type: 'notification', to: recipientNick, id: `gift_${giftId}`, sender: giverNick, state:'pending', attempts:0, nextAttemptAt:committedAt, queuedAt: committedAt, ts: committedAt }
+      [giverJobId]: { type: 'notification', to: giverNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt },
+      [recipientJobId]: { type: 'notification', to: recipientNick, id: `gift_${giftId}`, sender: giverNick, queuedAt: committedAt, ts: committedAt }
     };
     return { value: next };
   });
 
-  if (!tx.committed && tx.reason === 'already-completed') return json(request, env, {ok:true,success:true,giftId,replayed:true});
   if (!tx.committed) {
     const reason = String(tx.reason || 'Операция не подтверждена').trim();
     const status = /Недостаточно средств|более высокого уровня|Некорректн/.test(reason) ? 400 : 409;
@@ -1017,7 +980,7 @@ async function handleNotify(request, env, body) {
     if (!validNick(targetNick)) return json(request, env, { error: 'invalid targetNick' }, 400);
     if (!text) return json(request, env, { error: 'notification text is empty' }, 400);
 
-    const notificationId = String(body?.notificationId || giftIdPart('notification')).trim();
+    const notificationId = String(body?.notificationId || '').trim();
     if (!validKey(notificationId)) return json(request, env, { error: 'invalid notificationId' }, 400);
 
     const createdAt = Number(body?.createdAt || Date.now()) || Date.now();
@@ -1034,22 +997,27 @@ async function handleNotify(request, env, body) {
       sourceMessageId: String(body?.sourceMessageId || '').slice(0, 120)
     };
     if (record.source === 'dm') record.from = sender;
-    for(const key of ['type','duelId','from']) if(body[key]) record[key]=String(body[key]).slice(0,120);
 
-    const jobId = `notify_${await sha256Hex(targetNick+':'+notificationId)}`;
-    const created=await rtdbRootTransaction(env,root=>{
-      if(!root.users?.[targetNick]) return {abort:true,reason:'recipient missing'};
-      if(root.notificationTombstones?.[targetNick]?.[notificationId]) return {abort:true,reason:'deleted'};
-      root.users[targetNick].notifications ||= {};
-      const previous=root.users[targetNick].notifications[notificationId];
-      if(previous && previous.createdBy !== sender) return {abort:true,reason:'notification owner mismatch'};
-      root.users[targetNick].notifications[notificationId] ||= {...record,createdBy:sender};
-      root.pushOutbox ||= {};
-      root.pushOutbox[jobId] ||= {type:'notification',to:targetNick,id:notificationId,sender,state:'pending',attempts:0,nextAttemptAt:Date.now(),queuedAt:Date.now()};
-      return {value:root};
+    const rnd = Array.from(crypto.getRandomValues(new Uint32Array(2)), x => x.toString(36)).join('');
+    const jobId = `p${Date.now().toString(36)}${rnd}`.slice(0, 60);
+    const job = {
+      type: 'notification',
+      to: targetNick,
+      id: notificationId,
+      sender,
+      queuedAt: Date.now(),
+      ts: Date.now()
+    };
+
+    // Notification + durable push job are created in ONE authenticated server-side
+    // RTDB patch. The browser therefore never needs write access to protected inbox paths,
+    // and Firebase Cloud Functions are not needed for push on the Spark plan.
+    await rtdbPatch(env, {
+      [`users/${enc(targetNick)}/notifications/${enc(notificationId)}`]: record,
+      [`pushOutbox/${enc(jobId)}`]: job
     });
-    if(!created.committed) return json(request,env,{ok:created.reason==='deleted',discarded:true,reason:created.reason},created.reason==='deleted'?200:409);
-    const result = await processJob(env, jobId, { left: maxPush(env) }).catch(e=>({sent:0,retry:true,reason:String(e.message||e)}));
+
+    const result = await processJob(env, jobId, { left: maxPush(env) });
     return json(request, env, {
       ok: true,
       notificationId,
@@ -1078,19 +1046,18 @@ async function handleSubscribe(request, env, body) {
   if (deviceVk && workerVk && deviceVk !== workerVk) {
     return json(request, env, { error: 'vapid key mismatch', workerVapidPrefix: workerVk, deviceVapidPrefix: deviceVk }, 409);
   }
-  const before = await loadSubs(env);
-  const owner = await subscriptionBucket(env, before, nick);
+  const all = await loadSubs(env);
+  const owner = await subscriptionBucket(env, all, nick);
   const displayNameRaw = await rtdbGet(env, `users/${enc(nick)}/displayName`).catch(() => null);
   const displayName = String(displayNameRaw || body.displayName || '').trim().slice(0, 120);
 
   // Nothing changed since the last registration: skip the KV write (free plan: ~1000 writes/day).
-  const curSub = (before[nick] || []).find(x => x.id === id);
+  const curSub = (all[nick] || []).find(x => x.id === id);
   if (curSub && curSub.displayName === displayName && JSON.stringify(curSub.prefs) === JSON.stringify(sanitizePrefs(prefs))
       && Date.now() - Number(curSub.updatedAt || 0) < 12 * 3600e3) {
     return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName, unchanged: true });
   }
 
-  const all=await mutateSubs(env,async all=>{
   // If an older registration used the same account name with different
   // casing/spacing, migrate that bucket to the exact authenticated nick.
   // This repairs existing subscriptions without requiring the browser to
@@ -1101,7 +1068,7 @@ async function handleSubscribe(request, env, body) {
     console.log('push subscription owner normalized', owner.key, '=>', nick);
   }
 
-  for (const n of Object.keys(all).filter(n=>Array.isArray(all[n]))) {                                             // a device belongs to one account
+  for (const n of Object.keys(all)) {                                             // a device belongs to one account
     if (n === nick) continue;
     all[n] = all[n].filter(x => x.id !== id);
     if (!all[n].length) delete all[n];
@@ -1121,7 +1088,7 @@ async function handleSubscribe(request, env, body) {
     updatedAt: Date.now()
   });
   all[nick] = mine.slice(0, MAX_DEVICES_PER_USER);
-  });
+  await saveSubs(env, all);
   console.log('push subscription saved', JSON.stringify({
     ownerNick: nick,
     displayName,
@@ -1133,242 +1100,70 @@ async function handleSubscribe(request, env, body) {
 }
 async function handleUnsubscribe(request, env, body) {
   if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
-  let removed=false;
-  await mutateSubs(env,all=>{
-    const before=(all[body.nick]||[]).length;
-    all[body.nick]=(all[body.nick]||[]).filter(x=>x.id!==body.subscriptionId);
-    removed=before!==all[body.nick].length;
-    if(!all[body.nick].length) delete all[body.nick];
-  });
-  return json(request,env,{success:true,removed});
+  const all = await loadSubs(env);
+  const before = (all[body.nick] || []).length;
+  all[body.nick] = (all[body.nick] || []).filter(x => x.id !== body.subscriptionId);
+  if (!all[body.nick].length) delete all[body.nick];
+  await saveSubs(env, all);
+  return json(request, env, { success: true, removed: before !== (all[body.nick] || []).length });
 }
 async function handlePrefs(request, env, body) {
   if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
-  let prefs=null;
-  await mutateSubs(env,all=>{
-    const sub=(all[body.nick]||[]).find(x=>x.id===body.subscriptionId);
-    if(sub) {sub.prefs=sanitizePrefs(body.prefs);prefs=sub.prefs;}
-  });
-  return json(request,env,prefs?{success:true,prefs}:{error:'subscription not found'},prefs?200:404);
+  const all = await loadSubs(env);
+  const sub = (all[body.nick] || []).find(x => x.id === body.subscriptionId);
+  if (!sub) return json(request, env, { error: 'subscription not found' }, 404);
+  sub.prefs = sanitizePrefs(body.prefs);
+  await saveSubs(env, all);
+  return json(request, env, { success: true, prefs: sub.prefs });
 }
-// Financial and address writes are server-owned; public forms cannot forge the price or pickup.
-const DELIVERY_PRICE_PER_KM = 200;
-function serverPoint(point){
-  if(!point || point.lat==null || point.lng==null || String(point.lat).trim()==='' || String(point.lng).trim()==='') return null;
-  const lat=Number(point.lat),lng=Number(point.lng),address=String(point.address||point.text||'').trim();
-  if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180||!address) return null;
-  return {lat,lng,address:address.slice(0,300)};
-}
-function distanceKm(a,b){
-  const rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLng=(b.lng-a.lng)*rad;
-  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLng/2)**2;
-  return 6371*2*Math.atan2(Math.sqrt(Math.min(1,x)),Math.sqrt(Math.max(0,1-x)));
-}
-function appendNotification(root,nick,id,text,cat,sender){
-  if(!root.users?.[nick] || root.notificationTombstones?.[nick]?.[id]) return;
-  root.users[nick].notifications ||= {};
-  root.users[nick].notifications[id] ||= {title:'Капани',text,cat,createdAt:Date.now(),time:moscowTime(Date.now()),push:true,url:appUrlForRecord,source:'service',sourceMessageId:id,createdBy:sender};
-  root.pushOutbox ||= {};
-    // Account keys may contain Unicode; outbox IDs remain ASCII and stable.
-  const jobId=`service_${id}_${b64uEnc(te.encode(nick))}`;
-  root.pushOutbox[jobId] ||= {type:'notification',id,to:nick,sender,state:'pending',attempts:0,nextAttemptAt:Date.now(),queuedAt:Date.now()};
-}
-const appUrlForRecord='https://iamskoup1.github.io/kapani/';
-function appendTx(user,id,type,who,amount,desc){
-  user.txlog ||= {};user.txlog[id]={type,who,amt:amount,desc,date:new Date().toLocaleDateString('ru-RU',{timeZone:'Europe/Moscow'}),time:moscowTime(Date.now()),ts:new Date().toISOString()};
-}
-async function handleDeliveryCreate(request,env,body){
-  if(!(await verifyUser(env,body.nick,body.ph))) return json(request,env,{error:'unauthorized'},401);
-  const input=body.order,id=String(input?.id||'');
-  if(!validKey(id) || !['business','marketplace'].includes(input?.source)) return json(request,env,{error:'Некорректный заказ'},400);
-  const dropoff=serverPoint(input.deliveryAddress);
-  if(!dropoff) return json(request,env,{error:'Укажите адрес доставки и координаты'},400);
-  let order;
-  const tx=await rtdbRootTransaction(env,root=>{
-    const client=root.users?.[body.nick];
-    if(!client) return {abort:true,reason:'Пользователь не найден'};
-    if(!client.accountVerified||client.accountFrozen) return {abort:true,reason:'Аккаунт не подтверждён или заморожен'};
-    const previous=root.deliveryCustomOrders?.[id];
-    if(previous) {if(previous.client!==body.nick) return {abort:true,reason:'Чужой заказ'};order=previous;return {abort:true,reason:'replayed'};}
-    let pickup,from,items,extra={};
-    if(input.source==='marketplace') {
-      const listing=root.marketplace?.[input.listingId];
-      if(!listing || listing.status!=='active' || listing.archived || ['work','service'].includes(listing.category)) return {abort:true,reason:'Объявление недоступно'};
-      if(listing.seller===body.nick) return {abort:true,reason:'Нельзя купить свой товар'};
-      pickup=serverPoint(listing.pickupAddress);
-      if(!pickup) return {abort:true,reason:'У товара отсутствует адрес'};
-      const seller=root.users?.[listing.seller],price=Number(listing.price);
-      if(!seller || listing.priceNegotiable || !Number.isFinite(price)||price<=0) return {abort:true,reason:'Для доставки нужна фиксированная цена товара'};
-      const shipping=Math.round(distanceKm(pickup,dropoff)*DELIVERY_PRICE_PER_KM);
-      if(Math.abs(shipping-Number(input.deliveryPrice))>0) return {abort:true,reason:'Цена доставки изменилась. Обновите выбранные адреса'};
-      if(!Number.isFinite(Number(client.balance)) || Number(client.balance)<price) return {abort:true,reason:'Недостаточно средств для покупки'};
-      client.balance=Number(client.balance)-price;seller.balance=Number(seller.balance||0)+price;
-      Object.assign(listing,{status:'sold',buyer:body.nick,deliveryPurchaseId:id,soldAt:Date.now()});
-      appendTx(client,id,'out',listing.seller,price,`Покупка «${listing.title}»`);
-      appendTx(seller,id,'in',body.nick,price,`Продажа «${listing.title}»`);
-      appendNotification(root,listing.seller,`sale_${id}`,`💰 ${body.nick} купил «${listing.title}» за ${price} ₽`,'market',body.nick);
-      appendNotification(root,body.nick,`buy_${id}`,`✅ «${listing.title}» куплено, доставка оформлена`,'market',body.nick);
-      from=listing.seller;items=listing.title;
-      extra={listingId:input.listingId,listingTitle:items,listingPrice:price,sellerNick:listing.seller,sellerLat:pickup.lat,sellerLng:pickup.lng,itemKind:'marketplace_listing'};
-    } else {
-      const business=root.businesses?.[input.bizId], product=business?.products?.[input.productId];
-      if(!business || business.status!=='active'||!product) return {abort:true,reason:'Товар бизнеса недоступен'};
-      pickup=serverPoint({lat:business.lat,lng:business.lng,address:business.address});
-      if(!pickup) return {abort:true,reason:'У бизнеса отсутствует адрес'};
-      from=business.name;items=product.name;
-      extra={bizId:input.bizId,businessName:from,businessLat:pickup.lat,businessLng:pickup.lng,productId:input.productId,productName:items,productPrice:Number(product.price||0),itemKind:'business_product'};
-    }
-    const km=distanceKm(pickup,dropoff),price=Math.round(km*DELIVERY_PRICE_PER_KM);
-    if(!Number.isFinite(Number(input.deliveryPrice))||price!==Number(input.deliveryPrice)) return {abort:true,reason:'Цена доставки изменилась. Обновите выбранные адреса'};
-    if(Number(client.balance||0)<price) return {abort:true,reason:'Недостаточно средств для доставки'};
-    client.balance=Number(client.balance||0)-price;
-    appendTx(client,`shipping_${id}`,'out','Доставка',price,'Резерв оплаты доставки');
-    order={id,source:input.source,sourceLabel:input.source==='business'?'🏪 Бизнес':'🛍 Маркетплейс',...extra,from,items,pickupAddress:{...pickup},deliveryAddress:{...dropoff},address:dropoff.address,deliveryLat:dropoff.lat,deliveryLng:dropoff.lng,distanceKm:km,deliveryPrice:price,priceOffer:price,deliveryPriceRule:'200_per_km',priceMode:'fixed_200_per_km',notes:String(input.notes||'').slice(0,1000),contact:String(input.contact||'').slice(0,200),client:body.nick,status:'waiting',clientConfirmed:false,workerConfirmed:false,clientReceived:false,escrowAmount:price,payoutDone:false,date:new Date().toLocaleDateString('ru-RU'),time:moscowTime(Date.now()),createdAt:Date.now()};
-    root.deliveryCustomOrders ||= {};root.deliveryCustomOrders[id]=order;
-    for(const [nick,u] of Object.entries(root.users||{})) if(u.job==='Доставщик'||nick===String(env.ADMIN_NICK||'Денис')) appendNotification(root,nick,`delivery_${id}`,`📦 Новый заказ: ${items}. Забрать: ${pickup.address}; доставить: ${dropoff.address}. ${price} ₽`,'delivery_orders',body.nick);
-    return {value:root};
-  });
-  return json(request,env,tx.committed||tx.reason==='replayed'?{ok:true,order,replayed:tx.reason==='replayed'}:{ok:false,error:tx.reason},tx.committed||tx.reason==='replayed'?200:409);
-}
-async function handleDeliveryAction(request,env,body){
-  if(!(await verifyUser(env,body.nick,body.ph))) return json(request,env,{error:'unauthorized'},401);
-  const id=String(body.orderId||''),action=String(body.action||'');
-  if(!validKey(id)) return json(request,env,{error:'invalid orderId'},400);
-  let order;
-  const tx=await rtdbRootTransaction(env,root=>{
-    const o=root.deliveryCustomOrders?.[id],u=root.users?.[body.nick];
-    if(!o||!u) return {abort:true,reason:'Заказ не найден'};
-    const client=o.client===body.nick,worker=o.worker===body.nick;
-    if(action==='take') {
-      if(!(u.job==='Доставщик'||body.nick===String(env.ADMIN_NICK||'Денис'))||client) return {abort:true,reason:'Заказ может взять доставщик'};
-      if(o.worker===body.nick&&o.status==='client_confirmed') {order=o;return {abort:true,reason:'replayed'};}
-      if(o.status!=='waiting'||o.worker) return {abort:true,reason:'Заказ уже принят'};
-      if(Number(o.escrowAmount)!==Number(o.deliveryPrice)) return {abort:true,reason:'Оплата старого заказа не зарезервирована'};
-      Object.assign(o,{worker:body.nick,status:'client_confirmed',clientConfirmed:true,driverAcceptedAt:Date.now()});
-      appendNotification(root,o.client,`accepted_${id}`,`🛵 ${body.nick} взял доставку «${o.items}»`,'delivery_orders',body.nick);
-    } else if(action==='cancel') {
-      if(!client) return {abort:true,reason:'Чужой заказ'};
-      if(o.status==='cancelled') {order=o;return {abort:true,reason:'replayed'};}
-      if(!['waiting','price_proposed','client_confirmed'].includes(o.status)) return {abort:true,reason:'Доставка уже началась'};
-      const refund=Number(o.escrowAmount||0);u.balance=Number(u.balance||0)+refund;
-      if(refund) appendTx(u,`refund_${id}`,'in','Доставка',refund,'Возврат резерва доставки');
-      if(o.worker) appendNotification(root,o.worker,`cancelled_${id}`,'❌ Клиент отменил доставку','delivery_orders',body.nick);
-      Object.assign(o,{status:'cancelled',cancelledAt:Date.now(),escrowAmount:0,worker:null});
-    } else if(action==='start'||action==='complete') {
-      if(!worker) return {abort:true,reason:'Чужой заказ'};
-      const expected=action==='start'?'client_confirmed':'in_progress',next=action==='start'?'in_progress':'delivered';
-      if(o.status===next) {order=o;return {abort:true,reason:'replayed'};}
-      if(o.status!==expected) return {abort:true,reason:'Статус изменён'};
-      o.status=next;o[action==='start'?'startedAt':'deliveredAt']=Date.now();
-      if(action==='complete') appendNotification(root,o.client,`delivered_${id}`,'📦 Доставлено. Подтвердите получение.','delivery_orders',body.nick);
-    } else if(action==='received'||action==='done') {
-      if(action==='received'&&!client || action==='done'&&!worker) return {abort:true,reason:'Чужой заказ'};
-      if(o.status==='done'&&o.payoutDone) {order=o;return {abort:true,reason:'replayed'};}
-      if(o.status!=='delivered') return {abort:true,reason:'Доставка ещё не завершена'};
-      o[action==='received'?'clientReceived':'workerConfirmed']=true;
-      if(o.clientReceived&&o.workerConfirmed&&!o.payoutDone) {
-        const target=root.users?.[o.worker],amount=Number(o.escrowAmount||0);
-        if(!target||!Number.isFinite(amount)||amount<0) return {abort:true,reason:'Некорректная выплата'};
-        target.balance=Number(target.balance||0)+amount;target.totalEarned=Number(target.totalEarned||0)+amount;
-        appendTx(target,`payout_${id}`,'in','Доставка',amount,'Завершённая доставка');
-        Object.assign(o,{status:'done',payoutDone:true,paidAt:Date.now(),escrowAmount:0});
-        appendNotification(root,o.worker,`payout_${id}`,`💰 +${amount} ₽ за доставку`,'money',body.nick);
-        appendNotification(root,o.client,`closed_${id}`,'✅ Доставка завершена и оплачена','delivery_orders',body.nick);
-      }
-    } else return {abort:true,reason:'Неизвестное действие'};
-    o.updatedAt=Date.now();order=o;return {value:root};
-  });
-  return json(request,env,tx.committed||tx.reason==='replayed'?{ok:true,order}:{error:tx.reason},tx.committed||tx.reason==='replayed'?200:409);
-}
-
-function isoWeekKey(){
-  const d=new Date(new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Moscow'})+'T00:00:00Z');
-  const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day+3);
-  const first=new Date(Date.UTC(d.getUTCFullYear(),0,4));
-  return `${d.getUTCFullYear()}-W${String(1+Math.round(((d-first)/86400000-3+((first.getUTCDay()+6)%7))/7)).padStart(2,'0')}`;
-}
-async function handleMarketAddress(request,env,body){
-  if(!(await verifyUser(env,body.nick,body.ph))) return json(request,env,{error:'unauthorized'},401);
-  const id=String(body.listingId||''),point=serverPoint(body.pickupAddress);
-  if(!validKey(id)||!point) return json(request,env,{error:'Укажите адрес товара и координаты'},400);
-  const tx=await rtdbRootTransaction(env,root=>{
-    const listing=root.marketplace?.[id];
-    if(!listing||listing.seller!==body.nick) return {abort:true,reason:'Чужое объявление'};
-    listing.pickupAddress=point;listing.updatedAt=Date.now();return {value:root};
-  });
-  return json(request,env,{ok:tx.committed,error:tx.reason},tx.committed?200:403);
-}
-async function handleMarketPublish(request,env,body){
-  if(!(await verifyUser(env,body.nick,body.ph))) return json(request,env,{error:'unauthorized'},401);
-  const l=body.listing,id=String(l?.id||''),pickup=serverPoint(l?.pickupAddress);
-  if(!validKey(id)||!pickup||!String(l?.title||'').trim()) return json(request,env,{error:'Укажите название и адрес товара'},400);
-  const category=String(l.category||'other'),price=Number(l.price);
-  if(!['other','food','tools','clothes','electronics','building','work','service'].includes(category)||!Number.isFinite(price)||price<0 || (category!=='work'&&!l.priceNegotiable&&price<=0)) return json(request,env,{error:'Некорректная цена или категория'},400);
-  const week=isoWeekKey();
-  const tx=await rtdbRootTransaction(env,root=>{
-    const u=root.users?.[body.nick];if(!u) return {abort:true,reason:'Пользователь не найден'};
-    if(!u.accountVerified||u.accountFrozen||Number(u.balance)<0) return {abort:true,reason:'Маркетплейс недоступен для этого аккаунта'};
-    if(root.marketplace?.[id]) return {abort:true,reason:root.marketplace[id].seller===body.nick?'replayed':'Чужое объявление'};
-    const rank=subscriptionRank(u),limit=[2,4,8,999999][rank],count=u.lastListingWeek===week?Number(u.listingsThisWeek||0):0;
-    if(count>=limit) return {abort:true,reason:'Лимит объявлений за неделю достигнут'};
-    root.marketplace ||= {};
-    root.marketplace[id]={id,seller:body.nick,pickupAddress:pickup,title:String(l.title).slice(0,100),desc:String(l.desc||'').slice(0,500),photo:String(l.photo||''),price:category==='work'?0:price,priceNegotiable:category!=='work'&&!!l.priceNegotiable,salaryHint:String(l.salaryHint||'').slice(0,100),category,status:'active',createdAt:Date.now()};
-    u.listingsThisWeek=count+1;u.lastListingWeek=week;
-    if(!u.rewardedListing){u.rewardedListing=true;u.taskBalance=Number(u.taskBalance||0)+60;appendTx(u,id,'in','Задания',60,'Первое объявление');}
-    return {value:root};
-  });
-  return json(request,env,{ok:tx.committed||tx.reason==='replayed',error:tx.reason},tx.committed||tx.reason==='replayed'?200:409);
-}
-async function handleBusinessApply(request,env,body){
-  if(!(await verifyUser(env,body.nick,body.ph))) return json(request,env,{error:'unauthorized'},401);
-  const a=body.application,id=String(a?.id||''),point=serverPoint({lat:a?.lat,lng:a?.lng,address:a?.address});
-  if(!validKey(id)||!point||!String(a.name||'').trim()||!String(a.desc||'').trim()) return json(request,env,{error:'Укажите название, описание и адрес бизнеса'},400);
-  const tx=await rtdbRootTransaction(env,root=>{
-    const u=root.users?.[body.nick];if(!u) return {abort:true,reason:'Пользователь не найден'};
-    if(root.businessApps?.[id]) return {abort:true,reason:root.businessApps[id].owner===body.nick?'replayed':'Чужая заявка'};
-    const owned=Object.values(root.businesses||{}).filter(b=>b.owner===body.nick&&b.status==='active').length;
-    if(Object.values(root.businessApps||{}).some(a=>a.owner===body.nick&&a.status==='pending')) return {abort:true,reason:'Заявка уже на рассмотрении'};
-    const rank=subscriptionRank(u),fee=rank===3?1250:rank===2?2000:2500;
-    if(owned>=[1,3,5,8][rank]) return {abort:true,reason:'Лимит бизнесов достигнут'};
-    if(!Number.isFinite(Number(u.balance))||Number(u.balance)<fee) return {abort:true,reason:'Недостаточно средств для госпошлины'};
-    u.balance=Number(u.balance)-fee;appendTx(u,id,'out','Госпошлина',fee,'Заявка на создание бизнеса');
-    root.businessApps ||= {};root.businessApps[id]={id,owner:body.nick,name:String(a.name).slice(0,150),desc:String(a.desc).slice(0,2000),address:point.address,lat:point.lat,lng:point.lng,location:point,category:String(a.category||'Услуги').slice(0,100),services:String(a.services||'').slice(0,2000),status:'pending',createdAt:Date.now(),feePaid:fee};
-    appendNotification(root,body.nick,`bizfee_${id}`,`🏛 Списана госпошлина ${fee} ₽ за заявку на бизнес`,'money',body.nick);
-    appendNotification(root,String(env.ADMIN_NICK||'Денис'),`bizapp_${id}`,`🏪 Новая заявка на бизнес от ${body.nick}: «${a.name}»`,'system',body.nick);
-    return {value:root};
-  });
-  return json(request,env,{ok:tx.committed||tx.reason==='replayed',error:tx.reason},tx.committed||tx.reason==='replayed'?200:409);
-}
-
 async function handleTest(request, env, body) {
-  return handleNotify(request,env,{...body,targetNick:body.nick,notificationId:giftIdPart('test'),text:body.text||body.body||'🧪 Тестовое уведомление Капани',source:'worker_test'});
-}
-async function handleNotificationAction(request,env,body,action) {
-  if(!(await verifyUser(env,body.nick,body.ph))) return json(request,env,{error:'unauthorized'},401);
-  const id=String(body.notificationId||'');
-  if(action!=='clear'&&!validKey(id)) return json(request,env,{error:'invalid notificationId'},400);
-  const result=await rtdbRootTransaction(env,root=>{
-    const user=root.users?.[body.nick];
-    if(!user) return {abort:true,reason:'user missing'};
-    user.notifications ||= {};
-    const ids=action==='clear'?Object.keys(user.notifications):[id];
-    for(const key of ids) {
-      if(action==='read') {if(user.notifications[key]) user.notifications[key].readAt ||= Date.now();}
-      else {
-        root.notificationTombstones ||= {};root.notificationTombstones[body.nick] ||= {};
-        root.notificationTombstones[body.nick][key]={deletedAt:Date.now()};
-        delete user.notifications[key];
-      }
+  if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
+
+  const all = await loadSubs(env);
+  const subs = (all[body.nick] || []).filter(s => prefsAllow(s, String(body.category || 'system')));
+  if (!subs.length) return json(request, env, { ok: true, sent: 0, devices: 0, message: 'no active push devices for this user' });
+
+  const payload = {
+    title: String(body.title || 'Капани — тест Push').slice(0, 120),
+    body: String(body.body || 'Тестовое Push-уведомление успешно отправлено.').trim().slice(0, 1000),
+    category: String(body.category || 'system'),
+    notificationId: `test_${Date.now().toString(36)}`,
+    url: String(body.url || appUrl(env)),
+    createdAt: Date.now(),
+    source: 'worker_test',
+    sourceMessageId: ''
+  };
+
+  let sent = 0;
+  const dead = new Set();
+  const results = [];
+  for (const sub of subs) {
+    try {
+      const status = await sendPush(env, sub, payload);
+      results.push({ id: sub.id, status });
+      if (status === 404 || status === 410) dead.add(sub.id);
+      else if (status >= 200 && status < 300) sent++;
+    } catch (e) {
+      results.push({ id: sub.id, error: String(e?.message || e).slice(0, 200) });
     }
-    return {value:root};
-  });
-  return json(request,env,{ok:result.committed},result.committed?200:409);
+  }
+
+  if (dead.size) {
+    const fresh = await loadSubs(env);
+    if (fresh[body.nick]) {
+      fresh[body.nick] = fresh[body.nick].filter(s => !dead.has(s.id));
+      if (!fresh[body.nick].length) delete fresh[body.nick];
+      await saveSubs(env, fresh);
+    }
+  }
+
+  return json(request, env, { ok: true, sent, devices: subs.length, results });
 }
 
 async function handleDebug(request, env, body) {
   if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
   const all = await loadSubs(env);
-  const totals = { accounts: Object.values(all).filter(Array.isArray).length, devices: Object.values(all).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0) };
+  const totals = { accounts: Object.keys(all).length, devices: Object.values(all).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0) };
   const category = String(body.category || 'messages');
   const target = String(body.target || body.nick);
   const b = await subscriptionBucket(env, all, target);
@@ -1383,7 +1178,7 @@ async function handleDebug(request, env, body) {
     vapidPublicPrefix: String(env.VAPID_PUBLIC_KEY || '').slice(0, 16),
     vapid: await vapidHealth(env),
     diagnosis: diagnoseRecipient(entry, totals, 'debug'),
-    accountsWithPush: Object.fromEntries(Object.entries(all).filter(([,l])=>Array.isArray(l)).map(([k, l]) => [k, Array.isArray(l) ? l.length : 0])),
+    accountsWithPush: Object.fromEntries(Object.entries(all).map(([k, l]) => [k, Array.isArray(l) ? l.length : 0])),
     yourDevices: mine
   });
 }
@@ -1393,21 +1188,19 @@ async function handleEvent(request, env, body) {
   if (body.job) {                                                                 // fallback: the browser could not write the outbox itself
     if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
     const j = body.job;
-    if (!['chat', 'news', 'dm'].includes(j?.type)) return json(request, env, { error: 'bad job' }, 400);
-    if(!validKey(String(j.id||''))) return json(request,env,{error:'bad source id'},400);
-    jobId = `${j.type}_${j.id}`;
+    if (!['notification', 'chat', 'news'].includes(j?.type)) return json(request, env, { error: 'bad job' }, 400);
+    jobId = `w${Date.now().toString(36)}${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
     const now = Date.now();
-    const snapshot=await rtdbGetWithEtag(env,`pushOutbox/${jobId}`);
-    if(!snapshot.value) {
-      const result=await rtdbPutIfMatch(env,`pushOutbox/${jobId}`,{
-        type:j.type,id:String(j.id),to:String(j.to||''),dmKey:String(j.dmKey||''),sender:body.nick,
-        state:'pending',attempts:0,nextAttemptAt:now,queuedAt:now,ts:now
-      },snapshot.etag);
-      if(!result.ok&&result.status!==412) throw new Error('outbox creation failed');
-    }
-
+    await rtdb(env, 'PUT', `pushOutbox/${jobId}`, {
+      type: j.type,
+      id: String(j.id || ''),
+      to: String(j.to || ''),
+      sender: body.nick,
+      queuedAt: now,
+      ts: now
+    });
   }
-  if (!/^[-\w]{3,512}$/.test(jobId)) return json(request, env, { error: 'bad jobId' }, 400);
+  if (!validKey(jobId)) return json(request, env, { error: 'bad jobId' }, 400);
   const budget = { left: maxPush(env) };
   console.log('push event received', jobId, body.job ? 'inline-job' : 'outbox-job');
   const r = await processJob(env, jobId, budget);
@@ -1432,32 +1225,24 @@ export default {
         return json(request, env, {
           ok: true,
           service: 'kapani-push',
-          endpoints: { health: 'GET /health', session: 'POST /session', gift: 'POST /gift', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug',auth:'POST /auth',directory:'POST /directory',notificationDelete:'POST /notification/delete',notificationClear:'POST /notification/clear',notificationRead:'POST /notification/read',marketPublish:'POST /market/publish',businessApply:'POST /business/apply',deliveryCreate:'POST /delivery/create',deliveryAction:'POST /delivery/action' }
+          endpoints: { health: 'GET /health', session: 'POST /session', gift: 'POST /gift', subscribe: 'POST /subscribe', unsubscribe: 'POST /unsubscribe', prefs: 'POST /prefs', notify: 'POST /notify', event: 'POST /event', test: 'POST /test', debug: 'POST /debug' }
         });
       }
       if (url.pathname === '/health') {
         const subs = await loadSubs(env);
         return json(request, env, {
-          ok: true, version:'kapani-2026-10-03',
+          ok: true,
           kv: !!env.PUSH_KV,
           vapidPublic: !!env.VAPID_PUBLIC_KEY, vapidPrivate: !!env.VAPID_PRIVATE_KEY, vapidPublicPrefix: String(env.VAPID_PUBLIC_KEY || '').slice(0, 16),
           vapid: await vapidHealth(env),
           serviceAccount: !!env.FIREBASE_SERVICE_ACCOUNT_JSON,
-          subscribers: Object.values(subs).filter(Array.isArray).length, devices: Object.values(subs).reduce((n, l) => n + (Array.isArray(l)?l.length:0), 0)
+          subscribers: Object.keys(subs).length, devices: Object.values(subs).reduce((n, l) => n + l.length, 0)
         });
       }
       if (request.method !== 'POST') return json(request, env, { error: 'not found' }, 404);
       const body = await request.json().catch(() => null);
       if (!body || typeof body !== 'object') return json(request, env, { error: 'bad json' }, 400);
-      if (/^\/notification\/(delete|clear|read)$/.test(url.pathname)) return await handleNotificationAction(request,env,body,url.pathname.split('/').pop());
       if (url.pathname === '/session') return await handleSession(request, env, body);
-      if (url.pathname === '/auth') return await handleAuth(request,env,body);
-      if (url.pathname === '/directory') return await handleDirectory(request,env,body);
-      if (url.pathname === '/delivery/action') return await handleDeliveryAction(request,env,body);
-      if (url.pathname === '/delivery/create') return await handleDeliveryCreate(request,env,body);
-      if (url.pathname === '/market/address') return await handleMarketAddress(request,env,body);
-      if (url.pathname === '/market/publish') return await handleMarketPublish(request,env,body);
-      if (url.pathname === '/business/apply') return await handleBusinessApply(request,env,body);
       if (url.pathname === '/gift') return await handleGift(request, env, body);
       if (url.pathname === '/notify') return await handleNotify(request, env, body);
       if (url.pathname === '/subscribe') return await handleSubscribe(request, env, body);

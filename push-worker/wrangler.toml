@@ -11,7 +11,7 @@ VAPID_SUBJECT = "https://iamskoup1.github.io/kapani/"
 APP_URL = "https://iamskoup1.github.io/kapani/"
 ALLOWED_ORIGINS = "https://iamskoup1.github.io"
 # Pushes one invocation may send (the free plan has tight CPU/subrequest limits). Bigger audiences are split automatically.
-MAX_PUSH_PER_RUN = "3"
+MAX_PUSH_PER_RUN = "10"
 
 [[kv_namespaces]]
 binding = "PUSH_KV"

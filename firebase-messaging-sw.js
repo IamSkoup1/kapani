@@ -1,7 +1,7 @@
 /* Kapani Web Push Service Worker.
  * One Service Worker only: receives standard Web Push and renders system notifications.
  */
-const SW_VERSION = 'kapani-webpush-2026-10-03-v5';
+const SW_VERSION = 'kapani-webpush-2026-09-30-v4';
 const KAPANI_APP_PATH = '/kapani/';
 
 function resolveNotificationUrl(requestedUrl) {
@@ -18,51 +18,26 @@ function resolveNotificationUrl(requestedUrl) {
   } catch (_) { return new URL(KAPANI_APP_PATH, self.location.origin).href; }
 }
 
-const DEDUPE_TTL = 7 * 86400000;
-let databasePromise;
-function pushDatabase(){
-  return databasePromise ||= new Promise((resolve,reject)=>{
-    const request=indexedDB.open('KapaniPushDB',1);
-    request.onupgradeneeded=()=>request.result.createObjectStore('shownNotifications',{keyPath:'id'});
-    request.onsuccess=()=>resolve(request.result);
-    request.onerror=()=>{databasePromise=null;reject(request.error);};
-  });
+const shownNotificationIds = new Map();
+function pruneShown() {
+  const now = Date.now();
+  for (const [key, ts] of shownNotificationIds) if (now - ts > 120000) shownNotificationIds.delete(key);
 }
-async function reserveNotification(id){
-  const db=await pushDatabase();
-  return new Promise((resolve,reject)=>{
-    const tx=db.transaction('shownNotifications','readwrite'),store=tx.objectStore('shownNotifications');
-    let reserved=false;
-    const request=store.get(id);
-    request.onsuccess=()=>{
-      if(!request.result || Date.now()-request.result.timestamp>DEDUPE_TTL){store.put({id,timestamp:Date.now()});reserved=true;}
-    };
-    const cursor=store.openCursor();
-    cursor.onsuccess=()=>{const c=cursor.result;if(c){if(Date.now()-c.value.timestamp>DEDUPE_TTL)c.delete();c.continue();}};
-    tx.oncomplete=()=>resolve(reserved);tx.onabort=()=>reject(tx.error);
-  });
-}
-async function forgetNotification(id){
-  const db=await pushDatabase();
-  return new Promise((resolve,reject)=>{const tx=db.transaction('shownNotifications','readwrite');tx.objectStore('shownNotifications').delete(id);tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);});
-}
-// Serialize foreground + push handlers; IDB remains authoritative across worker restarts.
-let displayQueue=Promise.resolve();
-function showKapaniPush(data){
-  const task=displayQueue.then(()=>displayKapaniPush(data));
-  displayQueue=task.catch(()=>{});
-  return task;
+/* Check only; the id is recorded AFTER showNotification() succeeds, so a failed
+ * display can still be retried (e.g. by the server push for the same id). */
+function wasShownRecently(notificationId) {
+  const id = String(notificationId || '').trim(); if (!id) return false;
+  pruneShown();
+  return shownNotificationIds.has(id);
 }
 
-async function displayKapaniPush(data = {}) {
+async function showKapaniPush(data = {}) {
   const notificationId = String(data.notificationId || '').trim();
-  const dedupeId=String(data.recipientNick||'')+':'+notificationId;
+  if (notificationId && wasShownRecently(notificationId)) return false;
   const body = String(data.body || data.text || '').trim(); if (!body) return false;
   const category = String(data.category || 'system');
   const title = String(data.title || 'Капани');
   const targetUrl = resolveNotificationUrl(data.url);
-  if(notificationId && !await reserveNotification(dedupeId)) return false;
-  try {
   await self.registration.showNotification(title, {
     body,
     icon: new URL('/kapani/image.png', self.location.origin).href,
@@ -71,10 +46,7 @@ async function displayKapaniPush(data = {}) {
     renotify: false,
     data: { ...data, url: targetUrl, category, swVersion: SW_VERSION, receivedAt: Date.now() }
   });
-  } catch(error) {
-    if(notificationId) await forgetNotification(dedupeId);
-    throw error;
-  }
+  if (notificationId) shownNotificationIds.set(notificationId, Date.now());
   return true;
 }
 

@@ -1,5 +1,3 @@
-> Обновление 2026-10-03: сначала прочитайте [отчёт](KAPANI_FIX_REPORT_2026-10-03.md) и [установку](INSTALL_2026-10-03.md). Старые финансовые сценарии ещё требуют серверной миграции; полный production-аудит не подтверждён.
-
 # Kapani — Push notifications
 
 В production push-уведомления идут через **Cloudflare Worker + стандартный Web Push (VAPID)**. Firebase используется как **Realtime Database/Auth-контур**, а Firebase Cloud Functions не участвуют в доставке push. Эта схема не требует перевода Firebase-проекта на Blaze только ради push.

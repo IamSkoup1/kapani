@@ -1300,11 +1300,6 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
             <label style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:800;margin:8px 0;cursor:pointer;"><input type="checkbox" id="mktNegotiable" onchange="toggleMktPriceFields()"> Цена договорная</label>
             <input type="number" id="mktPrice" placeholder="Цена (₽)" min="0" step="1">
             <input type="text" id="mktSalaryHint" placeholder="Зарплата (для категории «Работа»), напр. 350₽/смена" style="display:none;" maxlength="50">
-            <input id="mktAddress" placeholder="Адрес товара (обязательно)">
-            <input id="mktLat" type="hidden"><input id="mktLng" type="hidden">
-            <div id="mktLocationPreview" style="font-size:12px;color:var(--muted);">📍 Точка не выбрана</div>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="detectLocation('market')">📍 Определить местоположение</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openMarketLocationPicker()">🗺 Выбрать на карте</button>
             <input type="url" id="mktPhoto" placeholder="Фото URL" pattern="https?://.+" title="Введите корректный URL">
             <label class="file-upload-btn" for="mktPhotoFile">📷 Выбрать фото</label>
             <input type="file" id="mktPhotoFile" accept="image/*" onchange="handleMktPhoto(event)">
@@ -2178,7 +2173,6 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <textarea id="bizEditDesc" placeholder="Описание" style="min-height:60px;"></textarea>
         <input type="text" id="bizEditAddress" placeholder="Адрес / описание точки" maxlength="120">
         <input type="hidden" id="bizEditLat"><input type="hidden" id="bizEditLng">
-        <button class="btn btn-ghost btn-sm" type="button" onclick="detectLocation('businessEdit')">📍 Определить местоположение</button>
         <button class="btn btn-ghost btn-sm" type="button" onclick="openBusinessLocationPicker('edit')">🗺 Изменить точку на карте</button>
         <div id="bizEditLocationPreview" style="font-size:12px;color:var(--primary);margin-top:6px;"></div>
         <input type="text" id="bizEditServices" placeholder="Что вы предоставляете? (через запятую)" maxlength="200">
@@ -2318,7 +2312,6 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         </div>
 
         <textarea id="deliveryOrderNotes" placeholder="Комментарий для доставщика (необязательно): подъезд, время, что уточнить..." style="min-height:88px;margin-top:8px;"></textarea>
-        <button class="btn btn-ghost btn-sm" type="button" onclick="detectLocation('delivery')">📍 Определить местоположение</button>
         <button class="btn btn-ghost btn-sm" type="button" onclick="openDeliveryLocationPicker()">🗺 Выбрать точку доставки на карте</button>
         <input type="text" id="deliveryOrderAddr" placeholder="📍 Адрес / описание точки доставки" maxlength="150" style="margin-top:8px;">
         <input type="hidden" id="deliveryOrderLat"><input type="hidden" id="deliveryOrderLng">
@@ -2437,7 +2430,6 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
         <div style="font-size:12px;color:var(--muted);margin:4px 0 6px;">📍 Местоположение бизнеса выбирается на карте. Текстовый адрес можно уточнить автоматически.</div>
         <input type="text" id="bapAddress" placeholder="Адрес / описание точки" maxlength="120">
         <input type="hidden" id="bapLat"><input type="hidden" id="bapLng">
-        <button class="btn btn-ghost btn-sm" type="button" onclick="detectLocation('business')">📍 Определить местоположение</button>
         <button class="btn btn-ghost btn-sm" type="button" onclick="openBusinessLocationPicker('create')">🗺 Выбрать точку бизнеса на карте</button>
         <div id="bapLocationPreview" style="font-size:12px;color:var(--primary);margin-top:6px;"></div>
         <input type="text" id="bapCategory" placeholder="Категория (Еда, Услуги, Магазин, Развлечения...)" maxlength="40">
@@ -2505,7 +2497,9 @@ window.kapaniLoadLeaflet = (function(){
         return Number(item?.price ?? CONFIG.subscriptions?.[type]?.price ?? 0);
     }
     function getSubscriptionRank(subscription, expiry){
-        return globalThis.KAPANI_SUBSCRIPTIONS.activeRank({subscription,subscriptionExpiry:expiry});
+        const active = subscription && subscription !== 'none' && expiry && new Date(expiry) > new Date();
+        if(!active) return 0;
+        return Number(globalThis.KAPANI_SUBSCRIPTIONS?.[subscription]?.rank || 0);
     }
     window.openBizOwnerPanel = function(bizId){
     currentBizId = bizId;
@@ -2654,7 +2648,7 @@ async function establishKapaniServerSession(nick, password){
             // Firebase Cloud Functions are intentionally NOT used here: Kapani runs on
             // Firebase Spark. The existing Cloudflare Worker already has the service
             // account needed to mint the same Firebase custom token.
-            const passwordHash = await hashPassword(secret, allUsersCache?.[expectedNick]?.passwordHashSalt || expectedNick);
+            const passwordHash = await hashPassword(secret, expectedNick);
             const result = await pushWorkerCall('/session', {
                 nick: expectedNick,
                 ph: passwordHash
@@ -2743,7 +2737,7 @@ const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 // Canonical push backend: direct Web Push through the Cloudflare Worker in push-worker/.
 // Firebase Functions are not part of the push delivery path.
 const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
-const KAPANI_BUILD = '2026-10-03-canonical-push'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
+const KAPANI_BUILD = '2026-09-30-noblaze-worker'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -2847,7 +2841,7 @@ const ROLE_MIGRANT = 'Мигрант';
 function isMigrantUser(u){ return !!(u && u.roles && u.roles.migrant === true); }
 async function requireNotMigrant(actionText){
     try{
-        const snap = await getUserSnapshot(currentNick);
+        const snap = await get(userRef(currentNick));
         const u = snap.exists() ? (snap.val()||{}) : {};
         if(isMigrantUser(u)){
             toast(`🚫 ${ROLE_MIGRANT}: ${actionText}`,'red');
@@ -3159,7 +3153,7 @@ async function fallbackTakeOrder(data) {
     if(!['pending','waiting'].includes(String(o.status||''))) throw new Error('Заказ уже в работе');
     if(o.worker) throw new Error('Уже есть исполнитель');
     
-    const workerSnap = await getUserSnapshot(currentNick);
+    const workerSnap = await get(userRef(currentNick));
     const worker = workerSnap.val()||{};
     await update(orderRef(data.orderId), { worker: currentNick, status: o.type==='taxi'?'accepted':'in_progress', driverVehicle: worker.vehicle||'', driverAvatar: worker.avatar||'', acceptedAt: Date.now() });
     return { success: true };
@@ -3175,7 +3169,7 @@ async function fallbackCancelOrder(data) {
         // Client canceling: this architecture charges only at payment time, so
         // there is no amount to refund. Apply only the cancellation penalty.
         const penalty = 35;
-        const userSnap = await getUserSnapshot(currentNick);
+        const userSnap = await get(userRef(currentNick));
         const before = userSnap.val() || {};
         const tx = await runTransaction(userRef(currentNick), current => {
             const u = current || before;
@@ -3192,7 +3186,7 @@ async function fallbackCancelOrder(data) {
     } else if(o.worker === currentNick) {
         // Worker abandoning - penalty
         const penalty = 35;
-        const uSnap = await getUserSnapshot(currentNick);
+        const uSnap = await get(userRef(currentNick));
         const u = uSnap.val();
         const currentBalance = u.balance || 0;
         // If balance is less than penalty, deduct all available
@@ -3211,7 +3205,7 @@ async function fallbackPayOrder(data) {
     const o = snap.val();
     if(!o.worker) throw new Error('Нет исполнителя');
     if(o.type==='taxi' && o.status !== 'waiting_payment') throw new Error('Заказ ещё не готов к оплате');
-    const [cSnap, wSnap] = await Promise.all([getUserSnapshot(o.client), getUserSnapshot(o.worker)]);
+    const [cSnap, wSnap] = await Promise.all([get(userRef(o.client)), get(userRef(o.worker))]);
     const c = cSnap.val();
     const w = wSnap.val();
     if(!c || !w) throw new Error('Пользователь не найден');
@@ -3236,7 +3230,7 @@ async function fallbackPayOrder(data) {
 
 // Fallback: Transfer money directly
 async function fallbackTransferMoney(data) {
-    const [fromSnap, toSnap] = await Promise.all([getUserSnapshot(currentNick), getUserSnapshot(data.toUid)]);
+    const [fromSnap, toSnap] = await Promise.all([get(userRef(currentNick)), get(userRef(data.toUid))]);
     const fromUser = fromSnap.val();
     const toUser = toSnap.val();
 
@@ -3262,7 +3256,7 @@ async function fallbackTransferMoney(data) {
 async function fallbackAdminAdjustBalance(data) {
     if(currentNick !== ADMIN) throw new Error('Только для мэра');
     
-    const snap = await getUserSnapshot(data.uid);
+    const snap = await get(userRef(data.uid));
     if(!snap.exists()) throw new Error('Пользователь не найден');
     
     const u = snap.val();
@@ -3338,7 +3332,7 @@ let _onlineStatusInFlight=false;
 async function updateOnlineStatus() {
     if(!currentNick || _onlineStatusInFlight) return;
     _onlineStatusInFlight=true;
-    try { _lastOnlineWriteAt=Date.now(); await update(ref(db),{[`users/${currentNick}/lastSeen`]:Date.now(),[`presence/${currentNick}/updatedAt`]:Date.now()}); } catch(e){} finally { _onlineStatusInFlight=false; }
+    try { _lastOnlineWriteAt=Date.now(); await update(userRef(currentNick), {lastSeen:Date.now()}); } catch(e){} finally { _onlineStatusInFlight=false; }
 }
 let _lastOnlineWriteAt=0;
 function scheduleOnlineStatusUpdate(){
@@ -3489,7 +3483,7 @@ async function findUserByPublicName(name){
             if(dn === q || normalizePublicName(u.referralCode) === q) return { nick, ...u };
         }
     }
-    const snap = await getKapaniDirectory();
+    const snap = await get(ref(db, 'users'));
     const users = snap.val() || {};
     for(const [nick, u] of Object.entries(users)){
         const dn = normalizePublicName(displayNick(u));
@@ -3510,7 +3504,7 @@ async function ensureUniqueNick(baseNick){
     let nick = baseNick;
     let i = 1;
     while(true){
-        const snap = await getUserSnapshot(nick);
+        const snap = await get(userRef(nick));
         if(!snap.exists()) return nick;
         nick = `${baseNick.slice(0, 20)}_${i}`;
         i++;
@@ -3571,7 +3565,7 @@ async function syncUserEmployments(nick, u){
 }
 async function canTakeAnotherJob(u, nick){
     await syncUserEmployments(nick, u);
-    const fresh = (await getUserSnapshot(nick)).val() || u;
+    const fresh = (await get(userRef(nick))).val() || u;
     return countActiveEmployments(fresh, nick) < getJobLimit(fresh);
 }
 function applyBizBgEffect(el, effectId){
@@ -3679,7 +3673,7 @@ async function processEconomyChargesForUser(nick, opts = {}) {
     if(!nick || economyMaintenanceBusy) return null;
     economyMaintenanceBusy = true;
     try {
-        const snap = await getUserSnapshot(nick);
+        const snap = await get(userRef(nick));
         if(!snap.exists()) return null;
         const u = snap.val() || {};
         const now = Date.now();
@@ -3771,7 +3765,7 @@ async function ensureEconomyFresh(opts = {}){
     if(!currentNick) return null;
     const result = await processEconomyChargesForUser(currentNick, opts);
     if(result){
-        const snap = await getUserSnapshot(currentNick);
+        const snap = await get(userRef(currentNick));
         const u = snap.val() || result;
         await processBusinessWeeklyFees(currentNick, u, opts); // Теперь достучится до оригинальной функции!
         await processSavingsInterest(currentNick, u, opts);
@@ -3781,7 +3775,7 @@ async function ensureEconomyFresh(opts = {}){
 } // <--- А ЭТА СКОБКА ЗАКРЫВАЕТ ensureEconomyFresh
 async function requireMarketTaxiAccess(){
     if(!await requireSpendable()) return false;
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     if(!snap.exists()) return false;
     const u = snap.val() || {};
     if((u.balance || 0) < 0){
@@ -3795,7 +3789,7 @@ async function requireMarketTaxiAccess(){
 async function chargeCommissionAndLog(nick, fee, desc){
     const amount = Math.max(0, Math.round(Number(fee) || 0));
     if(amount <= 0) return;
-    const snap = await getUserSnapshot(nick);
+    const snap = await get(userRef(nick));
     if(!snap.exists()) return;
     const u = snap.val() || {};
     await update(userRef(nick), { balance: (u.balance || 0) - amount });
@@ -3803,7 +3797,7 @@ async function chargeCommissionAndLog(nick, fee, desc){
 }
 
 async function requireSpendable(){
-    const s = await getUserSnapshot(currentNick);
+    const s = await get(userRef(currentNick));
     if(!s.exists()) return false;
     const u = s.val();
     
@@ -3824,7 +3818,7 @@ async function logTx(nick, entry){
     // Update total earned for income transactions (anti-dup system)
     if(entry.type === 'in' && entry.amt > 0) {
         try {
-            const snap = await getUserSnapshot(nick);
+            const snap = await get(userRef(nick));
             if(snap.exists()) {
                 const user = snap.val();
                 const newTotalEarned = (user.totalEarned || 0) + entry.amt;
@@ -3897,7 +3891,7 @@ async function incrementAdvertiserReferralCount(nick){
 }
 async function clearAdvertiserReferralStats(){
     if(currentNick!==ADMIN) throw new Error('Только для мэра');
-    const snap=await getKapaniDirectory();
+    const snap=await get(ref(db,'users'));
     const users=snap.val()||{};
     const advertisers=Object.entries(users).filter(([nick,u])=>hasMunicipalJob(u,JOB_ADVERTISER)).map(([nick])=>nick);
     const resetAt=Date.now();
@@ -3909,7 +3903,7 @@ window.clearAdvertiserReferralStats=clearAdvertiserReferralStats;
 
 async function processAdvertiserWeeklySalary(nick, uSnapshot){
     if(!nick) return null;
-    const userSnap = uSnapshot ? { val:()=>uSnapshot, exists:()=>true } : await getUserSnapshot(nick);
+    const userSnap = uSnapshot ? { val:()=>uSnapshot, exists:()=>true } : await get(userRef(nick));
     if(!userSnap.exists()) return null;
     const u = userSnap.val() || {};
     if(!hasMunicipalJob(u, JOB_ADVERTISER)) return u;
@@ -3933,7 +3927,7 @@ async function processAdvertiserWeeklySalary(nick, uSnapshot){
 
     let allUsers = {};
     try{
-        const allUsersSnap = await getKapaniDirectory();
+        const allUsersSnap = await get(ref(db,'users'));
         allUsers = allUsersSnap.val() || {};
     }catch(e){
         console.warn('[advertiser weekly users read]', nick, e);
@@ -4076,7 +4070,7 @@ window.withdrawMunicipalTreasury=async function(){
         });
         if(!credit?.committed) throw new Error('Не удалось зачислить средства на аккаунт Кайона');
 
-        const committedMayor=credit.snapshot?.val?.() || (await getUserSnapshot(ADMIN)).val() || {};
+        const committedMayor=credit.snapshot?.val?.() || (await get(userRef(ADMIN))).val() || {};
         try{ await push(ref(db,`${MUNICIPAL_TREASURY_PATH}/history`),{type:'out',amount,reason:'Вывод казны мэром на личный аккаунт',sourceNick:ADMIN,sourceType:'mayor_withdrawal',date:new Date().toLocaleDateString('ru'),time:nowTime(),ts:Date.now()}); }catch(e){console.warn('[municipalTreasury withdrawal history]',e);}
         try { await logTx(ADMIN,{type:'in',who:'Казна мэрии',amt:amount,desc:'Вывод средств из казны мэром'}); } catch(logErr){ console.warn('[municipalTreasury mayor txlog]',logErr); }
         try { await pushNotification(ADMIN, `💰 Из казны мэрии выведено ${amount.toLocaleString('ru-RU')} ₽ на ваш аккаунт`, 'money'); } catch(notifErr){ console.warn('[municipalTreasury notification]',notifErr); }
@@ -4091,22 +4085,138 @@ window.withdrawMunicipalTreasury=async function(){
 };
 
 // ─── AUTH ─────────────────────────────────
-window.handleAuth = async function(){
-    const name=(qs('lgNick').value||'').trim(),password=qs('lgPass').value||'';
-    const btn=qs('authBtn');btn.disabled=true;btn.textContent='Подключение…';
-    try{
-        const data=await pushWorkerCall('/auth',{name,password,inviter:String(qs('lgInviter')?.value||'').trim()});
-        const auth=await ensureAuth();
-        await authModule.signInWithCustomToken(auth,data.token);
-        currentNick=data.user.nick;_kapaniSessionPassword=password;
-        allUsersCache[currentNick]=data.user;window.allUsersCache=allUsersCache;
-        localStorage.setItem('kp_s',currentNick);sessionStorage.setItem('kp_s',currentNick);
-        localStorage.setItem('kp_auth',JSON.stringify({nick:currentNick,name:data.user.displayName,displayName:data.user.displayName}));
-        syncCurrentNick();
-        toast(data.created?'🎉 Добро пожаловать! Аккаунт ожидает подтверждения мэрией.':'👋 С возвращением!','green');
-        startApp();
-    }catch(e){toast('❌ '+(e?.message||e),'red');}
-    finally{btn.disabled=false;btn.textContent='Войти / Создать аккаунт';}
+window.handleAuth = async function() {
+    const nameInput = (qs('lgNick').value || '').trim();
+    const password = (qs('lgPass').value || '');
+    const inviterInput = String(qs('lgInviter')?.value || '').trim();
+    if(!nameInput) return toast('⚠️ Введите отображаемое имя','gold');
+    if(password.length < 4) return toast('⚠️ Пароль должен быть не короче 4 символов','gold');
+    const btn = qs('authBtn'); btn.disabled = true; btn.textContent = 'Подключение...';
+    const resetBtn = () => { btn.disabled = false; btn.textContent = 'Войти / Создать аккаунт'; };
+    try {
+        const existing = await findUserByPublicName(nameInput);
+        if(!existing) {
+            const baseNick = makeNickFromName(nameInput);
+            const nick = await ensureUniqueNick(baseNick);
+            const now = Date.now();
+            const passwordHash = await hashPassword(password, nick);
+
+            let advertiserReferrer = null;
+            if(inviterInput){
+                const candidate = await findUserByPublicName(inviterInput);
+                if(!candidate){
+                    resetBtn();
+                    return toast('❌ Рекламщик с таким именем или кодом не найден','red');
+                }
+                if(candidate.nick === nick){
+                    resetBtn();
+                    return toast('❌ Нельзя указать себя пригласившим','red');
+                }
+                if(!hasMunicipalJob(candidate, JOB_ADVERTISER)){
+                    resetBtn();
+                    return toast('❌ Указанный пользователь сейчас не работает рекламщиком','red');
+                }
+                advertiserReferrer = { nick:candidate.nick, displayName:displayNick(candidate) || candidate.nick };
+            }
+
+            const userData = {
+                nick,
+                balance: 0,
+                job: 'Житель',
+                avatar: DEFAULT_AVATAR_URL,
+                joinDate: new Date().toLocaleDateString('ru'),
+                vehicle: '',
+                lastSeen: Date.now(),
+                displayName: nameInput,
+                accountFrozen: false,
+                rewardedAvatar: false,
+                rewardedWall: false,
+                createdAt: now,
+                economyLastProcessedAt: now,
+                savingsBalance: 0,
+                savingsLastInterestAt: now,
+                taskBalance: 0,
+                employments: [],
+                totalEarned: 0,
+                accountVerified: false,
+                passwordHash,
+                passwordHashSalt: nick,
+                referralCode: generateReferralCode(),
+                ...(advertiserReferrer ? {
+                    invitedBy: advertiserReferrer.nick,
+                    invitedByName: advertiserReferrer.displayName,
+                    referralWeekKey: advertiserWeekKey(now),
+                    referralCreatedAt: now
+                } : {})
+            };
+
+            // Referral metadata is stored on the newly-created user's own record.
+            // This preserves the existing Firebase user-write boundary; the advertiser's
+            // weekly aggregate is materialized later by the advertiser's economy cycle.
+            await set(userRef(nick), userData);
+            localStorage.setItem('kp_s', nick);
+            sessionStorage.setItem('kp_s', nick);
+            localStorage.setItem('kp_auth', JSON.stringify({ nick, name: nameInput, displayName: nameInput }));
+            currentNick = nick;
+            allUsersCache[nick]=userData;
+            allUsersCacheLoaded=true;
+            window.allUsersCache=allUsersCache;
+            renderHomeStats_users(allUsersCache);
+            _kapaniSessionPassword = password;
+            syncCurrentNick();
+            try {
+                await establishKapaniServerSession(nick, password);
+            } catch(sessionError) {
+                // The public Kapani login remains usable during a transient Firebase
+                // Auth/network race, but sensitive actions will wait for recovery.
+                console.warn('[Kapani auth] server session after registration:', sessionError);
+                scheduleKapaniServerSessionRetry(nick);
+            }
+            if(advertiserReferrer){
+                await incrementAdvertiserReferralCount(advertiserReferrer.nick);
+                try {
+                    await pushNotification(advertiserReferrer.nick, `📢 Новый приглашённый: ${nameInput} зарегистрировался по вашей рекомендации`, 'system');
+                } catch(e){ console.warn('[advertiser referral notification]', e); }
+            }
+            try {
+                await pushNotification(ADMIN, `🆕 Новый аккаунт: ${nameInput}`, 'system');
+            } catch(e){ console.warn('[new account notification]', e); }
+            toast('🎉 Добро пожаловать в Капани! Ваш аккаунт ожидает подтверждения мэрией.','green');
+            startApp();
+        } else {
+            const enteredHash = await hashPassword(password, existing.passwordHashSalt || existing.nick);
+            if(existing.passwordHash){
+                if(existing.passwordHash !== enteredHash){
+                    resetBtn();
+                    qs('lgPass').value = '';
+                    qs('lgPass').focus();
+                    return toast('❌ Неверный пароль','red');
+                }
+            } else {
+                // Старый аккаунт без пароля — устанавливаем введённый пароль как новый
+                await update(userRef(existing.nick), { passwordHash: enteredHash });
+            }
+            toast('👋 С возвращением!','green');
+            localStorage.setItem('kp_s', existing.nick);
+            sessionStorage.setItem('kp_s', existing.nick);
+            localStorage.setItem('kp_auth', JSON.stringify({ nick: existing.nick, name: displayNick(existing), displayName: displayNick(existing) }));
+            currentNick = existing.nick;
+            _kapaniSessionPassword = password;
+            syncCurrentNick();
+            try {
+                await establishKapaniServerSession(existing.nick, password);
+            } catch(sessionError) {
+                // Do not make a transient Firebase Auth race look like a failed login.
+                // Sensitive operations call the single recovery helper themselves.
+                console.warn('[Kapani auth] server session after login:', sessionError);
+                scheduleKapaniServerSessionRetry(existing.nick);
+            }
+            startApp();
+        }
+    } catch(e) {
+        resetBtn();
+        toast('❌ Ошибка: ' + e.message, 'red');
+    }
 };
 
 function startApp() {
@@ -4147,7 +4257,7 @@ function startApp() {
 
     // Critical path: only the signed-in user's profile. Heavy/global branches are lazy.
     const criticalProfileLoad = Promise.race([
-        getUserSnapshot(currentNick),
+        get(userRef(currentNick)),
         new Promise((_, reject)=>setTimeout(()=>reject(new Error('profile_load_timeout')), 8000))
     ]);
     Promise.resolve()
@@ -4179,7 +4289,7 @@ function startApp() {
               try { requestPersistentStorage(); } catch(e) {}
               if(typeof window.startKapaniRentExpiryWatcher === 'function') window.startKapaniRentExpiryWatcher();
           }, {timeout: 1500});
-      }).catch(e=>{console.error('[Kapani] profile startup:',e);appStarted=false;hideLoadingSafe();if(authSection)authSection.style.display='block';toast('Войдите снова, чтобы восстановить подключение','gold');});
+      });
 }
 
 function handleKapaniPushDeepLink(rawUrl){
@@ -4251,32 +4361,17 @@ function removeAllServiceListeners(service){
 function leaveAllServiceServices(){
     Object.keys(serviceListeners).forEach(removeAllServiceListeners);
 }
-async function getUserSnapshot(nick){
-    if(nick===currentNick) return get(userRef(nick));
-    const data=await pushWorkerCall('/directory',{nick:currentNick,ph:await getPushAuthHash(),target:nick});
-    const value=data.users?.[nick];return {val:()=>value||null,exists:()=>!!value,key:nick};
-}
-window.getUserSnapshot=getUserSnapshot;
-async function getBusinessApplications(){
-    const data=await pushWorkerCall('/directory',{nick:currentNick,ph:await getPushAuthHash(),resource:'businessApps'});
-    return {val:()=>data.apps||{},exists:()=>!!Object.keys(data.apps||{}).length};
-}
-async function getKapaniDirectory(){
-    const data=await pushWorkerCall('/directory',{nick:currentNick,ph:await getPushAuthHash()});
-    return {val:()=>data.users||{},exists:()=>!!data.users};
-}
-window.getKapaniDirectory=getKapaniDirectory;
 async function loadAllUsersCache(force=false){
     if(force){ allUsersCacheLoaded=false; allUsersCachePromise=null; }
     if(!force && allUsersCacheLoaded) return allUsersCache;
     if(!force && allUsersCachePromise) return allUsersCachePromise;
     allUsersCachePromise = (async()=>{
-        const snap=await getKapaniDirectory();
+        const snap=await get(ref(db,'users'));
         allUsersCache=snap.val()||{};
         allUsersCacheLoaded=true;
         window.allUsersCache=allUsersCache;
         if(currentNick && !allUsersCache[currentNick]){
-            try{ const mine=await getUserSnapshot(currentNick); if(mine.exists()) allUsersCache[currentNick]=mine.val(); }catch(e){}
+            try{ const mine=await get(userRef(currentNick)); if(mine.exists()) allUsersCache[currentNick]=mine.val(); }catch(e){}
         }
         return allUsersCache;
     })();
@@ -4291,7 +4386,7 @@ function attachUserListener(){
         const u=snap.val();
         allUsersCache[currentNick]=u; window.allUsersCache=allUsersCache;
         try{ liveOwnAccountChanged(u); }catch(e){}
-        try{await syncJanitorTaskState(u);}catch(e){console.warn('[Kapani] janitor state sync:',e?.message||e);}
+        await syncJanitorTaskState(u);
         updateHeader(u); updateFrozenOverlay(u); updateHeader_balance(u);
         renderHomeStats_users(allUsersCache);
         const taskBalanceEl = qs('taskBalanceDisplay');
@@ -4333,7 +4428,7 @@ function attachNotificationsListener(){
         attempt=0;
         const notifs=snap.val()||{};
         window._kapaniNotificationsCache=notifs;
-        updateBadge(Object.values(notifs).filter(n=>n&&!n.readAt&&!n.deletedAt).length);
+        updateBadge(Object.keys(notifs).length);
         // Always render (even while Profile is hidden) so the inbox is ready when opened.
         renderNotifications(notifs);
         if(!state.baseline){
@@ -4343,7 +4438,7 @@ function attachNotificationsListener(){
             return;
         }
         const fresh=Object.entries(notifs)
-            .filter(([id,n])=>n && !n.deletedAt && !n.readAt && !state.ids.has(id))
+            .filter(([id,n])=>n && !state.ids.has(id))
             .map(([id,n])=>(typeof n==='string'?{text:n,id}:{...n,id}))
             .sort((a,b)=>(Number(a.createdAt)||0)-(Number(b.createdAt)||0));
         fresh.forEach(n=>{
@@ -4425,7 +4520,6 @@ async function setGeneralChatPresence(active){
     if(!currentNick) return;
     try{
         const p = ref(db, `presence/${currentNick}/generalChatOpen`);
-        void set(ref(db,`presence/${currentNick}/updatedAt`),Date.now());
         const dc = onDisconnect(p);
         if(active){
             await dc.set(false);
@@ -4883,7 +4977,7 @@ function updateHeader_balance(u){
     if(curPage==='bank')renderSavingsDisplay();
 }
 
-window.goToWorkerPage=function(){getUserSnapshot(currentNick).then(snap=>{if(!snap.exists())return;const u=snap.val();if(hasMunicipalJob(u,'Водитель'))navTo('driverPage');else if(hasMunicipalJob(u,'Доставщик'))navTo('deliveryPage');else if(hasMunicipalJob(u,JOB_JANITOR))navTo('janitorPage');});};
+window.goToWorkerPage=function(){get(userRef(currentNick)).then(snap=>{if(!snap.exists())return;const u=snap.val();if(hasMunicipalJob(u,'Водитель'))navTo('driverPage');else if(hasMunicipalJob(u,'Доставщик'))navTo('deliveryPage');else if(hasMunicipalJob(u,JOB_JANITOR))navTo('janitorPage');});};
 function updateBadge(count){const badge=qs('notifyBadge');badge.textContent=count>0?(count>9?'9+':count):'';badge.style.display=count>0?'block':'none';}
 function stopCallsListener(){
     if(!_callsListenerStarted) return;
@@ -4994,12 +5088,11 @@ async function kickPushWorker(jobId,inline){
 }
 // Durable path: write the job to RTDB (cron will pick it up if this call is lost), then wake the worker.
 // If the browser may not write the outbox, fall back to an authenticated inline job.
-function canonicalPushJob(job){const now=Date.now();return {...job,state:'pending',attempts:0,queuedAt:now,nextAttemptAt:now,ts:now};}
 async function enqueuePushJob(job){
     if(!PUSH_WORKER_URL||!currentNick) return;
     try{
         const jRef=push(ref(db,'pushOutbox'));
-        await set(jRef,canonicalPushJob(job));
+        await set(jRef,{...job,ts:Date.now()});
         void kickPushWorker(String(jRef.key||''));
     }catch(e){
         console.debug('[Kapani push worker] outbox write failed, using inline job:',e?.message||e);
@@ -5180,14 +5273,21 @@ async function showForegroundKapaniPush(payload={}){
             category,
             notificationId:String(payload.notificationId||''),
             url:String(payload.url||''),
-            recipientNick:currentNick,
             source:String(payload.source||'foreground')
         };
         let reg=null;
         try{ reg=await getSwReg(); }catch(_){}
         const sw=reg?.active || navigator.serviceWorker?.controller;
         if(sw){ sw.postMessage({type:'KAPANI_FOREGROUND_PUSH',payload:data}); return true; }
-        return false; // Wait for the canonical SW; another display path would bypass persistent dedupe.
+        const icon=new URL('./image.png',location.href).href;
+        const tag=data.notificationId?`kapani-${data.notificationId}`:`kapani-${category}-${Date.now()}`;
+        if(reg?.showNotification){
+            await reg.showNotification(data.title,{body,icon,badge:icon,tag,data:{...data,category}});
+            return true;
+        }
+        const n=new Notification(data.title,{body,icon,tag});
+        n.onclick=()=>{ try{window.focus();n.close();}catch(_){} };
+        return true;
     }catch(e){
         console.debug('[Kapani Push] foreground notification failed:',e?.message||e);
         return false;
@@ -5227,7 +5327,7 @@ function announceIncomingNotification(n){
         category:n.cat,
         notificationId:n.id,
         url:n.url,
-        source:n.source||'inbox'
+        source:'inbox'
     });
 }
 if(!window._kapaniPushSwMessageBound&&'serviceWorker' in navigator){window._kapaniPushSwMessageBound=true;navigator.serviceWorker.addEventListener('message',event=>{
@@ -5348,7 +5448,7 @@ async function writeNotificationViaWorker(targetNick,body,cat,extra){
     // Firebase push() only generates a local key here; the actual protected RTDB write
     // is performed atomically by the authenticated Cloudflare Worker.
     const nRef=push(notifRef(targetNick));
-    const notificationId=String(extra?.notificationId||nRef?.key||'');
+    const notificationId=String(nRef?.key||'');
     if(!notificationId) throw new Error('Не удалось создать ID уведомления');
     const result=await pushWorkerCall('/notify',{
         nick:currentNick,
@@ -5361,7 +5461,6 @@ async function writeNotificationViaWorker(targetNick,body,cat,extra){
         url:String(extra?.url||''),
         source:String(extra?.source||''),
         sourceMessageId:String(extra?.sourceMessageId||''),
-        type:extra?.type||'',duelId:extra?.duelId||'',from:extra?.from||'',
         createdAt:Date.now()
     });
     return {notificationId,...result};
@@ -5389,22 +5488,17 @@ window.testKapaniPush = async function(){
     toast(perm==='granted'?'🧪 Тестовое уведомление отправлено':'🧪 Уведомление добавлено в список. Разрешите push в браузере, чтобы видеть его как системное','green');
     return {...result, permission:perm, diagnostics: await window.getKapaniPushDiagnostics()};
 };
-async function notificationAction(action, notificationId){
-    try{return await pushWorkerCall('/notification/'+action,{nick:currentNick,ph:await getPushAuthHash(),notificationId});}
-    catch(e){toast('❌ Не удалось изменить уведомление: '+(e?.message||e),'red');throw e;}
-}
-window.deleteNotification=async function(id){await notificationAction('delete',id);};
-window.readNotification=async function(id){await notificationAction('read',id);};
-window.clearAllNotifications=async function(){await notificationAction('clear');toast('✅ Уведомления очищены','green');};
+window.deleteNotification=async function(notifId){await remove(ref(db,`users/${currentNick}/notifications/${notifId}`));};
+window.clearAllNotifications=async function(){await remove(notifRef(currentNick));toast('✅ Уведомления очищены','green');};
 function renderNotifications(notifs){
     const el=qs('inboxList');if(!el)return;
     const arr=Object.entries(notifs||{})
-        .filter(([,n])=>n && !n.deletedAt)
+        .filter(([,n])=>n)
         .map(([id,n])=>(typeof n==='string'?{text:n,id}:{...n,id}))
         .sort((a,b)=>((Number(b.createdAt)||0)-(Number(a.createdAt)||0)) || (a.id<b.id?1:a.id>b.id?-1:0));
     el.innerHTML=arr.length===0?'<div style="color:var(--muted);font-size:13px;">Нет уведомлений</div>':arr.map(n=>{
       const duelActions=n.type==='duel_invite'&&n.duelId?`<div style="display:flex;gap:6px;margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="acceptOnlineDuelFromNotif('${n.duelId}','${n.id}')">✅ Принять</button><button class="btn btn-red btn-sm" onclick="declineOnlineDuelFromNotif('${n.duelId}','${n.id}')">❌ Отклонить</button></div>`:'';
-      return `<div class="notif-item" style="${n.type==='duel_invite'?'border-left-color:var(--gold);':''}" onclick="${!duelActions?`readNotification('${n.id}')`:''}">`
+      return `<div class="notif-item" style="${n.type==='duel_invite'?'border-left-color:var(--gold);':''}" onclick="${!duelActions?`deleteNotification('${n.id}')`:''}">`
         +`<div style="flex:1;min-width:0;"><div class="notif-text" style="white-space:pre-wrap;word-break:break-word;">${escHtml(n.text||'')}</div>${duelActions}</div>`
         +`<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:8px;"><div class="notif-time">${escHtml(formatNotifTime(n))}</div>${!duelActions?`<div class="notif-del" onclick="deleteNotification('${n.id}');event.stopPropagation()">✕</div>`:''}</div></div>`;
     }).join('');
@@ -5415,9 +5509,32 @@ function renderNotifications(notifs){
 // (legacy_<key>), so the invite shows up even if the Cloud Function is slow or
 // not deployed; the function's `existing.exists()` check makes this idempotent.
 async function pushLegacyDuelNotification(targetNick,payload){
-    const id=`duel_${payload.duelId}_${payload.type}`;
-    return pushNotification(targetNick,payload.text||'Новое приглашение','messages',{notificationId:id,type:payload.type,duelId:payload.duelId,from:payload.from,source:'duel',sourceMessageId:payload.duelId});
+    const legacyRef=await push(ref(db,`notifications/${targetNick}`),payload);
+    try{
+        const key=String(legacyRef?.key||''); if(!key) return;
+        await set(ref(db,`users/${targetNick}/notifications/legacy_${key}`),{
+            text:String(payload.text||'Новое уведомление'),
+            title:'Капани',
+            time:nowTime(),
+            cat:'messages',
+            createdAt:Number(payload.ts)||Date.now(),
+            url:'',
+            push:true,
+            type:String(payload.type||''),
+            from:String(payload.from||''),
+            duelId:String(payload.duelId||''),
+            source:'legacy_duel',
+            sourceMessageId:key
+        });
+        void enqueuePushJob({type:'notification',to:targetNick,id:`legacy_${key}`});
+    }catch(e){ console.debug('[duel notification mirror]',e?.message||e); }
+}
 
+window.acceptOnlineDuelFromNotif=async function(duelId,notifId){
+  await deleteNotification(notifId);
+  await acceptOnlineDuel(duelId);
+  navTo('gameDuelSection');
+  setTimeout(()=>document.getElementById('duelTabOnline')?.click(),400);
 };
 window.declineOnlineDuelFromNotif=async function(duelId,notifId){
   await deleteNotification(notifId);
@@ -5763,7 +5880,7 @@ function renderActiveOrders(orders) {
 // ─── WORKER HOME ──────────────────────────
 async function renderHomeWorker(orders){
     const wl=qs('workerList'); if(!wl) return;
-    const snap=await getUserSnapshot(currentNick); if(!snap.exists()) return;
+    const snap=await get(userRef(currentNick)); if(!snap.exists()) return;
     const u=snap.val();
     if(hasMunicipalJob(u,JOB_JANITOR)){
         const status=u.janitorSubmissionStatus||'ready';
@@ -5779,7 +5896,7 @@ async function renderHomeWorker(orders){
 
 // ─── WORKER PAGES ─────────────────────────
 async function renderWorkerPage(orders){
-    const snap=await getUserSnapshot(currentNick); if(!snap.exists()) return;
+    const snap=await get(userRef(currentNick)); if(!snap.exists()) return;
     const u=snap.val(); const isDriver=hasMunicipalJob(u,'Водитель');
     const type=isDriver?'taxi':'shop'; const listId=isDriver?'driverList':'deliveryList';
     const el=qs(listId); if(!el) return;
@@ -5844,7 +5961,7 @@ function compressImage(file,maxPx,quality){
 }
 window.handleAvatarUpload=async function(e){
     const file=e.target.files[0];if(!file)return;
-    const snap=await getUserSnapshot(currentNick);
+    const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
     
     // Check if account is verified
@@ -5868,7 +5985,7 @@ window.handleAvatarUpload=async function(e){
 
 // Profile Customization Functions
 window.openProfileCustomizer=async function(){
-    const snap=await getUserSnapshot(currentNick);
+    const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
     const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasUltra = (u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
@@ -6041,7 +6158,7 @@ window.closeProfileCustomizer=async function(){
     const modal = qs('profileCustomizerModal');
     if(modal) modal.remove();
     // Restore original theme
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     applyInterfaceTheme(u.interfaceTheme || 'default');
 };
@@ -6153,10 +6270,10 @@ window.saveProfileCustomization=async function(){
     closeProfileCustomizer();
 };
 
-window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await getUserSnapshot(currentNick);const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.taskBalance=Math.max(0,Number(u.taskBalance||0))+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Задания',amt:REWARD_CUSTOM_AVATAR,desc:'Одноразовое задание: своя аватарка'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽ на счёт заданий!`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
+window.changeAvatarUrl=async function(){const url=prompt('Введите URL:');if(url&&url.startsWith('http')){const s=await get(userRef(currentNick));const u=s.val()||{};const patch={avatar:url};if(!u.rewardedAvatar&&!url.includes('flaticon')){patch.rewardedAvatar=true;patch.taskBalance=Math.max(0,Number(u.taskBalance||0))+REWARD_CUSTOM_AVATAR;await logTx(currentNick,{type:'in',who:'Задания',amt:REWARD_CUSTOM_AVATAR,desc:'Одноразовое задание: своя аватарка'});toast(`🎁 +${REWARD_CUSTOM_AVATAR} ₽ на счёт заданий!`,'gold');}await update(userRef(currentNick),patch);toast('🖼 Аватарка обновлена!','green');}};
 window.changeDisplayName=async function(){
     const oldNick = currentNick;
-    const snap = await getUserSnapshot(oldNick);
+    const snap = await get(userRef(oldNick));
     if(!snap.exists()) return;
     const u = snap.val() || {};
     const cur = displayNick(u) || oldNick;
@@ -6173,7 +6290,7 @@ window.changeDisplayName=async function(){
     // differ only by unsupported characters. Otherwise migrate users/<nick>.
     let targetNick = newNick || oldNick;
     if(targetNick !== oldNick){
-        const existingTarget = await getUserSnapshot(targetNick);
+        const existingTarget = await get(userRef(targetNick));
         if(existingTarget.exists()) return toast('❌ Такой ник уже занят','red');
     } else {
         targetNick = oldNick;
@@ -6254,7 +6371,7 @@ window.changeDisplayName=async function(){
     toast('✅ Имя, nick и запись users/ обновлены','green');
 };
 window.changePassword=async function(){
-    const s = await getUserSnapshot(currentNick);
+    const s = await get(userRef(currentNick));
     if(!s.exists()) return;
     const u = s.val() || {};
     if(u.passwordHash){
@@ -6279,13 +6396,13 @@ window.saveDisplayJob=async function(){
     if(!role) return;
     await update(userRef(currentNick), { displayJob: role });
     toast('✅ Звание обновлено','green');
-    const snap=await getUserSnapshot(currentNick); if(snap.exists()) updateHeader(snap.val());
+    const snap=await get(userRef(currentNick)); if(snap.exists()) updateHeader(snap.val());
 };
 window.savingsDeposit=async function(){
     if(!await requireSpendable()) return;
     const amt=parseInt(qs('savingsAmt')?.value||'0',10)||0;
     if(amt<=0) return toast('⚠️ Введите сумму','gold');
-    const snap=await getUserSnapshot(currentNick); const u=snap.val()||{};
+    const snap=await get(userRef(currentNick)); const u=snap.val()||{};
     if((u.balance||0)<amt) return toast('❌ Недостаточно средств','red');
     const savings = Number(u.savingsBalance||0)+amt;
     await update(userRef(currentNick), { balance: (u.balance||0)-amt, savingsBalance: savings, savingsLastInterestAt: u.savingsLastInterestAt || Date.now() });
@@ -6297,7 +6414,7 @@ window.savingsDeposit=async function(){
 window.savingsWithdraw=async function(){
     const amt=parseInt(qs('savingsAmt')?.value||'0',10)||0;
     if(amt<=0) return toast('⚠️ Введите сумму','gold');
-    const snap=await getUserSnapshot(currentNick); const u=snap.val()||{};
+    const snap=await get(userRef(currentNick)); const u=snap.val()||{};
     if((u.savingsBalance||0)<amt) return toast('❌ Недостаточно на накопительном счёте','red');
     await update(userRef(currentNick), { balance: (u.balance||0)+amt, savingsBalance: (u.savingsBalance||0)-amt });
     await logTx(currentNick, { type:'in', who:'Накопительный счёт', amt, desc:'Снятие с накопительного счёта' });
@@ -6314,7 +6431,7 @@ function renderSavingsDisplay(){
     if(rateEl && typeof getSavingsRateLabel==='function') rateEl.textContent=getSavingsRateLabel(savings);
 }
 window.editProfileDescription=async function(){
-    const snap=await getUserSnapshot(currentNick);
+    const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
     const current=u.profileDescription||'';
     const newDesc=prompt('Расскажите о себе (максимум 200 символов):',current);
@@ -6352,7 +6469,7 @@ window.recalcShop=function(){
 };
 window.buyShop=async function(){
     if(!await requireSpendable())return;
-    const uSnap=await getUserSnapshot(currentNick);const u=uSnap.val()||{};
+    const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
     const b=parseInt(qs('sB').value)||0,p=parseInt(qs('sP').value)||0,l=parseInt(qs('sL').value)||0,k=parseInt(qs('sK').value)||0;
     if(b+p+l+k<=0)return toast('⚠️ Выберите товары','gold');
     const addr=qs('sAddr').value.trim();
@@ -6464,7 +6581,7 @@ window.orderTaxi=async function(){
     if(!from||!to)return toast('⚠️ Укажите маршрут','gold');if(basePrice<=0)return toast('⚠️ Выберите точки','gold');
     
     // Apply subscription discount
-    const uSnap=await getUserSnapshot(currentNick);
+    const uSnap=await get(userRef(currentNick));
     const u=uSnap.val()||{};
     const hasPlus = (u.subscription === 'plus' || u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasUltra = (u.subscription === 'ultra' || u.subscription === 'prime') && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
@@ -6571,7 +6688,7 @@ window.takeOrder=async function(id){
         const result = await fallbackTakeOrder({ orderId: id });
         
         if (result.success) {
-            const uSnap=await getUserSnapshot(currentNick);const u=uSnap.val()||{};
+            const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
             const isDriver=hasMunicipalJob(u,'Водитель')||u.job==='Водитель';
             const notifText=isDriver?`🛵 Водитель ${currentNick} принял заказ! Транспорт: ${u.vehicle||'?'}`:`📦 Курьер ${currentNick} принял заказ!`;
             await pushNotification(o.client,notifText,o.type==='taxi'?'taxi_orders':'delivery_orders');
@@ -6782,7 +6899,7 @@ window.quitJob = async function(){
         if(!nick) return toast('⚠️ Сначала войдите','gold');
 
         let snap;
-        try { snap = await getUserSnapshot(nick); } catch(e){ return toast('❌ Ошибка загрузки данных','red'); }
+        try { snap = await get(userRef(nick)); } catch(e){ return toast('❌ Ошибка загрузки данных','red'); }
         if(!snap || !snap.exists()) return toast('❌ Профиль не найден','red');
         const u = snap.val();
 
@@ -6959,7 +7076,7 @@ window.doTransfer = async function(){
     const to = toUser.nick;
     if(to===currentNick)return toast('⚠️ Нельзя себе','gold');if(amt<=0)return toast('⚠️ Введите сумму','gold');
 
-    const[fromSnap,toSnap]=await Promise.all([getUserSnapshot(currentNick),getUserSnapshot(to)]);
+    const[fromSnap,toSnap]=await Promise.all([get(userRef(currentNick)),get(userRef(to))]);
     const fromUser = fromSnap.val();
     const toUserData = toSnap.val();
     const hasPrimeTransfer = fromUser?.subscription === 'prime' && fromUser?.subscriptionExpiry && new Date(fromUser.subscriptionExpiry) > new Date();
@@ -7287,17 +7404,17 @@ window.sendChat=async function(){
     catch(e){ inp.value=text; toast('❌ Не удалось отправить сообщение','red'); }
 };
 async function sendChatMsg(text,mediaData,msgType,cameraFacing){
-    const u = allUsersCache?.[currentNick] || (await getUserSnapshot(currentNick)).val();
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val();
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
     if(msgType) msg.msgType=msgType;
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     if(!text&&!mediaData) return;
-    const pushed = push(chatRef());
-    const jobId=`chat_${pushed.key}`;
-    await update(ref(db),{[`chat/${pushed.key}`]:msg,[`pushOutbox/${jobId}`]:canonicalPushJob({type:'chat',id:pushed.key,sender:currentNick})});
-    void kickPushWorker(jobId);
+    const pushed = await push(chatRef(),msg);
+    void enqueuePushJob({type:'chat',id:String(pushed.key||''),sender:currentNick});
+    // Только Cloud Function fan-out уведомлений по событию /chat/{messageId}.
+    // Браузер пишет ровно одно сообщение и не рассылает уведомления сам.
     return pushed;
 }
 
@@ -7445,7 +7562,7 @@ window.openDmChat=async function(nick){
     // previous chat are ignored and can no longer replace the new chat.
     const openSeq = (window._dmOpenSeq = (window._dmOpenSeq || 0) + 1);
     currentDmNick = nick;
-    try{ await update(ref(db,`presence/${currentNick}`),{dmOpenWith:nick,updatedAt:Date.now()}); }catch(e){}
+    try{ await set(ref(db,`presence/${currentNick}/dmOpenWith`),nick); }catch(e){}
     dmPeerReadTs = 0;
 
     const listView = qs('dmListView');
@@ -7474,7 +7591,7 @@ window.openDmChat=async function(nick){
     try{
         let u = allUsersCache?.[nick] || null;
         if(!u){
-            const snap = await getUserSnapshot(nick);
+            const snap = await get(userRef(nick));
             u = snap.exists() ? (snap.val() || {}) : {nick,avatar:'',job:'Житель'};
             if(snap.exists()){
                 allUsersCache[nick]=u;
@@ -7595,19 +7712,25 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     if(!currentDmNick)return;
     // currentNick's user record is already kept live via attachUserListener(),
     // so avoid a fresh get() on every single message send.
-    const u = allUsersCache?.[currentNick] || (await getUserSnapshot(currentNick)).val();
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val();
     const msg={nick:currentNick,avatar:u?.avatar||DEFAULT_AVATAR_URL,time:nowTime(),createdAt:Date.now()};
     if(text) { msg.text=text; if(mediaData) msg.caption=text; }
     if(mediaData) msg.mediaData=mediaData;
     if(msgType) msg.msgType=msgType;
     if(cameraFacing) msg.cameraFacing = cameraFacing;
     const key=dmKey(currentNick,currentDmNick);
-    const recipient=currentDmNick, messageRef=push(dmRef(key)), jobId=`dm_${messageRef.key}`;
-    await update(ref(db),{[`dms/${key}/messages/${messageRef.key}`]:msg,[`pushOutbox/${jobId}`]:canonicalPushJob({type:'dm',id:messageRef.key,dmKey:key,to:recipient,sender:currentNick})});
-    void kickPushWorker(jobId);
+    await push(dmRef(key),msg);
     const latestMeta={lastTs:msg.createdAt,latest:{nick:msg.nick,avatar:msg.avatar,text:msg.text||'',msgType:msg.msgType||null,time:msg.time,createdAt:msg.createdAt}};
     try{await update(dmIndexRef(currentNick),{[currentDmNick]:{...latestMeta,unread:false}});await update(dmIndexRef(currentDmNick),{[currentNick]:{...latestMeta,unread:true}});}catch(e){console.warn('[DM index update]',e);}
-
+    let notifText;
+    if(msgType==='voice') notifText=`🎤 ${currentNick}: Голосовое сообщение`;
+    else if(msgType==='video_circle') notifText=`⭕ ${currentNick}: Видеосообщение`;
+    else if(msgType==='image') notifText=`🖼 ${currentNick}: Фото`;
+    else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
+    else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
+    if(currentDmNick!==currentNick){
+        await pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:`${key}:${msg.createdAt}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
+    }
 }
 
 // ─── USER PROFILE MODAL ───────────────────
@@ -7663,7 +7786,7 @@ async function applyFirstWallReward(u){
 async function pushWallPostMedia(msgType,mediaData){
     const text=(qs('wallInput')?.value||'').trim();
     if(!text&&!mediaData)return toast('⚠️ Добавьте текст или запишите медиа','gold');
-    const uSnap=await getUserSnapshot(currentNick);const u=uSnap.val()||{};
+    const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
     const msg={text:text||'',date:new Date().toLocaleDateString('ru'),time:nowTime(),createdAt:Date.now()};
     if(msgType&&mediaData){msg.msgType=msgType;msg.mediaData=mediaData;}
     await push(wallRef(currentNick),msg);
@@ -7682,7 +7805,7 @@ window.onWallMediaPick=async function(e){
 window.publishWallPost=async function(){
     const text=(qs('wallInput')?.value||'').trim();
     if(!text&&!wallMediaPending)return toast('⚠️ Текст или медиа','gold');
-    const uSnap=await getUserSnapshot(currentNick);const u=uSnap.val()||{};
+    const uSnap=await get(userRef(currentNick));const u=uSnap.val()||{};
     const msg={text:text||'',date:new Date().toLocaleDateString('ru'),time:nowTime(),createdAt:Date.now()};
     if(wallMediaPending){msg.msgType=wallMediaPending.type==='image'?'image':'video';msg.mediaData=wallMediaPending.dataUrl;}
     await push(wallRef(currentNick),msg);
@@ -7699,7 +7822,7 @@ window.openUserProfile=async function(nick){
     viewingProfileNick=nick;
     const profileModal = qs('userProfileModal');
     const switchingWithinOpenProfile = !!(profileModal && profileModal.classList.contains('open'));
-    const snap=await getUserSnapshot(nick);if(!snap.exists())return toast('❌ Не найден','red');const u=snap.val();const online=isUserOnline(u);
+    const snap=await get(userRef(nick));if(!snap.exists())return toast('❌ Не найден','red');const u=snap.val();const online=isUserOnline(u);
     
     // Check subscription status
     const expiry = u.subscriptionExpiry ? new Date(u.subscriptionExpiry) : null;
@@ -7817,7 +7940,7 @@ window.goToTransferFromProfile=async function(){
     const nick=viewingProfileNick;
     let publicName = nick;
     try {
-        const snap = await getUserSnapshot(nick);
+        const snap = await get(userRef(nick));
         const u = snap.val() || {};
         publicName = displayNick(u) || nick;
     } catch(e) {}
@@ -7826,7 +7949,7 @@ window.goToTransferFromProfile=async function(){
     setTimeout(()=>{const el=qs('bTo');if(el)el.value=publicName;},200);
 };
 async function renderVisitorProfilePage(nick){
-    const snap=await getUserSnapshot(nick);
+    const snap=await get(userRef(nick));
     if(!snap.exists()){toast('❌ Пользователь не найден','red');navTo('home');return;}
     const u=snap.val();
     window._visitorProfileNick=nick;
@@ -7886,7 +8009,7 @@ window.visitorProfileTransfer=async function(){
     if(!n) return;
     let publicName = n;
     try {
-        const snap = await getUserSnapshot(n);
+        const snap = await get(userRef(n));
         const u = snap.val() || {};
         publicName = displayNick(u) || n;
     } catch(e) {}
@@ -8017,7 +8140,7 @@ window.claimDailyTask = async function(taskId, reward, options={}){
     const claimedKey = `dailyClaimed_${today}`;
     const tasks = [...(getDailyTasksForToday()||[])];
     try{
-        const snap = await getUserSnapshot(currentNick);
+        const snap = await get(userRef(currentNick));
         const u = snap.val() || {};
         const primeActive = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
         if(primeActive) tasks.push(...(getPrimeDailyTasksForToday()||[]));
@@ -8025,7 +8148,7 @@ window.claimDailyTask = async function(taskId, reward, options={}){
     const task = tasks.find(t => t.id === taskId);
     if(!task) return options.autoPrime ? false : toast('❌ Задание не найдено','red');
     if(options.autoPrime && !task.id.startsWith('prime_')) return false;
-    const claimed = (await getUserSnapshot(currentNick)).val()?.[claimedKey] || [];
+    const claimed = (await get(userRef(currentNick))).val()?.[claimedKey] || [];
     if(claimed.includes(taskId)) return false;
     const ok = await creditTaskRewardOnce(`__dailyReward_${today}_${taskId}` , Number(task.reward), 'Ежедневное задание выполнено', claimedKey, taskId);
     if(ok) renderTasks();
@@ -8043,7 +8166,7 @@ window.claimOneTimeTask = async function(taskKey, reward){
         rewardedAllLicenses: 90
     };
     if(!Object.prototype.hasOwnProperty.call(rewards, taskKey)) return toast('❌ Недействительное задание','red');
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     if(u[taskKey]) return toast('✅ Уже получено','gold');
     const ok = await creditTaskRewardOnce(taskKey, rewards[taskKey], 'Одноразовое задание выполнено');
@@ -8084,7 +8207,7 @@ window.renderTasks = async function(){
         // user read when the cache is not ready yet.
         let u = allUsersCache?.[currentNick] || null;
         if(!u){
-            const uSnap = await getUserSnapshot(currentNick);
+            const uSnap = await get(userRef(currentNick));
             u = uSnap.val() || {};
         }
         const claimed = Array.isArray(u[claimedKey]) ? u[claimedKey] : [];
@@ -8254,7 +8377,7 @@ function daysUntilNextWeek(date){
     return ((1 - day + 7) % 7) || 7;
 }
 window.updateMarketLimitInfo = async function(){
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const subscription = isSubActive ? (u.subscription || 'none') : 'none';
@@ -8323,7 +8446,7 @@ function renderMarket(listings){
     const all=Object.entries(lastMarketListings).map(([id,l])=>({...l,id}));
     const cat=qs('mktBrowseCat')?.value||'all';
     const allEl=qs('marketListings');
-    getUserSnapshot(currentNick).then(s=>{ const u=s.val()||{}; renderDebtNotice('marketDebtNotice', u); }).catch(()=>{});
+    get(userRef(currentNick)).then(s=>{ const u=s.val()||{}; renderDebtNotice('marketDebtNotice', u); }).catch(()=>{});
     if(allEl){
         let active=all.filter(l=>(l.status!=='sold' || l.category==='service') && !l.archived);
         if(cat&&cat!=='all') active=active.filter(l=>(l.category||'other')===cat);
@@ -8388,7 +8511,6 @@ function marketCard(l,isMine, isArchived=false){
     return `<div class="market-card" style="${isArchived?'opacity:0.7;':''}">${l.photo?`<img loading="lazy" decoding="async" class="market-img" src="${escHtml(l.photo)}" onerror="this.style.display='none'" onclick="openImgViewer('${jsEsc(l.photo)}')">`:''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;gap:6px;flex-wrap:wrap;"><div class="market-title">${categoryEmoji[l.category]||'📦'} ${escHtml(l.title)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;">${pinnedBadge}${statusBadge}${workBadge}${serviceBadge}${archivedBadge}</div></div>
         <div class="market-price">${priceLine(l)}</div>${l.desc?`<div class="market-desc">${escHtml(l.desc)}</div>`:''}
-        <div style="font-size:12px;color:var(--muted);margin:6px 0;">📍 ${escHtml(l.pickupAddress?.address||'Адрес не указан — продавцу нужно выбрать точку')}</div>
         <div class="market-seller" style="cursor:pointer;" onclick="openUserProfile('${escHtml(l.seller)}')">
             <div class="seller-info" style="display:flex;align-items:center;gap:6px;">
                 <div class="seller-state ${sellerOnline?'online':'offline'}" style="position:relative;">${frameHtml}</div>
@@ -8402,12 +8524,11 @@ function marketCard(l,isMine, isArchived=false){
             ${pendingSellerConfirm&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
             ${pendingBuyerConfirm&&!isArchived?`<button class="btn btn-primary btn-sm" onclick="confirmPurchase('${l.id}')">✅ ${isService?'Подтвердить заказ':'Оплатить и подтвердить'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
             ${showChat?`<button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(chatPartner)}')">💬 Написать</button>`:''}
-            ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" onclick="openMarketLocationPicker('${jsEsc(l.id)}')">📍 Изменить адрес</button><button class="btn btn-ghost btn-sm" onclick="pinListing('${l.id}')">${(()=>{const me=allUsersCache[currentNick]||{};const mePrime=me.subscription==='prime'&&me.subscriptionExpiry&&new Date(me.subscriptionExpiry)>new Date();return mePrime?`🔥 ${isListingPinned(l)?'Закреплено':'ХИТ ПРОДАЖ!'} (бесплатно)`:`📌 ${isListingPinned(l)?'Закреплено':'Лидер продаж!'} (${ECONOMY_MARKET_PIN_PRICE}₽)`;})()}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
+            ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" onclick="pinListing('${l.id}')">${(()=>{const me=allUsersCache[currentNick]||{};const mePrime=me.subscription==='prime'&&me.subscriptionExpiry&&new Date(me.subscriptionExpiry)>new Date();return mePrime?`🔥 ${isListingPinned(l)?'Закреплено':'ХИТ ПРОДАЖ!'} (бесплатно)`:`📌 ${isListingPinned(l)?'Закреплено':'Лидер продаж!'} (${ECONOMY_MARKET_PIN_PRICE}₽)`;})()}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
             ${isMine&&isArchived?`<button class="btn btn-primary btn-sm" onclick="restoreListing('${l.id}')">↩ Вернуть</button><button class="btn btn-red btn-sm" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
         </div></div>`;
 }
 window.publishListing=async function(){
-    try {
     if(!await requireMarketTaxiAccess()) return;
     const title=qs('mktTitle').value.trim();
     const negotiable=qs('mktNegotiable')?.checked;
@@ -8415,13 +8536,11 @@ window.publishListing=async function(){
     const price=cat==='work' ? 0 : (negotiable?0:(parseInt(qs('mktPrice').value)||0));
     const salaryHint=(qs('mktSalaryHint')?.value||'').trim();
     if(!title)return toast('⚠️ Название','gold');
-    const pickupAddress=readFormPoint('mktLat','mktLng','mktAddress');
-    if(!pickupAddress)return toast('📍 Укажите адрес товара, чтобы покупатель и курьер знали, откуда его забирать.','gold');
     if(cat!=='work' && !negotiable && price<=0)return toast('⚠️ Укажите цену или отметьте «договорная»','gold');
     if(cat==='work' && !salaryHint)return toast('⚠️ Для вакансии укажите оплату','gold');
     
     // Проверяем лимит объявлений в месяц
-    const snap=await getUserSnapshot(currentNick);
+    const snap=await get(userRef(currentNick));
     const u=snap.val()||{};
     if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: маркетплейс недоступен`,'red');
     const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
@@ -8453,16 +8572,26 @@ window.publishListing=async function(){
     
     const photo=window._mktPhotoData||qs('mktPhoto').value.trim();
     const id=genId();
-    await pushWorkerCall('/market/publish',{nick:currentNick,ph:await getPushAuthHash(),listing:{id,title,desc:qs('mktDesc').value.trim(),price,priceNegotiable:cat!=='work'&&!!negotiable,salaryHint,photo,category:cat,pickupAddress}});
-    ['mktLat','mktLng','mktAddress'].forEach(id=>{qs(id).value='';});qs('mktLocationPreview').textContent='📍 Точка не выбрана';
+    await set(listingRef(id),{id,seller:currentNick,title,desc:qs('mktDesc').value.trim(),price,priceNegotiable:cat!=='work' && !!negotiable,salaryHint,photo,category:cat,status:'active',buyer:null});
+    
+    // Обновляем счетчик объявлений
+    await update(userRef(currentNick),{
+        listingsThisWeek: actualListingsThisWeek+1,
+        lastListingWeek: currentWeek
+    });
+    
+    if(!u.rewardedListing){
+        await update(userRef(currentNick),{rewardedListing:true,taskBalance:Math.max(0,Number(u.taskBalance||0))+60});
+        await logTx(currentNick,{type:'in',who:'Задания',amt:60,desc:'Одноразовое задание: первое объявление'});
+        toast('🎁 +60 ₽ на счёт заданий за первое объявление','gold');
+    }
     qs('mktTitle').value='';qs('mktDesc').value='';qs('mktPrice').value='';if(qs('mktNegotiable'))qs('mktNegotiable').checked=false;if(qs('mktSalaryHint'))qs('mktSalaryHint').value='';
     qs('mktPhoto').value='';qs('mktPhotoPreview').style.display='none';window._mktPhotoData=null;toggleMktPriceFields();toast('✅ Опубликовано!','green');switchMarketTab(0);
-    }catch(e){toast('❌ '+(e?.message||e),'red');}
 };
 window.requestMeeting=async function(id){
     if(!await requireMarketTaxiAccess()) return;
     const snap=await get(listingRef(id));if(!snap.exists())return toast('❌ Листинг не найден','red');
-    const meSnap = await getUserSnapshot(currentNick); const me = meSnap.val()||{};
+    const meSnap = await get(userRef(currentNick)); const me = meSnap.val()||{};
     if(isMigrantUser(me)) return toast(`🚫 ${ROLE_MIGRANT}: маркетплейс недоступен`,'red');
     const l=snap.val();
     await update(listingRef(id),{status:'meeting_requested',buyer:currentNick});
@@ -8487,7 +8616,7 @@ window.confirmPurchase=async function(id){
     const isService=l.category==='service';
     const pay=l.priceNegotiable?parseInt(prompt('Сколько ₽ перевести продавцу?','0')||'0',10)||0:(l.price||0);
     if(pay<0)return toast('⚠️ Сумма','gold');
-    const[bSnap,sSnap]=await Promise.all([getUserSnapshot(l.buyer),getUserSnapshot(l.seller)]);
+    const[bSnap,sSnap]=await Promise.all([get(userRef(l.buyer)),get(userRef(l.seller))]);
     if(!bSnap.exists()||!sSnap.exists())return;
     const fee = calcCommission(pay, ECONOMY_MARKET_COMMISSION);
     const total = pay + fee;
@@ -8525,7 +8654,7 @@ window.pinListing=async function(id){
     if(l.seller!==currentNick) return toast('❌ Нет прав','red');
     if(l.archived) return toast('❌ Сначала восстановите объявление','red');
     if((l.pinnedUntil || 0) > Date.now()) return toast('⭐ Уже закреплено','gold');
-    const uSnap = await getUserSnapshot(currentNick);
+    const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
     const hasPrimePin = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const pinPrice = hasPrimePin ? 0 : ECONOMY_MARKET_PIN_PRICE;
@@ -8539,7 +8668,7 @@ window.pinListing=async function(id){
     get(marketRef()).then(s=>renderMarket(s.val()||{}));
 };
 window.promoteBusiness=async function(bizId){
-    const uSnap = await getUserSnapshot(currentNick);
+    const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
     const hasPrimeBiz = u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     if(!hasPrimeBiz) return toast('❌ Продвижение бизнеса в ТОП доступно только для Kapani Prime','red');
@@ -8620,7 +8749,7 @@ function renderLeaderboard(users){
 window.sendApp=async function(){
     const target=qs('jSel').value;
     const appText=qs('jAppText').value.trim();
-    const uSnap=await getUserSnapshot(currentNick);
+    const uSnap=await get(userRef(currentNick));
     const u=uSnap.val()||{};
     if(hasMunicipalJob(u, target)) return toast('⚠️ Вы уже работаете на этой должности','gold');
     if(!await canTakeAnotherJob(u, currentNick)) return toast(`⚠️ Лимит работ: ${getJobLimit(u)}. Увольтесь с одной работы или оформите подписку.`,'gold');
@@ -8674,7 +8803,7 @@ window.renderJobAppStatus=async function(){
     const myApp=Object.values(apps).find(a=>a.from===currentNick);
     const statusEl=qs('myAppStatus');
     const jobsListEl=qs('myJobsList');
-    const uSnap=await getUserSnapshot(currentNick);
+    const uSnap=await get(userRef(currentNick));
     const u=uSnap.val()||{};
     if(jobsListEl){
         const emps=collectEmploymentsFromData(u, currentNick);
@@ -8732,7 +8861,7 @@ function renderJanitorTaskCard(u){
     const btn=qs('janitorDoneBtn');if(btn)btn.disabled=(status==='pending'||status==='approved');
 }
 async function renderJanitorPage(){
-    const uSnap=await getUserSnapshot(currentNick);if(!uSnap.exists())return;
+    const uSnap=await get(userRef(currentNick));if(!uSnap.exists())return;
     const u=uSnap.val();
     renderJanitorTaskCard(u);
     const hist=qs('janitorWorkerHistory');
@@ -8752,7 +8881,7 @@ window.handleJanitorProof=async function(e){
     e.target.value='';
 };
 window.submitJanitorDone=async function(){
-    const uSnap=await getUserSnapshot(currentNick);if(!uSnap.exists())return;
+    const uSnap=await get(userRef(currentNick));if(!uSnap.exists())return;
     const u=uSnap.val();
     if(isMigrantUser(u)) return toast(`🚫 ${ROLE_MIGRANT}: задания недоступны`,'red');
     if(!hasMunicipalJob(u,JOB_JANITOR))return toast('⚠️ Только для уборщика','gold');
@@ -8786,7 +8915,7 @@ async function renderKveSection(u){
     const el=qs('kveResultCard');
     if(!el)return;
     if(!u){
-        const snap=await getUserSnapshot(currentNick);
+        const snap=await get(userRef(currentNick));
         if(!snap.exists()){el.innerHTML='';return;}
         u=snap.val();
     }
@@ -8839,7 +8968,7 @@ window.adminSetKveScore=async function(){
     if(!target){if(statusEl)statusEl.textContent='⚠️ Выберите жителя';return;}
     const score=parseInt(scoreRaw,10);
     if(isNaN(score)||score<0||score>100){if(statusEl)statusEl.textContent='⚠️ Введите балл от 0 до 100';return;}
-    const snap=await getUserSnapshot(target);
+    const snap=await get(userRef(target));
     if(!snap.exists()){if(statusEl)statusEl.textContent='❌ Житель не найден';return;}
     const now=new Date();
     const dateStr=now.toLocaleDateString('ru');
@@ -8852,7 +8981,7 @@ window.adminSetKveScore=async function(){
     if(statusEl)statusEl.innerHTML=`<span style="color:var(--primary);">✅ Балл ${score} выставлен жителю <b>${target}</b>. Уведомление отправлено.</span>`;
     if(qs('kveScoreInput'))qs('kveScoreInput').value='';
     // Refresh user list in select
-    const allSnap=await getKapaniDirectory();
+    const allSnap=await get(ref(db,'users'));
     renderAdminUserSelect(allSnap.val()||{});
     toast(`📝 КВЭ: ${target} = ${score} балл`,'green');
 };
@@ -8895,7 +9024,7 @@ async function renderAdvertiserWorkStats(){
 }
 async function renderAdminAdvertiserStats(){
     const host=qs('adminAdvertiserStats'); if(!host) return;
-    const [snap, statsSnap] = await Promise.all([getKapaniDirectory(), get(ref(db,'advertiserStats'))]);
+    const [snap, statsSnap] = await Promise.all([get(ref(db,'users')), get(ref(db,'advertiserStats'))]);
     const users=snap.val()||{};
     const stats=statsSnap.val()||{};
     const rows=[];
@@ -8995,7 +9124,7 @@ window.payoutJanitorSubmission=async function(id){
     if(amt<=0)return toast('⚠️ Сумма','gold');
     const snap=await get(janitorSubRef(id));if(!snap.exists())return;
     const s=snap.val();
-    const uSnap=await getUserSnapshot(s.worker);if(!uSnap.exists())return;
+    const uSnap=await get(userRef(s.worker));if(!uSnap.exists())return;
     const u=uSnap.val();
     const newBal=(u.balance||0)+amt;
     const unfrozen=newBal>MIN_BALANCE_ALLOWED?{accountFrozen:false}:{};
@@ -9017,7 +9146,7 @@ window.rejectJanitorSubmission=async function(id){
     renderAdmin();
 };
 async function renderAdmin(){
-    const[uSnap,oSnap,aSnap,jSnap,rSnap]=await Promise.all([getKapaniDirectory(),get(ordersRef()),get(appsRef()),get(janitorSubsRef()),get(rentBuildingsRef())]);
+    const[uSnap,oSnap,aSnap,jSnap,rSnap]=await Promise.all([get(ref(db,'users')),get(ordersRef()),get(appsRef()),get(janitorSubsRef()),get(rentBuildingsRef())]);
     renderAdminUsers(uSnap.val()||{});renderAdminOrders(oSnap.val()||{});renderAdminApps(aSnap.val()||{});renderAdminJanitorSubmissions(jSnap.val()||{});renderAdminUserSelect(uSnap.val()||{});renderUnverifiedAccounts();
     renderAdminBizApps();
     renderAdminBizDeleteReqs();
@@ -9134,7 +9263,7 @@ window.adminForceHire = async function(){
     if(!confirm(`Назначить ${target} на должность «${job}» в обход требований КВЭ?`)) return;
     _forceHireBusy = true;
     try {
-        const snap = await getUserSnapshot(target);
+        const snap = await get(userRef(target));
         if(!snap.exists()){ if(statusEl) statusEl.textContent='❌ Житель не найден'; return; }
         const u = snap.val() || {};
         if(!await canTakeAnotherJob(u, target)){
@@ -9144,7 +9273,7 @@ window.adminForceHire = async function(){
         // KVE CHECK = BYPASS — this is the one and only path in the app that
         // skips the KVE requirement. Regular applications (sendApp/approveApp)
         // continue to enforce it as before.
-        const fresh = (await getUserSnapshot(target)).val() || u;
+        const fresh = (await get(userRef(target))).val() || u;
         const emps = collectEmploymentsFromData(fresh, target);
         const newEmp = { id: `muni_${job}`, type: 'municipal', role: job };
         const patch = { job, vehicle:'', employments:[...emps.filter(e=>e.id!==newEmp.id), newEmp], displayJob: fresh.displayJob || job };
@@ -9166,7 +9295,7 @@ window.approveApp=async function(id,ok){
     const snap=await get(appRef(id));if(!snap.exists())return;
     const a=snap.val();
     if(ok){
-        const uSnap=await getUserSnapshot(a.from);
+        const uSnap=await get(userRef(a.from));
         const u=uSnap.val()||{};
         if(!await canTakeAnotherJob(u, a.from)) {
             toast(`❌ Лимит работ (${getJobLimit(u)}) для ${a.from}`,'red');
@@ -9207,7 +9336,7 @@ window.adminMoney=async function(){
             return nextBalance;
         });
         if(!result?.committed)return toast('❌ Не удалось изменить баланс','red');
-        const committedUser=(await getUserSnapshot(target)).val()||{};
+        const committedUser=(await get(userRef(target))).val()||{};
         allUsersCache[target]=committedUser;window.allUsersCache=allUsersCache;
         if(amt>0) await logTx(target,{type:'in',who:'Мэрия',amt,desc:'Зачисление от мэрии'});
         else await logTx(target,{type:'out',who:'Мэрия',amt:Math.abs(amt),desc:'Списание мэрией'});
@@ -9230,7 +9359,7 @@ window.adminFineWorker=async function(){
     if(!target)return toast('⚠️ Выберите жителя','gold');
     if(amt<=0)return toast('⚠️ Укажите штраф','gold');
     if(!reason)return toast('⚠️ Укажите причину штрафа','gold');
-    const snap=await getUserSnapshot(target);if(!snap.exists())return toast('❌ Не найден','red');
+    const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
     
     try {
         // Вызываем Cloud Function с fallback
@@ -9243,7 +9372,7 @@ window.adminFineWorker=async function(){
         
         if (result.success) {
             // Проверяем и обновляем статус заморозки аккаунта
-            const userSnap = await getUserSnapshot(target);
+            const userSnap = await get(userRef(target));
             const user = userSnap.val();
             const newBal = result.newBalance;
             const patch = {};
@@ -9269,7 +9398,7 @@ window.adminSetMigrant = async function(on){
     const target = qs('adminTarget').value;
     if(!target) return toast('⚠️ Выберите жителя','gold');
     if(target===ADMIN) return toast('⚠️ Нельзя применить к мэру','gold');
-    const snap = await getUserSnapshot(target);
+    const snap = await get(userRef(target));
     if(!snap.exists()) return toast('❌ Не найден','red');
     const u = snap.val() || {};
     const already = !!(u.roles && u.roles.migrant === true);
@@ -9293,7 +9422,7 @@ window.adminFireWorker=async function(){
     const target=qs('adminTarget')?.value;
     if(!target)return toast('⚠️ Выберите жителя','gold');
     if(target===currentNick)return toast('⚠️ Нельзя уволить себя','gold');
-    const snap=await getUserSnapshot(target);if(!snap.exists())return toast('❌ Не найден','red');
+    const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
     const u=snap.val();
 
     // Собираем список должностей из employments + legacy job (без рекурсии через allBusinessesCache)
@@ -9524,9 +9653,8 @@ window.publishNews = async function(){
         date: new Date().toLocaleDateString('ru'),
         time: nowTime()
     };
-    const jobId=`news_${id}`;
-    await update(ref(db),{[`news/${id}`]:newsItem,[`pushOutbox/${jobId}`]:canonicalPushJob({type:'news',id,sender:currentNick})});
-    void kickPushWorker(jobId);
+    await set(newsItemRef(id), newsItem);
+    void enqueuePushJob({type:'news',id:String(id),sender:currentNick});
     // ── Notify residents about the new post (reuses existing notifRef +
     //    Web Push/service-worker plumbing — no parallel notification system) ──
     notifyAllUsersOfNews(newsItem).catch(e=>console.error('[news notify]', e));
@@ -9744,7 +9872,7 @@ window.sendNewsMsg = async function(){
 };
 window.sendNewsDiscussionMsg = async function(text, mediaData, msgType){
     if(!currentNewsId) return;
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val();
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val();
     const msg = { nick: currentNick, avatar: u?.avatar || DEFAULT_AVATAR_URL, time: nowTime(), createdAt: Date.now() };
     if(text) { msg.text = text; if(mediaData) msg.caption = text; }
     if(mediaData) msg.mediaData = mediaData;
@@ -9943,7 +10071,7 @@ let achievementsReturnPage = 'profile';
 
 async function recordGameStart(gameId){
   try{
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     const stats = u.gameStats || {};
     const played = Array.isArray(stats.playedGames) ? stats.playedGames.slice() : [];
@@ -9959,7 +10087,7 @@ async function recordGameStart(gameId){
 
 async function bumpGameCounter(counterKey, achId, threshold){
   try{
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     const stats = u.gameStats || {};
     const value = (stats[counterKey] || 0) + 1;
@@ -9972,7 +10100,7 @@ async function bumpGameCounter(counterKey, achId, threshold){
 
 async function checkBalanceAchievements(nick=currentNick){
   try{
-    const snap = await getUserSnapshot(nick);
+    const snap = await get(userRef(nick));
     const u = snap.val() || {};
     const bal = u.balance || 0;
     if(bal >= 500) unlockAchievement('rich_500');
@@ -9983,7 +10111,7 @@ async function checkBalanceAchievements(nick=currentNick){
 }
 
 async function renderAchievements(nick=currentNick){
-  const snap = await getUserSnapshot(nick);
+  const snap = await get(userRef(nick));
   const u = snap.val() || {};
   const ach = u.achievements || {};
   const html = ALL_ACHIEVEMENTS.map(a=>{
@@ -10018,7 +10146,7 @@ window.closeAchievementsPage = function(){
 };
 
 async function renderGamesLibrary(){
-  const snap = await getUserSnapshot(currentNick);
+  const snap = await get(userRef(currentNick));
   const u = snap.val()||{};
   const bal = u.balance||0;
   const owned = u.ownedGames||{};
@@ -10046,7 +10174,7 @@ async function renderGamesLibrary(){
 
 window.buyGame = async function(gameId){
   const g = GAMES_CATALOG.find(x=>x.id===gameId); if(!g) return;
-  const snap = await getUserSnapshot(currentNick);
+  const snap = await get(userRef(currentNick));
   const u = snap.val()||{};
   if((u.balance||0)<g.price) return toast(`❌ Недостаточно рублей. Нужно ${g.price}₽`,'red');
   const owned = u.ownedGames||{};
@@ -10060,7 +10188,7 @@ window.buyGame = async function(gameId){
 };
 
 async function checkGameOwned(gameId){
-  const snap = await getUserSnapshot(currentNick);
+  const snap = await get(userRef(currentNick));
   return !!((snap.val()||{}).ownedGames||{})[gameId];
 }
 
@@ -10213,7 +10341,7 @@ async function initMatch3(){
 }
 
 async function updateMatch3BalDisplay(){
-  const snap=await getUserSnapshot(currentNick);
+  const snap=await get(userRef(currentNick));
   const u=snap.val()||{};
   const el=document.getElementById('match3BalRow');
   if(el) el.textContent=`Баланс: ${(u.balance||0).toLocaleString()}₽`;
@@ -10337,7 +10465,7 @@ async function m3cascade(){
     if(m3Moves<=0){
       m3Active=false;
       // Save best score
-      getUserSnapshot(currentNick).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).match3Best||0;if(m3Score>prev)update(userRef(currentNick),{'gameStats/match3Best':m3Score});});
+      get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).match3Best||0;if(m3Score>prev)update(userRef(currentNick),{'gameStats/match3Best':m3Score});});
       if(m3Score>=1000) unlockAchievement('match3_1000');
     } else if(m3Active && !m3HasMoves()){
       toast('⚠️ Нет ходов — перемешиваем','gold');
@@ -10424,7 +10552,7 @@ function m3Click(r,c){
 }
 
 window.match3BuyHint=async function(){
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<5) return toast('❌ Нужно 5₽ для подсказки','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-5});
   await logTx(currentNick,{type:'out',who:'Три в ряд',amt:5,desc:'Подсказка'});
@@ -10442,7 +10570,7 @@ window.match3BuyHint=async function(){
 };
 
 window.match3BuyRevive=async function(){
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<10) return toast('❌ Нужно 10₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-10});
   await logTx(currentNick,{type:'out',who:'Три в ряд',amt:10,desc:'+10 ходов'});
@@ -10551,9 +10679,9 @@ window.sendOnlineDuelInvite=async function(){
   if(!opponent) return toast('❌ Введи ник соперника','red');
   if(opponent===currentNick) return toast('❌ Нельзя вызвать самого себя','red');
   if(stake<1) return toast('❌ Минимальная ставка 1₽','red');
-  const opSnap=await getUserSnapshot(opponent);
+  const opSnap=await get(userRef(opponent));
   if(!opSnap.exists()) return toast('❌ Игрок не найден','red');
-  const mySnap=await getUserSnapshot(currentNick);const u=mySnap.val()||{};
+  const mySnap=await get(userRef(currentNick));const u=mySnap.val()||{};
   if((u.balance||0)<stake) return toast(`❌ Нужно ${stake}₽`,'red');
   if(stake>=50) unlockAchievement('duel_highstake');
   // Deduct stake
@@ -10575,7 +10703,7 @@ window.sendOnlineDuelInvite=async function(){
 window.acceptOnlineDuel=async function(duelId){
   const dSnap=await get(onlineDuelRef(duelId));
   const d=dSnap.val(); if(!d||d.status!=='waiting') return toast('❌ Дуэль уже не актуальна','red');
-  const mySnap=await getUserSnapshot(currentNick);const u=mySnap.val()||{};
+  const mySnap=await get(userRef(currentNick));const u=mySnap.val()||{};
   if((u.balance||0)<d.stake) return toast(`❌ Нужно ${d.stake}₽`,'red');
   if(d.stake>=50) unlockAchievement('duel_highstake');
   await update(userRef(currentNick),{balance:(u.balance||0)-d.stake});
@@ -10591,7 +10719,7 @@ window.declineOnlineDuel=async function(duelId){
   const dSnap=await get(onlineDuelRef(duelId));
   const d=dSnap.val(); if(!d) return;
   // Refund challenger
-  const cSnap=await getUserSnapshot(d.challenger);const cu=cSnap.val()||{};
+  const cSnap=await get(userRef(d.challenger));const cu=cSnap.val()||{};
   await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
   await logTx(d.challenger,{type:'in',who:'Дуэли',amt:d.stake,desc:`Вызов отклонён ${currentNick}`});
   await update(onlineDuelRef(duelId),{status:'declined'});
@@ -10676,16 +10804,16 @@ window.makeOnlineKNBMove=async function(duelId,role,choice){
     // Pay winner (do it once by challenger role to avoid double payout)
     if(role==='challenger'){
       if(winner==='draw'){
-        const cSnap=await getUserSnapshot(d.challenger);const cu=cSnap.val()||{};
+        const cSnap=await get(userRef(d.challenger));const cu=cSnap.val()||{};
         await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
-        const oSnap=await getUserSnapshot(d.opponent);const ou=oSnap.val()||{};
+        const oSnap=await get(userRef(d.opponent));const ou=oSnap.val()||{};
         await update(userRef(d.opponent),{balance:(ou.balance||0)+d.stake});
       } else {
-        const wSnap=await getUserSnapshot(winner);const wu=wSnap.val()||{};
+        const wSnap=await get(userRef(winner));const wu=wSnap.val()||{};
         await update(userRef(winner),{balance:(wu.balance||0)+d.stake*2});
         await logTx(winner,{type:'in',who:'Дуэли',amt:d.stake*2,desc:`Победа в онлайн-дуэли КНБ`});
         unlockAchievement('duel_win');
-        getUserSnapshot(winner).then(snap2=>{const u2=snap2.val()||{};const w=(u2.gameStats?.duelWins||0)+1;update(userRef(winner),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
+        get(userRef(winner)).then(snap2=>{const u2=snap2.val()||{};const w=(u2.gameStats?.duelWins||0)+1;update(userRef(winner),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
       }
     }
   }
@@ -10723,16 +10851,16 @@ window.makeOnlineTTTMove=async function(duelId,d,role,idx,board){
   if(checkTTTWin(newBoard)){
     const winner=role==='challenger'?d.challenger:d.opponent;
     await update(onlineDuelRef(duelId),{board:newBoard,status:'finished',winner});
-    const wSnap=await getUserSnapshot(winner);const wu=wSnap.val()||{};
+    const wSnap=await get(userRef(winner));const wu=wSnap.val()||{};
     await update(userRef(winner),{balance:(wu.balance||0)+d.stake*2});
     await logTx(winner,{type:'in',who:'Дуэли',amt:d.stake*2,desc:`Победа в онлайн-дуэли`});
     unlockAchievement('duel_win');
-    getUserSnapshot(winner).then(snap2=>{const u2=snap2.val()||{};const w=(u2.gameStats?.duelWins||0)+1;update(userRef(winner),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
+    get(userRef(winner)).then(snap2=>{const u2=snap2.val()||{};const w=(u2.gameStats?.duelWins||0)+1;update(userRef(winner),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
   } else if(newBoard.every(x=>x)){
     await update(onlineDuelRef(duelId),{board:newBoard,status:'finished',winner:'draw'});
-    const cSnap=await getUserSnapshot(d.challenger);const cu=cSnap.val()||{};
+    const cSnap=await get(userRef(d.challenger));const cu=cSnap.val()||{};
     await update(userRef(d.challenger),{balance:(cu.balance||0)+d.stake});
-    const oSnap=await getUserSnapshot(d.opponent);const ou=oSnap.val()||{};
+    const oSnap=await get(userRef(d.opponent));const ou=oSnap.val()||{};
     await update(userRef(d.opponent),{balance:(ou.balance||0)+d.stake});
   } else {
     await update(onlineDuelRef(duelId),{board:newBoard,turn:nextTurn});
@@ -10749,7 +10877,7 @@ window.startDuel=async function(){
   const stake=parseInt(document.getElementById('duelStake')?.value||10);
   if(stake>=50) unlockAchievement('duel_highstake');
   if(stake<1) return toast('❌ Минимальная ставка 1₽','red');
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<stake*2) return toast(`❌ Нужно ${stake*2}₽ (ставка × 2)`,'red');
   await update(userRef(currentNick),{balance:(u.balance||0)-stake*2});
   await logTx(currentNick,{type:'out',who:'Дуэли',amt:stake*2,desc:`Ставка на дуэль`});
@@ -10791,7 +10919,7 @@ window.knbChoose=function(player,choice){
     const res=document.getElementById('knbResult');
     let winner=0;
     if(KNB_BEATS[knbP1]===knbP2)winner=1;else if(KNB_BEATS[knbP2]===knbP1)winner=2;
-    const snap2=await getUserSnapshot(currentNick);const u2=snap2.val()||{};
+    const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
     if(winner===0){
       if(res)res.innerHTML=`<div style="color:var(--gold);margin-bottom:8px;">🤝 Ничья! Деньги возвращены.</div>`;
       await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
@@ -10800,7 +10928,7 @@ window.knbChoose=function(player,choice){
       await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
       await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа КНБ`});
       unlockAchievement('duel_win');
-      getUserSnapshot(currentNick).then(snap=>{const u=snap.val()||{};const w=(u.gameStats?.duelWins||0)+1;update(userRef(currentNick),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
+      get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const w=(u.gameStats?.duelWins||0)+1;update(userRef(currentNick),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
     }
     if(res)res.innerHTML+=`<button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
   },500);
@@ -10835,17 +10963,17 @@ window.tttMove=async function(i){
   const result=document.getElementById('tttResult');
   if(win){
     if(status)status.textContent=`🏆 Игрок ${tttTurn2} победил!`;
-    const snap2=await getUserSnapshot(currentNick);const u2=snap2.val()||{};
+    const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
     await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
     await logTx(currentNick,{type:'in',who:'Дуэли',amt:duelState.stake*2,desc:`Победа крестики-нолики`});
     if(result)result.innerHTML=`<div style="color:var(--primary);margin-bottom:8px;">Игрок ${tttTurn2} победил! +${duelState.stake*2}₽</div><button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
     unlockAchievement('duel_win');
-    getUserSnapshot(currentNick).then(snap=>{const u=snap.val()||{};const w=(u.gameStats?.duelWins||0)+1;update(userRef(currentNick),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
+    get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const w=(u.gameStats?.duelWins||0)+1;update(userRef(currentNick),{'gameStats/duelWins':w});if(w>=5)unlockAchievement('duel_win5');});
     return;
   }
   if(tttBoard.every(x=>x)){
     if(status)status.textContent='🤝 Ничья!';
-    const snap2=await getUserSnapshot(currentNick);const u2=snap2.val()||{};
+    const snap2=await get(userRef(currentNick));const u2=snap2.val()||{};
     await update(userRef(currentNick),{balance:(u2.balance||0)+duelState.stake*2});
     if(result)result.innerHTML=`<div style="color:var(--gold);margin-bottom:8px;">Ничья! Деньги возвращены.</div><button class="btn btn-primary btn-sm" onclick="startDuel()">🔄 Ещё раз</button>`;
     return;
@@ -10870,7 +10998,7 @@ async function initAbandonedGame(){
   if(!owned){ area.innerHTML=gameLockedHTML('abandoned',89); return; }
   await recordGameStart('abandoned');
   // Load saved energy from Firebase (daily reset)
-  const snap=await getUserSnapshot(currentNick); const u=snap.val()||{};
+  const snap=await get(userRef(currentNick)); const u=snap.val()||{};
   const abnData=u.abandonedData||{};
   const today=abnTodayKey();
   if(abnData.energyDate===today){
@@ -10983,7 +11111,7 @@ async function abnOpen(r,c){
   abnRevealed[r][c]=true;abnEnergy--;
   await abnSaveEnergy();
   const v=abnBoard[r][c];
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   let gain=0;
   if(typeof v==='number'&&v>0){gain=v;abnScore+=v;await update(userRef(currentNick),{balance:(u.balance||0)+v});await logTx(currentNick,{type:'in',who:'Заброшка',amt:v,desc:'Найден хабар'});}
   else if(v==='big'){gain=100;abnScore+=100;await update(userRef(currentNick),{balance:(u.balance||0)+100});await logTx(currentNick,{type:'in',who:'Заброшка',amt:100,desc:'Большой куш!'});unlockAchievement('abandoned_gold');toast('💰 БОЛЬШОЙ КУШ! +100₽','gold');}
@@ -10998,7 +11126,7 @@ function endAbandonedGame(clear){
   if(clear) unlockAchievement('abandoned_clear');
   if(abnScore>=200) unlockAchievement('abandoned_rich');
   // Save best score
-  getUserSnapshot(currentNick).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).abandonedBest||0;if(abnScore>prev)update(userRef(currentNick),{'gameStats/abandonedBest':abnScore});});
+  get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).abandonedBest||0;if(abnScore>prev)update(userRef(currentNick),{'gameStats/abandonedBest':abnScore});});
   toast(`🏚️ Экспедиция окончена! Найдено: ${abnScore}₽`,'green');
   renderAbnGrid();
 }
@@ -11006,7 +11134,7 @@ function endAbandonedGame(clear){
 window.abnBuyBomb=async function(){
   if(abnBombUsed) return toast('Бомба уже использована','gold');
   if(!abnActive) return toast('Сначала начни экспедицию','red');
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<35) return toast('❌ Нужно 35₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-35});
   await logTx(currentNick,{type:'out',who:'Заброшка',amt:35,desc:'Бомба'});
@@ -11020,7 +11148,7 @@ async function abnUseBombOnCell(r,c){
   if(!abnBombMode||!abnActive) return;
   abnBombMode=false;
   // Reveal 3×3 area
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   let totalGain=0,totalLoss=0;
   for(let dr=-1;dr<=1;dr++){for(let dc=-1;dc<=1;dc++){
     const nr=r+dr,nc=c+dc;
@@ -11040,7 +11168,7 @@ async function abnUseBombOnCell(r,c){
 
 window.abnBuyFlashlight=async function(){
   if(abnFlashlightUsed) return toast('Фонарик уже использован','gold');
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<15) return toast('❌ Нужно 15₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-15});
   await logTx(currentNick,{type:'out',who:'Заброшка',amt:15,desc:'Фонарик'});
@@ -11060,7 +11188,7 @@ window.abnBuyFlashlight=async function(){
 
 window.abnBuyDetector=async function(){
   if(abnDetectorUsed) return toast('Металлоискатель уже использован','gold');
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<25) return toast('❌ Нужно 25₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-25});
   await logTx(currentNick,{type:'out',who:'Заброшка',amt:25,desc:'Металлоискатель'});
@@ -11182,7 +11310,7 @@ function towerPlace(){
     if(towerScore>=10) unlockAchievement('tower_10');
     if(towerScore>=20) unlockAchievement('tower_20');
     // Save best score
-    getUserSnapshot(currentNick).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).towerBest||0;if(towerScore>prev)update(userRef(currentNick),{'gameStats/towerBest':towerScore});});
+    get(userRef(currentNick)).then(snap=>{const u=snap.val()||{};const prev=(u.gameStats||{}).towerBest||0;if(towerScore>prev)update(userRef(currentNick),{'gameStats/towerBest':towerScore});});
     setTimeout(towerStartNew,2000);
     return;
   }
@@ -11216,7 +11344,7 @@ function towerPlace(){
 }
 
 window.towerBuyStability=async function(){
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<20) return toast('❌ Нужно 20₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-20});
   await logTx(currentNick,{type:'out',who:'Башня',amt:20,desc:'Устойчивость блока'});
@@ -11356,7 +11484,7 @@ window.wdSubmit=function(){
 };
 
 window.wdBuyHint1=async function(){
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<5) return toast('❌ Нужно 5₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-5});
   await logTx(currentNick,{type:'out',who:'Угадай слово',amt:5,desc:'Подсказка: буква'});
@@ -11370,7 +11498,7 @@ window.wdBuyHint1=async function(){
 };
 
 window.wdBuyHint2=async function(){
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   if((u.balance||0)<10) return toast('❌ Нужно 10₽','red');
   await update(userRef(currentNick),{balance:(u.balance||0)-10});
   await logTx(currentNick,{type:'out',who:'Угадай слово',amt:10,desc:'Подсказка: буква+место'});
@@ -11397,7 +11525,7 @@ async function initReactionGame(){
   const area=document.getElementById('reactionGameArea'); if(!area) return;
   if(!owned){ area.innerHTML=gameLockedHTML('reaction',29); return; }
   await recordGameStart('reaction');
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   reactionBest=(u.gameStats?.reactionBest)||null;
   renderReactionGame('idle');
 }
@@ -11444,7 +11572,7 @@ window.reactionClick=async function(){
   }
   reactionStarted=false;
   const t=Date.now()-window._reactionTs;
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   const prev=(u.gameStats?.reactionBest)||null;
   if(!prev||t<prev){
     reactionBest=t;
@@ -11567,7 +11695,7 @@ function move2048(dir){
     toast('Игра окончена! Дальше ходов нет.','red');
   }
 
-  getUserSnapshot(currentNick).then(snap=>{
+  get(userRef(currentNick)).then(snap=>{
     const u=snap.val()||{};
     const prev=(u.gameStats?.g2048Best||0);
     if(g2048Score>prev) update(userRef(currentNick),{'gameStats/g2048Best':g2048Score});
@@ -11747,7 +11875,7 @@ async function snakeGameOver(){
   snakeRunning=false;snakeGameOverFlag=true;if(snakeRAF2){cancelAnimationFrame(snakeRAF2);snakeRAF2=null;}
   const msg=document.getElementById('snakeMsg');
   if(msg)msg.innerHTML=`💀 Игра окончена! Счёт: ${snakeScore} <button class="btn btn-primary btn-sm" onclick="snakeStartNew();document.getElementById('snakeMsg').textContent='Нажми ▶ для старта'" style="margin-left:8px;">🔄 Снова</button>`;
-  const snap=await getUserSnapshot(currentNick);const u=snap.val()||{};
+  const snap=await get(userRef(currentNick));const u=snap.val()||{};
   const prev=(u.gameStats||{}).snakeBest||0;
   if(snakeScore>prev) await update(userRef(currentNick),{'gameStats/snakeBest':snakeScore});
 }
@@ -11770,45 +11898,6 @@ let _bizEditBannerData = null;
 let _bizProdPhotoData = null;
 let _rentBuildingPhotoData = null;
 
-
-function coordinate(value){
-    if(value===null||value===undefined||String(value).trim()==='') return NaN;
-    return Number(value);
-}
-function locationPoint(lat,lng,address){
-    lat=coordinate(lat);lng=coordinate(lng);
-    if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
-    return {lat,lng,address:String(address||'').trim()||`Капани, точка ${lat.toFixed(6)}, ${lng.toFixed(6)}`};
-}
-function readFormPoint(latId,lngId,addressId){return locationPoint(qs(latId)?.value,qs(lngId)?.value,qs(addressId)?.value);}
-function writeFormPoint(latId,lngId,addressId,previewId,point){
-    qs(latId).value=point.lat;qs(lngId).value=point.lng;
-    if(qs(addressId)) qs(addressId).value=point.address;
-    if(qs(previewId)) qs(previewId).textContent='📍 '+point.address;
-}
-window.detectLocation=async function(kind){
-    const ids=kind==='market'?['mktLat','mktLng','mktAddress','mktLocationPreview']:kind==='delivery'?['deliveryOrderLat','deliveryOrderLng','deliveryOrderAddr','deliveryLocationPreview']:kind==='businessEdit'?['bizEditLat','bizEditLng','bizEditAddress','bizEditLocationPreview']:['bapLat','bapLng','bapAddress','bapLocationPreview'];
-    try{
-        if(!navigator.geolocation) throw new Error('Геолокация недоступна');
-        const position=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:0}));
-        writeFormPoint(...ids,locationPoint(position.coords.latitude,position.coords.longitude,''));
-        if(kind==='delivery') updateDeliverySummary();
-        toast('✅ Местоположение определено','green');
-    }catch(e){toast('📍 Не удалось определить местоположение. Выберите точку на карте.','gold');}
-};
-let marketLocationListingId=null;
-window.openMarketLocationPicker=async function(listingId){
-    marketLocationListingId=listingId||null;
-    if(listingId){const snap=await get(listingRef(listingId)),l=snap.val();if(!l||l.seller!==currentNick)return;const point=l.pickupAddress;if(point)writeFormPoint('mktLat','mktLng','mktAddress','mktLocationPreview',point);else ['mktLat','mktLng','mktAddress'].forEach(id=>{qs(id).value='';});}
-    await ensureMapModal('marketLocationPicker','🗺 Адрес товара',coordinate(qs('mktLat')?.value),coordinate(qs('mktLng')?.value),'saveMarketLocationPicker');
-};
-window.saveMarketLocationPicker=async function(){
-    const state=qs('marketLocationPicker')?._locationState,point=locationPoint(state?.lat,state?.lng,qs('mktAddress')?.value);
-    if(!point) return;
-    if(marketLocationListingId)await pushWorkerCall('/market/address',{nick:currentNick,ph:await getPushAuthHash(),listingId:marketLocationListingId,pickupAddress:point});
-    writeFormPoint('mktLat','mktLng','mktAddress','mktLocationPreview',point);
-    qs('marketLocationPicker').style.display='none';
-};
 
 let businessLocationMap=null, businessLocationMarker=null;
 let deliveryLocationMap=null, deliveryLocationMarker=null;
@@ -11836,20 +11925,20 @@ async function ensureMapModal(id,title,initialLat,initialLng,saveFn){
     const saveBtn = modal.querySelector('[data-location-save="1"]');
     if(saveBtn && !saveBtn.dataset.bound){
         saveBtn.dataset.bound='1';
-        saveBtn.addEventListener('click', async (ev)=>{
+        saveBtn.addEventListener('click', (ev)=>{
             ev.preventDefault(); ev.stopPropagation();
-            try { const fn=window[saveFn]; if(typeof fn==='function') await fn(); else toast('❌ Функция сохранения точки не найдена','red'); }
+            try { const fn=window[saveFn]; if(typeof fn==='function') fn(); else toast('❌ Функция сохранения точки не найдена','red'); }
             catch(e){ console.error('[location picker save]',e); toast('❌ Не удалось сохранить точку: '+(e?.message||'ошибка'),'red'); }
         });
     }
-    const lat=Number.isFinite(coordinate(initialLat))?coordinate(initialLat):fallbackLat;
-    const lng=Number.isFinite(coordinate(initialLng))?coordinate(initialLng):fallbackLng;
+    const lat=Number.isFinite(Number(initialLat))?Number(initialLat):fallbackLat;
+    const lng=Number.isFinite(Number(initialLng))?Number(initialLng):fallbackLng;
     const state={lat,lng};
     modal._locationState=state;
-    const mapVar=id+'MapInstance';
-    const markerVar=id+'MarkerInstance';
+    const mapVar=id==='bizLocationPicker'?'businessLocationMap':'deliveryLocationMap';
+    const markerVar=id==='bizLocationPicker'?'businessLocationMarker':'deliveryLocationMarker';
     if(globalThis[mapVar]){try{globalThis[mapVar].remove()}catch(e){}}
-    globalThis[mapVar]=L.map(host,{center:[lat,lng],zoom:(Number.isFinite(coordinate(initialLat))&&Number.isFinite(coordinate(initialLng)))?17:14});
+    globalThis[mapVar]=L.map(host,{center:[lat,lng],zoom:(Number.isFinite(Number(initialLat))&&Number.isFinite(Number(initialLng)))?17:14});
     addSatelliteLayer(globalThis[mapVar]);
     globalThis[markerVar]=L.marker([lat,lng],{draggable:true}).addTo(globalThis[mapVar]);
     const update=()=>{
@@ -11864,14 +11953,14 @@ window.openBusinessLocationPicker=async function(mode){
     _businessLocationMode=mode||'create';
     // Business location picker always opens at the Kapani base point requested by the project.
     // Existing saved coordinates are not overwritten until the user explicitly presses Save.
-    const lat=coordinate(qs(_businessLocationMode==='edit'?'bizEditLat':'bapLat')?.value);
-    const lng=coordinate(qs(_businessLocationMode==='edit'?'bizEditLng':'bapLng')?.value);
+    const lat=BUSINESS_DEFAULT_LAT;
+    const lng=BUSINESS_DEFAULT_LNG;
     await ensureMapModal('bizLocationPicker','🗺 Точка бизнеса',lat,lng,'saveBusinessLocationPicker');
 };
 window.saveBusinessLocationPicker=async function(){
     const modal=qs('bizLocationPicker');
     if(!modal) return toast('❌ Окно выбора точки не найдено','red');
-    const marker=globalThis.bizLocationPickerMarkerInstance;
+    const marker=globalThis.businessLocationMarker;
     const state=modal._locationState || {};
     if(marker?.getLatLng){ const ll=marker.getLatLng(); state.lat=ll.lat; state.lng=ll.lng; modal._locationState=state; }
     const lat=Number(state.lat), lng=Number(state.lng);
@@ -11880,9 +11969,7 @@ window.saveBusinessLocationPicker=async function(){
     const latEl=qs(ids[0]), lngEl=qs(ids[1]), preview=qs(ids[2]);
     if(!latEl||!lngEl) return toast('❌ Поля координат бизнеса не найдены','red');
     latEl.value=String(lat); lngEl.value=String(lng);
-    const addressEl=qs(_businessLocationMode==='edit'?'bizEditAddress':'bapAddress');
-    if(addressEl&&!addressEl.value.trim()) addressEl.value=locationPoint(lat,lng,'').address;
-    if(preview) preview.textContent='📍 '+(addressEl?.value||`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+    if(preview) preview.textContent=`📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
     // In edit mode persist the point immediately to the real business record.
     // This avoids the old situation where coordinates only lived in hidden inputs
@@ -11911,8 +11998,10 @@ window.saveBusinessLocationPicker=async function(){
 window.openDeliveryLocationPicker=async function(){
     // Delivery picker opens at the same fixed Kapani point as the business picker.
     // The selected point is written only when the user confirms the picker.
-    const lat=coordinate(qs('deliveryOrderLat')?.value);
-    const lng=coordinate(qs('deliveryOrderLng')?.value);
+    const lat=BUSINESS_DEFAULT_LAT;
+    const lng=BUSINESS_DEFAULT_LNG;
+    if(qs('deliveryOrderLat')) qs('deliveryOrderLat').value=String(lat);
+    if(qs('deliveryOrderLng')) qs('deliveryOrderLng').value=String(lng);
     await ensureMapModal('deliveryLocationPicker','🗺 Точка доставки',lat,lng,'saveDeliveryLocationPicker');
 };
 window.saveDeliveryLocationPicker=function(){
@@ -11940,9 +12029,9 @@ async function initBusinessDetailLocationMap(b){
 }
 // ─── BIZ APPLY MODAL ─────────────────────────
 window.openBizApplyModal = async function(){
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
-    const appsSnap = await getBusinessApplications();
+    const appsSnap = await get(bizAppsRef());
     const apps = appsSnap.val() || {};
     const myPending = Object.values(apps).find(a => a.owner === currentNick && a.status === 'pending');
     if(myPending){ return toast('⏳ Ваша заявка уже на рассмотрении','gold'); }
@@ -11970,13 +12059,13 @@ window.submitBizApply = async function(){
     const address = (qs('bapAddress')?.value||'').trim();
     const category = (qs('bapCategory')?.value||'Услуги').trim();
     const services = (qs('bapServices')?.value||'').trim();
-    const lat = coordinate(qs('bapLat')?.value);
-    const lng = coordinate(qs('bapLng')?.value);
+    const lat = Number(qs('bapLat')?.value);
+    const lng = Number(qs('bapLng')?.value);
     if(!name) return toast('⚠️ Укажите название','gold');
     if(!desc) return toast('⚠️ Укажите описание','gold');
-    if(!locationPoint(lat,lng,address)) return toast('📍 Укажите адрес бизнеса: определите местоположение или выберите точку на карте','gold');
+    if(!Number.isFinite(lat) || !Number.isFinite(lng)) return toast('🗺 Выберите точку бизнеса на карте','gold');
     const normalizedAddress = address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-    const uSnap = await getUserSnapshot(currentNick);
+    const uSnap = await get(userRef(currentNick));
     const u = uSnap.val() || {};
     const limit = getBusinessLimitForUser(u);
     const ownedCount = getBusinessIds(u).length;
@@ -11988,11 +12077,19 @@ window.submitBizApply = async function(){
     const actualFee = hasPrimeForBiz ? 1250 : (hasUltraForBiz ? 2000 : ECONOMY_BUSINESS_CREATION_FEE);
     if((u.balance || 0) < actualFee) return toast(`❌ Для создания бизнеса нужно ${actualFee}₽ госпошлины`,'red');
     const id = genId();
-    await pushWorkerCall('/business/apply',{nick:currentNick,ph:await getPushAuthHash(),application:{id,name,desc,address:normalizedAddress,lat,lng,category,services}});
+    const updatedBizBalance = Number(u.balance || 0) - actualFee;
+    await update(userRef(currentNick), { balance: updatedBizBalance });
+    await logTx(currentNick, { type:'out', who:'Госпошлина', amt:actualFee, desc:`Госпошлина за создание бизнеса${hasPrimeForBiz ? ' (Prime -50%)' : (hasUltraForBiz ? ' (Ultra -20%)' : '')}` });
+    await pushNotification(currentNick, `🏛 Списана госпошлина ${actualFee}₽ за заявку на бизнес${hasPrimeForBiz ? ' (скидка Prime)' : (hasUltraForBiz ? ' (скидка Ultra)' : '')}`, 'money');
+    await set(bizAppRef(id), {
+        id, owner: currentNick, name, desc, address: normalizedAddress, lat, lng, category, services,
+        status: 'pending', createdAt: Date.now(), feePaid: actualFee
+    });
+    await pushNotification(ADMIN, `🏪 Новая заявка на бизнес от ${currentNick}: «${name}»`, 'system');
     closeBizApplyModal();
     toast('📋 Заявка отправлена в мэрию!', 'green');
     if(curPage==='bizOwnerPanel') renderBizOwnerPanel();
-    } catch(e){toast('❌ '+(e?.message||e),'red');} finally {
+    } finally {
         _submitBizApplyBusy = false;
     }
 };
@@ -12028,7 +12125,7 @@ window.adminDeleteBiz = async function(bizId){
     await update(bizItemRef(bizId), { status: 'deleted', deletedAt: Date.now(), deletedBy: ADMIN });
     // Remove businessId from owner
     if(b.owner){
-        const ownerSnap = await getUserSnapshot(b.owner);
+        const ownerSnap = await get(userRef(b.owner));
         const owner = ownerSnap.val() || {};
         const businessIds = getBusinessIds(owner).filter(id => id !== bizId);
         const ownerUpdate = { businessIds, businessId: businessIds[0] || null, employerBizId: null, job: 'Житель' };
@@ -12063,7 +12160,7 @@ window.adminApproveBizDelete = async function(reqId, bizId){
     const r=rSnap.val(), b=bSnap.val();
     await update(bizItemRef(bizId), { status:'deleted', deletedAt:Date.now(), deletedBy:ADMIN });
     if(b.owner){
-        const ownerSnap = await getUserSnapshot(b.owner);
+        const ownerSnap = await get(userRef(b.owner));
         const owner = ownerSnap.val() || {};
         const businessIds = getBusinessIds(owner).filter(id => id !== bizId);
         await update(userRef(b.owner), { businessIds, businessId: businessIds[0] || null, job:'Житель' });
@@ -12090,7 +12187,7 @@ let _adminBizAppsCache = null;
 async function renderAdminBizApps(forceFetch){
     const el = qs('adminBizApps'); if(!el) return;
     if(forceFetch || !_adminBizAppsCache){
-        const snap = await getBusinessApplications();
+        const snap = await get(bizAppsRef());
         _adminBizAppsCache = snap.val() || {};
     }
     const apps = Object.values(_adminBizAppsCache).filter(a => a.status === 'pending');
@@ -12112,17 +12209,16 @@ window.adminApproveBiz = async function(id){
     if(currentNick !== ADMIN) return;
     const snap = await get(bizAppRef(id)); if(!snap.exists()) return;
     const a = snap.val();
-    if(!locationPoint(a.lat,a.lng,a.address)) return toast('📍 В заявке нет адреса — попросите владельца выбрать точку','gold');
     const bizId = genId();
     await set(bizItemRef(bizId), {
         id: bizId, owner: a.owner, name: a.name, desc: a.desc,
-        location:locationPoint(a.lat,a.lng,a.address), address: a.address, ...(Number.isFinite(Number(a.lat))&&Number.isFinite(Number(a.lng))?{lat:Number(a.lat),lng:Number(a.lng)}:{}), category: a.category, services: a.services,
+        address: a.address, ...(Number.isFinite(Number(a.lat))&&Number.isFinite(Number(a.lng))?{lat:Number(a.lat),lng:Number(a.lng)}:{}), category: a.category, services: a.services,
         icon: '', banner: '', balance: 0, delivery: false,
         roles: {}, employees: {}, products: {},
         createdAt: Date.now(), bizWeeklyFeeAt: Date.now(), status: 'active'
     });
 
-    const ownerSnap = await getUserSnapshot(a.owner);
+    const ownerSnap = await get(userRef(a.owner));
     const owner = ownerSnap.val() || {};
     const businessIds = getBusinessIds(owner);
     if(!businessIds.includes(bizId)) businessIds.push(bizId);
@@ -12171,7 +12267,7 @@ async function renderBusinesses(){
         .sort((a,b)=>Number(Number(b.promotedUntil||0) > Date.now()) - Number(Number(a.promotedUntil||0) > Date.now()));
     // currentNick's own user record is kept live by attachUserListener()
     // (allUsersCache[currentNick]); reuse it instead of a fresh get() here.
-    const u = allUsersCache?.[currentNick] || (await getUserSnapshot(currentNick)).val() || {};
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val() || {};
     const myBizPanel = qs('myBizPanel');
     const ownedLimit = getBusinessLimitForUser(u);
     const ownedBizs = bizneses.filter(b => b.owner === currentNick);
@@ -12451,7 +12547,7 @@ window.applyToBiz = async function(bizId){
     const snap = await get(bizItemRef(bizId)); if(!snap.exists()) return;
     const b = snap.val();
     if(b.employees && b.employees[currentNick]) return toast('✅ Вы уже сотрудник','gold');
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val()||{};
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
     if(!await canTakeAnotherJob(u, currentNick)) return toast(`⚠️ Лимит работ: ${getJobLimit(u)}. Увольтесь с одной работы.`,'gold');
     const allAppsSnap = await get(ref(db,`bizJobApps/${bizId}`));
     const allApps = allAppsSnap.val()||{};
@@ -12468,7 +12564,7 @@ window.applyToBiz = async function(bizId){
 window.quitBiz = async function(bizId){
     if(!confirm('Уволиться из бизнеса?')) return;
     await update(bizItemRef(bizId), { [`employees/${currentNick}`]: null });
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val()||{};
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val()||{};
     const emps = collectEmploymentsFromData(u, currentNick).filter(e => e.id !== `biz_${bizId}`);
     const patch = { employments: emps };
     if(u.employerBizId === bizId) patch.employerBizId = null;
@@ -12519,7 +12615,7 @@ window.checkoutBizCart = async function(bizId){
     if(!buyerName) return toast('⚠️ Укажите имя','gold');
     if(!await requireSpendable()) return;
     const total = bizCartTotal(cart);
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val() || {};
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val() || {};
     if((u.balance||0) < total) return toast('❌ Недостаточно средств','red');
     const orderId = genId();
     const orderCode = orderId.slice(-6).toUpperCase();
@@ -12600,7 +12696,7 @@ window.buyBizProduct = window.addBizToCart;
 
 // ─── OWNER PANEL ─────────────────────────
 async function renderBizOwnerPanel(){
-    const u = allUsersCache?.[currentNick] || (await getUserSnapshot(currentNick)).val() || {};
+    const u = allUsersCache?.[currentNick] || (await get(userRef(currentNick))).val() || {};
 
     const bizIds = Array.from(new Set([
         ...(Array.isArray(u.businessIds) ? u.businessIds : []),
@@ -12839,7 +12935,7 @@ window.sendBizComplaint = async function(bizId, type){
     const u = allUsersCache?.[currentNick];
     const b = allBusinessesCache?.[bizId];
     const [uSnap, bSnap] = await Promise.all([
-        u ? Promise.resolve(null) : getUserSnapshot(currentNick),
+        u ? Promise.resolve(null) : get(userRef(currentNick)),
         b ? Promise.resolve(null) : get(bizItemRef(bizId))
     ]);
     const uu = u || uSnap.val() || {};
@@ -13000,7 +13096,7 @@ async function processBizAutoSalaries(bizId, b){
     if(!payOps.length) return false;
     await update(bizItemRef(bizId), { balance: bizBalance, ...employeePatch });
     for(const op of payOps){
-        const empSnap = await getUserSnapshot(op.nick);
+        const empSnap = await get(userRef(op.nick));
         const emp = empSnap.val() || {};
         await update(userRef(op.nick), { balance: (emp.balance||0) + op.amount });
         await logTx(op.nick, {type:'in', who:b.name, amt:op.amount, desc:`Автозарплата: ${op.roleName} (${op.amount} ₽/${op.period === 'week' ? 'неделю' : 'день'})`});
@@ -13142,7 +13238,7 @@ window.approveJobApp = async function(bizId, appId, applicant, roleId, roleName)
     const limits = getBizLimits(b);
     const empCount = Object.keys(b.employees||{}).length;
     if(empCount >= limits.employees) return toast(`❌ Лимит сотрудников (${limits.employees}). Расширьте в панели владельца.`,'red');
-    const uSnap = await getUserSnapshot(applicant); const u = uSnap.val()||{};
+    const uSnap = await get(userRef(applicant)); const u = uSnap.val()||{};
     if(!await canTakeAnotherJob(u, applicant)) return toast(`❌ ${applicant}: лимит работ (${getJobLimit(u)})`,'red');
     await update(bizItemRef(bizId), { [`employees/${applicant}`]: { roleId, roleName, joinedAt: Date.now() } });
     await update(ref(db,`bizJobApps/${bizId}/${appId}`), { status: 'approved' });
@@ -13169,7 +13265,7 @@ window.fireEmployee = async function(nick){
     if(!currentBizId) return;
     if(!confirm(`Уволить ${nick}?`)) return;
     await update(bizItemRef(currentBizId), { [`employees/${nick}`]: null });
-    const uSnap = await getUserSnapshot(nick); const u = uSnap.val()||{};
+    const uSnap = await get(userRef(nick)); const u = uSnap.val()||{};
     const emps = collectEmploymentsFromData(u, nick).filter(e => e.id !== `biz_${currentBizId}`);
     const patch = { employments: emps };
     if(u.employerBizId === currentBizId) patch.employerBizId = null;
@@ -13194,7 +13290,7 @@ window.payEmployee = async function(nick){
     const amt = parseInt(amtStr||'0',10);
     if(!amt||amt<=0) return;
     if((b.balance||0) < amt) return toast(`❌ На счету бизнеса только ${(b.balance||0).toLocaleString()} ₽`,'red');
-    const empSnap = await getUserSnapshot(nick); if(!empSnap.exists()) return;
+    const empSnap = await get(userRef(nick)); if(!empSnap.exists()) return;
     const empUser = empSnap.val();
     await update(bizItemRef(currentBizId), { balance: (b.balance||0) - amt });
     await update(userRef(nick), { balance: (empUser.balance||0) + amt });
@@ -13210,7 +13306,7 @@ window.bizDeposit = async function(){
     if(!currentBizId) return;
     const amtStr = prompt('Пополнить счёт бизнеса из своего баланса. Сумма (₽):');
     const amt = parseInt(amtStr||'0',10); if(!amt||amt<=0) return;
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val();
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val();
     if((u.balance||0)<amt) return toast('❌ Недостаточно средств','red');
     const bSnap = await get(bizItemRef(currentBizId)); const b = bSnap.val();
     await update(userRef(currentNick), { balance: (u.balance||0)-amt });
@@ -13225,7 +13321,7 @@ window.bizWithdraw = async function(){
     const amt = parseInt(amtStr||'0',10); if(!amt||amt<=0) return;
     const bSnap = await get(bizItemRef(currentBizId)); const b = bSnap.val();
     if((b.balance||0)<amt) return toast('❌ Недостаточно на счету бизнеса','red');
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val();
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val();
     await update(bizItemRef(currentBizId), { balance: (b.balance||0)-amt });
     await update(userRef(currentNick), { balance: (u.balance||0)+amt });
     await logTx(currentNick, {type:'in',who:b.name,amt,desc:`Снятие со счёта бизнеса «${b.name}»`});
@@ -13259,8 +13355,8 @@ window.saveBizEdit = async function(){
         category: (qs('bizEditCategory')?.value||'').trim(),
         delivery: !!(qs('bizDeliveryCheck')?.checked),
     };
-    const editLat = coordinate(qs('bizEditLat')?.value);
-    const editLng = coordinate(qs('bizEditLng')?.value);
+    const editLat = Number(qs('bizEditLat')?.value);
+    const editLng = Number(qs('bizEditLng')?.value);
     if(Number.isFinite(editLat) && Number.isFinite(editLng)){ patch.lat=editLat; patch.lng=editLng; }
     if(!patch.name) return toast('⚠️ Укажите название','gold');
     if(_bizEditIconData){ patch.icon = _bizEditIconData; _bizEditIconData = null; }
@@ -13436,7 +13532,7 @@ window.rentBuilding = async function(id){
     const snap = await get(rentBuildingRef(id)); if(!snap.exists()) return;
     const b = snap.val();
     if(b.renter) return toast('⚠️ Уже арендовано','gold');
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val() || {};
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val() || {};
     const isSubActive = u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date();
     const hasUltra = (u.subscription === 'ultra') && isSubActive;
     const hasPrime = (u.subscription === 'prime') && isSubActive;
@@ -13810,7 +13906,7 @@ async function populateRaceDayGroupSelect() {
 
 async function populateRaceDayUserSelect() {
   const sel = qs('raceDayUserSelect'); if (!sel) return;
-  const snap = await getKapaniDirectory();
+  const snap = await get(ref(db,'users'));
   const users = snap.val() || {};
   sel.innerHTML = '<option value="">— Выберите жителя —</option>' +
     Object.keys(users).map(nick=>`<option value="${escHtml(nick)}">${escHtml(nick)}</option>`).join('');
@@ -14015,7 +14111,7 @@ window.terminalPay = async function(){
     if(payBtn){ payBtn.disabled = true; payBtn.textContent = '⏳ Оплата…'; }
     try {
     if(!await requireSpendable()) return;
-    const uSnap = await getUserSnapshot(currentNick); const u = uSnap.val();
+    const uSnap = await get(userRef(currentNick)); const u = uSnap.val();
     if((u.balance||0) < _terminalAmt) return toast('❌ Недостаточно средств','red');
     const bSnap = await get(bizItemRef(_terminalBizId)); if(!bSnap.exists()) return;
     const b = bSnap.val();
@@ -14823,7 +14919,7 @@ renderDmMessages = window.renderDmMessages;
 
 // ─── SUBSCRIPTION FUNCTIONS ─────────────────
 window.renderSubscription = async function(){
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     const subscription = u.subscription || 'none';
     const subscriptionExpiry = u.subscriptionExpiry || '';
@@ -14903,7 +14999,7 @@ window.renderSubscription = async function(){
 };
 
 window.buySubscription = async function(type){
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     const currentBal = u.balance || 0;
     
@@ -14968,7 +15064,7 @@ window.buySubscription = async function(type){
 window.cancelSubscription = async function(){
     if(!confirm('Отменить подписку? Она останется активной до конца оплаченного периода.')) return;
     
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     const u = snap.val() || {};
     
     await update(userRef(currentNick), {
@@ -14983,15 +15079,14 @@ window.cancelSubscription = async function(){
 
 // ─── GIFT SUBSCRIPTION FUNCTIONS ────────────
 let giftSubscriptionType = '';
-let giftRequestId='', giftBusy=false;
 
 window.openGiftSubscriptionModal = async function(type){
-    giftSubscriptionType = type; giftRequestId=genId();
+    giftSubscriptionType = type;
     const price = getSubscriptionPrice(type);
     const name = CONFIG.subscriptions[type].name;
     
     // Get all users for selection
-    const usersSnap = await getKapaniDirectory();
+    const usersSnap = await get(ref(db, 'users'));
     const users = usersSnap.val() || {};
     
     // Build user options, excluding current user
@@ -15055,7 +15150,6 @@ window.closeGiftSubscriptionModal = function(){
 };
 
 window.sendGiftSubscription = async function(){
-    if(giftBusy) return;
     const recipient = qs('giftRecipient')?.value;
     if(!recipient) return toast('⚠️ Выберите получателя', 'gold');
     if(!giftSubscriptionType) return;
@@ -15065,7 +15159,6 @@ window.sendGiftSubscription = async function(){
     const name = plan?.name || CONFIG.subscriptions[giftSubscriptionType]?.name || giftSubscriptionType;
 
     if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
-    giftBusy=true;
 
     try{
         // Gift is handled by the same Cloudflare Worker that already powers
@@ -15077,7 +15170,7 @@ window.sendGiftSubscription = async function(){
             nick: String(currentNick || '').trim(),
             ph,
             recipientNick: recipient,
-            subscriptionType: giftSubscriptionType, requestId:giftRequestId
+            subscriptionType: giftSubscriptionType
         });
         if(!data.success) throw new Error(data.message || 'Подарок не выполнен');
 
@@ -15085,7 +15178,7 @@ window.sendGiftSubscription = async function(){
         closeGiftSubscriptionModal();
 
         // Server is the source of truth. Refresh local state from RTDB.
-        const fresh=await getUserSnapshot(currentNick);
+        const fresh=await get(userRef(currentNick));
         if(fresh.exists()){
             allUsersCache[currentNick]=fresh.val();
             window.allUsersCache=allUsersCache;
@@ -15104,7 +15197,7 @@ window.sendGiftSubscription = async function(){
         }else{
             toast('❌ '+(message || 'Не удалось подарить подписку'),'red');
         }
-    } finally { giftBusy=false; }
+    }
 };
 
 // ═══════════════════════════════════════════════════════
@@ -15114,7 +15207,7 @@ const deputyProposalsRef = () => ref(db, 'deputyProposals');
 const deputyProposalRef = (id) => ref(db, `deputyProposals/${id}`);
 
 window.submitDeputyProposal = async function() {
-    const snap = await getUserSnapshot(currentNick);
+    const snap = await get(userRef(currentNick));
     if (!snap.exists()) return;
     const u = snap.val();
     if (u.job !== 'Депутат' && currentNick !== ADMIN) {
@@ -15182,7 +15275,7 @@ async function purchaseMarketplaceListingForDelivery(listingId){
     if(l.status==='sold' && l.buyer===currentNick && l.deliveryPurchase===true) return true;
     if(l.status!=='active' || l.seller===currentNick || l.category==='work' || l.category==='service') return toast('❌ Объявление уже куплено или недоступно','red')&&false;
     const price=Math.max(0,Number(l.price||0));
-    const buyerSnap=await getUserSnapshot(currentNick); const sellerSnap=await getUserSnapshot(l.seller);
+    const buyerSnap=await get(userRef(currentNick)); const sellerSnap=await get(userRef(l.seller));
     if(!buyerSnap.exists()||!sellerSnap.exists()) return toast('❌ Пользователь не найден','red')&&false;
     const reserveId=genId();
     const result=await runTransaction(lRef,cur=>{
@@ -15289,12 +15382,10 @@ async function renderBusinessDeliveryMap(){
     const card=qs('deliveryBusinessMapCard'), host=qs('deliveryBusinessMap');
     if(!card||!host) return;
     const source=qs('deliveryOrderSource')?.value||'business';
-    if(!['business','marketplace'].includes(source)){ card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return; }
-    const bizId=qs('deliveryOrderBiz')?.value||'';
-    const listing=(lastMarketListings||{})[qs('deliveryOrderMarketItem')?.value||''];
-    const b=source==='business'?(allBusinessesCache||{})[bizId]:(listing?.pickupAddress?{...listing.pickupAddress,name:listing.title}:null);
-    const dLat=coordinate(qs('deliveryOrderLat')?.value), dLng=coordinate(qs('deliveryOrderLng')?.value);
-    const bLat=coordinate(b?.lat), bLng=coordinate(b?.lng);
+    if(source!=='business'){ card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return; }
+    const bizId=qs('deliveryOrderBiz')?.value||'', b=(allBusinessesCache||{})[bizId];
+    const dLat=Number(qs('deliveryOrderLat')?.value), dLng=Number(qs('deliveryOrderLng')?.value);
+    const bLat=Number(b?.lat), bLng=Number(b?.lng);
     if(!b||!Number.isFinite(bLat)||!Number.isFinite(bLng)||!Number.isFinite(dLat)||!Number.isFinite(dLng)){ card.style.display='none'; if(deliveryBusinessMapObj){try{deliveryBusinessMapObj.remove()}catch(e){} deliveryBusinessMapObj=null;} return; }
     card.style.display='block';
     await window.kapaniLoadLeaflet();
@@ -15391,7 +15482,7 @@ function haversineKm(lat1,lng1,lat2,lng2){
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-function deliveryDistancePrice(distanceKm){ return Math.max(0, Math.round(Number(distanceKm||0)*Number(CONFIG.finance.deliveryPricePerKm))); }
+function deliveryDistancePrice(distanceKm){ return Math.max(0, Math.round(Number(distanceKm||0)*200)); }
 
 window.placeDeliveryOrder = async function() {
     if (_placeDeliveryOrderBusy) return toast('⏳ Заказ уже размещается…','gold');
@@ -15402,11 +15493,11 @@ window.placeDeliveryOrder = async function() {
         if (!await requireSpendable()) return;
         const source = qs('deliveryOrderSource')?.value || 'business';
         const addr = (qs('deliveryOrderAddr')?.value || '').trim();
-        const deliveryLat = coordinate(qs('deliveryOrderLat')?.value), deliveryLng = coordinate(qs('deliveryOrderLng')?.value);
+        const deliveryLat = Number(qs('deliveryOrderLat')?.value), deliveryLng = Number(qs('deliveryOrderLng')?.value);
         const contact = (qs('deliveryOrderContact')?.value || '').trim();
         const notes = (qs('deliveryOrderNotes')?.value || '').trim();
         const sourceLabels = { business: '🏪 Бизнес', marketplace: '🛍 Маркетплейс' };
-        if(!locationPoint(deliveryLat,deliveryLng,addr)) return toast('🗺 Выберите точку доставки на карте','gold');
+        if(!Number.isFinite(deliveryLat)||!Number.isFinite(deliveryLng)) return toast('🗺 Выберите точку доставки на карте','gold');
 
         let from='', items='', summaryText='', payload={source,sourceLabel:sourceLabels[source]||source};
         if(source==='business'){
@@ -15418,34 +15509,47 @@ window.placeDeliveryOrder = async function() {
             if(!Number.isFinite(blat)||!Number.isFinite(blng)) return toast('❌ У бизнеса не задана точка на карте','red');
             const distanceKm=haversineKm(blat,blng,deliveryLat,deliveryLng), deliveryPrice=deliveryDistancePrice(distanceKm);
             from=b.name||'Бизнес'; items=p.name||'Товар'; summaryText=`🏪 ${from} → ${items}`;
-            payload={...payload,bizId,businessName:b.name||'',businessLat:blat,businessLng:blng,pickupAddress:locationPoint(blat,blng,b.address),productId,productName:p.name||'',productPrice:Number(p.price||0),itemKind:'business_product',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km'};
+            payload={...payload,bizId,businessName:b.name||'',businessLat:blat,businessLng:blng,productId,productName:p.name||'',productPrice:Number(p.price||0),itemKind:'business_product',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km'};
         } else {
             const listingId=qs('deliveryOrderMarketItem')?.value||'', l=(lastMarketListings||{})[listingId];
             if(!listingId||!l) return toast('⚠️ Выберите объявление с маркетплейса','gold');
-            const pickupAddress=locationPoint(l.pickupAddress?.lat,l.pickupAddress?.lng,l.pickupAddress?.address);
-            if(!pickupAddress) return toast('📍 У товара нет адреса. Продавцу нужно обновить объявление.','gold');
+            // Purchase the one-of-one listing before creating a delivery request.
+            const bought=await purchaseMarketplaceListingForDelivery(listingId);
+            if(!bought) return;
+            const sellerSnap=await get(userRef(l.seller)), seller=sellerSnap.val()||{};
             from=l.seller||'Продавец'; items=l.title||'Объявление'; summaryText=`🛍 ${items} → ${from}`;
-            const sellerLat=pickupAddress.lat,sellerLng=pickupAddress.lng;
+            const sellerLat=Number(l.sellerLat ?? seller.lat), sellerLng=Number(l.sellerLng ?? seller.lng);
+            if(!Number.isFinite(sellerLat)||!Number.isFinite(sellerLng)) return toast('❌ У продавца не указано местоположение — доставка невозможна','red');
             const distanceKm=haversineKm(sellerLat,sellerLng,deliveryLat,deliveryLng), deliveryPrice=deliveryDistancePrice(distanceKm);
-            payload={...payload,listingId,listingTitle:l.title||'',listingPrice:Number(l.price||0),sellerNick:l.seller||'',pickupAddress,sellerLat,sellerLng,itemKind:'marketplace_listing',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km',priceMode:'fixed_200_per_km'};
+            payload={...payload,listingId,listingTitle:l.title||'',listingPrice:Number(l.price||0),sellerNick:l.seller||'',sellerLat,sellerLng,itemKind:'marketplace_listing',distanceKm,deliveryPrice,deliveryPriceRule:'200_per_km',priceMode:'fixed_200_per_km'};
         }
 
         const id=genId();
         const order={
-            id,...payload,deliveryAddress:locationPoint(deliveryLat,deliveryLng,addr),from,items,notes,address:addr||`${deliveryLat.toFixed(6)}, ${deliveryLng.toFixed(6)}`,
+            id,...payload,from,items,notes,address:addr||`${deliveryLat.toFixed(6)}, ${deliveryLng.toFixed(6)}`,
             deliveryLat,deliveryLng,contact,client:currentNick,status:'waiting',
             priceOffer:Number(payload.deliveryPrice||0),clientConfirmed:false,workerConfirmed:false,clientReceived:false,
             escrowAmount:0,payoutDone:false,date:new Date().toLocaleDateString('ru'),time:nowTime(),createdAt:Date.now()
         };
-        if(!confirm(`Оформить доставку?\nЗабрать: ${payload.pickupAddress?.address}\nДоставить: ${order.deliveryAddress.address}\nРасстояние: ${Number(payload.distanceKm).toFixed(2)} км\nДоставка: ${payload.deliveryPrice} ₽ (резерв оплаты)${source==='marketplace'?`\nТовар: ${payload.listingPrice} ₽`:''}`)) return;
-        const creation=await pushWorkerCall('/delivery/create',{nick:currentNick,ph:await getPushAuthHash(),order});
-        if(!creation.ok) throw new Error(creation.error||'Заказ не создан');
+        await set(deliveryCustomOrderRef(id),order);
+
+        const notifyText=source==='business'
+            ? `🚚 Новый заказ доставки от ${currentNick}: бизнес «${from}», товар «${items}», ${Number(payload.deliveryPrice||0).toLocaleString()} ₽`
+            : `🚚 Новый заказ доставки от ${currentNick}: маркетплейс «${items}», цена доставки предложением`;
+        await pushNotification(ADMIN,notifyText,'delivery_orders');
+
+        const usersSnap=await get(ref(db,'users')), allUsers=usersSnap.val()||{};
+        await Promise.all(Object.entries(allUsers).filter(([,u])=>u?.job==='Доставщик').map(([nick])=>
+            pushNotification(nick,source==='business'
+                ? `📦 Новый заказ: ${from} → ${items}, доставка ${Number(payload.deliveryPrice||0).toLocaleString()} ₽`
+                : `📦 Новый заказ: маркетплейс «${items}» — предложите цену доставки`,'delivery_orders')
+        ));
 
         ['deliveryOrderNotes','deliveryOrderAddr','deliveryOrderContact'].forEach(id2=>{if(qs(id2))qs(id2).value='';});
         if(qs('deliveryOrderLat')) qs('deliveryOrderLat').value='';
         if(qs('deliveryOrderLng')) qs('deliveryOrderLng').value='';
         if(qs('deliveryLocationPreview')) qs('deliveryLocationPreview').textContent='📍 Точка не выбрана';
-        toast(`✅ Заказ на доставку размещён! Оплата доставки зарезервирована. ${summaryText}`,'green');
+        toast(`✅ Заказ на доставку размещён! ${summaryText}`,'green');
         renderMyDeliveryOrders();
     } catch(e) {
         console.error('[placeDeliveryOrder]',e);
@@ -15456,10 +15560,6 @@ window.placeDeliveryOrder = async function() {
     }
 };
 
-function deliveryAddressLines(o){
-    const link=(point,label)=>point?`<div style="font-size:12px;color:var(--muted);">${label}: ${escHtml(point.address)} <a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${Number(point.lat)}&mlon=${Number(point.lng)}#map=17/${Number(point.lat)}/${Number(point.lng)}">🗺</a></div>`:'';
-    return link(o.pickupAddress,'📦 Забрать')+link(o.deliveryAddress,'📍 Доставить')+(!o.deliveryAddress?`<div>📍 ${escHtml(o.address||'')}</div>`:'');
-}
 async function renderMyDeliveryOrders(){
     const el=qs('myDeliveryOrders'); if(!el)return;
     el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0;">Загрузка...</div>';
@@ -15474,7 +15574,7 @@ async function renderMyDeliveryOrders(){
             let actions='';
             if(o.status==='price_proposed'&&o.client===currentNick) actions=`<div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="confirmCustomDeliveryPrice('${o.id}',true)">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="confirmCustomDeliveryPrice('${o.id}',false)">❌ Отказаться</button></div>`;
             if(o.status==='delivered'&&!o.clientReceived) actions=`<button class="btn btn-primary btn-sm" onclick="confirmCustomDeliveryReceived('${o.id}')">✅ Получил</button>`;
-            return `<div class="work-order" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;"><b>${escHtml(line||o.from)}</b><span class="status-badge badge-wait">${labels[o.status]||o.status}</span></div>${deliveryAddressLines(o)}${extra}${o.worker?`<div style="font-size:12px;color:var(--primary);">🛵 ${escHtml(o.worker)}</div>`:''}${o.notes?`<div style="font-size:12px;color:var(--muted);">📝 ${escHtml(o.notes)}</div>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${actions}${['waiting','client_confirmed','price_proposed'].includes(o.status)?`<button class="btn btn-red btn-sm" onclick="cancelCustomDelivery('${o.id}')">❌ Отменить</button>`:''}</div></div>`;
+            return `<div class="work-order" style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;"><b>${escHtml(line||o.from)}</b><span class="status-badge badge-wait">${labels[o.status]||o.status}</span></div><div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div>${extra}${o.worker?`<div style="font-size:12px;color:var(--primary);">🛵 ${escHtml(o.worker)}</div>`:''}${o.notes?`<div style="font-size:12px;color:var(--muted);">📝 ${escHtml(o.notes)}</div>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${actions}${['waiting','client_confirmed','price_proposed'].includes(o.status)?`<button class="btn btn-red btn-sm" onclick="cancelCustomDelivery('${o.id}')">❌ Отменить</button>`:''}</div></div>`;
         }).join('');
     }catch(e){el.innerHTML='<div style="color:var(--muted);font-size:13px;">Ошибка загрузки</div>';}
 }
@@ -15498,9 +15598,52 @@ window.clearMyDeliveryHistory = async function(){
     }
 };
 
-window.cancelCustomDelivery=async function(id){if(confirm('Отменить доставку? Резерв оплаты будет возвращён.')) await customDeliveryAction(id,'cancel');};
+window.cancelCustomDelivery=async function(orderId){
+    if(!currentNick)return toast('❌ Сначала войдите в аккаунт','red');
+    if(!confirm('Отменить заказ?'))return;
+    try{
+        const orderRef=deliveryCustomOrderRef(orderId);
+        const snap=await get(orderRef);
+        const current=snap.val()||null;
+        if(!current)return toast('❌ Заказ не найден','red');
+        const status=String(current.status||'').trim().toLowerCase();
+        if(String(current.client||'')!==String(currentNick||''))return toast('❌ Это не ваш заказ','red');
+        if(status==='cancelled')return toast('ℹ️ Заказ уже отменён','gold');
+        if(!['waiting','price_proposed','client_confirmed'].includes(status)){
+            return toast(`❌ Нельзя отменить заказ в статусе «${status||'неизвестно'}»`,'red');
+        }
+
+        // Do not use runTransaction() on the whole order here: client-side RTDB
+        // transactions require read + write permissions at that location.
+        // The cancellation state is guarded by a fresh read immediately before
+        // a single-path update, then verified after the write.
+        await update(orderRef,{
+            status:'cancelled',
+            cancelledAt:Date.now(),
+            cancelledBy:currentNick,
+            priceOffer:null,
+            escrowAmount:0,
+            clientConfirmed:false,
+            worker:null,
+            updatedAt:Date.now()
+        });
+
+        const verify=await get(orderRef);
+        const after=verify.val()||null;
+        if(String(after?.status||'').trim().toLowerCase()!=='cancelled'){
+            return toast('❌ Не удалось отменить заказ. Сервер не подтвердил отмену.','red');
+        }
+        toast('✅ Заказ отменён','gold');
+        renderMyDeliveryOrders();
+        renderDeliveryCustomOrders();
+    }catch(e){
+        console.error('[cancelCustomDelivery]',e);
+        toast('❌ Не удалось отменить заказ: '+(e?.message||'ошибка'),'red');
+    }
+};
+
 async function renderDeliveryCustomOrders(){
-    const uSnap=await getUserSnapshot(currentNick); if(!uSnap.exists())return;
+    const uSnap=await get(userRef(currentNick)); if(!uSnap.exists())return;
     const u=uSnap.val(); if(u.job!=='Доставщик'&&currentNick!==ADMIN)return;
     const all=(await get(deliveryCustomOrdersRef())).val()||{};
     const waiting=Object.values(all).filter(o=>o.status==='waiting');
@@ -15516,27 +15659,106 @@ async function renderDeliveryCustomOrders(){
         if(!isMine&&o.status==='waiting'&&['business','marketplace'].includes(o.source)) priceControl=`<div style="margin-top:7px;"><div style="font-size:12px;color:var(--gold);font-weight:900;margin-bottom:5px;">🚚 Цена доставки: ${Number(o.deliveryPrice||deliveryDistancePrice(Number(o.distanceKm||0))||0).toLocaleString()} ₽</div><button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">🛵 Взять заказ</button></div>`;
         if(!isMine&&o.status==='waiting'&&o.source==='business') priceControl=`<button class="btn btn-primary btn-sm" onclick="takeCustomDelivery('${o.id}')">✅ Взять заказ (${Number(o.deliveryPrice||0).toLocaleString()} ₽)</button>`;
         const mineActions=isMine?`<div style="display:flex;gap:6px;flex-wrap:wrap;">${o.status==='client_confirmed'?`<button class="btn btn-primary btn-sm" onclick="startCustomDelivery('${o.id}')">🛵 Начать доставку</button>`:''}${o.status==='in_progress'?`<button class="btn btn-gold btn-sm" onclick="completeCustomDelivery('${o.id}')">✅ Доставлено</button>`:''}${o.status==='delivered'&&!o.workerConfirmed?`<button class="btn btn-gold btn-sm" onclick="confirmCustomDeliveryDone('${o.id}')">✅ Завершить</button>`:''}</div>`:'';
-        html+=`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:900;font-size:14px;">${escHtml(o.sourceLabel||'')} «${escHtml(o.from)}»</div><div style="font-size:12px;color:var(--muted);">📋 ${escHtml(o.items)}</div>${deliveryAddressLines(o)}<div style="font-size:12px;color:var(--muted);">👤 ${escHtml(o.client)}</div>${o.contact?`<div style="font-size:12px;color:var(--muted);">📞 ${escHtml(o.contact)}</div>`:''}${o.distanceKm!=null?`<div style="font-size:12px;color:var(--muted);">📏 ${Number(o.distanceKm).toFixed(2)} км</div>`:''}${o.priceOffer!=null?`<div style="font-size:12px;color:var(--gold);font-weight:900;">💰 ${Number(o.priceOffer).toLocaleString()} ₽</div>`:''}${priceControl}${mineActions}</div>`;
+        html+=`<div class="work-order" style="margin-bottom:10px;"><div style="font-weight:900;font-size:14px;">${escHtml(o.sourceLabel||'')} «${escHtml(o.from)}»</div><div style="font-size:12px;color:var(--muted);">📋 ${escHtml(o.items)}</div><div style="font-size:12px;color:var(--muted);">📍 ${escHtml(o.address)}</div><div style="font-size:12px;color:var(--muted);">👤 ${escHtml(o.client)}</div>${o.contact?`<div style="font-size:12px;color:var(--muted);">📞 ${escHtml(o.contact)}</div>`:''}${o.distanceKm!=null?`<div style="font-size:12px;color:var(--muted);">📏 ${Number(o.distanceKm).toFixed(2)} км</div>`:''}${o.priceOffer!=null?`<div style="font-size:12px;color:var(--gold);font-weight:900;">💰 ${Number(o.priceOffer).toLocaleString()} ₽</div>`:''}${priceControl}${mineActions}</div>`;
     });
     delivList.insertAdjacentHTML('beforeend',html);
 }
 
 window.proposeCustomDeliveryPrice=async function(){ return toast('ℹ️ Цена доставки фиксирована: 200 ₽/км','gold'); };
 
-async function customDeliveryAction(orderId,action){
-    try{
-        const result=await pushWorkerCall('/delivery/action',{nick:currentNick,ph:await getPushAuthHash(),orderId,action});
-        toast('✅ Статус доставки обновлён','green');renderDeliveryCustomOrders();renderMyDeliveryOrders();return result;
-    }catch(e){toast('❌ '+(e?.message||e),'red');}
-}
-window.takeCustomDelivery=id=>customDeliveryAction(id,'take');
-window.startCustomDelivery=id=>customDeliveryAction(id,'start');
-window.completeCustomDelivery=id=>customDeliveryAction(id,'complete');
-window.confirmCustomDeliveryReceived=id=>customDeliveryAction(id,'received');
-window.confirmCustomDeliveryDone=id=>customDeliveryAction(id,'done');
-window.confirmCustomDeliveryPrice=async function(id,approve){
-    if(!approve) return customDeliveryAction(id,'cancel');
-    toast('ℹ️ Для нового заказа цена уже подтверждена при оформлении. Старый заказ нужно оформить заново.','gold');
+window.takeCustomDelivery=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.status!=='waiting'||!['business','marketplace'].includes(cur.source)||cur.worker)return;
+        const amount=Number(cur.deliveryPrice||deliveryDistancePrice(Number(cur.distanceKm||0))||0);
+        if(!Number.isFinite(amount)||amount<0)return;
+        return {...cur,worker:currentNick,priceOffer:amount,status:'client_confirmed',priceMode:'fixed_200_per_km',clientConfirmed:true,clientConfirmedAt:Date.now(),driverAcceptedAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже принят другим доставщиком','red');
+    const o=res.snapshot.val(); await pushNotification(o.client,`🛵 ${currentNick} взял доставку «${o.from}» за ${Number(o.priceOffer||0).toLocaleString()} ₽`,'delivery_orders');
+    toast(`✅ Заказ взят. Цена доставки: ${Number(o.priceOffer||0).toLocaleString()} ₽`,'green'); renderDeliveryCustomOrders(); renderMyDeliveryOrders();
+};
+
+window.confirmCustomDeliveryPrice=async function(orderId,approve){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.client!==currentNick||cur.status!=='price_proposed')return;
+        if(!approve)return {...cur,status:'cancelled',cancelledAt:Date.now(),rejectedAt:Date.now(),worker:null,priceOffer:null};
+        return {...cur,status:'client_confirmed',clientConfirmed:true,clientConfirmedAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже изменён','red');
+    if(!approve){const o=res.snapshot.val();if(o.worker){} toast('❌ Доставка отклонена','gold');renderMyDeliveryOrders();renderDeliveryCustomOrders();return;}
+    // Reserve client money in the order escrow; the driver is not paid yet.
+    const price=Number(res.snapshot.val()?.priceOffer||0);
+    const pay=await runTransaction(userRef(currentNick),cur=>{
+        const bal=Number(cur?.balance||0);if(bal<price)return;return {...cur,balance:bal-price};
+    });
+    if(!pay?.committed){
+        await runTransaction(deliveryCustomOrderRef(orderId),cur=>cur?.status==='client_confirmed'&&cur.client===currentNick?{...cur,status:'price_proposed',clientConfirmed:false,clientConfirmedAt:null}:undefined);
+        return toast(`❌ Недостаточно средств для доставки: ${price.toLocaleString()} ₽`,'red');
+    }
+    await update(deliveryCustomOrderRef(orderId),{escrowAmount:price});
+    toast('✅ Цена подтверждена. Деньги зарезервированы до получения.','green');
+    const o=res.snapshot.val(); await pushNotification(o.worker,`✅ ${o.client} подтвердил доставку за ${price} ₽`,'delivery_orders');
+    renderMyDeliveryOrders();renderDeliveryCustomOrders();
+};
+
+window.startCustomDelivery=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.worker!==currentNick||cur.status!=='client_confirmed')return;
+        return {...cur,status:'in_progress',startedAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Статус заказа уже изменён','red');
+    toast('🛵 Доставка началась','green');renderDeliveryCustomOrders();renderMyDeliveryOrders();
+};
+
+window.completeCustomDelivery=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.worker!==currentNick||cur.status!=='in_progress')return;
+        return {...cur,status:'delivered',deliveredAt:Date.now()};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже завершён','red');
+    const o=res.snapshot.val();if(o?.client)await pushNotification(o.client,`✅ Доставщик отметил доставку «${o.from}» выполненной. Подтвердите получение.` ,'delivery_orders');
+    toast('✅ Доставлено. Ждём подтверждения клиента.','green');renderDeliveryCustomOrders();renderMyDeliveryOrders();
+};
+
+window.confirmCustomDeliveryReceived=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.client!==currentNick||cur.status!=='delivered'||cur.clientReceived)return;
+        return {...cur,clientReceived:true};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже подтверждён','red');
+    await finalizeCustomDeliveryPayout(orderId);
+};
+
+window.confirmCustomDeliveryDone=async function(orderId){
+    const res=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.worker!==currentNick||cur.status!=='delivered'||cur.workerConfirmed)return;
+        return {...cur,workerConfirmed:true};
+    });
+    if(!res?.committed)return toast('❌ Заказ уже подтверждён','red');
+    await finalizeCustomDeliveryPayout(orderId);
+};
+
+async function finalizeCustomDeliveryPayout(orderId){
+    const snap=await get(deliveryCustomOrderRef(orderId)),o=snap.val(); if(!o||o.payoutDone)return;
+    if(!o.clientReceived||!o.workerConfirmed)return;
+    const payout=Number(o.escrowAmount||0); if(payout<=0){
+        await update(deliveryCustomOrderRef(orderId),{status:'done',payoutDone:true,paidAt:Date.now(),escrowAmount:0});
+        return;
+    }
+    const pay=await runTransaction(deliveryCustomOrderRef(orderId),cur=>{
+        if(!cur||cur.payoutDone||!cur.clientReceived||!cur.workerConfirmed)return;
+        return {...cur,payoutDone:true,status:'done',paidAt:Date.now(),escrowAmount:0};
+    });
+    if(!pay?.committed)return;
+    const workerRes=await runTransaction(userRef(o.worker),cur=>({...cur,balance:Number(cur?.balance||0)+payout}));
+    if(workerRes?.committed){
+        await logTx(o.worker,{type:'in',who:'Доставка',amt:payout,desc:`Доставка заказа ${o.id}`});
+        await pushNotification(o.worker,`💰 +${payout} ₽ за доставку`,'money');
+        await pushNotification(o.client,`✅ Доставка завершена. Доставщику выплачено ${payout} ₽.` ,'delivery_orders');
+    } else {
+        console.error('[delivery payout] worker credit failed',o.worker,orderId);
+    }
+    renderDeliveryCustomOrders();renderMyDeliveryOrders();
 };
 
 // ══════════════════════════════════════════════════════════════════
@@ -15560,7 +15782,7 @@ function getHospitalDoctor(){ return hospitalFindByRole('Врач'); }
 function getHospitalAssistant(){ return hospitalFindByRole('Помощник врача'); }
 async function refreshHospitalUsersCache(){
     try{
-        const snap=await getKapaniDirectory();
+        const snap=await get(ref(db,'users'));
         const users=snap.val()||{};
         allUsersCache=users;window.allUsersCache=allUsersCache;
         return users;
@@ -15688,7 +15910,7 @@ window.confirmHospitalBooking = async function(){
         const svcSnap = await get(hospitalServiceRef(_hospBookingServiceId));
         const s = svcSnap.val();
         if(!s || s.active===false) { toast('❌ Услуга недоступна','red'); return; }
-        const uSnap = await getUserSnapshot(currentNick);
+        const uSnap = await get(userRef(currentNick));
         const u = uSnap.val() || {};
         const {first, last} = splitDisplayName(u, currentNick);
         const id = genId();
@@ -15767,7 +15989,7 @@ async function tryFinalizeHospitalPayment(id){
         const appt = freshSnap.val();
         if(!appt || appt.paymentStatus !== 'processing') return;
 
-        const [clientSnap, doctorSnap] = await Promise.all([getUserSnapshot(appt.clientNick), getUserSnapshot(appt.doctorNick)]);
+        const [clientSnap, doctorSnap] = await Promise.all([get(userRef(appt.clientNick)), get(userRef(appt.doctorNick))]);
         const client = clientSnap.val();
         const doctor = doctorSnap.val();
         if(!client || !doctor){ await update(hospitalAppointmentRef(id), { paymentStatus:'unpaid' }); return; }
@@ -15935,7 +16157,7 @@ window.deleteHospitalService = async function(id){
 // 🏥 HOSPITAL — Assistant hiring & salary
 // ══════════════════════════════════════════════════════════════════
 window.applyForHospitalAssistant = async function(){
-    const uSnap = await getUserSnapshot(currentNick);
+    const uSnap = await get(userRef(currentNick));
     const u = uSnap.val()||{};
     if(hasMunicipalJob(u,'Помощник врача')) { toast('⚠️ Вы уже помощник врача','gold'); return; }
     const score = (u.kveScore!==undefined && u.kveScore!==null) ? Number(u.kveScore) : null;
@@ -15972,7 +16194,7 @@ window.acceptHospitalAssistantApp = async function(id){
         const snap = await get(hospitalAssistantAppRef(id));
         const a = snap.val();
         if(!a || a.status!=='pending') { toast('⚠️ Заявка недоступна','gold'); return; }
-        const uSnap = await getUserSnapshot(a.from);
+        const uSnap = await get(userRef(a.from));
         const u = uSnap.val()||{};
         if(!await canTakeAnotherJob(u, a.from)) { toast(`❌ Лимит работ для ${a.from}`,'red'); return; }
         const emps = collectEmploymentsFromData(u, a.from);
@@ -16016,10 +16238,10 @@ window.payHospitalAssistantSalary = async function(){
     if(!confirm(`Выдать зарплату ${amount}₽ помощнику ${asst.nick}?`)) return;
     _hospSalaryBusy = true;
     try {
-        const docSnap = await getUserSnapshot(currentNick);
+        const docSnap = await get(userRef(currentNick));
         const doc = docSnap.val()||{};
         if((doc.balance||0) < amount) { toast('❌ Недостаточно средств','red'); return; }
-        const asstSnap = await getUserSnapshot(asst.nick);
+        const asstSnap = await get(userRef(asst.nick));
         const asstUser = asstSnap.val()||{};
         await update(userRef(currentNick), { balance: (doc.balance||0) - amount });
         await update(userRef(asst.nick), { balance: (asstUser.balance||0) + amount });
@@ -16593,7 +16815,7 @@ ready(function(){
   const renderProfile = window.renderProfile || (()=>{});
   const findUserByPublicName = window.findUserByPublicName || (async(name)=>{
     // Fallback: direct lookup by nick if the main app's helper isn't exposed
-    try { const s = await getUserSnapshot(name); return s.exists() ? { nick: name, ...s.val() } : null; } catch(e){ return null; }
+    try { const s = await get(userRef(name)); return s.exists() ? { nick: name, ...s.val() } : null; } catch(e){ return null; }
   });
   const logTx = window.logTx || (async()=>{});
   const txLogRef = window.txLogRef || ((nick)=>ref(db,`users/${nick}/txlog`));
@@ -16653,7 +16875,7 @@ ready(function(){
       const pSnap = await get(ref(db, `passports/${nick}`));
       if(pSnap.exists()) existing = pSnap.val();
       else {
-        const snap = await getUserSnapshot(nick);
+        const snap = await get(userRef(nick));
         if(snap.exists()) existing = snap.val().passport || {};
       }
     } catch(e){ console.warn('[passport] get failed', e); }
@@ -16733,7 +16955,7 @@ ready(function(){
     let passportData = null;
     try {
       const [snap, pSnap, lSnap] = await Promise.race([
-        Promise.all([ getUserSnapshot(nick), get(ref(db, `passports/${nick}`)), get(ref(db, `licenses/${nick}`)) ]),
+        Promise.all([ get(userRef(nick)), get(ref(db, `passports/${nick}`)), get(ref(db, `licenses/${nick}`)) ]),
         new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), 8000))
       ]);
       if(!snap || !snap.exists()){
@@ -16912,7 +17134,7 @@ ready(function(){
   async function ksbCheckAccess(){
     const myNick = window.currentNick;
     if(!myNick) { toast('❌ Не авторизован','red'); return null; }
-    const meSnap = await getUserSnapshot(myNick);
+    const meSnap = await get(userRef(myNick));
     if(!meSnap.exists()) { toast('❌ Профиль не найден','red'); return null; }
     const me = meSnap.val();
     const isKsb = hasMunicipalJob(me,'КСБ') || me.job==='КСБ';
@@ -16930,7 +17152,7 @@ ready(function(){
         if(dn === q || nick.toLowerCase() === q) return { nick, ...u };
       }
     }
-    const allSnap = await getKapaniDirectory();
+    const allSnap = await get(ref(db,'users'));
     const allU = allSnap.val() || {};
     for(const [nick, u] of Object.entries(allU)){
       const dn = ((u.displayName||'').trim() || nick).toLowerCase();
@@ -17027,7 +17249,7 @@ ready(function(){
   }
   async function refreshPolicePanelVisibility(){
     const panel = qs('policePanel'); if(!panel) return;
-    const snap = await getUserSnapshot(window.currentNick); const u = snap.val()||{};
+    const snap = await get(userRef(window.currentNick)); const u = snap.val()||{};
     const isPolice = hasMunicipalJob(u,'Полицейский') || u.job==='Полицейский';
     panel.style.display = isPolice ? 'block' : 'none';
     if(isPolice) renderMyPoliceReqs();
@@ -17054,7 +17276,7 @@ ready(function(){
     const reason = qs('polReason')?.value.trim();
     if(!target || !reason) return toast('⚠️ Заполните ник и причину','gold');
     if(type==='fine' && amount<=0) return toast('⚠️ Укажите сумму штрафа','gold');
-    const tsnap = await getUserSnapshot(target); if(!tsnap.exists()) return toast('❌ Жителя нет','red');
+    const tsnap = await get(userRef(target)); if(!tsnap.exists()) return toast('❌ Жителя нет','red');
     const id = 'pr_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
     await set(policeReqRef(id), { id, officer: window.currentNick, target, type, amount, reason, status:'pending', createdAt: Date.now() });
     await pushNotification(ADMIN, `👮 Новый запрос от полиции (${window.currentNick}) на ${target}`,'system');
@@ -17083,7 +17305,7 @@ ready(function(){
     const snap = await get(policeReqRef(id)); if(!snap.exists()) return;
     const r = snap.val();
     if(r.type === 'fine'){
-      const tsnap = await getUserSnapshot(r.target); if(!tsnap.exists()) return toast('❌ Нет жителя','red');
+      const tsnap = await get(userRef(r.target)); if(!tsnap.exists()) return toast('❌ Нет жителя','red');
       const u = tsnap.val();
       await update(userRef(r.target), { balance: (u.balance||0) - r.amount });
       await window.addMunicipalTreasury?.(r.amount, `Штраф от полиции: ${r.reason||''}`, {sourceNick:r.target,sourceType:'fine'});
@@ -17270,7 +17492,7 @@ ready(function(){
   }
   async function refreshFinePanelVisibility(){
     const panel = qs('directFinePanel'); if(!panel) return;
-    const snap = await getUserSnapshot(window.currentNick); const u = snap.val()||{};
+    const snap = await get(userRef(window.currentNick)); const u = snap.val()||{};
     const isKsb = hasMunicipalJob(u,'КСБ') || u.job==='КСБ';
     const isPolice = hasMunicipalJob(u,'Полицейский') || u.job==='Полицейский';
     panel.style.display = (isKsb || isPolice) ? 'block' : 'none';
@@ -17346,7 +17568,7 @@ ready(function(){
     }, 20000);
 
     try {
-      const meSnap = await getUserSnapshot(myNick);
+      const meSnap = await get(userRef(myNick));
       if(!meSnap.exists()) throw new Error('Профиль сотрудника не найден');
       const me = meSnap.val() || {};
       const isKsb = hasMunicipalJob(me,'КСБ') || me.job==='КСБ';
@@ -17370,7 +17592,7 @@ ready(function(){
       }
 
       if(!target){
-        const allSnap = await getKapaniDirectory();
+        const allSnap = await get(ref(db,'users'));
         const allU = allSnap.val() || {};
         // Reuse the freshly fetched directory for the rest of the session.
         allUsersCache = allU;
@@ -17385,7 +17607,7 @@ ready(function(){
       const tnick = targetNick;
       if(tnick === myNick) throw new Error('Нельзя оштрафовать самого себя');
 
-      const fineSnap = await getUserSnapshot(tnick);
+      const fineSnap = await get(userRef(tnick));
       if(!fineSnap.exists()) throw new Error('Пользователь не найден');
 
       const tUser = fineSnap.val() || {};
@@ -17411,7 +17633,7 @@ ready(function(){
       // Поэтому сначала получаем актуальный объект пользователя и используем его
       // как безопасный fallback внутри транзакции. Это устраняет ложное
       // `Пользователь не найден` при первом нажатии.
-      const freshUserSnap = await getUserSnapshot(tnick);
+      const freshUserSnap = await get(userRef(tnick));
       if(!freshUserSnap.exists()) throw new Error('Пользователь не найден');
       const freshUser = freshUserSnap.val() || {};
       const balanceRef = ref(db, `users/${tnick}/balance`);
@@ -17436,7 +17658,7 @@ ready(function(){
       // without a page reload; this cache update also keeps any already-open
       // profile/rating/business UI from showing the old balance until its next read.
       try {
-        const committedUserSnap = await getUserSnapshot(tnick);
+        const committedUserSnap = await get(userRef(tnick));
         const committedUser = committedUserSnap.exists() ? committedUserSnap.val() : null;
         if(committedUser){
           allUsersCache[tnick] = committedUser;
@@ -17619,7 +17841,7 @@ ready(function(){
       if(window._scooterLicenseBusy)return;
       window._scooterLicenseBusy=true;
       try{
-        const nick=current();const uSnap=await getUserSnapshot(nick);const u=uSnap.val()||{};
+        const nick=current();const uSnap=await get(userRef(nick));const u=uSnap.val()||{};
         const lic={...(u.licenses||{})};const app=u.scooterLicenseApplication||{};
         if(lic.scooter)return toast('✅ Права на скутер уже получены','green');
         if(app.status==='pending')return toast('⏳ Заявка уже находится на рассмотрении мэрии','gold');
@@ -17661,7 +17883,7 @@ ready(function(){
       const nick=_scooterExamState.nick,score=_scooterExamState.answers.reduce((a,b)=>a+b,0),passed=score>=4;
       try{
         if(passed){
-          const u=(await getUserSnapshot(nick)).val()||{},passport=await getPassportData(nick,u),appId=genId();
+          const u=(await get(userRef(nick))).val()||{},passport=await getPassportData(nick,u),appId=genId();
           await update(userRef(nick),{scooterExam:{status:'passed',score,total:SCOOTER_EXAM_QUESTIONS.length,finishedAt:Date.now()},scooterLicenseApplication:{id:appId,status:'pending',createdAt:Date.now(),nick,examScore:score,firstName:String(passport.firstName||u.firstName||'').trim(),lastName:String(passport.lastName||u.lastName||'').trim(),displayName:String(u.displayName||nick).trim()}});
           await pushNotification(nick,'✅ Экзамен на скутер сдан. Заявка отправлена в мэрию.','system');
           await pushNotification(ADMIN,`🛵 ${String(u.displayName||nick)} (@${nick}) сдал(а) экзамен на скутер — заявка отправлена в мэрию.`,'system');
@@ -17679,7 +17901,7 @@ ready(function(){
     async function renderRightsCard(){
       const host=qs('kapaniRightsCard'); if(!host || !current()) return;
       const nick=current();
-      const uSnap=await getUserSnapshot(nick); const u=uSnap.val()||{};
+      const uSnap=await get(userRef(nick)); const u=uSnap.val()||{};
       const ext=(await get(ref(db,`licenses/${nick}`)).catch(()=>null))?.val?.() || {};
       const lic=getMergedLicenses(u,ext);
       const app=u.scooterLicenseApplication||{};
@@ -17695,7 +17917,7 @@ ready(function(){
 
     async function renderAdminScooterApplications(){
       const host=qs('kapaniScooterApps'); if(!host || current()!==ADMIN) return;
-      const usersSnap=await getKapaniDirectory(); const users=usersSnap.val()||{};
+      const usersSnap=await get(ref(db,'users')); const users=usersSnap.val()||{};
       const rows=Object.entries(users).map(([nick,u])=>({nick,u,app:u?.scooterLicenseApplication||{}})).filter(x=>x.app.status==='pending').sort((a,b)=>(b.app.createdAt||0)-(a.app.createdAt||0));
       host.innerHTML=rows.length?rows.map(({nick,u,app})=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;">
         <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${esc(window.safeAvatar?window.safeAvatar(nick):u.avatar||'')}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(app.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(app.firstName||'—')} ${esc(app.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(app.createdAt)} · ${esc(app.status)}</div></div></div>
@@ -17710,7 +17932,7 @@ ready(function(){
       if(_scooterReviewBusy[nick]) return toast('⏳ Заявка уже обрабатывается…','gold');
       _scooterReviewBusy[nick]=true;
       try{
-        const freshSnap=await getUserSnapshot(nick);
+        const freshSnap=await get(userRef(nick));
         if(!freshSnap.exists()) return toast('❌ Пользователь не найден','red');
         const freshUser=freshSnap.val()||{};
         if((freshUser.scooterLicenseApplication||{}).status!=='pending') return toast('⚠️ Заявка уже обработана','gold');
@@ -17721,7 +17943,7 @@ ready(function(){
           if(approve) next.licenses={...(base.licenses||{}),scooter:true,scooterIssuedAt:now};
           return next;
         });
-        if(!result?.committed){ const after=(await getUserSnapshot(nick)).val()||{}; const st=after.scooterLicenseApplication?.status; return toast(st&&st!=='pending'?'⚠️ Заявка уже обработана':'❌ Не удалось обработать заявку. Попробуйте ещё раз','red'); }
+        if(!result?.committed){ const after=(await get(userRef(nick))).val()||{}; const st=after.scooterLicenseApplication?.status; return toast(st&&st!=='pending'?'⚠️ Заявка уже обработана':'❌ Не удалось обработать заявку. Попробуйте ещё раз','red'); }
         await pushNotification(nick,approve?'🛵 Права на скутер одобрены мэрией.':'❌ Мэрия отказала в выдаче прав на скутер. Деньги не возвращаются.','system');
         toast(approve?'✅ Права выданы':'❌ В выдаче прав отказано',approve?'green':'red');
         renderAdminScooterApplications(); renderRightsCard();
@@ -17772,7 +17994,7 @@ ready(function(){
       window._kEduBusy=true;
       try{
         const nick=current();
-        const uSnap=await getUserSnapshot(nick); const u=uSnap.val()||{};
+        const uSnap=await get(userRef(nick)); const u=uSnap.val()||{};
         if(u.kEducationPurchase?.status==='paid'||u.kEducationPurchase?.status==='submitted') return toast('✅ К-образование уже оплачено','gold');
         const p=await getPassportData(nick,u);
         const purchaseId=genId();
@@ -17797,7 +18019,7 @@ ready(function(){
 
     async function renderAdminKEducation(){
       const host=qs('kapaniKEducationApps'); if(!host || current()!==ADMIN) return;
-      const users=(await getKapaniDirectory()).val()||{};
+      const users=(await get(ref(db,'users'))).val()||{};
       const rows=Object.entries(users).map(([nick,u])=>({nick,u,p:u?.kEducationPurchase||{}})).filter(x=>x.p.status==='submitted'||x.p.status==='paid').sort((a,b)=>(b.p.createdAt||0)-(a.p.createdAt||0));
       host.innerHTML=rows.length?rows.map(({nick,u,p})=>`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:8px;">
         <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="openUserProfile('${jsEsc(nick)}')"><img src="${esc(window.safeAvatar?window.safeAvatar(nick):u.avatar||'')}" style="width:42px;height:42px;border-radius:12px;object-fit:cover;"><div style="flex:1"><div style="font-weight:900;">${esc(p.displayName||u.displayName||nick)}</div><div style="font-size:11px;color:var(--muted);">${esc(p.firstName||'—')} ${esc(p.lastName||'')} · @${esc(nick)}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${formatDate(p.createdAt)} · ${esc(p.status||'submitted')}</div></div></div>
@@ -17814,7 +18036,7 @@ ready(function(){
     function handValue(cards){let total=0,aces=0;for(const c of cards){if(c.rank==='A'){total+=11;aces++;}else if(['K','Q','J'].includes(c.rank))total+=10;else total+=Number(c.rank);}while(total>21&&aces>0){total-=10;aces--;}return total;}
     function renderCards(cards){return (cards||[]).map(c=>`<span style="display:inline-flex;width:48px;height:66px;align-items:center;justify-content:center;background:#fff;color:${['♥','♦'].includes(c.suit)?'#c33':'#111'};border-radius:8px;border:1px solid #ddd;font-weight:900;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.2);margin-right:5px;">${esc(c.rank)}${esc(c.suit)}</span>`).join('');}
     // Every casino sub-render (slots/roulette/coinflip/dice/blackjack) used to
-    // call getCasinoUser(), which always did its own getUserSnapshot(...) round
+    // call getCasinoUser(), which always did its own get(userRef(...)) round
     // trip to Firebase — so opening the casino page, or any single game
     // action that re-renders several panels, fired several sequential network
     // reads in a row. The user record is already kept live in
@@ -17825,7 +18047,7 @@ ready(function(){
       const nick=current();
       const cached=window.allUsersCache?.[nick];
       if(cached) return cached;
-      return (await getUserSnapshot(nick)).val()||{};
+      return (await get(userRef(nick))).val()||{};
     }
     function casinoBalance(u){return Math.max(0,Number(u?.casino?.balance||0));}
     function casinoCachedBalance(){

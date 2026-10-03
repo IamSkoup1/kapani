@@ -1,4 +1,3 @@
-// LEGACY: do not deploy for current Kapani. Canonical backend: push-worker/worker.js
 // Kapani Free Push Bridge — production push path.
 // Kapani Free Push Bridge
 // RTDB -> Cloudflare Worker -> FCM HTTP v1

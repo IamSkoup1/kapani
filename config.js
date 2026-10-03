@@ -16,10 +16,14 @@ const KAPANI_CONFIG = Object.freeze({
     pushWorkerUrl: "https://kapani-push.kapani.workers.dev",
     admin: { username: "Денис" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
-    finance: { minBalanceAllowed: -2500, pricePerKm: 250, deliveryPricePerKm: 200, maxSpeedKmh: 30 },
+    finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
     location: { kapani: { lat: 52.628825753234985, lng: 38.416863347119566 } },
     rewards: { customAvatar: 40, firstWall: 60 },
-    get subscriptions() { return globalThis.KAPANI_SUBSCRIPTIONS || {}; },
+    subscriptions: {
+        plus: { price: 299, name: "Kapani Plus" },
+        ultra: { price: 899, name: "Kapani Ultra" },
+        prime: { price: 1499, name: "Kapani Prime" }
+    },
     limits: { chatMessages: 60, dmMessages: 80, videoCircleMaxDuration: 30, debounceTimeout: 50 },
     ui: { defaultAvatarUrl: "https://cdn-icons-png.flaticon.com/512/149/149071.png" }
 });

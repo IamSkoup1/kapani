@@ -81,6 +81,69 @@ async function sendWebPush(endpoint, subscription, payload, privateKey, publicKe
     return {status:response.status,text};
 }
 
+function b64uEncode(value) {
+    return Buffer.from(value).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+function b64uDecode(value) {
+    const s = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+    return Buffer.from(s + '='.repeat((4 - s.length % 4) % 4), 'base64');
+}
+function hkdfExtract(salt, ikm) {
+    return require('crypto').createHmac('sha256', salt).update(ikm).digest();
+}
+function hkdfExpand(prk, info, length) {
+    const crypto = require('crypto');
+    const chunks=[]; let previous=Buffer.alloc(0); let counter=1;
+    while(Buffer.concat(chunks).length < length) {
+        previous=crypto.createHmac('sha256', prk).update(Buffer.concat([previous, Buffer.from(info), Buffer.from([counter])])).digest();
+        chunks.push(previous); counter++;
+    }
+    return Buffer.concat(chunks).subarray(0,length);
+}
+function rawP256ToJwk(raw) {
+    const bytes=Buffer.from(raw); if(bytes.length!==65 || bytes[0]!==4) throw new Error('Invalid P-256 public key');
+    return {kty:'EC',crv:'P-256',x:b64uEncode(bytes.subarray(1,33)),y:b64uEncode(bytes.subarray(33,65))};
+}
+function makeVapidPrivateKey(rawPrivate, publicRaw) {
+    const priv=String(rawPrivate||'').trim(); if(!priv) throw new Error('VAPID private key is missing');
+    return require('crypto').createPrivateKey({key:{...rawP256ToJwk(publicRaw),d:b64uEncode(b64uDecode(priv))},format:'jwk'});
+}
+function makeVapidJwt(endpoint, rawPrivate, publicRaw) {
+    const crypto=require('crypto'); const url=new URL(endpoint);
+    const header=b64uEncode(JSON.stringify({typ:'JWT',alg:'ES256'}));
+    const payload=b64uEncode(JSON.stringify({aud:url.origin,exp:Math.floor(Date.now()/1000)+12*60*60,sub:KAPANI_VAPID_SUBJECT}));
+    const input=`${header}.${payload}`;
+    const key=makeVapidPrivateKey(rawPrivate,publicRaw);
+    const sig=crypto.createSign('SHA256').update(input).sign({key,dsaEncoding:'ieee-p1363'});
+    return `${input}.${b64uEncode(sig)}`;
+}
+function encryptWebPushPayload(subscription, plaintext) {
+    const crypto=require('crypto');
+    const receiverPublic=b64uDecode(subscription.keys.p256dh); const auth=b64uDecode(subscription.keys.auth);
+    if(receiverPublic.length!==65 || receiverPublic[0]!==4 || auth.length<16) throw new Error('Invalid Web Push subscription keys');
+    const ecdh=crypto.createECDH('prime256v1'); ecdh.generateKeys(); const senderPublic=ecdh.getPublicKey(); const shared=ecdh.computeSecret(receiverPublic);
+    const salt=crypto.randomBytes(16);
+    const prk=hkdfExtract(auth,shared);
+    const info=Buffer.concat([Buffer.from('WebPush: info\0','ascii'),receiverPublic,senderPublic]);
+    const ikm=hkdfExpand(prk,info,32);
+    const contentPrk=hkdfExtract(salt,ikm);
+    const cek=hkdfExpand(contentPrk,Buffer.from('Content-Encoding: aes128gcm\0','ascii'),16);
+    const nonce=hkdfExpand(contentPrk,Buffer.from('Content-Encoding: nonce\0','ascii'),12);
+    const cipher=crypto.createCipheriv('aes-128-gcm',cek,nonce);
+    const message=Buffer.concat([Buffer.from(String(plaintext),'utf8'),Buffer.from([2])]);
+    const ciphertext=Buffer.concat([cipher.update(message),cipher.final(),cipher.getAuthTag()]);
+    const recordSize=4096;
+    return Buffer.concat([salt,Buffer.from([recordSize>>>24,(recordSize>>>16)&255,(recordSize>>>8)&255,recordSize&255]),Buffer.from([65]),senderPublic,ciphertext]);
+}
+async function sendWebPush(endpoint, subscription, payload, privateKey, publicKeyRaw) {
+    const body=encryptWebPushPayload(subscription,JSON.stringify(payload));
+    const jwt=makeVapidJwt(endpoint,privateKey,publicKeyRaw);
+    const response=await fetch(endpoint,{method:'POST',headers:{'TTL':'300','Content-Type':'application/octet-stream','Content-Encoding':'aes128gcm','Authorization':`vapid t=${jwt}, k=${b64uEncode(publicKeyRaw)}`},body});
+    const text=await response.text();
+    if(!response.ok){const error=new Error(`Web Push ${response.status}: ${text.slice(0,500)}`);error.statusCode=response.status;throw error;}
+    return {status:response.status,text};
+}
+
 function sanitizePushPreferences(incoming) {
     const source = incoming && typeof incoming === 'object' ? incoming : {};
     const allowedCategories = ['messages', 'money', 'taxi_orders', 'delivery_orders', 'market', 'news', 'system'];
@@ -91,9 +154,20 @@ function sanitizePushPreferences(incoming) {
     return prefs;
 }
 
-function normalizeSubscriptionType(value){ return SUBSCRIPTIONS.normalizeType(value); }
-function isActiveSubscription(user){ return SUBSCRIPTIONS.isActiveSubscription(user); }
-function subscriptionRank(user){ return SUBSCRIPTIONS.activeRank(user); }
+function normalizeSubscriptionType(value) {
+    const type = String(value || '').trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(SUBSCRIPTIONS, type) ? type : 'none';
+}
+
+function isActiveSubscription(user) {
+    const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
+    return !!expiry && !Number.isNaN(expiry.getTime()) && expiry.getTime() > Date.now() && normalizeSubscriptionType(user?.subscription) !== 'none';
+}
+
+function subscriptionRank(user) {
+    if (!isActiveSubscription(user)) return 0;
+    return Number(SUBSCRIPTIONS[normalizeSubscriptionType(user.subscription)]?.rank || 0);
+}
 
 function hashPassword(password, salt) {
     return crypto.createHash('sha256')
@@ -589,7 +663,7 @@ exports.issueKapaniSessionToken = onCall({ region: 'europe-west1' }, async (requ
  * The same token is removed from other Kapani users, preventing delivery
  * to a previous account when the same browser switches users.
  */
-const legacy_registerWebPushSubscription = onCall({ region: 'europe-west1' }, async (request) => {
+exports.registerWebPushSubscription = onCall({ region: 'europe-west1' }, async (request) => {
     const uid = String(request.auth?.uid || '').trim();
     const incoming = request.data?.subscription || {};
     if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
@@ -611,7 +685,7 @@ const legacy_registerWebPushSubscription = onCall({ region: 'europe-west1' }, as
     return { success:true, subscriptionId };
 });
 
-const legacy_updateWebPushPreferences = onCall({ region: 'europe-west1' }, async (request) => {
+exports.updateWebPushPreferences = onCall({ region: 'europe-west1' }, async (request) => {
     const uid = String(request.auth?.uid || '').trim(); const subscriptionId = String(request.data?.subscriptionId || '').trim();
     if (!uid) throw new HttpsError('unauthenticated', 'Требуется защищённая сессия');
     if (!subscriptionId) throw new HttpsError('invalid-argument', 'Не указан subscriptionId');
@@ -622,7 +696,7 @@ const legacy_updateWebPushPreferences = onCall({ region: 'europe-west1' }, async
     return {success:true,prefs,subscriptionId};
 });
 
-const legacy_unregisterWebPushSubscription = onCall({ region: 'europe-west1' }, async (request) => {
+exports.unregisterWebPushSubscription = onCall({ region: 'europe-west1' }, async (request) => {
     const uid=String(request.auth?.uid||'').trim(); const subscriptionId=String(request.data?.subscriptionId||'').trim();
     if(!uid) throw new HttpsError('unauthenticated','Требуется защищённая сессия');
     if(!subscriptionId) throw new HttpsError('invalid-argument','Не указан subscriptionId');
@@ -632,7 +706,7 @@ const legacy_unregisterWebPushSubscription = onCall({ region: 'europe-west1' }, 
     return {success:true,subscriptionId,removed:true};
 });
 
-const legacy_getPushDiagnostics = onCall({ region: 'europe-west1', secrets: [KAPANI_VAPID_PRIVATE_KEY] }, async (request) => {
+exports.getPushDiagnostics = onCall({ region: 'europe-west1', secrets: [KAPANI_VAPID_PRIVATE_KEY] }, async (request) => {
     const uid=String(request.auth?.uid||'').trim();
     if(!uid) throw new HttpsError('unauthenticated','Требуется защищённая сессия');
     const snap=await db.ref(`users/${uid}/pushSubscriptions`).get(); const subs=snap.exists()?snap.val()||{}:{};
@@ -645,7 +719,7 @@ async function shouldSuppressNotificationForOpenContext(nick,notification){
     if(String(notification?.source||'')==='dm'&&notification?.from){const snap=await db.ref(`presence/${nick}/dmOpenWith`).get();return snap.exists()&&String(snap.val()||'')===String(notification.from);}
     return false;
 }
-const legacy_deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notifications/{notificationId}',region:'europe-west1',secrets:[KAPANI_VAPID_PRIVATE_KEY]},async(event)=>{
+exports.deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notifications/{notificationId}',region:'europe-west1',secrets:[KAPANI_VAPID_PRIVATE_KEY]},async(event)=>{
     const nick=String(event.params?.nick||'');const notificationId=String(event.params?.notificationId||'');const notification=event.data?.val()||null;if(!nick||!notificationId||!notification||notification.push===false)return null;
     const body=String(notification.text||notification.body||'').trim();if(!body)return null;
     const privateKey=String(KAPANI_VAPID_PRIVATE_KEY.value()||'').trim();if(!privateKey){pushLog('error','vapid_private_key_missing',{nick,notificationId});return null;}
@@ -665,7 +739,7 @@ const legacy_deliverKapaniWebPush=onValueCreated({ref:'/users/{nick}/notificatio
  * transaction. If the gift is rejected or the transaction does not commit,
  * no balance/subscription/transaction/gift record is changed.
  */
-const legacy_giftSubscription = onCall({ region: 'europe-west1' }, async (request) => {
+exports.giftSubscription = onCall({ region: 'europe-west1' }, async (request) => {
     // Primary authorization: Firebase Auth when the auxiliary server session is
     // already available. Fallback authorization: Kapani's own password hash,
     // supplied by the already-authenticated Kapani UI. This keeps gifting usable
@@ -730,7 +804,7 @@ const legacy_giftSubscription = onCall({ region: 'europe-west1' }, async (reques
         if (!Number.isFinite(balance) || balance < price) return;
 
         const recipientRank = subscriptionRank(recipient);
-        if (recipientRank > giftRank) return;
+        if (recipientRank >= giftRank) return;
 
         const now = new Date(committedAt);
         const currentExpiry = recipient.subscriptionExpiry ? new Date(recipient.subscriptionExpiry) : null;
@@ -891,7 +965,7 @@ const legacy_giftSubscription = onCall({ region: 'europe-west1' }, async (reques
  * The sender is excluded, and Web Push is skipped for users who currently have
  * the general chat open. RTDB notification remains available to them.
  */
-const legacy_notifyOnChatMessage = onValueCreated(
+exports.notifyOnChatMessage = onValueCreated(
   {
     ref: '/chat/{messageId}',
     region: 'europe-west1'
@@ -959,7 +1033,7 @@ const legacy_notifyOnChatMessage = onValueCreated(
  * Mirror only duel events into the canonical user notification collection so
  * they use the same Web Push delivery/Web Push path without removing the legacy UI data.
  */
-const legacy_notifyOnLegacyDuelNotification = onValueCreated(
+exports.notifyOnLegacyDuelNotification = onValueCreated(
   { ref: '/notifications/{nick}/{notificationId}', region: 'europe-west1' },
   async (event) => {
     const nick = String(event.params?.nick || '');
@@ -996,7 +1070,7 @@ const legacy_notifyOnLegacyDuelNotification = onValueCreated(
  * Server-side news fan-out. This replaces the old client-side best-effort
  * fan-out, so a publisher closing their tab cannot interrupt delivery.
  */
-const legacy_notifyOnNewsCreated = onValueCreated(
+exports.notifyOnNewsCreated = onValueCreated(
   { ref: '/news/{newsId}', region: 'europe-west1' },
   async (event) => {
     const newsId = String(event.params?.newsId || '');
@@ -1040,7 +1114,7 @@ const legacy_notifyOnNewsCreated = onValueCreated(
  * node is intentionally read-only from the browser. This callable uses the
  * authenticated Firebase session, writes the inbox item atomically; the notification trigger performs the actual Web Push delivery.
  */
-const legacy_createKapaniNotification = onCall({ region: 'europe-west1' }, async (request) => {
+exports.createKapaniNotification = onCall({ region: 'europe-west1' }, async (request) => {
     const senderNick = String(request.auth?.uid || '').trim();
     const targetNick = String(request.data?.nick || '').trim();
     const text = String(request.data?.text || '').trim();
