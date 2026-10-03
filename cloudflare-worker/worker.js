@@ -1,5 +1,6 @@
-// LEGACY — НЕ ИСПОЛЬЗУЕТСЯ ДЛЯ ТЕКУЩЕГО PUSH.
-// Kapani Free Push Bridge (старый Cloudflare → FCM контур)
+// LEGACY: do not deploy for current Kapani. Canonical backend: push-worker/worker.js
+// Kapani Free Push Bridge — production push path.
+// Kapani Free Push Bridge
 // RTDB -> Cloudflare Worker -> FCM HTTP v1
 // RTDB закрыт для анонимного REST-доступа. Worker использует
 // короткоживущий Google OAuth2 access token из server-only service account

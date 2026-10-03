@@ -7,31 +7,39 @@
         ".read": "auth != null && (auth.uid == $uid || auth.token.admin == true)",
         ".write": "auth.token.admin == true",
         "balance": {
-          ".write": "false"
+          ".write": "false",
+          ".read": "auth != null"
         },
         "adminMoney": {
           ".write": "auth.token.admin == true"
         },
         "fine": {
-          ".write": "auth.token.admin == true"
+          ".write": "auth.token.admin == true",
+          ".read": "auth != null"
         },
         "accountVerified": {
-          ".write": "auth.token.admin == true"
+          ".write": "auth.token.admin == true",
+          ".read": "auth != null"
         },
         "accountFrozen": {
-          ".write": "auth.token.admin == true"
+          ".write": "auth.token.admin == true",
+          ".read": "auth != null"
         },
         "job": {
-          ".write": "auth.token.admin == true"
+          ".write": "auth.token.admin == true",
+          ".read": "auth != null"
         },
         "vehicle": {
-          ".write": "auth.uid == $uid"
+          ".write": "auth.uid == $uid",
+          ".read": "auth != null"
         },
         "avatar": {
-          ".write": "auth.uid == $uid"
+          ".write": "auth.uid == $uid",
+          ".read": "auth != null"
         },
         "avatarFrame": {
-          ".write": "auth.uid == $uid"
+          ".write": "auth.uid == $uid",
+          ".read": "auth != null"
         },
         "profileBgEffect": {
           ".write": "auth.uid == $uid"
@@ -40,16 +48,20 @@
           ".write": "auth.uid == $uid"
         },
         "profileDescription": {
-          ".write": "auth.uid == $uid"
+          ".write": "auth.uid == $uid",
+          ".read": "auth != null"
         },
         "nicknameEmoji": {
-          ".write": "auth.uid == $uid"
+          ".write": "auth.uid == $uid",
+          ".read": "auth != null"
         },
         "subscription": {
-          ".write": "auth.token.admin == true"
+          ".write": "auth.token.admin == true",
+          ".read": "auth != null"
         },
         "subscriptionExpiry": {
-          ".write": "auth.token.admin == true"
+          ".write": "auth.token.admin == true",
+          ".read": "auth != null"
         },
         "txlog": {
           ".read": "auth.uid == $uid",
@@ -60,8 +72,7 @@
           ".write": "false"
         },
         "pinnedChats": {
-          ".read": "auth.uid == $uid",
-          ".write": "auth.uid == $uid"
+          ".write": "auth != null && auth.uid == $uid"
         },
         "notificationTokens": {
           ".read": false,
@@ -77,11 +88,44 @@
         },
         "lastSeen": {
           ".write": "auth != null && auth.uid == $uid",
-          ".validate": "newData.isNumber()"
+          ".read": "auth != null"
+        },
+        "displayName": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".read": "auth != null"
+        },
+        "notificationPrefs": {
+          ".write": "auth != null && auth.uid == $uid"
+        },
+        "displayJob": {
+          ".read": "auth != null"
+        },
+        "taskBalance": {
+          ".read": "auth != null"
+        },
+        "savingsBalance": {
+          ".read": "auth != null"
+        },
+        "kveScore": {
+          ".read": "auth != null"
+        },
+        "employments": {
+          ".read": "auth != null"
+        },
+        "totalEarned": {
+          ".read": "auth != null"
+        },
+        "businessIds": {
+          ".read": "auth != null"
+        },
+        "businessId": {
+          ".read": "auth != null"
         }
       },
       ".indexOn": [
-        "displayName"
+        "displayName",
+        "invitedBy",
+        "referralCode"
       ]
     },
     "orders": {
@@ -93,19 +137,22 @@
     },
     "chat": {
       ".read": "auth != null",
-      ".write": "false",
       ".indexOn": [
         "nick",
         "createdAt"
-      ]
+      ],
+      "$id": {
+        ".write": "auth != null && ((!data.exists() && newData.child('nick').val() == auth.uid) || data.child('nick').val() == auth.uid || auth.token.admin == true)",
+        ".validate": "!newData.exists() || (newData.hasChildren(['nick','createdAt']) && newData.child('nick').isString() && newData.child('createdAt').isNumber())"
+      }
     },
     "dms": {
       "$key": {
-        ".read": "auth != null && $key.contains(auth.uid)",
-        ".write": "auth != null && $key.contains(auth.uid)",
+        ".read": "auth != null && ($key.beginsWith(auth.uid + '__dm__') || $key.endsWith('__dm__' + auth.uid))",
         "messages": {
           "$msgId": {
-            ".write": "auth != null && $key.contains(auth.uid)"
+            ".write": "auth != null && ($key.beginsWith(auth.uid + '__dm__') || $key.endsWith('__dm__' + auth.uid)) && ((!data.exists() && newData.child('nick').val() == auth.uid) || data.child('nick').val() == auth.uid)",
+            ".validate": "!newData.exists() || newData.hasChildren(['nick','createdAt'])"
           },
           ".indexOn": [
             "createdAt"
@@ -113,14 +160,14 @@
         },
         "lastRead": {
           "$uid": {
-            ".write": "auth.uid == $uid"
+            ".write": "auth != null && ($key.beginsWith(auth.uid + '__dm__') || $key.endsWith('__dm__' + auth.uid)) && auth.uid == $uid"
           }
         }
       }
     },
     "market": {
       ".read": "auth != null",
-      ".write": "auth != null",
+      ".write": false,
       "$listingId": {
         "status": {
           ".write": "auth.uid == data.child('seller').val() || auth.token.admin == true"
@@ -160,77 +207,155 @@
       ".write": "false"
     },
     "marketplace": {
-      ".read": "auth != null",
       ".indexOn": [
-        "seller",
-        "status",
-        "createdAt"
+        "seller"
       ],
-      "$listingId": {
-        ".validate": "!data.exists() ? (newData.hasChildren(['seller','title','pickupAddress']) && newData.child('pickupAddress/lat').isNumber() && newData.child('pickupAddress/lng').isNumber() && newData.child('pickupAddress/text').isString() && newData.child('pickupAddress/text').val().length > 0) : true",
-        ".write": "auth != null && (!data.exists() ? newData.child('seller').val() == auth.uid : (data.child('seller').val() == auth.uid || auth.token.admin == true))",
-        "status": {
-          ".write": "auth != null && (data.parent().child('seller').val() == auth.uid || data.parent().child('buyer').val() == auth.uid || auth.token.admin == true)"
-        },
-        "buyer": {
-          ".write": "auth != null && (data.parent().child('seller').val() == auth.uid || data.parent().child('buyer').val() == auth.uid || auth.token.admin == true)"
-        },
+      ".read": "auth != null",
+      ".write": false,
+      "$id": {
+        ".write": "auth != null && (data.child('seller').val() == auth.uid || auth.token.admin == true)",
+        ".validate": "!newData.exists() || (data.exists() && newData.child('seller').val() == data.child('seller').val() && newData.child('pickupAddress').hasChildren(['lat','lng','address']))",
         "pickupAddress": {
-          ".write": "auth != null && (data.parent().child('seller').val() == auth.uid || auth.token.admin == true)",
-          ".validate": "newData.hasChildren(['lat','lng','text']) && newData.child('lat').isNumber() && newData.child('lng').isNumber() && newData.child('text').isString() && newData.child('text').val().length > 0"
+          ".validate": "newData.hasChildren(['lat','lng','address']) && newData.child('lat').isNumber() && newData.child('lat').val() >= -90 && newData.child('lat').val() <= 90 && newData.child('lng').isNumber() && newData.child('lng').val() >= -180 && newData.child('lng').val() <= 180 && newData.child('address').isString() && newData.child('address').val().length > 0"
         }
       }
     },
-    "businessApps": {
+    "pushOutbox": {
+      ".read": false,
+      ".indexOn": [
+        "nextAttemptAt",
+        "queuedAt"
+      ],
+      "$id": {
+        ".write": "auth != null && !data.exists() && newData.child('sender').val() == auth.uid",
+        ".validate": "newData.hasChildren(['type','id','sender','state','attempts','queuedAt','nextAttemptAt']) && newData.child('state').val() == 'pending' && newData.child('attempts').val() == 0 && newData.child('queuedAt').isNumber() && newData.child('queuedAt').val() <= now + 60000 && newData.child('queuedAt').val() >= now - 300000 && newData.child('nextAttemptAt').val() == newData.child('queuedAt').val() && (($id == 'chat_' + newData.child('id').val() && newData.child('type').val() == 'chat' && newData.parent().parent().child('chat').child(newData.child('id').val()).child('nick').val() == auth.uid) || ($id == 'news_' + newData.child('id').val() && newData.child('type').val() == 'news' && newData.parent().parent().child('news').child(newData.child('id').val()).child('author').val() == auth.uid) || ($id == 'dm_' + newData.child('id').val() && newData.child('type').val() == 'dm' && newData.parent().parent().child('dms').child(newData.child('dmKey').val()).child('messages').child(newData.child('id').val()).child('nick').val() == auth.uid && (newData.child('dmKey').val() == auth.uid + '__dm__' + newData.child('to').val() || newData.child('dmKey').val() == newData.child('to').val() + '__dm__' + auth.uid)))"
+      }
+    },
+    "notificationTombstones": {
+      ".read": false,
+      ".write": false
+    },
+    "pushDevices": {
+      ".read": false,
+      ".write": false
+    },
+    "pushDone": {
+      ".read": false,
+      ".write": false
+    },
+    "subscriptionGifts": {
+      ".read": false,
+      ".write": false
+    },
+    "municipalTreasury": {
+      ".read": "auth != null && auth.token.admin == true",
+      ".write": false
+    },
+    "presence": {
       ".read": "auth != null",
-      "$appId": {
-        ".write": "auth != null && (!data.exists() ? newData.child('owner').val() == auth.uid : (data.child('owner').val() == auth.uid || auth.token.admin == true))",
-        ".validate": "!data.exists() ? (newData.child('owner').isString() && newData.child('address').isString() && newData.child('address').val().length > 0 && newData.child('lat').isNumber() && newData.child('lng').isNumber() && newData.child('location/lat').isNumber() && newData.child('location/lng').isNumber() && newData.child('location/text').isString() && newData.child('location/text').val().length > 0) : true"
+      "$nick": {
+        ".write": "auth != null && auth.uid == $nick"
+      }
+    },
+    "news": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (auth.token.admin == true || (!data.exists() && newData.child('author').val() == auth.uid && root.child('users').child(auth.uid).child('job').val() == 'Журналист') || data.child('author').val() == auth.uid)",
+        ".validate": "!newData.exists() || newData.hasChildren(['author','title','createdAt'])"
+      },
+      ".indexOn": [
+        "createdAt"
+      ]
+    },
+    "businessApps": {
+      ".read": "auth != null && auth.token.admin == true",
+      ".write": false,
+      "$id": {
+        ".read": "auth != null && data.child('owner').val() == auth.uid",
+        ".write": "auth != null && auth.token.admin == true"
       }
     },
     "businesses": {
       ".read": "auth != null",
-      "$bizId": {
-        ".write": "auth != null && (data.child('owner').val() == auth.uid || (!data.exists() && newData.child('owner').val() == auth.uid) || auth.token.admin == true)",
-        ".validate": "!data.exists() ? (newData.child('owner').isString() && newData.child('address').isString() && newData.child('address').val().length > 0 && newData.child('lat').isNumber() && newData.child('lng').isNumber() && newData.child('location/lat').isNumber() && newData.child('location/lng').isNumber() && newData.child('location/text').isString() && newData.child('location/text').val().length > 0) : true"
-      }
-    },
-    "pushOutbox": {
-      ".read": "false",
-      ".write": "false",
-      ".indexOn": [
-        "status"
-      ]
-    },
-    "notificationTombstones": {
-      ".read": "false",
-      ".write": "false"
-    },
-    "dmIndex": {
-      "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
-        "$peer": {
-          "unread": {
-            ".write": "auth != null && auth.uid == $uid",
-            ".validate": "newData.isBoolean()"
-          },
-          "lastReadAt": {
-            ".write": "auth != null && auth.uid == $uid",
-            ".validate": "newData.isNumber()"
-          }
+      "$id": {
+        ".write": "auth != null && auth.token.admin == true",
+        ".validate": "!newData.exists() || (newData.hasChildren(['owner','lat','lng','address']) && newData.child('lat').isNumber() && newData.child('lat').val() >= -90 && newData.child('lat').val() <= 90 && newData.child('lng').isNumber() && newData.child('lng').val() >= -180 && newData.child('lng').val() <= 180 && newData.child('address').isString() && newData.child('address').val().length > 0)",
+        "name": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "desc": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "address": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "lat": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "lng": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "location": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "icon": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "banner": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "delivery": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "products": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "roles": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "employees": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "services": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
+        },
+        "category": {
+          ".write": "auth != null && data.parent().child('owner').val() == auth.uid"
         }
       }
     },
-    "presence": {
+    "deliveryCustomOrders": {
       ".read": "auth != null",
-      "$uid": {
-        ".write": "auth != null && auth.uid == $uid"
+      ".write": false
+    },
+    "dmIndex": {
+      "$nick": {
+        ".read": "auth != null && auth.uid == $nick",
+        "$peer": {
+          ".write": "auth != null && (auth.uid == $nick || (auth.uid == $peer && newData.child('latest').child('nick').val() == auth.uid))"
+        }
       }
     },
     "readState": {
       ".read": "auth != null",
-      "$uid": {
-        ".write": "auth != null && auth.uid == $uid"
+      "$nick": {
+        ".write": "auth != null && auth.uid == $nick"
+      }
+    },
+    "typing": {
+      "chat": {
+        ".read": "auth != null",
+        "$nick": {
+          ".write": "auth != null && auth.uid == $nick"
+        }
+      },
+      "dm": {
+        "$key": {
+          ".read": "auth != null && ($key.beginsWith(auth.uid + '__dm__') || $key.endsWith('__dm__' + auth.uid))",
+          "$nick": {
+            ".write": "auth != null && auth.uid == $nick && ($key.beginsWith(auth.uid + '__dm__') || $key.endsWith('__dm__' + auth.uid))"
+          }
+        }
       }
     }
   }
