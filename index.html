@@ -913,9 +913,137 @@ input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
 .logo-card{background:linear-gradient(145deg,rgba(34,211,165,.04),rgba(251,191,36,.025));}
 .profile-header{background:linear-gradient(145deg,rgba(34,211,165,.075),transparent);}
 .help-call-btn{width:min(220px,72%);}
+
+/* ─── One-time project status notice ───────────────────────────── */
+body.kapani-shutdown-notice-open{overflow:hidden!important;}
+#kapaniShutdownNotice{
+    position:fixed;
+    inset:0;
+    z-index:2147483647;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    padding-top:max(20px,env(safe-area-inset-top,0px));
+    padding-bottom:max(20px,env(safe-area-inset-bottom,0px));
+    background:
+      radial-gradient(circle at 18% 14%,rgba(248,113,113,.16),transparent 34%),
+      radial-gradient(circle at 82% 84%,rgba(251,191,36,.11),transparent 36%),
+      rgba(3,6,10,.97);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+}
+#kapaniShutdownNotice[hidden]{display:none!important;}
+.kapani-shutdown-card{
+    width:min(100%,620px);
+    max-height:calc(100vh - 40px);
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:clamp(22px,5vw,38px);
+    border:1px solid rgba(248,113,113,.28);
+    border-radius:24px;
+    background:linear-gradient(155deg,rgba(20,24,31,.98),rgba(9,12,17,.98));
+    box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.025) inset;
+}
+.kapani-shutdown-kicker{
+    display:inline-flex;
+    align-items:center;
+    min-height:28px;
+    padding:5px 10px;
+    margin-bottom:16px;
+    border-radius:999px;
+    border:1px solid rgba(248,113,113,.24);
+    background:rgba(248,113,113,.08);
+    color:#fca5a5;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+}
+.kapani-shutdown-title{
+    margin:0 0 18px;
+    font-family:'Unbounded','Nunito',sans-serif;
+    font-size:clamp(25px,6vw,42px);
+    line-height:1.08;
+    letter-spacing:-.035em;
+    color:#fff;
+}
+.kapani-shutdown-text{
+    color:#cbd5e1;
+    font-size:clamp(14px,3.7vw,17px);
+    line-height:1.7;
+    font-weight:650;
+}
+.kapani-shutdown-text p+p{margin-top:12px;}
+.kapani-shutdown-text strong{color:#fff;}
+#kapaniShutdownAccept{
+    width:100%;
+    margin-top:24px;
+    padding:16px 20px;
+    border:0;
+    border-radius:14px;
+    background:linear-gradient(135deg,#fbbf24,#f59e0b);
+    color:#111827;
+    font-family:'Nunito',sans-serif;
+    font-size:14px;
+    font-weight:1000;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    cursor:pointer;
+    box-shadow:0 12px 30px rgba(245,158,11,.18);
+    transition:transform .15s ease,filter .15s ease;
+}
+#kapaniShutdownAccept:hover{filter:brightness(1.05);}
+#kapaniShutdownAccept:active{transform:scale(.98);}
+#kapaniShutdownAccept:focus-visible{outline:3px solid rgba(251,191,36,.35);outline-offset:3px;}
+@media (max-width:520px){
+    #kapaniShutdownNotice{align-items:flex-end;padding:10px;}
+    .kapani-shutdown-card{max-height:calc(100vh - 10px - env(safe-area-inset-top,0px));border-radius:22px 22px 16px 16px;padding:24px 20px 20px;}
+}
+
 </style>
 </head>
 <body>
+
+<!-- ONE-TIME PROJECT STATUS NOTICE -->
+<div id="kapaniShutdownNotice" hidden role="dialog" aria-modal="true" aria-labelledby="kapaniShutdownTitle" aria-describedby="kapaniShutdownText">
+    <div class="kapani-shutdown-card">
+        <div class="kapani-shutdown-kicker">Статус проекта</div>
+        <h1 class="kapani-shutdown-title" id="kapaniShutdownTitle">КАПАНИ БОЛЬШЕ НЕ РАБОТАЮТ</h1>
+        <div class="kapani-shutdown-text" id="kapaniShutdownText">
+            <p>Я принял решение немного забыть о сайте. Теперь я, то есть администратор, больше не контролирую сайт и не выдаю зарплаты, и сайт не будет обновляться, хотя тут много недочётов.</p>
+            <p>Навсегда это или нет — неизвестно. Возможно, вернусь, и сделаю что-то маштабное.</p>
+            <p>Сейчас сайт всё ещё доступен, можно играть в казино, сайт весь доступен, но помните: <strong>он не поддерживается, и фактически он брошен.</strong></p>
+        </div>
+        <button type="button" id="kapaniShutdownAccept">Понятно</button>
+    </div>
+</div>
+<script>
+(function(){
+    var storageKey='kapani_shutdown_notice_seen_v1';
+    var notice=document.getElementById('kapaniShutdownNotice');
+    var accept=document.getElementById('kapaniShutdownAccept');
+    if(!notice || !accept) return;
+
+    var alreadySeen=false;
+    try{ alreadySeen=localStorage.getItem(storageKey)==='1'; }catch(e){}
+
+    if(!alreadySeen){
+        notice.hidden=false;
+        document.body.classList.add('kapani-shutdown-notice-open');
+        requestAnimationFrame(function(){ try{ accept.focus({preventScroll:true}); }catch(e){ accept.focus(); } });
+    }
+
+    function dismissNotice(){
+        try{ localStorage.setItem(storageKey,'1'); }catch(e){}
+        notice.hidden=true;
+        document.body.classList.remove('kapani-shutdown-notice-open');
+    }
+
+    accept.addEventListener('click',dismissNotice);
+})();
+</script>
+
 
 <div id="frozenOverlay"><div style="font-size:48px;margin-bottom:12px;">🧊</div><div style="font-weight:900;font-size:18px;margin-bottom:8px;">Аккаунт заморожен</div><div style="color:var(--muted);font-size:14px;max-width:320px;line-height:1.5;">Баланс ниже допустимого лимита. Попросите перевод или отработайте, чтобы мэрия пополнила счёт.</div></div>
 <div id="loadingOverlay">
