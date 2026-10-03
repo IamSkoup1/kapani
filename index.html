@@ -14,6 +14,17 @@
 <link rel="icon" type="image/png" href="./image.png">
 <title>Капани - официальный сайт</title>
 <script>
+// This watchdog also runs if the main ES module fails to parse/load.
+window._kapaniStartupWatchdog = setTimeout(function(){
+  if(window.KAPANI_BOOTSTRAPPED) return;
+  var status=document.getElementById('loStatus');
+  if(status) status.textContent='Не удалось запустить сайт. Проверьте интернет и обновите страницу.';
+  var overlay=document.getElementById('loadingOverlay');
+  var retry=document.createElement('button');
+  retry.className='btn btn-primary'; retry.textContent='Повторить подключение';
+  retry.onclick=function(){location.reload();};
+  if(status && status.parentElement) status.parentElement.appendChild(retry);
+},25000);
 // Early stubs for fine handlers: if user taps before late module wires
 // up, queue the call and replay once real handler is installed.
 // Resolution now uses window.KAPANI_READY (set by the main module) instead
@@ -2747,7 +2758,7 @@ const WEB_PUSH_VAPID_PUBLIC_KEY = CONFIG.webPushVapidPublicKey;
 // Canonical push backend: direct Web Push through the Cloudflare Worker in push-worker/.
 // Firebase Functions are not part of the push delivery path.
 const PUSH_WORKER_URL = String(CONFIG.pushWorkerUrl || '').trim().replace(/\/+$/,'');
-const KAPANI_BUILD = '2026-09-30-noblaze-worker'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
+const KAPANI_BUILD = '2026-10-03-audit'; window.KAPANI_BUILD = KAPANI_BUILD;   // shown in the push status line: proves which version a device is running
 const ECONOMY_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ECONOMY_ACCOUNT_WEEKLY_FEE = 15;
 const ECONOMY_TRANSFER_COMMISSION = 0.02;
@@ -4303,13 +4314,16 @@ function startApp() {
 }
 
 function handleKapaniPushDeepLink(rawUrl){
+    if(rawUrl && !window.KAPANI_APP_VISIBLE){window._kapaniPendingPushUrl=rawUrl;return;}
+    rawUrl=rawUrl||window._kapaniPendingPushUrl||'';
+    window._kapaniPendingPushUrl=null;
     try{
         const params=rawUrl?new URL(rawUrl,location.href).searchParams:new URLSearchParams(location.search);
         const section=params.get('kpSection');
         const dm=params.get('kpDm');
         if(section==='messages'){
             navTo('messages');
-            if(dm) setTimeout(()=>{ try{ if(typeof openDmChat==='function') openDmChat(decodeURIComponent(dm)); }catch(e){} },150);
+            if(dm){switchMsgTab(1);void openDmChat(dm).catch(e=>console.warn('[push link]',e));}else switchMsgTab(0);
         } else if(section==='news'){
             navTo('news');
         } else if(rawUrl){
@@ -4319,6 +4333,7 @@ function handleKapaniPushDeepLink(rawUrl){
 }
 
 function revealApp(){
+    window.KAPANI_APP_VISIBLE=true;
     const h=qs('gHeader'); const b=qs('bottomNav'); const m=qs('mainApp');
     if(h) h.style.display='flex';
     if(b) b.style.display='flex';
@@ -4327,6 +4342,7 @@ function revealApp(){
 }
 
 window.logout = function() {
+    window.KAPANI_APP_VISIBLE=false;
     const logoutNick=currentNick;
 
     // Do not block the button on network/Firebase operations. The visible
@@ -5039,7 +5055,7 @@ async function getSwReg(){
     const isLocalDev=location.hostname==='localhost'||location.hostname==='127.0.0.1'||location.hostname==='[::1]';
     if(location.protocol!=='https:'&&!isLocalDev){window._kapaniPushState={...(window._kapaniPushState||{}),status:'https_required',error:'service_worker_requires_https'};return null;}
     if(!('serviceWorker' in navigator)){window._kapaniPushState={...(window._kapaniPushState||{}),status:'unsupported',error:'service_worker_unsupported'};return null;}
-    try{const swUrl=new URL('./firebase-messaging-sw.js',location.href);const scope=new URL('./',location.href).pathname;_swReg=await navigator.serviceWorker.register(swUrl.href,{scope});await navigator.serviceWorker.ready;window._kapaniPushState={...(window._kapaniPushState||{}),serviceWorkerRegistered:true,serviceWorkerScope:_swReg.scope};return _swReg;}
+    try{const swUrl=new URL('./firebase-messaging-sw.js',location.href);const scope=new URL('./',location.href).pathname;_swReg=await navigator.serviceWorker.register(swUrl.href,{scope});await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(new Error('Service Worker activation timeout')),15000))]);window._kapaniPushState={...(window._kapaniPushState||{}),serviceWorkerRegistered:true,serviceWorkerScope:_swReg.scope};return _swReg;}
     catch(err){window._kapaniPushState={...(window._kapaniPushState||{}),status:'sw_failed',error:String(err?.message||err)};console.error('[Kapani Push] Service Worker registration failed:',err);return null;}
 }
 async function requestNotificationPermission(){
@@ -5081,9 +5097,10 @@ async function getPushAuthHash(){
     return String(ph||'');
 }
 async function pushWorkerCall(path,body){
-    const res=await fetch(PUSH_WORKER_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    if(!PUSH_WORKER_URL) throw new Error('Cloudflare Worker не настроен');
+    const res=await fetch(PUSH_WORKER_URL+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(25000)});
     const data=await res.json().catch(()=>({}));
-    if(!res.ok) throw new Error(data?.error||data?.detail||('push worker HTTP '+res.status));
+    if(!res.ok){ const error=new Error(data?.detail||data?.error||('push worker HTTP '+res.status)); error.status=res.status; throw error; }
     return data;
 }
 // Wake the worker for a job. The worker returns `next` when it had to split a big fan-out; keep going.
@@ -5214,17 +5231,21 @@ async function registerWebPushSubscription(){
         const ph=await getPushAuthHash();if(!ph)throw new Error('Не найден хэш пароля для регистрации push');
         const result=await pushWorkerCall('/subscribe',{nick:currentNick,ph,subscription:payload,prefs:getPushPrefs(),userAgent:navigator.userAgent});
         savedId=String(result?.subscriptionId||subscriptionId);
+        const sw=(await getSwReg())?.active;
+        sw?.postMessage({type:'KAPANI_PUSH_CONTEXT',context:{workerUrl:PUSH_WORKER_URL,nick:currentNick,subscriptionId:savedId,rotationToken:String(result?.rotationToken||''),vapidPublicKey:WEB_PUSH_VAPID_PUBLIC_KEY}});
     }
     window._kapaniWebPushSubscriptionId=savedId;try{localStorage.setItem('kp_webpush_subscription_id',window._kapaniWebPushSubscriptionId);}catch(e){}
-    window._kapaniPushState={...(window._kapaniPushState||{}),status:'registered',backend:PUSH_WORKER_URL?'cloudflare-webpush':null,pushSupported:true,pushSubscriptionExists:true,subscriptionId:window._kapaniWebPushSubscriptionId,subscriptionSaved:true,vapidConfigured:!!WEB_PUSH_VAPID_PUBLIC_KEY,lastGoodRegistrationAt:Date.now(),error:null};return sub;
+    window._kapaniPushState={...(window._kapaniPushState||{}),status:'registered',contextSaved:true,backend:PUSH_WORKER_URL?'cloudflare-webpush':null,pushSupported:true,pushSubscriptionExists:true,subscriptionId:window._kapaniWebPushSubscriptionId,subscriptionSaved:true,vapidConfigured:!!WEB_PUSH_VAPID_PUBLIC_KEY,lastGoodRegistrationAt:Date.now(),error:null};return sub;
 }
 async function unregisterWebPushSubscription(){
-    let sub=null;try{sub=await getWebPushSubscription(false);}catch(_){}
+    const nick=currentNick;
+    const authHashPromise=getPushAuthHash();
+    let sub=null;try{sub=await getWebPushSubscription(false); (await getSwReg())?.active?.postMessage({type:'KAPANI_PUSH_CONTEXT',context:null}); if(sub) await sub.unsubscribe();}catch(_){}
     let id=window._kapaniWebPushSubscriptionId;try{id=id||localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){id=id||'';}
     if(!id&&sub?.endpoint)id=await hashWebPushEndpoint(sub.endpoint);
     if(id){
         try{
-            if(PUSH_WORKER_URL){ const ph=await getPushAuthHash(); if(ph) await pushWorkerCall('/unsubscribe',{nick:currentNick,ph,subscriptionId:id}); }
+            if(PUSH_WORKER_URL){ const ph=await authHashPromise; if(ph&&nick) await pushWorkerCall('/unsubscribe',{nick,ph,subscriptionId:id}); }
         }catch(e){console.debug('[Kapani Push] unregister subscription failed:',e);}
     }
     window._kapaniWebPushSubscriptionId=null;try{localStorage.removeItem('kp_webpush_subscription_id');localStorage.removeItem('kp_push_reg');}catch(e){}
@@ -5256,7 +5277,7 @@ async function ensureWebPushOnStartup(){
         // The "registered recently" shortcut also requires the saved subscription id: logout removes it (and unregisters the device
         // from the worker), so logging out and back in as the same account always registers the device again.
         let savedId='';try{savedId=localStorage.getItem('kp_webpush_subscription_id')||'';}catch(_){}
-        if(existing&&last&&last.stamp===stamp&&savedId&&savedId===last.subId&&Date.now()-Number(last.at||0)<12*3600e3&&last.subId===await hashWebPushEndpoint(existing.endpoint))return true;   // registered recently
+        if(window._kapaniPushState?.contextSaved&&existing&&last&&last.stamp===stamp&&savedId&&savedId===last.subId&&Date.now()-Number(last.at||0)<12*3600e3&&last.subId===await hashWebPushEndpoint(existing.endpoint))return true;   // registered recently
         await registerWebPushSubscription();
         try{localStorage.setItem('kp_push_reg',JSON.stringify({stamp,at:Date.now(),subId:window._kapaniWebPushSubscriptionId||''}));}catch(_){}
         return true;
@@ -5426,7 +5447,7 @@ if(!window._kapaniChatPresenceUnloadBound){
     window._kapaniChatPresenceUnloadBound = true;
     window.addEventListener('pagehide', ()=>{ 
         if(currentNick) {
-            try { set(ref(db, `presence/${currentNick}/generalChatOpen`), false); } catch(e) {}
+            void set(ref(db, `presence/${currentNick}/generalChatOpen`), false).catch(()=>{});
         }
     }, {capture:true});
 }
@@ -5522,17 +5543,10 @@ function renderNotifications(notifs){
     }).join('');
 }
 
-// Duel notifications now use the canonical notification pipeline. Keep the old
-// /notifications mirror only as a best-effort legacy write because the active
-// RTDB rules intentionally block direct client writes to that protected node.
+// Duel notifications use only the canonical server-side inbox + push pipeline.
 async function pushLegacyDuelNotification(targetNick,payload){
-    let legacyKey='';
     try{
-        const legacyRef=await push(ref(db,`notifications/${targetNick}`),payload);
-        legacyKey=String(legacyRef?.key||'');
-    }catch(e){ console.debug('[duel legacy notification disabled]',e?.message||e); }
-    try{
-        const key=legacyKey || `${String(payload.duelId||'duel')}_${Number(payload.ts||Date.now())}`;
+        const key=`${String(payload.duelId||'duel')}_${Number(payload.ts||Date.now())}`;
         await pushNotification(targetNick,String(payload.text||'Новое уведомление'),'messages',{
             notificationId:`legacy_${key}`,
             source:'legacy_duel', sourceMessageId:key,
@@ -7630,7 +7644,7 @@ window.openDmChat=async function(nick){
         }
 
         const key = dmKey(currentNick,nick);
-        try{ await update(dmIndexRef(currentNick),{[nick]:{...(dmConvoMeta[nick]||{}),unread:false,lastReadAt:Date.now()}}); }catch(e){ console.warn('[DM index read]',e); }
+        try{ await update(ref(db,`dmIndex/${currentNick}/${nick}`),{unread:false,lastReadAt:Date.now()}); }catch(e){ console.warn('[DM index read]',e); }
         const dmR = query(dmRef(key),orderByChild('createdAt'),limitToLast(80));
         const dmFn = (snap2) => {
             if(openSeq !== window._dmOpenSeq || currentDmNick !== nick) return;
@@ -7733,18 +7747,7 @@ async function sendDmMsg(text,mediaData,msgType,cameraFacing){
     const msgRef=push(dmRef(key));
     const msgId=String(msgRef?.key||'');
     if(!msgId) throw new Error('Не удалось создать ID сообщения');
-    await set(msgRef,msg);
-    const latestMeta={lastTs:msg.createdAt,latest:{nick:msg.nick,avatar:msg.avatar,text:msg.text||'',msgType:msg.msgType||null,time:msg.time,createdAt:msg.createdAt}};
-    try{await update(dmIndexRef(currentNick),{[currentDmNick]:{...latestMeta,unread:false}});await update(dmIndexRef(currentDmNick),{[currentNick]:{...latestMeta,unread:true}});}catch(e){console.warn('[DM index update]',e);}
-    let notifText;
-    if(msgType==='voice') notifText=`🎤 ${currentNick}: Голосовое сообщение`;
-    else if(msgType==='video_circle') notifText=`⭕ ${currentNick}: Видеосообщение`;
-    else if(msgType==='image') notifText=`🖼 ${currentNick}: Фото`;
-    else if(msgType==='video') notifText=`🎥 ${currentNick}: Видео`;
-    else { const preview=text?(text.length>60?text.slice(0,57)+'...':text):''; notifText=`💬 ${currentNick}: ${preview}`; }
-    if(currentDmNick!==currentNick){
-        await pushNotification(currentDmNick,notifText,'messages',{source:'dm',sourceMessageId:msgId,notificationId:`dm_${msgId}`,url:`${new URL('./',location.href).pathname}?kpSection=messages&kpDm=${encodeURIComponent(currentDmNick)}`});
-    }
+    await pushWorkerCall('/dm',{nick:currentNick,ph:await getPushAuthHash(),to:currentDmNick,id:msgId,message:msg});
 }
 
 // ─── USER PROFILE MODAL ───────────────────
@@ -9987,7 +9990,7 @@ window.navTo=function(id){
           .then(s=>{
               const value=s.val()||{};
               window._kapaniNotificationsCache=value;
-              updateBadge(Object.keys(value).length);
+              updateBadge(Object.values(value).filter(n=>n && !n.readAt).length);
               renderNotifications(value);
           })
           .catch(e=>console.warn('[Kapani] notifications load:',e?.message||e));
@@ -15144,15 +15147,26 @@ window.cancelSubscription = async function(){
 
 // ─── GIFT SUBSCRIPTION FUNCTIONS ────────────
 let giftSubscriptionType = '';
+let giftSubscriptionBusy = false;
+let giftSubscriptionRequest = null;
+
+async function loadGiftRecipients(){
+    const result = await pushWorkerCall('/gift/recipients',{nick:currentNick,ph:await getPushAuthHash()});
+    return result.users || {};
+}
 
 window.openGiftSubscriptionModal = async function(type){
+    if(giftSubscriptionBusy) return;
+    if(!CONFIG.subscriptions[type]) return toast('❌ Неизвестная подписка','red');
+    qs('giftSubModal')?.remove();
     giftSubscriptionType = type;
     const price = getSubscriptionPrice(type);
     const name = CONFIG.subscriptions[type].name;
     
     // Get all users for selection
-    const usersSnap = await get(ref(db, 'users'));
-    const users = usersSnap.val() || {};
+    let users;
+    try { users = await loadGiftRecipients(); }
+    catch(e) { return toast('❌ Не удалось загрузить получателей: '+e.message,'red'); }
     
     // Build user options, excluding current user
     let userOptions = '<option value="">Выберите получателя...</option>';
@@ -15197,7 +15211,7 @@ window.openGiftSubscriptionModal = async function(type){
                 
                 <div style="display:flex;gap:10px;">
                     <button class="btn btn-ghost" style="flex:1;" onclick="closeGiftSubscriptionModal()">Отмена</button>
-                    <button class="btn btn-primary" style="flex:1;" onclick="sendGiftSubscription()">🎁 Подарить</button>
+                    <button id="giftSendBtn" class="btn btn-primary" style="flex:1;" onclick="sendGiftSubscription()">🎁 Подарить</button>
                 </div>
             </div>
         </div>
@@ -15209,12 +15223,14 @@ window.openGiftSubscriptionModal = async function(type){
 };
 
 window.closeGiftSubscriptionModal = function(){
+    if(giftSubscriptionBusy) return;
     const modal = qs('giftSubModal');
     if(modal) modal.remove();
     giftSubscriptionType = '';
 };
 
 window.sendGiftSubscription = async function(){
+    if(giftSubscriptionBusy) return;
     const recipient = qs('giftRecipient')?.value;
     if(!recipient) return toast('⚠️ Выберите получателя', 'gold');
     if(!giftSubscriptionType) return;
@@ -15225,6 +15241,16 @@ window.sendGiftSubscription = async function(){
 
     if(!confirm(`Подарить ${name} пользователю ${recipient} за ${price}₽?`)) return;
 
+    const type = giftSubscriptionType;
+    const signature = `${currentNick}:${recipient}:${type}`;
+    if(giftSubscriptionRequest?.signature !== signature){
+        let pending={}; try{pending=JSON.parse(sessionStorage.getItem('kp_pending_gifts')||'{}')||{};}catch(_){}
+        giftSubscriptionRequest={signature,id:typeof pending[signature]==='string'?pending[signature]:crypto.randomUUID()};
+        pending[signature]=giftSubscriptionRequest.id;
+        try{sessionStorage.setItem('kp_pending_gifts',JSON.stringify(pending));}catch(_){}
+    }
+    giftSubscriptionBusy=true;
+    const sendBtn=qs('giftSendBtn'); if(sendBtn) sendBtn.disabled=true;
     try{
         // Gift is handled by the same Cloudflare Worker that already powers
         // Kapani Push. This keeps the feature available on Firebase Spark and
@@ -15235,21 +15261,26 @@ window.sendGiftSubscription = async function(){
             nick: String(currentNick || '').trim(),
             ph,
             recipientNick: recipient,
-            subscriptionType: giftSubscriptionType
+            subscriptionType: type,
+            requestId: giftSubscriptionRequest.id
         });
         if(!data.success) throw new Error(data.message || 'Подарок не выполнен');
 
         toast(`🎁 ${name} подарен ${recipient}!`, 'green');
+        giftSubscriptionBusy=false;
+        giftSubscriptionRequest=null;
+        try{const pending=JSON.parse(sessionStorage.getItem('kp_pending_gifts')||'{}')||{};delete pending[signature];sessionStorage.setItem('kp_pending_gifts',JSON.stringify(pending));}catch(_){}
         closeGiftSubscriptionModal();
 
         // Server is the source of truth. Refresh local state from RTDB.
-        const fresh=await get(userRef(currentNick));
-        if(fresh.exists()){
-            allUsersCache[currentNick]=fresh.val();
-            window.allUsersCache=allUsersCache;
-            updateHeader(fresh.val());
-            updateHeader_balance(fresh.val());
-        }
+        try {
+            const fresh=await get(userRef(currentNick));
+            if(fresh.exists()){
+                allUsersCache[currentNick]=fresh.val();
+                window.allUsersCache=allUsersCache;
+                updateHeader(fresh.val()); updateHeader_balance(fresh.val());
+            }
+        } catch(e) { console.warn('[gift] Подарок выполнен; профиль обновится при восстановлении связи',e); }
         try{ if(typeof renderSubscription==='function') renderSubscription(); }catch(e){}
     }catch(e){
         console.error('[giftSubscription]',e);
@@ -15263,6 +15294,7 @@ window.sendGiftSubscription = async function(){
             toast('❌ '+(message || 'Не удалось подарить подписку'),'red');
         }
     }
+    finally { giftSubscriptionBusy=false; if(sendBtn) sendBtn.disabled=false; }
 };
 
 // ═══════════════════════════════════════════════════════
@@ -15760,7 +15792,7 @@ window.openCustomDeliveryRoute=async function(orderId){
     let modal=qs(id);
     if(!modal){
         modal=document.createElement('div'); modal.id=id; modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px;';
-        modal.innerHTML='<div style="width:100%;max-width:650px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b>🗺 Маршрут заказа</b><button class="btn btn-ghost btn-sm" onclick="this.closest('#customDeliveryRoutePicker').style.display='none'">✕</button></div><div id="customDeliveryRouteMap" style="height:380px;border-radius:14px;overflow:hidden;"></div><div id="customDeliveryRouteInfo" style="margin-top:8px;font-size:12px;color:var(--muted);"></div></div>';
+        modal.innerHTML=`<div style="width:100%;max-width:650px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:14px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><b>🗺 Маршрут заказа</b><button class="btn btn-ghost btn-sm" onclick="this.closest('#customDeliveryRoutePicker').style.display='none'">✕</button></div><div id="customDeliveryRouteMap" style="height:380px;border-radius:14px;overflow:hidden;"></div><div id="customDeliveryRouteInfo" style="margin-top:8px;font-size:12px;color:var(--muted);"></div></div>`;
         document.body.appendChild(modal);
     }
     modal.style.display='flex'; await window.kapaniLoadLeaflet(); await new Promise(r=>requestAnimationFrame(r));
@@ -16370,7 +16402,7 @@ function escAttr(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&qu
 function renderHospitalPhotoCards(photos,canDelete){
     const list=Object.entries(photos||{}).sort((a,b)=>(b[1]?.createdAt||0)-(a[1]?.createdAt||0));
     if(!list.length)return '<div style="color:var(--muted);font-size:13px;">Фотографий пока нет.</div>';
-    return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${list.map(([id,p])=>`<div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;"><img src="${escAttr(p.data||'')}" alt="Фото больницы" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:pointer;" onclick="openImageFullscreen('${escAttr(p.data||'')}')">${canDelete?`<button class="btn btn-red btn-sm" style="position:absolute;right:6px;top:6px;min-width:0;padding:7px 9px;" onclick="deleteHospitalPhoto('${escAttr(id)}')">🗑</button>`:''}<div style="font-size:10px;color:var(--muted);padding:7px 8px;">${escHtml(p.authorNick||'Врач')}</div></div>`).join('')}</div>`;
+    return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${list.map(([id,p])=>`<div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;"><img src="${escAttr(p.data||'')}" alt="Фото больницы" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:pointer;" onclick="openImgViewer('${escAttr(jsEsc(p.data||''))}')">${canDelete?`<button class="btn btn-red btn-sm" style="position:absolute;right:6px;top:6px;min-width:0;padding:7px 9px;" onclick="deleteHospitalPhoto('${escAttr(id)}')">🗑</button>`:''}<div style="font-size:10px;color:var(--muted);padding:7px 8px;">${escHtml(p.authorNick||'Врач')}</div></div>`).join('')}</div>`;
 }
 function renderHospitalPhotosGallery(photos){const el=qs('hospitalPhotosGallery');if(el)el.innerHTML=renderHospitalPhotoCards(photos,false);}
 function renderHospitalPanelPhotos(photos,canDelete){const el=qs('hospitalPanelPhotos');if(el)el.innerHTML=renderHospitalPhotoCards(photos,canDelete);}
@@ -16490,6 +16522,7 @@ try {
   // when any code accessed window.currentNick inside the getter chain.
   // The main app module sets currentNick as a let variable; Kapani Pack reads it via closure.
   window._getCurrentNick = () => currentNick;
+  window.KAPANI_BOOTSTRAPPED=true; clearTimeout(window._kapaniStartupWatchdog);
   _resolveKapaniReady();
 } catch(e) { console.error('[Kapani exports]', e); }
 
@@ -18021,6 +18054,7 @@ ready(function(){
         </div>`;
     }
     window.kapaniBuyBikeLicense=purchaseBikeLicense;
+    window.openScooterExam=openScooterExam; window.closeScooterExam=closeScooterExam;
     window.kapaniBuyScooterLicense=purchaseScooterLicense;
 
     async function renderAdminScooterApplications(){
@@ -18315,6 +18349,7 @@ ready(function(){
         toast(st?.resultText||'Раунд завершён',payout>0?'green':'red');
       }finally{window._blackjackActionBusy=false;}
     }
+    window.renderBlackjack=renderBlackjack;
     window.kapaniBlackjackStart=blackjackStart;window.kapaniBlackjackHit=blackjackHit;window.kapaniBlackjackStand=blackjackStand;
 
     // Casino game #2: classic three-reel slot machine.

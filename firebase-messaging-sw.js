@@ -1,8 +1,8 @@
 /* Kapani Web Push Service Worker.
  * One Service Worker only: receives standard Web Push and renders system notifications.
  */
-const SW_VERSION = 'kapani-webpush-2026-10-02-idb-v1';
-const KAPANI_APP_PATH = '/kapani/';
+const SW_VERSION = 'kapani-webpush-2026-10-03-audit';
+const KAPANI_APP_PATH = new URL(self.registration.scope).pathname;
 
 function resolveNotificationUrl(requestedUrl) {
   try {
@@ -19,13 +19,14 @@ function resolveNotificationUrl(requestedUrl) {
 }
 
 const PUSH_DB_NAME = 'KapaniPushDB';
-const PUSH_DB_VERSION = 1;
+const PUSH_DB_VERSION = 2;
+const CONTEXT_STORE = 'deviceContext';
 const PUSH_STORE = 'shownNotifications';
 const PUSH_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 function openPushDb(){
   return new Promise((resolve,reject)=>{
     const req=indexedDB.open(PUSH_DB_NAME,PUSH_DB_VERSION);
-    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(PUSH_STORE)) db.createObjectStore(PUSH_STORE); };
+    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(PUSH_STORE)) db.createObjectStore(PUSH_STORE); if(!db.objectStoreNames.contains(CONTEXT_STORE)) db.createObjectStore(CONTEXT_STORE); };
     req.onsuccess=()=>resolve(req.result);
     req.onerror=()=>reject(req.error||new Error('IndexedDB unavailable'));
   });
@@ -52,7 +53,29 @@ async function rememberNotification(id){
   }catch(_){ /* push must still display even if the local cache is unavailable */ }
 }
 
-async function showKapaniPush(data = {}) {
+async function deviceContext(value){
+  const db=await openPushDb();
+  try {
+    return await new Promise((resolve,reject)=>{
+      const write=arguments.length > 0;
+      const tx=db.transaction(CONTEXT_STORE,write?'readwrite':'readonly');
+      const store=tx.objectStore(CONTEXT_STORE);
+      const req=write?(value===null?store.delete('current'):store.put(value,'current')):store.get('current');
+      let result; req.onsuccess=()=>{result=req.result;};
+      tx.oncomplete=()=>resolve(result); tx.onerror=()=>reject(tx.error);
+    });
+  } finally { db.close(); }
+}
+const inFlightNotifications = new Map();
+function showKapaniPush(data={}){
+  const id=String(data.notificationId||'');
+  if(id && inFlightNotifications.has(id)) return inFlightNotifications.get(id);
+  const task=displayKapaniPush(data).finally(()=>{if(id) inFlightNotifications.delete(id);});
+  if(id) inFlightNotifications.set(id,task);
+  return task;
+}
+
+async function displayKapaniPush(data = {}) {
   const notificationId = String(data.notificationId || '').trim();
   if (notificationId && await shownNotification(notificationId)) return false;
   const body = String(data.body || data.text || '').trim(); if (!body) return false;
@@ -61,8 +84,8 @@ async function showKapaniPush(data = {}) {
   const targetUrl = resolveNotificationUrl(data.url);
   await self.registration.showNotification(title, {
     body,
-    icon: new URL('/kapani/image.png', self.location.origin).href,
-    badge: new URL('/kapani/image.png', self.location.origin).href,
+    icon: new URL('image.png', self.registration.scope).href,
+    badge: new URL('image.png', self.registration.scope).href,
     tag: notificationId ? `kapani-${notificationId}` : `kapani-${category}-${Date.now()}`,
     renotify: false,
     data: { ...data, url: targetUrl, category, swVersion: SW_VERSION, receivedAt: Date.now() }
@@ -88,6 +111,10 @@ self.addEventListener('activate', event => { event.waitUntil(self.clients.claim(
 /* Foreground helper: the page may explicitly ask the same SW to display a
  * system notification, so there is no second display implementation. */
 self.addEventListener('message', event => {
+  if (event?.data?.type === 'KAPANI_PUSH_CONTEXT') {
+    event.waitUntil(deviceContext(event.data.context || null).catch(e=>console.warn('[Kapani SW] context storage failed',e)));
+    return;
+  }
   if (event?.data?.type === 'KAPANI_FOREGROUND_PUSH') {
     event.waitUntil(showKapaniPush(event.data.payload || {}).catch(err => console.error('[Kapani SW] foreground push failed:', err)));
   }
@@ -105,14 +132,29 @@ self.addEventListener('push', event => {
   })().catch(err => console.error('[Kapani SW] push event failed:', err)));
 });
 
-/* Browser implementations may rotate subscriptions. The active page will
- * receive this signal and persist the new subscription server-side. */
+/* Restore rotated subscriptions without needing an open page. Only a scoped
+ * device token is kept here; no account password/hash is stored in the SW. */
 self.addEventListener('pushsubscriptionchange', event => {
   event.waitUntil((async () => {
     try {
-      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      for (const client of clients) client.postMessage({ type: 'KAPANI_PUSHSUBSCRIPTION_CHANGED' });
-    } catch (error) { console.warn('[Kapani SW] pushsubscriptionchange notification failed:', error); }
+      const context=await deviceContext();
+      if(context?.workerUrl && context.rotationToken){
+        let sub=event.newSubscription || await self.registration.pushManager.getSubscription();
+        if(!sub){
+          const raw=atob(String(context.vapidPublicKey).replace(/-/g,'+').replace(/_/g,'/'));
+          sub=await self.registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(raw,c=>c.charCodeAt(0))});
+        }
+        const response=await fetch(context.workerUrl+'/subscribe/rotate',{
+          method:'POST',headers:{'content-type':'application/json'},signal:AbortSignal.timeout(25000),
+          body:JSON.stringify({nick:context.nick,subscriptionId:context.subscriptionId,rotationToken:context.rotationToken,subscription:{...sub.toJSON(),applicationServerKey:context.vapidPublicKey}})
+        });
+        if(!response.ok) throw new Error('Push renewal HTTP '+response.status);
+        const result=await response.json();
+        await deviceContext({...context,subscriptionId:result.subscriptionId,rotationToken:result.rotationToken});
+      }
+    } catch (error) { console.warn('[Kapani SW] push renewal failed:',error); }
+    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    for(const client of clients) client.postMessage({type:'KAPANI_PUSHSUBSCRIPTION_CHANGED'});
   })());
 });
 

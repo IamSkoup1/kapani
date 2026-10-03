@@ -291,7 +291,7 @@ async function createFirebaseCustomToken(env, uid) {
     iat: now,
     exp: now + 3600,
     uid: String(uid),
-    claims: {}
+    claims: { admin: uid === String(env.ADMIN_NICK || 'Кайон') }
   })));
   const input = `${header}.${payload}`;
   const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', customTokenKeyCache.key, te.encode(input)));
@@ -570,7 +570,7 @@ async function planJob(env, job) {
       payload: job.payload,
       nicks: job.nicks || [],
       inbox: {},
-      marks: job.marks || {}
+      marks: Array.isArray(job.marks) ? Object.fromEntries(job.marks) : (job.marks || {})
     };
   }
 
@@ -594,18 +594,6 @@ async function planJob(env, job) {
     const payload = payloadFromNotification(env, job.id, n);
     if (!payload.body) return { kind: 'discard', reason: 'notification has empty body' };
 
-    if (n.source === 'dm' && n.from) {
-      const open = await rtdbGet(env, `presence/${enc(job.to)}/dmOpenWith`);
-      if (open === n.from) {
-        return {
-          kind: 'done',
-          payload,
-          nicks: [],
-          inbox: {},
-          marks: { [`${path}/pushedAt`]: now }
-        };
-      }
-    }
 
     return {
       kind: 'done',
@@ -678,11 +666,7 @@ async function planJob(env, job) {
       recipients.push(nick);
     }
 
-    let nicks = recipients;
-    if (job.type === 'chat') {
-      const presence = (await rtdbGet(env, 'presence')) || {};
-      nicks = recipients.filter(n => presence[n]?.generalChatOpen !== true);
-    }
+    const nicks = recipients; // Push remains enabled while the conversation is open.
 
     return {
       kind: 'done',
@@ -739,7 +723,7 @@ async function processJob(env, jobId, budget, preloaded) {
       updatedAt: Date.now()
     }
   });
-  const finish = async (status, extra = {}) => { await rtdbPatch(env, state(status, extra)); };
+  const finish = async (status, extra = {}, rootPatch = {}) => { await rtdbPatch(env, { ...state(status, extra), ...rootPatch }); };
   const retry = async (reason) => {
     const attempts = Number(job.attempts || 0) + 1;
     if (attempts >= MAX_JOB_ATTEMPTS) {
@@ -780,33 +764,28 @@ async function processJob(env, jobId, budget, preloaded) {
 
   const all = await loadSubs(env);
   const dead = [], statuses = [], lookups = [];
-  let sent = 0, i = 0, hadPushErrors = false, attempted = 0;
+  const deliveredDeviceIds = { ...(job.deliveredDeviceIds || {}) };
+  const pendingNicks = [];
+  let sent = 0, attempted = 0, hadPushErrors = false;
 
-  for (; i < plan.nicks.length; i++) {
-    const nick = plan.nicks[i];
-    const bucket = await subscriptionBucket(env, all, nick);
+  for (const nick of plan.nicks) {
+    // Inbox jobs carry canonical account keys; no per-recipient database scan.
+    const bucket = subscriptionBucketLocal(all, nick);
     const rawSubs = bucket.subs || [];
-    const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category) && !staleKey(s, env));
+    const subs = rawSubs.filter(s => prefsAllow(s, plan.payload.category) && !staleKey(s, env) && !deliveredDeviceIds[s.id]);
     lookups.push({
       recipient: nick, mode: bucket.mode, matchedKey: bucket.key, stored: rawSubs.length,
       eligible: subs.length, blockedByPrefs: rawSubs.filter(s => !prefsAllow(s, plan.payload.category)).length,
       staleKey: rawSubs.filter(s => staleKey(s, env)).length, category: plan.payload.category
     });
-    if (subs.length && budget.left < subs.length && sent > 0) break;
-
+    let pending = false;
     for (const sub of subs) {
-      if (budget.left <= 0) break;
+      if (budget.left <= 0) { pending = true; continue; }
       // A notification may be deleted after planJob() and while a job is being processed.
       // Re-check the server-side tombstone immediately before the actual Web Push call so a
       // concurrent delete cannot leak a just-removed notification onto the device.
       const tombstoneId = plan.payload.notificationId;
-      const tombstonePath = tombstoneId && plan.payload?.source === 'general_chat'
-        ? `notificationTombstones/${enc(nick)}/${enc(tombstoneId)}`
-        : tombstoneId && plan.payload?.source === 'news'
-          ? `notificationTombstones/${enc(nick)}/${enc(tombstoneId)}`
-          : tombstoneId && job.type === 'notification'
-            ? `notificationTombstones/${enc(nick)}/${enc(tombstoneId)}`
-            : null;
+      const tombstonePath = tombstoneId ? `notificationTombstones/${enc(nick)}/${enc(tombstoneId)}` : null;
       if (tombstonePath && await rtdbGet(env, tombstonePath)) {
         if (job.type === 'notification') {
           await finish('skipped', { lastError: 'notification deleted during processing', nextAttemptAt: null });
@@ -819,15 +798,16 @@ async function processJob(env, jobId, budget, preloaded) {
         const status = await sendPush(env, sub, plan.payload);
         statuses.push({ recipient: nick, device: String(sub.id).slice(0, 8), host: new URL(sub.endpoint).host, status });
         if (status === 404 || status === 410) dead.push([nick, sub.id]);
-        else if (status >= 200 && status < 300) sent++;
-        else hadPushErrors = true;
+        else if (status >= 200 && status < 300) { sent++; deliveredDeviceIds[sub.id] = true; }
+        else { pending = true; hadPushErrors = true; }
       } catch (e) {
         hadPushErrors = true;
         if (e?.deadSub) dead.push([nick, sub.id]);
+        else pending = true;
         statuses.push({ recipient: nick, device: String(sub.id).slice(0, 8), error: String(e?.message || e).slice(0, 200) });
       }
     }
-    if (budget.left <= 0) { i++; break; }
+    if (pending) pendingNicks.push(nick);
   }
 
   if (dead.length) {
@@ -841,41 +821,46 @@ async function processJob(env, jobId, budget, preloaded) {
     await saveSubs(env, fresh);
   }
 
-  if (job.type === 'notification' && plan.nicks.length && sent === 0) {
-    const reason = attempted ? (hadPushErrors ? 'push delivery failed' : 'push device not delivered') : 'no eligible push device';
-    const totals = { accounts: Object.keys(all).length, devices: Object.values(all).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0) };
-    const r = await retry(reason);
-    return { ...r, detail: lookups[0] ? diagnoseRecipient(lookups[0], totals) : null, statuses };
+  // Persist progress in the same leased job. Retrying failed devices or a split
+  // audience must not resend to devices that already accepted the notification,
+  // recreate inbox records, or lose recipients when the per-run budget ends.
+  if (pendingNicks.length) {
+    const attempts = Number(job.attempts || 0) + (hadPushErrors ? 1 : 0);
+    const deadJob = attempts >= MAX_JOB_ATTEMPTS;
+    await finish(deadJob ? 'dead' : 'retry', {
+      type: 'deliver', payload: plan.payload, nicks: pendingNicks, marks: Object.entries(plan.marks || {}),
+      deliveredDeviceIds, attempts,
+      nextAttemptAt: deadJob ? null : Date.now() + (hadPushErrors ? retryDelayMs(attempts) : 1000),
+      lastError: hadPushErrors ? 'temporary push delivery failure' : 'delivery budget exhausted'
+    });
+    return { sent, next: null, retry: !deadJob, dead: deadJob, statuses };
   }
-
-  const rest = plan.nicks.slice(i);
-  let next = null;
-  const extra = {};
-  if (rest.length) {
-    next = `${String(jobId).replace(/_c[0-9a-z]+$/, '')}_c${Date.now().toString(36)}`;
-    extra[`pushOutbox/${next}`] = {
-      type: 'deliver', payload: plan.payload, nicks: rest, marks: plan.marks,
-      status: 'pending', attempts: 0, leaseUntil: null, updatedAt: Date.now(),
-      queuedAt: Number(job.queuedAt || job.ts || Date.now()), ts: Date.now()
-    };
-    await finish('sent', extra);
-  } else {
-    await finish(plan.nicks.length ? 'sent' : 'skipped', Object.assign({}, plan.marks));
-  }
+  // Inbox remains available even when the account has no device or opted out.
+  // Such intentional skips must not consume the retry queue indefinitely.
+  await finish(sent || Object.keys(deliveredDeviceIds).length ? 'sent' : 'skipped',
+    { deliveredDeviceIds, nextAttemptAt: null }, plan.marks || {});
+  const next = null;
   console.log('push job completed', jobId, { sent, attempted, next });
   return { sent, next, statuses };
 }
 
 async function runCron(env) {
-  const jobs = await rtdbGet(env, 'pushOutbox', '?orderBy=%22%24key%22&limitToFirst=25');
+  // Query live states independently: completed history must never block new jobs.
+  const jobs = {};
+  for (const status of ['pending', 'retry', 'processing']) {
+    Object.assign(jobs, await rtdbGet(env, 'pushOutbox',
+      `?orderBy=%22status%22&equalTo=${enc(JSON.stringify(status))}&limitToFirst=25`) || {});
+  }
   if (!jobs) return;
   const budget = { left: maxPush(env) };
+  let processed = 0; // Bound fixed RTDB overhead as well as push requests.
   for (const [id, job] of Object.entries(jobs)) {
     if (budget.left <= 0) break;
     if (!job || typeof job !== 'object') continue;
     const now = Date.now();
     const age = now - Number(job?.queuedAt || job?.ts || now);
     if (age > 24 * 3600e3) {
+      if (processed++ >= 3) break;
       await rtdbPatch(env, { [`pushOutbox/${enc(id)}`]: { ...job, status: 'dead', leaseUntil: null, updatedAt: now, lastError: 'outbox retention exceeded' } });
       continue;
     }
@@ -883,6 +868,7 @@ async function runCron(env) {
     if (['sent','skipped','dead'].includes(status)) continue;
     if (status === 'processing' && Number(job.leaseUntil || 0) > now) continue;
     if (status === 'retry' && Number(job.nextAttemptAt || 0) > now) continue;
+    if (processed++ >= 3) break;
     try { await processJob(env, id, budget, job); }
     catch (e) {
       console.warn('job failed', id, String(e?.message || e));
@@ -908,6 +894,14 @@ async function handleSession(request, env, body) {
   return json(request, env, { ok: true, token, uid: nick });
 }
 
+async function handleGiftRecipients(request, env, body){
+  if (!(await verifyUser(env, String(body?.nick || ''), String(body?.ph || '')))) return json(request, env, { error: 'unauthorized' }, 401);
+  const users = await rtdbGet(env, 'users') || {};
+  // Never return password hashes, finances or private notifications to selectors.
+  const publicUsers = Object.fromEntries(Object.entries(users).map(([nick,u]) => [nick, { nick, displayName: String(u?.displayName || nick) }]));
+  return json(request, env, { ok: true, users: publicUsers });
+}
+
 async function handleGift(request, env, body) {
   const giverNick = String(body?.nick || '').trim();
   const ph = String(body?.ph || '').trim();
@@ -924,7 +918,9 @@ async function handleGift(request, env, body) {
   const price = Number(plan.price);
   const giftRank = Number(plan.rank);
   const committedAt = Date.now();
-  const giftId = giftIdPart('gift');
+  const requestId = String(body?.requestId || giftIdPart('legacy')).trim();
+  if (!validKey(requestId)) return json(request, env, { error: 'Некорректный ID подарка' }, 400);
+  const giftId = `gift_${(await sha256Hex(`${giverNick}:${requestId}`)).slice(0, 48)}`;
   const giverTxId = giftIdPart('tx');
   const recipientTxId = giftIdPart('tx');
   const giverJobId = giftIdPart('push');
@@ -932,8 +928,14 @@ async function handleGift(request, env, body) {
 
   const tx = await rtdbRootTransaction(env, async (root) => {
     const users = root?.users && typeof root.users === 'object' ? root.users : {};
+    const completed = root.subscriptionGifts?.[giftId];
+    if (completed) {
+      if (completed.to !== recipientNick || completed.subscription !== type) return { abort: true, reason: 'ID подарка уже использован' };
+      return { abort: true, reason: 'already-completed' };
+    }
     const giver = users[giverNick];
     const recipient = users[recipientNick];
+    if (giver?.accountFrozen) return { abort: true, reason: 'Аккаунт заморожен' };
     if (!giver || !recipient) return { abort: true, reason: 'Пользователь не найден' };
 
     const balance = Number(giver.balance || 0);
@@ -991,6 +993,7 @@ async function handleGift(request, env, body) {
     return { value: next };
   });
 
+  if (!tx.committed && tx.reason === 'already-completed') return json(request, env, { ok: true, success: true, giftId, subscription: type, price, repeated: true });
   if (!tx.committed) {
     const reason = String(tx.reason || 'Операция не подтверждена').trim();
     const status = /Недостаточно средств|более высокого уровня|Некорректн/.test(reason) ? 400 : 409;
@@ -1000,7 +1003,7 @@ async function handleGift(request, env, body) {
   const deliveries = [];
   for (const jobId of [giverJobId, recipientJobId]) {
     try {
-      const result = await processJob(env, jobId, { left: maxPush(env) });
+      const result = await tryImmediatePush(env, jobId);
       deliveries.push({ jobId, sent: Number(result?.sent || 0), retry: !!result?.retry, statuses: result?.statuses || [] });
     } catch (e) {
       console.warn('gift push job failed', jobId, String(e?.message || e));
@@ -1009,6 +1012,11 @@ async function handleGift(request, env, body) {
   }
 
   return json(request, env, { ok: true, success: true, giftId, subscription: type, price, deliveries });
+}
+
+async function tryImmediatePush(env, jobId) {
+  try { return await processJob(env, jobId, { left: maxPush(env) }); }
+  catch(e) { console.warn('push deferred to cron', jobId, String(e?.message || e)); return { sent: 0, retry: true, reason: 'queued for retry' }; }
 }
 
 async function handleNotify(request, env, body) {
@@ -1066,7 +1074,7 @@ async function handleNotify(request, env, body) {
       [`pushOutbox/${enc(jobId)}`]: job
     });
 
-    const result = await processJob(env, jobId, { left: maxPush(env) });
+    const result = await tryImmediatePush(env, jobId);
     return json(request, env, {
       ok: true,
       notificationId,
@@ -1083,6 +1091,37 @@ async function handleNotify(request, env, body) {
   }
 }
 
+async function handleDm(request, env, body) {
+  const nick=String(body?.nick||''), ph=String(body?.ph||''), to=String(body?.to||''), id=String(body?.id||'');
+  if (!(await verifyUser(env,nick,ph))) return json(request,env,{error:'unauthorized'},401);
+  if (!validNick(to) || !validKey(id) || !body.message || body.message.nick !== nick) return json(request,env,{error:'bad message'},400);
+  if (!await rtdbGet(env,`users/${enc(to)}/nick`)) return json(request,env,{error:'Получатель не найден'},404);
+  const key=[nick,to].sort().join('__dm__'), path=`dms/${enc(key)}/messages/${enc(id)}`;
+  if (await rtdbGet(env,path)) return json(request,env,{ok:true,id,duplicate:true});
+  const now=Date.now(), input=body.message;
+  const message={nick,avatar:String(input.avatar||''),time:moscowTime(now),createdAt:now};
+  for(const field of ['text','caption','mediaData','msgType','cameraFacing']) if(typeof input[field]==='string') message[field]=input[field];
+  const latestMeta={lastTs:now,latest:{nick,avatar:message.avatar,text:message.text||'',msgType:message.msgType||null,time:message.time,createdAt:now}};
+  const notificationId=`dm_${id}`, jobId=`dm_push_${id}`;
+  const patch={
+    [path]:message,
+    [`dmIndex/${enc(nick)}/${enc(to)}`]:{...latestMeta,unread:false},
+    [`dmIndex/${enc(to)}/${enc(nick)}`]:{...latestMeta,unread:true}
+  };
+  if(to!==nick){
+    const displayName=await rtdbGet(env,`users/${enc(nick)}/displayName`)||nick;
+    patch[`users/${enc(to)}/notifications/${notificationId}`]={
+      text:`💬 ${displayName}: ${previewOf(message)}`,cat:'messages',createdAt:now,time:moscowTime(now),push:true,source:'dm',from:nick,sourceMessageId:id,
+      url:`${appUrl(env)}?kpSection=messages&kpDm=${enc(nick)}`
+    };
+    patch[`pushOutbox/${jobId}`]={type:'notification',to,id:notificationId,sender:nick,status:'pending',attempts:0,queuedAt:now,ts:now,updatedAt:now};
+  }
+  // Closing the sender's tab after this write cannot lose the recipient's push.
+  await rtdbPatch(env,patch);
+  const delivery=to===nick?{}:await tryImmediatePush(env,jobId);
+  return json(request,env,{ok:true,id,sent:Number(delivery.sent||0),retry:!!delivery.retry});
+}
+
 async function handleChat(request, env, body) {
   const nick = String(body?.nick || '').trim();
   const ph = String(body?.ph || '').trim();
@@ -1096,7 +1135,7 @@ async function handleChat(request, env, body) {
   if (current) return json(request, env, { ok: true, id, duplicate: true });
   const job = { type:'chat', id, sender:nick, status:'pending', attempts:0, leaseUntil:null, updatedAt:now, queuedAt:now, ts:now };
   await rtdbPatch(env, { [`chat/${enc(id)}`]: msg, [`pushOutbox/${enc(jobId)}`]: job });
-  const result = await processJob(env, jobId, { left: maxPush(env) });
+  const result = await tryImmediatePush(env, jobId);
   return json(request, env, { ok:true, id, jobId, sent:Number(result?.sent||0), next:result?.next||null, retry:!!result?.retry, statuses:result?.statuses||[] });
 }
 
@@ -1113,7 +1152,7 @@ async function handleNews(request, env, body) {
   if (current) return json(request, env, { ok: true, id, duplicate: true });
   const job = { type:'news', id, sender:nick, status:'pending', attempts:0, leaseUntil:null, updatedAt:now, queuedAt:now, ts:now };
   await rtdbPatch(env, { [`news/${enc(id)}`]: item, [`pushOutbox/${enc(jobId)}`]: job });
-  const result = await processJob(env, jobId, { left: maxPush(env) });
+  const result = await tryImmediatePush(env, jobId);
   return json(request, env, { ok:true, id, jobId, sent:Number(result?.sent||0), next:result?.next||null, retry:!!result?.retry, statuses:result?.statuses||[] });
 }
 
@@ -1183,9 +1222,9 @@ async function handleSubscribe(request, env, body) {
 
   // Nothing changed since the last registration: skip the KV write (free plan: ~1000 writes/day).
   const curSub = (all[nick] || []).find(x => x.id === id);
-  if (curSub && curSub.displayName === displayName && JSON.stringify(curSub.prefs) === JSON.stringify(sanitizePrefs(prefs))
+  if (curSub?.rotationToken && curSub.displayName === displayName && JSON.stringify(curSub.prefs) === JSON.stringify(sanitizePrefs(prefs))
       && Date.now() - Number(curSub.updatedAt || 0) < 12 * 3600e3) {
-    return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName, unchanged: true });
+    return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName, rotationToken: curSub.rotationToken, unchanged: true });
   }
 
   // If an older registration used the same account name with different
@@ -1206,8 +1245,9 @@ async function handleSubscribe(request, env, body) {
   // Drop devices of this account that can no longer work: created with another VAPID key, or legacy records
   // (no key recorded) from the same kind of browser that this new registration replaces.
   const mine = (all[nick] || []).filter(x => x.id !== id && !staleKey(x, env) && !(workerVk && !x.vk && x.ua && x.ua === String(userAgent || '').slice(0, 200)));
+  const rotationToken = curSub?.rotationToken || b64uEnc(crypto.getRandomValues(new Uint8Array(32)));
   mine.unshift({
-    id,
+    id, rotationToken,
     vk: deviceVk || workerVk,
     endpoint: s.endpoint,
     keys: { p256dh: String(s.keys.p256dh), auth: String(s.keys.auth) },
@@ -1226,8 +1266,26 @@ async function handleSubscribe(request, env, body) {
     storedDevices: all[nick].length,
     bucketKeys: Object.keys(all).slice(0, 20)
   }));
-  return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName });
+  return json(request, env, { success: true, subscriptionId: id, ownerNick: nick, displayName, rotationToken });
 }
+async function handleRotateSubscription(request, env, body) {
+  const nick = String(body?.nick || ''), id = String(body?.subscriptionId || '');
+  const all = await loadSubs(env);
+  const old = (all[nick] || []).find(s => s.id === id);
+  if (!old?.rotationToken || !safeEqual(old.rotationToken, String(body?.rotationToken || ''))) return json(request, env, { error: 'unauthorized' }, 401);
+  // Device-scoped token can only replace this device's push subscription.
+  const ph = await rtdbGet(env, `users/${enc(nick)}/passwordHash`);
+  const response = await handleSubscribe(request, env, { nick, ph, subscription: body.subscription, prefs: old.prefs, userAgent: old.ua });
+  if (!response.ok) return response;
+  const result = await response.json();
+  if (result.subscriptionId !== id) {
+    const fresh = await loadSubs(env);
+    if (fresh[nick]) fresh[nick] = fresh[nick].filter(s => s.id !== id);
+    await saveSubs(env, fresh);
+  }
+  return json(request, env, result);
+}
+
 async function handleUnsubscribe(request, env, body) {
   if (!(await verifyUser(env, body.nick, body.ph))) return json(request, env, { error: 'unauthorized' }, 401);
   const all = await loadSubs(env);
@@ -1374,14 +1432,17 @@ export default {
       const body = await request.json().catch(() => null);
       if (!body || typeof body !== 'object') return json(request, env, { error: 'bad json' }, 400);
       if (url.pathname === '/session') return await handleSession(request, env, body);
+      if (url.pathname === '/gift/recipients') return await handleGiftRecipients(request, env, body);
       if (url.pathname === '/gift') return await handleGift(request, env, body);
       if (url.pathname === '/notify') return await handleNotify(request, env, body);
+      if (url.pathname === '/dm') return await handleDm(request, env, body);
       if (url.pathname === '/chat') return await handleChat(request, env, body);
       if (url.pathname === '/news') return await handleNews(request, env, body);
       if (url.pathname === '/notification/read') return await handleNotificationRead(request, env, body, 'one');
       if (url.pathname === '/notification/read-all') return await handleNotificationRead(request, env, body, 'all');
       if (url.pathname === '/notification/delete') return await handleNotificationDelete(request, env, body, 'one');
       if (url.pathname === '/notification/clear') return await handleNotificationDelete(request, env, body, 'all');
+      if (url.pathname === '/subscribe/rotate') return await handleRotateSubscription(request, env, body);
       if (url.pathname === '/subscribe') return await handleSubscribe(request, env, body);
       if (url.pathname === '/unsubscribe') return await handleUnsubscribe(request, env, body);
       if (url.pathname === '/prefs') return await handlePrefs(request, env, body);

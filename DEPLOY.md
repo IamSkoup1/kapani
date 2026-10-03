@@ -1,81 +1,44 @@
-# Deploy Kapani
+# Обновление Капани — 3 октября 2026
 
-## Firebase Functions
+Главная ошибка синтаксиса исправлена. Для остальных исправлений необходимо обновить и сайт, и канонический Cloudflare Worker. Изменить только index.html недостаточно: появились серверные маршруты `/dm`, `/gift/recipients`, `/subscribe/rotate`.
 
-```bash
-cd functions
-npm ci
-cd ..
-firebase deploy --only functions
-```
+1. Сначала разверните Worker из `push-worker/`:
 
-Должны быть deployed:
+   ```bash
+   cd push-worker
+   npx wrangler deploy
+   ```
 
-- `registerFcmToken`
-- `unregisterFcmToken`
-- `updatePushPreferences`
-- `getPushDiagnostics`
-- `enqueueNotificationPush`
-- `processNotificationQueue`
-- `notifyOnChatMessage`
-- `notifyOnLegacyDuelNotification`
-- `notifyOnNewsCreated`
-- остальные существующие Cloud Functions проекта
+   Сохраните существующие secrets `FIREBASE_SERVICE_ACCOUNT_JSON` и `VAPID_PRIVATE_KEY`, binding `PUSH_KV` и cron из `wrangler.toml`. Новая пара VAPID-ключей не генерировалась: ключи конфигурации остаются прежними. Проверка `/health` должна показать `vapid.publicOk`, `vapid.privateOk`, `vapid.pairOk` равными `true`.
 
-## Client / Service Worker
+   `ADMIN_NICK` должен совпадать с настоящим ключом аккаунта администратора в RTDB (`users/<ключ>`), а не просто с отображаемым именем. Клиент уже использует ключ «Кайон». Для обновления admin-claim нужна новая Firebase-сессия: после развёртывания выйдите и войдите снова.
 
-На production domain рядом с `index.html` должны быть доступны:
+2. Опубликуйте обновлённый проект на своём GitHub Pages, обязательно включая:
 
-- `/kapani/index.html`
-- `/kapani/config.js`
-- `/kapani/firebase-messaging-sw.js`
-- `/kapani/manifest.json`
-- `/kapani/image.png`
+   - `index.html`;
+   - `config.js`;
+   - `firebase-messaging-sw.js`;
+   - `functions/subscription-config.js`;
+   - существующие `manifest.json`, `image.png`.
 
-FCM Web требует HTTPS. citeturn733441search7
+   Backend для push — `push-worker/`, не `cloudflare-worker/`. Firebase Functions для новых push, ЛС и подарка не нужны. Другие существующие функции проекта этой инструкцией не разворачиваются.
 
-## Firebase prerequisites
+3. Сравните действующие правила Firebase с `database.rules.json`. В работающих правилах необходимо добавить индекс `pushOutbox: { ".indexOn": ["status"] }`. Также проверьте чтение своего `dmIndex/<uid>` и право менять только собственные `unread`/`lastReadAt`, `presence/<uid>`, `readState/<uid>`, `users/<uid>/lastSeen`; соответствующие примеры есть в файле правил. Это требует Firebase Auth с UID, совпадающим с ключом аккаунта.
 
-1. Authentication должен быть включён: Kapani создаёт Firebase custom-token сессию перед server-side `registerFcmToken`.
-2. Cloud Functions должны иметь доступ к Firebase Admin SDK.
-3. FCM API и Web Push credentials проекта должны оставаться на backend.
-4. Realtime Database должна быть доступна Functions в регионе `europe-west1`.
+   Не публикуйте весь файл правил без сравнения: существующие вход, регистрация и прямые денежные операции клиента несовместимы с его ограничениями. Подробности — в `AUDIT_2026-10-03.md`. Не открывайте всю базу для обхода отказов.
 
-## RTDB Rules
+4. Откройте сайт заново. В статусе push должна быть сборка `2026-10-03-audit`. При уже разрешённых уведомлениях устройство повторно регистрируется автоматически и сохраняет контекст обновления подписки. Если нужно, в профиле нажмите «Переподключить push».
 
-В архиве отсутствуют исходные RTDB/Firestore rules. Functions работают через Admin SDK и не требуют client rules для `notificationQueue`/`fcmTokenIndex`. Не копируйте публичные RTDB rules из старого Worker-конфига в production без отдельного security-аудита.
+5. Проверка после публикации:
 
-## Verification after deployment
+   ```js
+   await kapaniPushDoctor()
+   await kapaniPushSelfTest()
+   await testKapaniPush()
+   ```
 
-### 1. Token registration
+   `kapaniPushSelfTest()` проверяет фактическую отправку системного push; `testKapaniPush()` также создаёт внутреннее уведомление. При разрешённой категории и зарегистрированном устройстве проверяйте `sent` и HTTP-статусы доставки, а не только наличие разрешения браузера.
 
-Откройте Kapani, разрешите Notifications и выполните:
+   Из второго тестового аккаунта проверьте общий чат, ЛС, новость и уведомления используемых сервисов при открытой и закрытой вкладке получателя. Для ЛС клик по push должен открывать отправителя. Проверьте подарок: однократное списание, подписка получателю на 7 дней, история/казна, уведомления обоим аккаунтам; повтор такой же подписки продлевает срок.
 
-```js
-await window.getKapaniPushDiagnostics()
-```
-
-Ожидается:
-
-- `permission: "granted"`
-- `serviceWorkerRegistered: true`
-- `activeServiceWorker: true`
-- `fcmTokenExists: true`
-- `serverRegistered: true`
-- `serverTokenCount >= 1`
-
-### 2. End-to-end push
-
-Создайте новое notification событие. В `notificationQueue/{jobId}` ожидается `pending → processing → sent`.
-
-### 3. Closed-site test
-
-Полностью закройте вкладки/окна Kapani и отправьте новое сообщение другому пользователю. Системное уведомление должно приходить через FCM + Service Worker без открытого `index.html`.
-
-### 4. iOS
-
-На iPhone установите Kapani на Home Screen, разрешите Notifications и тестируйте из PWA. Apple документирует Web Push для Home Screen web apps на iOS/iPadOS 16.4+. citeturn733441search0turn733441search1
-
-### 5. Logs
-
-Ищите структурированные строки `[KapaniPush]` по `jobId`, `notificationId`, `user`, `tokenId`, `attempt`, `code`.
+   На iPhone проверяйте приложение, добавленное на экран «Домой». Эти реальные проверки не выполнялись в локальном аудите.

@@ -1,3 +1,5 @@
+> Актуальные исправления от 03.10.2026: [инструкция обновления](DEPLOY.md), [результаты и ограничения аудита](AUDIT_2026-10-03.md). Более старые инструкции push относятся к предыдущим версиям.
+
 # Kapani — Push notifications
 
 В production push-уведомления идут через **Cloudflare Worker + стандартный Web Push (VAPID)**. Firebase используется как **Realtime Database/Auth-контур**, а Firebase Cloud Functions не участвуют в доставке push. Эта схема не требует перевода Firebase-проекта на Blaze только ради push.
