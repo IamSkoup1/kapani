@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0c1117">
+<meta name="theme-color" content="#090508">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Капани">
@@ -75,9 +75,9 @@
 <link rel="preconnect" href="https://unpkg.com">
 <style>
 :root {
-    --bg:#0c1117;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
-    --border:rgba(255,255,255,0.09);--primary:#22d3a5;--pri-dim:rgba(34,211,165,0.14);
-    --gold:#fbbf24;--gold-dim:rgba(251,191,36,0.14);--red:#f87171;--red-dim:rgba(248,113,113,0.14);
+    --bg:#080507;--surface:rgba(255,255,255,0.04);--surface2:rgba(255,255,255,0.07);
+    --border:rgba(255,255,255,0.09);--primary:#f0444a;--pri-dim:rgba(240,68,74,0.14);
+    --gold:#ff806a;--gold-dim:rgba(255,128,106,0.14);--red:#f87171;--red-dim:rgba(248,113,113,0.14);
     --text:#e2e8f0;--muted:#64748b;--shadow:0 8px 40px rgba(0,0,0,0.5);--r:22px;--r-sm:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -85,8 +85,8 @@ body{font-family:'Nunito','Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji
 .bottom-nav{-webkit-backface-visibility:hidden;backface-visibility:hidden;}
 button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
 body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(34,211,165,.07) 0%,transparent 70%),
-               radial-gradient(ellipse 50% 50% at 85% 75%,rgba(251,191,36,.06) 0%,transparent 70%);}
+    background:radial-gradient(ellipse 60% 60% at 15% 25%,rgba(240,68,74,.07) 0%,transparent 70%),
+               radial-gradient(ellipse 50% 50% at 85% 75%,rgba(255,128,106,.06) 0%,transparent 70%);}
 .container{width:100%;max-width:490px;padding:0 12px;position:relative;z-index:1;}
 .g-header{position:fixed;top:0;width:100%;max-width:490px;background:rgba(12,17,23,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);height:calc(64px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top,0px) 18px 0;z-index:900;}
 .h-left{display:flex;align-items:center;gap:12px;cursor:pointer;}
@@ -94,7 +94,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .h-avatar:hover{transform:scale(1.08);}
 .h-name{font-weight:800;font-size:14px;line-height:1.2;}
 .h-job{font-size:11px;color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
-.h-bal{background:linear-gradient(135deg,var(--primary),#0fa87e);color:#0c1117;padding:9px 16px;border-radius:12px;font-weight:900;font-size:14px;box-shadow:0 4px 14px rgba(34,211,165,.35);}
+.h-bal{background:linear-gradient(135deg,var(--primary),#a71924);color:#080507;padding:9px 16px;border-radius:12px;font-weight:900;font-size:14px;box-shadow:0 4px 14px rgba(240,68,74,.35);}
 .h-notify{position:relative;cursor:pointer;font-size:22px;margin-right:4px;}
 .h-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:10px;font-size:9px;font-weight:900;padding:2px 5px;min-width:16px;text-align:center;display:none;}
 .avatar-wrap{position:relative;display:inline-block;}
@@ -118,17 +118,17 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .card:hover{border-color:rgba(255,255,255,0.14);}
 .card-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:16px;}
 #authSection{padding-top:20px;}
-.logo-card{text-align:center;padding:40px 24px 32px;background:linear-gradient(145deg,rgba(34,211,165,.06),rgba(251,191,36,.04));border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;}
+.logo-card{text-align:center;padding:40px 24px 32px;background:linear-gradient(145deg,rgba(240,68,74,.06),rgba(255,128,106,.04));border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;}
 .logo-title{font-family:'Unbounded',sans-serif;font-size:38px;font-weight:900;background:linear-gradient(135deg,var(--primary),var(--gold));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
 .logo-sub{color:var(--muted);margin-top:10px;font-size:14px;}
 input,textarea,select{width:100%;padding:14px 16px;margin:8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:15px;font-family:'Nunito',sans-serif;font-weight:600;transition:.2s;outline:none;}
-input:focus,textarea:focus,select:focus{border-color:var(--primary);background:rgba(34,211,165,.06);}
+input:focus,textarea:focus,select:focus{border-color:var(--primary);background:rgba(240,68,74,.06);}
 textarea{resize:vertical;min-height:80px;}
 select option{background:#1a2332;}
 .btn{width:100%;padding:16px;border:none;border-radius:var(--r-sm);font-family:'Nunito',sans-serif;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:.2s;}
 .btn:active{transform:scale(.96);}
-.btn-primary{background:linear-gradient(135deg,var(--primary),#0fa87e);color:#0c1117;}
-.btn-gold{background:linear-gradient(135deg,var(--gold),#d97706);color:#0c1117;}
+.btn-primary{background:linear-gradient(135deg,var(--primary),#a71924);color:#080507;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#b21c28);color:#080507;}
 .btn-red{background:linear-gradient(135deg,var(--red),#dc2626);color:#fff;}
 .btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 .btn-sm{padding:10px 16px;font-size:12px;width:auto;}
@@ -159,8 +159,8 @@ select option{background:#1a2332;}
 .quick-card .qlbl{font-size:13px;font-weight:800;}
 .quick-card .qsub{font-size:11px;color:var(--muted);margin-top:2px;}
 .status-card{border-radius:var(--r);padding:18px;margin-bottom:12px;border:1px solid var(--border);}
-.status-card.green{background:rgba(34,211,165,.08);border-color:rgba(34,211,165,.3);}
-.status-card.gold{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);}
+.status-card.green{background:rgba(240,68,74,.08);border-color:rgba(240,68,74,.3);}
+.status-card.gold{background:rgba(255,128,106,.08);border-color:rgba(255,128,106,.3);}
 .status-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
 .badge-wait{background:var(--gold-dim);color:var(--gold);}
 .badge-active{background:var(--pri-dim);color:var(--primary);}
@@ -168,7 +168,7 @@ select option{background:#1a2332;}
 @keyframes pulse{0%{box-shadow:0 0 0 0 currentColor}100%{box-shadow:0 0 0 7px transparent}}
 .item-row{display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface2);border-radius:var(--r-sm);margin-bottom:8px;border:1px solid var(--border);}
 .item-row input{width:70px;margin:0;padding:8px;text-align:center;}
-.total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--pri-dim);border-radius:var(--r-sm);margin:12px 0;border:1px solid rgba(34,211,165,.25);font-weight:900;}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--pri-dim);border-radius:var(--r-sm);margin:12px 0;border:1px solid rgba(240,68,74,.25);font-weight:900;}
 .cart-card,.order-card,.rent-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:12px;}
 .cart-list,.order-list,.rent-list{display:flex;flex-direction:column;gap:8px;}
 .cart-item,.order-item,.rent-row{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);}
@@ -180,7 +180,7 @@ select option{background:#1a2332;}
 .cart-qty input{width:54px;margin:0;padding:9px 8px;text-align:center;}
 .cart-actions,.order-actions,.rent-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
 .rent-disabled{background:var(--muted)!important;border-color:var(--border)!important;color:#fff!important;opacity:.6;}
-.rent-owned{background:var(--gold-dim);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:8px 10px;font-size:12px;color:var(--gold);font-weight:800;}
+.rent-owned{background:var(--gold-dim);border:1px solid rgba(255,128,106,.25);border-radius:12px;padding:8px 10px;font-size:12px;color:var(--gold);font-weight:800;}
 .biz-role-salary small{display:block;color:var(--muted);font-weight:700;margin-top:2px;}
 
 .total-val{font-size:22px;color:var(--primary);}
@@ -194,7 +194,7 @@ select option{background:#1a2332;}
 .chat-msg.me{flex-direction:row-reverse;}
 .chat-av{width:32px;height:32px;border-radius:10px;object-fit:cover;flex-shrink:0;display:block;}
 .chat-bubble{max-width:75%;padding:10px 14px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);font-size:13px;line-height:1.4;word-break:break-word;}
-.chat-msg.me .chat-bubble{background:var(--pri-dim);border-color:rgba(34,211,165,.3);color:var(--primary);}
+.chat-msg.me .chat-bubble{background:var(--pri-dim);border-color:rgba(240,68,74,.3);color:var(--primary);}
 .chat-sender{font-size:10px;font-weight:900;color:var(--primary);margin-bottom:3px;text-transform:uppercase;}
 .chat-time{font-size:10px;color:var(--muted);margin-top:3px;}
 .chat-input-row{display:flex;gap:6px;margin-top:8px;align-items:center;}
@@ -222,7 +222,7 @@ select option{background:#1a2332;}
 .market-seller img{width:24px;height:24px;border-radius:8px;object-fit:cover;}
 .market-status-sold{background:var(--red-dim);color:var(--red);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 .market-status-pending{background:var(--gold-dim);color:var(--gold);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
-.market-status-pin{background:rgba(251,191,36,.16);color:var(--gold);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.market-status-pin{background:rgba(255,128,106,.16);color:var(--gold);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 #taxiMap{width:100%;height:320px;border-radius:var(--r-sm);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
 .taxi-point-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
 .taxi-point-row input{flex:1;margin:0;}
@@ -233,7 +233,7 @@ select option{background:#1a2332;}
 .taxi-info-box{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;text-align:center;}
 .taxi-info-box .tiv{font-size:18px;font-weight:900;color:var(--primary);}
 .taxi-info-box .til{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
-.driver-card{background:linear-gradient(135deg,rgba(34,211,165,.1),rgba(34,211,165,.04));border:1px solid rgba(34,211,165,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;}
+.driver-card{background:linear-gradient(135deg,rgba(240,68,74,.1),rgba(240,68,74,.04));border:1px solid rgba(240,68,74,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;}
 .driver-card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
 .driver-card-av{width:44px;height:44px;border-radius:12px;object-fit:cover;border:2px solid var(--primary);}
 .driver-card-name{font-weight:900;font-size:15px;}
@@ -263,15 +263,15 @@ select option{background:#1a2332;}
 .np-close{font-size:18px;color:var(--muted);cursor:pointer;transition:.2s;padding:4px;}
 .np-close:hover{color:var(--text);}
 .work-order{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:12px;}
-.work-active{background:linear-gradient(135deg,rgba(34,211,165,.1),rgba(34,211,165,.04));border-color:rgba(34,211,165,.3);}
+.work-active{background:linear-gradient(135deg,rgba(240,68,74,.1),rgba(240,68,74,.04));border-color:rgba(240,68,74,.3);}
 .map-frame{width:100%;height:460px;border:none;border-radius:var(--r);display:block;}
-.profile-header{position:relative;text-align:center;padding:28px 20px 20px;background:linear-gradient(145deg,var(--pri-dim),transparent);border-radius:var(--r);border:1px solid rgba(34,211,165,.2);margin-bottom:14px;overflow:hidden;}
+.profile-header{position:relative;text-align:center;padding:28px 20px 20px;background:linear-gradient(145deg,var(--pri-dim),transparent);border-radius:var(--r);border:1px solid rgba(240,68,74,.2);margin-bottom:14px;overflow:hidden;}
 .p-av{width:90px;height:90px;border-radius:26px;object-fit:cover;border:3px solid var(--primary);margin-bottom:12px;box-shadow:0 0 0 6px var(--pri-dim);}
 .p-name{font-size:22px;font-weight:900;}
 .p-job{color:var(--primary);font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.6px;margin-top:4px;}
 
 /* Avatar Frames - Enhanced and Fixed */
-.avatar-frame-gold{border:4px solid var(--gold)!important;box-shadow:0 0 20px rgba(251,191,36,.6),inset 0 0 15px rgba(251,191,36,.3)!important;position:relative;z-index:1;}
+.avatar-frame-gold{border:4px solid var(--gold)!important;box-shadow:0 0 20px rgba(255,128,106,.6),inset 0 0 15px rgba(255,128,106,.3)!important;position:relative;z-index:1;}
 .avatar-frame-rainbow{border:4px solid transparent!important;animation:rainbowFrame 3s linear infinite;position:relative;z-index:1;}
 @keyframes rainbowFrame{
     0%{border-color:#ff0000;box-shadow:0 0 20px rgba(255,0,0,.6),inset 0 0 15px rgba(255,0,0,.3);}
@@ -284,13 +284,13 @@ select option{background:#1a2332;}
 }
 .avatar-frame-pulse{border:4px solid var(--primary)!important;animation:pulseFrame 2s ease-in-out infinite;position:relative;z-index:1;}
 @keyframes pulseFrame{
-    0%,100%{box-shadow:0 0 15px rgba(34,211,165,.4),inset 0 0 10px rgba(34,211,165,.2);}
-    50%{box-shadow:0 0 30px rgba(34,211,165,.8),inset 0 0 20px rgba(34,211,165,.4);}
+    0%,100%{box-shadow:0 0 15px rgba(240,68,74,.4),inset 0 0 10px rgba(240,68,74,.2);}
+    50%{box-shadow:0 0 30px rgba(240,68,74,.8),inset 0 0 20px rgba(240,68,74,.4);}
 }
 .avatar-frame-glow{border:4px solid var(--gold)!important;animation:glowFrame 2s ease-in-out infinite;position:relative;z-index:1;}
 @keyframes glowFrame{
-    0%,100%{box-shadow:0 0 20px rgba(251,191,36,.5),inset 0 0 15px rgba(251,191,36,.3);}
-    50%{box-shadow:0 0 40px rgba(251,191,36,.9),inset 0 0 25px rgba(251,191,36,.5),0 0 60px rgba(251,191,36,.3);}
+    0%,100%{box-shadow:0 0 20px rgba(255,128,106,.5),inset 0 0 15px rgba(255,128,106,.3);}
+    50%{box-shadow:0 0 40px rgba(255,128,106,.9),inset 0 0 25px rgba(255,128,106,.5),0 0 60px rgba(255,128,106,.3);}
 }
 /* New Avatar Frames */
 .avatar-frame-neon{border:3px solid #00ffff!important;box-shadow:0 0 25px rgba(0,255,255,.8),inset 0 0 20px rgba(0,255,255,.4),0 0 0 2px #0088ff;position:relative;z-index:1;}
@@ -318,12 +318,12 @@ select option{background:#1a2332;}
 @keyframes primeRainbowText{0%{background-position:0% 50%;}100%{background-position:-300% 50%;}}
 
 /* Profile Background Effects - Enhanced */
-.profile-bg-shimmer{background:linear-gradient(90deg,var(--pri-dim) 0%,rgba(34,211,165,.2) 50%,var(--pri-dim) 100%);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;position:relative;isolation:isolate;}
+.profile-bg-shimmer{background:linear-gradient(90deg,var(--pri-dim) 0%,rgba(240,68,74,.2) 50%,var(--pri-dim) 100%);background-size:200% 100%;animation:shimmer 3s ease-in-out infinite;position:relative;isolation:isolate;}
 @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
 .profile-bg-particles{position:relative;isolation:isolate;}
-.profile-bg-particles::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(34,211,165,.3) 1px,transparent 1px);background-size:20px 20px;animation:particles 20s linear infinite;pointer-events:none;z-index:-1;}
+.profile-bg-particles::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(240,68,74,.3) 1px,transparent 1px);background-size:20px 20px;animation:particles 20s linear infinite;pointer-events:none;z-index:-1;}
 @keyframes particles{0%{transform:translateY(0);}100%{transform:translateY(-20px);}}
-.profile-bg-gradient-animated{background:linear-gradient(-45deg,#0c1117,var(--pri-dim),rgba(251,191,36,.1),#0c1117);background-size:400% 400%;animation:gradientBG 15s ease infinite;position:relative;isolation:isolate;}
+.profile-bg-gradient-animated{background:linear-gradient(-45deg,#080507,var(--pri-dim),rgba(255,128,106,.1),#080507);background-size:400% 400%;animation:gradientBG 15s ease infinite;position:relative;isolation:isolate;}
 @keyframes gradientBG{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 /* New Profile Backgrounds */
 .profile-bg-ocean{background:linear-gradient(180deg,rgba(0,119,190,.2),rgba(0,180,216,.15),rgba(144,224,239,.1));position:relative;isolation:isolate;}
@@ -333,12 +333,12 @@ select option{background:#1a2332;}
 .profile-bg-sunset::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 70% 80%,rgba(255,206,84,.2) 0%,transparent 60%);animation:sunsetGlow 6s ease-in-out infinite;pointer-events:none;z-index:-1;}
 @keyframes sunsetGlow{0%,100%{opacity:0.6;}50%{opacity:1;}}
 .profile-bg-aurora{background:linear-gradient(180deg,rgba(16,185,129,.15),rgba(59,130,246,.15),rgba(147,51,234,.1));position:relative;isolation:isolate;}
-.profile-bg-aurora::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg,transparent 30%,rgba(34,211,165,.2) 50%,transparent 70%);animation:auroraMove 10s linear infinite;pointer-events:none;z-index:-1;}
+.profile-bg-aurora::before{content:'';position:absolute;inset:0;background:linear-gradient(45deg,transparent 30%,rgba(240,68,74,.2) 50%,transparent 70%);animation:auroraMove 10s linear infinite;pointer-events:none;z-index:-1;}
 @keyframes auroraMove{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
 .profile-bg-galaxy{background:linear-gradient(180deg,rgba(17,24,39,.8),rgba(31,41,55,.6),rgba(55,65,81,.4));position:relative;isolation:isolate;}
 .profile-bg-galaxy::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.3) 1px,transparent 1px),radial-gradient(circle,rgba(147,51,234,.2) 2px,transparent 2px);background-size:30px 30px,50px 50px;animation:galaxyRotate 60s linear infinite;pointer-events:none;z-index:-1;}
 @keyframes galaxyRotate{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
-.profile-bg-fire{background:linear-gradient(180deg,rgba(239,68,68,.3),rgba(249,115,22,.2),rgba(251,191,36,.1));position:relative;isolation:isolate;}
+.profile-bg-fire{background:linear-gradient(180deg,rgba(239,68,68,.3),rgba(249,115,22,.2),rgba(255,128,106,.1));position:relative;isolation:isolate;}
 .profile-bg-fire::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 100%,rgba(239,68,68,.4) 0%,transparent 70%);animation:flicker 1.5s ease-in-out infinite;pointer-events:none;z-index:-1;}
 .profile-bg-fire::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 90%,rgba(255,140,0,.3) 0%,transparent 60%);animation:flicker 2s ease-in-out infinite 0.5s;pointer-events:none;z-index:-1;}
 @keyframes flicker{0%,100%{opacity:0.7;transform:scale(1) translateY(0);}25%{opacity:0.9;transform:scale(1.01) translateY(-2px);}50%{opacity:1;transform:scale(1.02) translateY(-3px);}75%{opacity:0.8;transform:scale(1.01) translateY(-1px);}}
@@ -363,7 +363,7 @@ select option{background:#1a2332;}
 
 /* Chat Message Backgrounds - Enhanced */
 .chat-bubble-custom{background:var(--msg-bg-color,linear-gradient(135deg,var(--surface2),var(--surface)))!important;}
-.chat-bubble-gold{background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(251,191,36,.05))!important;border-color:var(--gold)!important;box-shadow:0 2px 8px rgba(251,191,36,.2)!important;}
+.chat-bubble-gold{background:linear-gradient(135deg,rgba(255,128,106,.2),rgba(255,128,106,.05))!important;border-color:var(--gold)!important;box-shadow:0 2px 8px rgba(255,128,106,.2)!important;}
 .chat-bubble-rainbow{animation:rainbowBubble 5s linear infinite;background:linear-gradient(135deg,rgba(255,0,0,.15),rgba(255,136,0,.15),rgba(255,255,0,.15),rgba(0,255,0,.15),rgba(0,136,255,.15),rgba(136,0,255,.15))!important;background-size:400% 400%!important;border-color:transparent!important;}
 @keyframes rainbowBubble{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 /* New Chat Backgrounds */
@@ -373,7 +373,7 @@ select option{background:#1a2332;}
 @keyframes auroraBubble{0%,100%{background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(147,51,234,.1));}50%{background:linear-gradient(135deg,rgba(147,51,234,.2),rgba(16,185,129,.1));}}
 .chat-bubble-galaxy{background:linear-gradient(135deg,rgba(17,24,39,.3),rgba(55,65,81,.2))!important;border-color:rgba(147,51,234,.3)!important;box-shadow:0 2px 8px rgba(147,51,234,.2)!important;position:relative;}
 .chat-bubble-galaxy::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.1) 1px,transparent 1px);background-size:15px 15px;border-radius:inherit;pointer-events:none;}
-.chat-bubble-fire{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(251,191,36,.08))!important;border-color:rgba(239,68,68,.3)!important;box-shadow:0 2px 8px rgba(239,68,68,.2)!important;animation:flickerBubble 2s ease-in-out infinite;position:relative;}
+.chat-bubble-fire{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(255,128,106,.08))!important;border-color:rgba(239,68,68,.3)!important;box-shadow:0 2px 8px rgba(239,68,68,.2)!important;animation:flickerBubble 2s ease-in-out infinite;position:relative;}
 .chat-bubble-fire::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(255,140,0,.1) 0%,transparent 50%);border-radius:inherit;pointer-events:none;animation:flickerBubbleInner 1.5s ease-in-out infinite;}
 .chat-bubble-fire *{position:relative;z-index:2;}
 @keyframes flickerBubble{0%,100%{opacity:0.95;transform:scale(1);}25%{opacity:0.97;transform:scale(1.002);}50%{opacity:1;transform:scale(1.005);}75%{opacity:0.96;transform:scale(1.001);}}
@@ -394,15 +394,15 @@ select option{background:#1a2332;}
 @keyframes primeBubbleShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 
 /* Interface Themes */
-.theme-gold{--primary:#fbbf24;--pri-dim:rgba(251,191,36,.14);}
-.theme-gold .h-bal{background:linear-gradient(135deg,var(--gold),#d97706)!important;}
-.theme-gold .btn-primary{background:linear-gradient(135deg,var(--gold),#d97706)!important;color:#0c1117!important;}
+.theme-gold{--primary:#ff806a;--pri-dim:rgba(255,128,106,.14);}
+.theme-gold .h-bal{background:linear-gradient(135deg,var(--gold),#b21c28)!important;}
+.theme-gold .btn-primary{background:linear-gradient(135deg,var(--gold),#b21c28)!important;color:#080507!important;}
 .theme-gold .h-avatar{border-color:var(--gold)!important;}
-.theme-gold .chat-msg.me .chat-bubble{background:rgba(251,191,36,.1)!important;border-color:rgba(251,191,36,.3)!important;}
+.theme-gold .chat-msg.me .chat-bubble{background:rgba(255,128,106,.1)!important;border-color:rgba(255,128,106,.3)!important;}
 /* Kapani Prime Interface Theme - shimmering animated colors */
 .theme-prime{--primary:#f0c419;--pri-dim:rgba(240,196,25,.14);}
-.theme-prime .h-bal{background:var(--gold)!important;color:#0c1117!important;}
-.theme-prime .btn-primary{background:var(--gold)!important;color:#0c1117!important;}
+.theme-prime .h-bal{background:var(--gold)!important;color:#080507!important;}
+.theme-prime .btn-primary{background:var(--gold)!important;color:#080507!important;}
 .theme-prime .h-avatar{border-color:#f0c419!important;box-shadow:0 0 15px rgba(240,196,25,.5)!important;}
 .theme-prime .chat-msg.me .chat-bubble{background:rgba(240,196,25,.15)!important;border-color:rgba(240,196,25,.4)!important;}
 @keyframes primeGradientShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
@@ -415,10 +415,10 @@ select option{background:#1a2332;}
 #hospitalPhotosGallery img:hover,#hospitalPanelPhotos img:hover{transform:scale(1.02);}
 
 
-.sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#d97706);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
-.sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,#22d3a5,#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
+.sub-badge-plus{display:inline-block;background:linear-gradient(135deg,var(--gold),#b21c28);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;}
+.sub-badge-ultra{display:inline-block;background:linear-gradient(135deg,#f0444a,#0d9488);color:#000;padding:4px 12px;border-radius:20px;font-weight:900;animation:pulseUltra 2s ease-in-out infinite;}
 @keyframes pulseUltra{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
-.sub-badge-prime{display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 12px;border-radius:20px;font-weight:900;}
+.sub-badge-prime{display:inline-block;background:var(--gold-dim);border:1px solid rgba(255,128,106,.3);color:var(--gold);padding:4px 12px;border-radius:20px;font-weight:900;}
 
 /* Info modal rows */
 .info-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
@@ -435,7 +435,7 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 #userProfileModal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9985;display:none;align-items:flex-end;justify-content:center;-webkit-overflow-scrolling:touch;}
 #userProfileModal.open{display:flex;}
 .user-profile-sheet{-webkit-overflow-scrolling:touch;overflow-y:auto;max-height:90vh;overscroll-behavior:contain;}
-.user-profile-sheet{background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;}
+.user-profile-sheet{background:#170b10;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;}
 .upm-online{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;margin-top:6px;}
 .upm-online.is-online{color:#22c55e;}
 .upm-online.is-offline{color:var(--muted);}
@@ -454,11 +454,11 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
     background:linear-gradient(135deg,var(--primary),#1ab8cc);
     display:flex;align-items:center;justify-content:center;
     font-size:44px;
-    box-shadow:0 8px 40px rgba(34,211,165,.35);
+    box-shadow:0 8px 40px rgba(240,68,74,.35);
     margin-bottom:28px;
     animation:loPulse 2s ease-in-out infinite;
 }
-@keyframes loPulse{0%,100%{box-shadow:0 8px 40px rgba(34,211,165,.35);}50%{box-shadow:0 8px 60px rgba(34,211,165,.65);}}
+@keyframes loPulse{0%,100%{box-shadow:0 8px 40px rgba(240,68,74,.35);}50%{box-shadow:0 8px 60px rgba(240,68,74,.65);}}
 #loadingOverlay .lo-title{
     font-family:'Unbounded',sans-serif;font-size:26px;font-weight:900;
     color:var(--text);letter-spacing:-.5px;margin-bottom:4px;
@@ -506,19 +506,19 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 .msg-edit-area .edit-btns{display:flex;gap:6px;}
 #historyModal{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:9980;display:none;align-items:flex-end;justify-content:center;}
 #historyModal.open{display:flex;}
-.history-sheet{background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;height:min(72vh,640px);max-height:min(72vh,640px);display:flex;flex-direction:column;overflow:hidden;padding:24px 18px max(28px,env(safe-area-inset-bottom));animation:sheetUp .3s ease-out;box-sizing:border-box;position:relative;}
+.history-sheet{background:#170b10;border-radius:24px 24px 0 0;width:100%;max-width:490px;height:min(72vh,640px);max-height:min(72vh,640px);display:flex;flex-direction:column;overflow:hidden;padding:24px 18px max(28px,env(safe-area-inset-bottom));animation:sheetUp .3s ease-out;box-sizing:border-box;position:relative;}
 .history-sheet-scroll{flex:1 1 0;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-right:2px;}
 .history-close{position:absolute;top:18px;right:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--surface2);color:var(--text);font-size:16px;cursor:pointer;z-index:10;border:none;line-height:1;flex-shrink:0;}
 .delivery-order-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
 .delivery-choice-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;}
 .delivery-choice-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-bottom:6px;}
 .delivery-choice-note{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px;}
-.delivery-summary{margin-top:10px;padding:12px 14px;border-radius:var(--r-sm);background:rgba(34,211,165,.08);border:1px solid rgba(34,211,165,.22);font-size:13px;line-height:1.45;}
+.delivery-summary{margin-top:10px;padding:12px 14px;border-radius:var(--r-sm);background:rgba(240,68,74,.08);border:1px solid rgba(240,68,74,.22);font-size:13px;line-height:1.45;}
 @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
 .history-close{font-size:22px;cursor:pointer;color:var(--muted);}
 .history-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
 .history-sum-box{padding:14px;border-radius:var(--r-sm);text-align:center;}
-.history-sum-box.income{background:rgba(34,211,165,.12);border:1px solid rgba(34,211,165,.3);}
+.history-sum-box.income{background:rgba(240,68,74,.12);border:1px solid rgba(240,68,74,.3);}
 .history-sum-box.expense{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);}
 .history-sum-val{font-size:22px;font-weight:900;}
 .history-sum-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;}
@@ -535,7 +535,7 @@ input[type="checkbox"]{-webkit-appearance:checkbox;appearance:checkbox;width:16p
 .file-upload-btn:hover{border-color:var(--primary);background:var(--pri-dim);color:var(--primary);}
 input[type=file]{display:none;}
 #trackingMap,#driverTrackMap{width:100%;height:320px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border);}
-.tracking-card{background:var(--surface);border:1px solid rgba(34,211,165,.3);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+.tracking-card{background:var(--surface);border:1px solid rgba(240,68,74,.3);border-radius:var(--r);padding:16px;margin-bottom:14px;}
 .tracking-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:var(--primary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
 
 /* === EMOJI PICKER === */
@@ -566,7 +566,7 @@ input[type=file]{display:none;}
 /* === VIDEO CIRCLE MODAL === */
 #vcModal{position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:9990;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
 #vcModal.open{display:flex;animation:fadeUp .25s ease-out;}
-.vc-circle{position:relative;width:240px;height:240px;border-radius:50%;overflow:hidden;border:3px solid var(--primary);box-shadow:0 0 0 8px var(--pri-dim),0 8px 40px rgba(34,211,165,.3);flex-shrink:0;background:#000;}
+.vc-circle{position:relative;width:240px;height:240px;border-radius:50%;overflow:hidden;border:3px solid var(--primary);box-shadow:0 0 0 8px var(--pri-dim),0 8px 40px rgba(240,68,74,.3);flex-shrink:0;background:#000;}
 .vc-circle video{width:100%;height:100%;object-fit:cover;display:block;}
 /* Live video: front camera mirrors (selfie style), back camera doesn't */
 #vcLiveVid{transform:scaleX(-1);-webkit-transform:scaleX(-1);}
@@ -627,7 +627,7 @@ input[type=file]{display:none;}
 .chat-bubble .chat-time{white-space:nowrap;flex:0 0 auto;align-self:flex-end;}
 .chat-bubble img,.chat-bubble video,.chat-bubble audio{max-width:100%;}
 .chat-msg.me .chat-msg-body{align-items:flex-end;}
-.chat-msg.me .chat-bubble{background:var(--pri-dim);border-color:rgba(34,211,165,.3);color:var(--primary);}
+.chat-msg.me .chat-bubble{background:var(--pri-dim);border-color:rgba(240,68,74,.3);color:var(--primary);}
 .chat-time{font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;}
 .msg-media-wrap{display:block;max-width:100%;overflow:hidden;border-radius:12px;}
 .msg-media-img{max-width:100%;width:100%;height:auto;max-height:260px;border-radius:12px;cursor:pointer;display:block;object-fit:cover;margin-top:4px;}
@@ -668,7 +668,7 @@ input[type=file]{display:none;}
     align-items:flex-start;
     gap:4px;
 }
-.chat-msg.me .chat-bubble{background:var(--pri-dim);border-color:rgba(34,211,165,.3);color:var(--primary);align-items:flex-end;}
+.chat-msg.me .chat-bubble{background:var(--pri-dim);border-color:rgba(240,68,74,.3);color:var(--primary);align-items:flex-end;}
 .chat-bubble .chat-time{white-space:nowrap;align-self:flex-end;flex-shrink:0;line-height:1;font-size:9px;}
 .chat-bubble .chat-sender{align-self:flex-start;}
 .msg-media-wrap{display:block;max-width:100%;overflow:hidden;border-radius:12px;}
@@ -727,7 +727,7 @@ input[type=file]{display:none;}
 .task-reward{font-size:11px;color:var(--gold);font-weight:900;margin-top:4px;}
 .dm-unread-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:10px;font-weight:900;line-height:1;}
 .dm-pin-btn{width:auto;min-width:38px;padding:8px 10px;font-size:12px;}
-.dm-pin-btn.pinned{color:var(--gold);border-color:rgba(251,191,36,.35);}
+.dm-pin-btn.pinned{color:var(--gold);border-color:rgba(255,128,106,.35);}
 .wall-post-actions{display:flex;justify-content:flex-end;gap:6px;margin-bottom:6px;}
 /* ─── iOS FIXES ─────────────────────────── */
 /* Prevent scroll-lock / flicker on iOS when modals open */
@@ -814,11 +814,11 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .chat-date-separator span{font-size:11px;font-weight:800;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 12px;white-space:nowrap;}
 /* Jump to date text */
 .jump-date-text,button.jump-date-text{display:inline-block;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:8px 14px;font-size:12px;font-weight:800;color:var(--primary);cursor:pointer;z-index:10;touch-action:manipulation;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:nowrap;transition:.2s;font-family:inherit;}
-.jump-date-text:hover,button.jump-date-text:hover{background:var(--pri-dim);border-color:var(--primary);transform:translateY(-1px);box-shadow:0 4px 12px rgba(34,211,165,.3);}
+.jump-date-text:hover,button.jump-date-text:hover{background:var(--pri-dim);border-color:var(--primary);transform:translateY(-1px);box-shadow:0 4px 12px rgba(240,68,74,.3);}
 .jump-date-text:active,button.jump-date-text:active{transform:translateY(0);box-shadow:0 2px 6px rgba(0,0,0,.2);}
 #chatWrapper,#dmWrapper{position:relative;}
 /* Service category listing stays active */
-.market-status-service{background:rgba(34,211,165,.12);color:var(--primary);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.market-status-service{background:rgba(240,68,74,.12);color:var(--primary);padding:4px 10px;border-radius:8px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 /* Ensure profile buttons are clickable above backgrounds */
 .user-profile-sheet button{position:relative;z-index:10;pointer-events:auto;}
 .user-profile-sheet .btn{position:relative;z-index:10;pointer-events:auto;}
@@ -837,7 +837,7 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .news-panel{display:none;}
 .news-panel.active{display:block;}
 .news-card{position:relative;}
-.news-badge-new{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(34,211,165,.14);border:1px solid rgba(34,211,165,.25);color:var(--primary);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
+.news-badge-new{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(240,68,74,.14);border:1px solid rgba(240,68,74,.25);color:var(--primary);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;}
 .news-discuss-btn{width:auto;min-width:0;white-space:nowrap;}
 .news-scope-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);font-size:11px;font-weight:800;color:var(--text);}
 .news-discussion-shell{display:flex;flex-direction:column;gap:12px;}
@@ -873,10 +873,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 .terminal-amount{font-size:64px;font-weight:900;color:var(--primary);font-family:'Unbounded',sans-serif;line-height:1;margin:16px 0;}
 .terminal-label{font-size:14px;color:var(--muted);font-weight:700;margin-bottom:8px;}
 .terminal-business{font-size:18px;font-weight:900;margin-bottom:24px;}
-.terminal-pay-anim{position:fixed;inset:0;background:linear-gradient(135deg,rgba(34,211,165,.25),rgba(34,211,165,.05));z-index:10000;display:none;align-items:center;justify-content:center;flex-direction:column;}
+.terminal-pay-anim{position:fixed;inset:0;background:linear-gradient(135deg,rgba(240,68,74,.25),rgba(240,68,74,.05));z-index:10000;display:none;align-items:center;justify-content:center;flex-direction:column;}
 .terminal-pay-anim.show{display:flex;animation:terminalPay .8s ease-out forwards;}
 @keyframes terminalPay{0%{opacity:0;transform:scale(.8)}50%{opacity:1;transform:scale(1.05)}100%{opacity:0;transform:scale(1.1)}}
-.biz-apply-pending{background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;font-size:13px;}
+.biz-apply-pending{background:var(--gold-dim);border:1px solid rgba(255,128,106,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:12px;font-size:13px;}
 .biz-employee-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:8px;cursor:pointer;}
 
 
@@ -886,10 +886,10 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
     --surface:rgba(255,255,255,.028);
     --surface2:rgba(255,255,255,.055);
     --border:rgba(255,255,255,.075);
-    --primary:#22d3a5;
-    --pri-dim:rgba(34,211,165,.105);
-    --gold:#fbbf24;
-    --gold-dim:rgba(251,191,36,.10);
+    --primary:#f0444a;
+    --pri-dim:rgba(240,68,74,.105);
+    --gold:#ff806a;
+    --gold-dim:rgba(255,128,106,.10);
     --text:#f1f5f9;
     --muted:#64748b;
     --shadow:0 10px 34px rgba(0,0,0,.62);
@@ -897,8 +897,8 @@ a,button,input,select,textarea,[role=button]{touch-action:manipulation;}
 body{background:var(--bg);}
 body::before{
     background:
-      radial-gradient(ellipse 65% 55% at 10% 15%,rgba(34,211,165,.035) 0%,transparent 72%),
-      radial-gradient(ellipse 55% 50% at 90% 85%,rgba(251,191,36,.025) 0%,transparent 74%);
+      radial-gradient(ellipse 65% 55% at 10% 15%,rgba(240,68,74,.035) 0%,transparent 72%),
+      radial-gradient(ellipse 55% 50% at 90% 85%,rgba(255,128,106,.025) 0%,transparent 74%);
 }
 .g-header{background:rgba(6,9,13,.94);border-bottom-color:rgba(255,255,255,.065);}
 .bottom-nav{background:rgba(6,9,13,.97);border-top-color:rgba(255,255,255,.065);}
@@ -909,9 +909,9 @@ body::before{
 }
 .card:hover,.quick-card:hover,.market-card:hover,.dm-user-row:hover{border-color:rgba(255,255,255,.13);}
 input,textarea,select{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.075);}
-input:focus,textarea:focus,select:focus{background:rgba(34,211,165,.045);}
-.logo-card{background:linear-gradient(145deg,rgba(34,211,165,.04),rgba(251,191,36,.025));}
-.profile-header{background:linear-gradient(145deg,rgba(34,211,165,.075),transparent);}
+input:focus,textarea:focus,select:focus{background:rgba(240,68,74,.045);}
+.logo-card{background:linear-gradient(145deg,rgba(240,68,74,.04),rgba(255,128,106,.025));}
+.profile-header{background:linear-gradient(145deg,rgba(240,68,74,.075),transparent);}
 .help-call-btn{width:min(220px,72%);}
 
 /* ─── One-time project status notice ───────────────────────────── */
@@ -928,7 +928,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     padding-bottom:max(20px,env(safe-area-inset-bottom,0px));
     background:
       radial-gradient(circle at 18% 14%,rgba(248,113,113,.16),transparent 34%),
-      radial-gradient(circle at 82% 84%,rgba(251,191,36,.11),transparent 36%),
+      radial-gradient(circle at 82% 84%,rgba(255,128,106,.11),transparent 36%),
       rgba(3,6,10,.97);
     backdrop-filter:blur(18px);
     -webkit-backdrop-filter:blur(18px);
@@ -982,7 +982,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     padding:16px 20px;
     border:0;
     border-radius:14px;
-    background:linear-gradient(135deg,#fbbf24,#f59e0b);
+    background:linear-gradient(135deg,#ff806a,#f59e0b);
     color:#111827;
     font-family:'Nunito',sans-serif;
     font-size:14px;
@@ -995,13 +995,14 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 }
 #kapaniShutdownAccept:hover{filter:brightness(1.05);}
 #kapaniShutdownAccept:active{transform:scale(.98);}
-#kapaniShutdownAccept:focus-visible{outline:3px solid rgba(251,191,36,.35);outline-offset:3px;}
+#kapaniShutdownAccept:focus-visible{outline:3px solid rgba(255,128,106,.35);outline-offset:3px;}
 @media (max-width:520px){
     #kapaniShutdownNotice{align-items:flex-end;padding:10px;}
     .kapani-shutdown-card{max-height:calc(100vh - 10px - env(safe-area-inset-top,0px));border-radius:22px 22px 16px 16px;padding:24px 20px 20px;}
 }
 
 </style>
+<link rel="stylesheet" href="redesign.css?v=1">
 </head>
 <body>
 
@@ -1120,40 +1121,42 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
         <div class="vc-hint">Нажмите для записи · до 30 сек · компактное видео</div>
     </div>
     <div class="vc-send-row" id="vcSendRow">
-        <button class="vc-action-btn" style="background:linear-gradient(135deg,var(--primary),#0fa87e);color:#0c1117;" onclick="sendVcMsg()">➤ Отправить</button>
+        <button class="vc-action-btn" style="background:linear-gradient(135deg,var(--primary),#a71924);color:#080507;" onclick="sendVcMsg()">➤ Отправить</button>
         <button class="vc-action-btn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border);" onclick="retakeVc()">🔄 Переснять</button>
     </div>
 </div>
 
 <!-- HEADER -->
 <div id="gHeader" style="display:none" class="g-header">
-    <div class="h-left" onclick="navTo('profile')">
+    <button type="button" class="brand-lockup" onclick="navTo('home')" aria-label="Капани — главная"><strong>KAPAN<i>I</i></strong><small>Посёлок со своими правилами</small></button>
+    <div class="header-links"><button type="button" onclick="navTo('home')">Главная</button><button type="button" onclick="navTo('news')">Новости</button><button type="button" onclick="navTo('bank')">Банк</button><button type="button" onclick="openInfoModal()">О Капанях</button></div>
+    <div class="header-actions"><div class="h-left" onclick="navTo('profile')">
         <div class="avatar-wrap" id="headerAvatarWrap">
             <img id="hAv" class="h-avatar" loading="lazy"><video id="hAvVideo" class="h-avatar" style="display:none;position:absolute;inset:0;object-fit:cover;border-radius:12px;" muted autoplay loop playsinline></video>
             <div class="online-dot" style="border-color:rgba(12,17,23,0.88)"></div>
         </div>
         <div><div class="h-name" id="hNick">...</div><div class="h-job" id="hJob">Житель</div></div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;">
         <div class="h-notify" onclick="navTo('profile')">🔔<span class="h-badge" id="notifyBadge"></span></div>
         <div class="h-bal"><span id="hBal">0</span> ₽</div>
-    </div>
+    </div></div>
 </div>
 
 <!-- BOTTOM NAV -->
 <div id="bottomNav" style="display:none;" class="bottom-nav">
-    <button class="bn-item sel" id="bn0" onclick="navTo('home')" aria-label="Перейти на главную страницу"><span class="ico">🏠</span>Главная</button>
-    <button class="bn-item" id="bn1" onclick="navTo('messages')" aria-label="Перейти в чаты"><span class="ico">💬</span>Чаты<span class="bn-badge" id="dmBadge"></span></button>
-    <button class="bn-item" id="bn2" onclick="navTo('market')" aria-label="Перейти в маркет"><span class="ico">🛍</span>Маркет</button>
-    <button class="bn-item" id="bn3" onclick="navTo('tasks')" aria-label="Перейти к заданиям"><span class="ico">🗂</span>Задания</button>
-    <button class="bn-item" id="bn4" onclick="navTo('bank')" aria-label="Перейти в банк"><span class="ico">💰</span>Банк</button>
-    <button class="bn-item" id="bn5" onclick="navTo('news')" aria-label="Перейти к новостям"><span class="ico">📰</span>Новости</button>
-    <button class="bn-item" id="bn6" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico">⭐</span>Плюс</button>
-    <button class="bn-item" id="bn7" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico">👤</span>Профиль</button>
-    <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico">🧹</span>Уборщик</button>
-    <button class="bn-item" id="bn9" onclick="navTo('businesses')" aria-label="Бизнесы поселка"><span class="ico">🏪</span>Бизнесы</button>
-    <button class="bn-item" id="bn10" onclick="navTo('rentBuildings')" aria-label="Аренда зданий"><span class="ico">🏘️</span>Здания</button>
-    <button class="bn-item" id="bn11" onclick="navTo('kveExam')" aria-label="Экзамен КВЭ" style="display:none;"><span class="ico">📝</span>КВЭ<span class="bn-badge" id="kveBadge"></span></button>
+    <button class="bn-item sel" id="bn0" onclick="navTo('home')" aria-label="Перейти на главную страницу"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v10h-7v-6h-4v6H3z"/></svg></span>Главная</button>
+    <button class="bn-item" id="bn1" onclick="navTo('messages')" aria-label="Перейти в чаты"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v12H8l-4 3z"/></svg></span>Чаты<span class="bn-badge" id="dmBadge"></span></button>
+    <button class="bn-item" id="bn2" onclick="navTo('market')" aria-label="Перейти в маркет"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2 12h12l2-9H6 M9 20h.01 M18 20h.01"/></svg></span>Маркет</button>
+    <button class="bn-item" id="bn3" onclick="navTo('tasks')" aria-label="Перейти к заданиям"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 8h8 M8 12h8 M8 16h5"/></svg></span>Задания</button>
+    <button class="bn-item" id="bn4" onclick="navTo('bank')" aria-label="Перейти в банк"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h18v12H3z M3 8l3-4h12l3 4 M8 12h8"/></svg></span>Банк</button>
+    <button class="bn-item" id="bn5" onclick="navTo('news')" aria-label="Перейти к новостям"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8 M8 12h8 M8 16h5"/></svg></span>Новости</button>
+    <button class="bn-item" id="bn6" onclick="navTo('subscription')" aria-label="Перейти к подписке Плюс"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 6.7H21l-5.4 4.1 2 6.6-5.6-4-5.6 4 2-6.6L3 8.7h6.6z"/></svg></span>Плюс</button>
+    <button class="bn-item" id="bn7" onclick="navTo('profile')" aria-label="Перейти в профиль"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21c0-4 3-7 8-7s8 3 8 7"/></svg></span>Профиль</button>
+    <button class="bn-item" id="bn8" onclick="navTo('janitorPage')" style="display:none;"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M9 4v16 M14 9h4 M14 13h4"/></svg></span>Уборщик</button>
+    <button class="bn-item" id="bn9" onclick="navTo('businesses')" aria-label="Бизнесы поселка"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3z M8 7h9 M8 11h9 M8 15h6"/></svg></span>Бизнесы</button>
+    <button class="bn-item" id="bn10" onclick="navTo('rentBuildings')" aria-label="Аренда зданий"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z M8 9h8 M8 13h5"/></svg></span>Здания</button>
+    <button class="bn-item" id="bn11" onclick="navTo('kveExam')" aria-label="Экзамен КВЭ" style="display:none;"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8 M8 12h8 M8 16h5"/></svg></span>КВЭ<span class="bn-badge" id="kveBadge"></span></button>
 </div>
 
 <div class="container">
@@ -1180,9 +1183,9 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 <div id="mainApp" style="display:none;" class="page-wrap">
 
 <!-- K-EDUCATION -->
-<div id="kEducation" class="section">
+<div id="kEducation" class="section" data-title="К-образование">
   <div id="kEducationContent">
-    <div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.08),rgba(251,191,36,.05));border-color:rgba(34,211,165,.25);">
+    <div class="card" style="background:linear-gradient(145deg,rgba(240,68,74,.08),rgba(255,128,106,.05));border-color:rgba(240,68,74,.25);">
       <div style="font-size:22px;font-weight:900;margin-bottom:8px;">🎓 К-образование</div>
       <div style="font-size:16px;font-weight:900;line-height:1.5;">Подготовим к КВЭ за один день — и сразу сдадим экзамен.</div>
       <div style="font-size:15px;color:var(--gold);font-weight:900;margin-top:8px;">Стоимость: 2.000 рублей.</div>
@@ -1193,8 +1196,8 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- CASINO -->
-<div id="casino" class="section">
-  <div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);">
+<div id="casino" class="section" data-title="Казино">
+  <div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(255,128,106,.05));border-color:rgba(248,113,113,.25);">
     <div style="font-size:22px;font-weight:900;">🎰 Казино</div>
     <div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек и игровые слоты</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
@@ -1222,20 +1225,21 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 <!-- HOME -->
 <div id="home" class="section active">
-    <div class="stats-row" id="homeStats"></div>
+    <div class="home-hero"><div class="hero-person"><img class="hero-avatar" id="heroAvatar" src="assets/avatar.svg" alt="Аватар жителя"><div class="hero-person-copy"><div class="hero-kicker">Житель Капаней</div><div class="hero-name" id="heroName">Капани</div><div class="hero-role" id="heroRole">Житель</div><div class="hero-rule"></div></div></div><div class="stats-row" id="homeStats"></div></div>
+    <div class="home-label"><span>Сервисы посёлка</span><small>Выбирай, куда отправиться</small></div>
     <div class="quick-grid">
-        <div class="quick-card" onclick="navTo('shop')" role="button" tabindex="0" aria-label="Перейти в магазин"><div class="qico">🛒</div><div class="qlbl">Магазин</div><div class="qsub">Ресурсы поселка</div></div>
-        <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico">🛵</div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
-        <div class="quick-card" onclick="navTo('deliveryOrderPage')" role="button" tabindex="0" aria-label="Заказать доставку из бизнеса"><div class="qico">🚚</div><div class="qlbl">Доставка</div><div class="qsub">Бизнесы и маркет</div></div>
-        <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico">🛠</div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
-        <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico">🏆</div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
-        <div class="quick-card" onclick="navTo('hospital')" role="button" tabindex="0" aria-label="Больница"><div class="qico">🏥</div><div class="qlbl">Больница</div><div class="qsub">Лёхин шалаш</div></div>
-        <div class="quick-card" onclick="navTo('autoSchool')" role="button" tabindex="0" aria-label="Автошкола"><div class="qico">🚦</div><div class="qlbl">Автошкола</div><div class="qsub">Права и экзамены</div></div>
-        <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" id="kveHomeCard" style="background:linear-gradient(135deg,rgba(34,211,165,.12),rgba(34,211,165,.06));border-color:rgba(34,211,165,.35);"><div class="qico">📝</div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub" id="kveHomeSub">Узнай о главном экзамене</div></div>
-        <div class="quick-card" onclick="navTo('kEducation')" role="button" tabindex="0" aria-label="К-образование" style="background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(34,211,165,.06));border-color:rgba(251,191,36,.3);"><div class="qico">🎓</div><div class="qlbl">К-образование</div><div class="qsub">Подготовка к КВЭ · 2 000 ₽</div></div>
-        <div class="quick-card" onclick="navTo('casino')" role="button" tabindex="0" aria-label="Казино" style="background:linear-gradient(135deg,rgba(248,113,113,.12),rgba(251,191,36,.06));border-color:rgba(248,113,113,.25);"><div class="qico">🎰</div><div class="qlbl">Казино</div><div class="qsub">Блекджек · Слоты</div></div>
-        <div class="quick-card" onclick="navTo('deputySession')" id="deputySessionQuickBtn" role="button" tabindex="0" aria-label="Заседание" style="display:none;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.06));border-color:rgba(251,191,36,.35);"><div class="qico">🏛</div><div class="qlbl">Заседание</div><div class="qsub">Предложения и запросы</div></div>
-        <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(248,113,113,.10));border-color:rgba(251,191,36,.3);"><div class="qico">🏁</div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
+        <div class="quick-card" onclick="navTo('shop')" role="button" tabindex="0" aria-label="Перейти в магазин"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h18l-2 13H5z M8 7V5a4 4 0 0 1 8 0v2"/></svg></div><div class="qlbl">Магазин</div><div class="qsub">Ресурсы поселка</div></div>
+        <div class="quick-card" onclick="navTo('taxi')" role="button" tabindex="0" aria-label="Вызвать такси"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14l2-6h12l2 6v5h-2v-2H6v2H4z M6 14h12 M8 17h.01 M16 17h.01"/></svg></div><div class="qlbl">Такси</div><div class="qsub">250₽ за км</div></div>
+        <div class="quick-card" onclick="navTo('deliveryOrderPage')" role="button" tabindex="0" aria-label="Заказать доставку из бизнеса"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h12v10H3z M15 11h4l2 3v3h-6 M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z M18 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg></div><div class="qlbl">Доставка</div><div class="qsub">Бизнесы и маркет</div></div>
+        <div class="quick-card" onclick="navTo('jobs')" role="button" tabindex="0" aria-label="Перейти к работе"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V7l8-4 8 4v13z M8 11h8 M8 15h8"/></svg></div><div class="qlbl">Работа</div><div class="qsub">Карьера & доход</div></div>
+        <div class="quick-card" onclick="navTo('ratings')" role="button" tabindex="0" aria-label="Перейти к рейтингу"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 5h5l-3 5-5 2-5-2-3-5h5z M12 15v6 M8 21h8"/></svg></div><div class="qlbl">Рейтинг</div><div class="qsub">Топ жителей</div></div>
+        <div class="quick-card" onclick="navTo('hospital')" role="button" tabindex="0" aria-label="Больница"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z M12 8v8 M8 12h8"/></svg></div><div class="qlbl">Больница</div><div class="qsub">Лёхин шалаш</div></div>
+        <div class="quick-card" onclick="navTo('autoSchool')" role="button" tabindex="0" aria-label="Автошкола"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V8l8-5 8 5v12z M9 16h6 M12 13v6"/></svg></div><div class="qlbl">Автошкола</div><div class="qsub">Права и экзамены</div></div>
+        <div class="quick-card" onclick="navTo('kveExam')" role="button" tabindex="0" aria-label="Экзамен КВЭ" id="kveHomeCard" style="background:linear-gradient(135deg,rgba(240,68,74,.12),rgba(240,68,74,.06));border-color:rgba(240,68,74,.35);"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3z M7 9h10 M7 13h6"/></svg></div><div class="qlbl">Экзамен (КВЭ)</div><div class="qsub" id="kveHomeSub">Узнай о главном экзамене</div></div>
+        <div class="quick-card" onclick="navTo('kEducation')" role="button" tabindex="0" aria-label="К-образование" style="background:linear-gradient(135deg,rgba(255,128,106,.12),rgba(240,68,74,.06));border-color:rgba(255,128,106,.3);"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M7 8h10 M7 12h10 M7 16h6"/></svg></div><div class="qlbl">К-образование</div><div class="qsub">Подготовка к КВЭ · 2 000 ₽</div></div>
+        <div class="quick-card" onclick="navTo('casino')" role="button" tabindex="0" aria-label="Казино" style="background:linear-gradient(135deg,rgba(248,113,113,.12),rgba(255,128,106,.06));border-color:rgba(248,113,113,.25);"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16v18H4z M8 8h8 M8 13h8"/></svg></div><div class="qlbl">Казино</div><div class="qsub">Блекджек · Слоты</div></div>
+        <div class="quick-card" onclick="navTo('deputySession')" id="deputySessionQuickBtn" role="button" tabindex="0" aria-label="Заседание" style="display:none;background:linear-gradient(135deg,rgba(255,128,106,.12),rgba(255,128,106,.06));border-color:rgba(255,128,106,.35);"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z M8 10h8 M12 7v6"/></svg></div><div class="qlbl">Заседание</div><div class="qsub">Предложения и запросы</div></div>
+        <div class="quick-card" onclick="navTo('events')" role="button" tabindex="0" aria-label="Мероприятия" style="grid-column:1/-1;background:linear-gradient(135deg,rgba(255,128,106,.12),rgba(248,113,113,.10));border-color:rgba(255,128,106,.3);"><div class="qico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z M8 10h8 M8 14h5"/></svg></div><div class="qlbl">Мероприятия</div><div class="qsub">Ежедневные гонки и ставки</div></div>
     </div>
 
     <div class="card">
@@ -1276,8 +1280,8 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- GAMES LIBRARY -->
-<div id="events" class="section">
-  <div class="card" style="background:linear-gradient(145deg,rgba(251,191,36,.08),rgba(248,113,113,.06));border-color:rgba(251,191,36,.25);">
+<div id="events" class="section" data-title="Мероприятия">
+  <div class="card" style="background:linear-gradient(145deg,rgba(255,128,106,.08),rgba(248,113,113,.06));border-color:rgba(255,128,106,.25);">
     <div style="font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--red));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;">🏁 Мероприятия</div>
     <div style="font-size:12px;color:var(--muted);">Ежедневные гонки на время — делай ставку и докажи, кто быстрее</div>
   </div>
@@ -1285,13 +1289,13 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- EVENT DETAIL -->
-<div id="eventDetail" class="section">
+<div id="eventDetail" class="section" data-title="Мероприятие">
   <button class="btn btn-ghost btn-sm" onclick="navTo('events')" style="width:auto;margin-bottom:14px;">← Назад</button>
   <div id="eventDetailContent"></div>
 </div>
 
 <!-- MESSAGES -->
-<div id="messages" class="section">
+<div id="messages" class="section" data-title="Чаты">
     <div class="msg-tabs">
         <button class="msg-tab active" id="msgTab0" onclick="switchMsgTab(0)">💬 Общий чат</button>
         <button class="msg-tab" id="msgTab1" onclick="switchMsgTab(1)">✉️ Личные</button>
@@ -1388,7 +1392,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 
 <!-- MARKETPLACE -->
-<div id="market" class="section">
+<div id="market" class="section" data-title="К-маркет">
     <div class="market-tabs">
         <button class="market-tab active" id="mktTab0" onclick="switchMarketTab(0)">🛍 Все товары</button>
         <button class="market-tab" id="mktTab1" onclick="switchMarketTab(1)">📦 Мои</button>
@@ -1448,7 +1452,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- SHOP -->
-<div id="shop" class="section">
+<div id="shop" class="section" data-title="Магазин">
     <div class="card">
         <div class="card-title">🛍 Заказ ресурсов</div>
         <div class="item-row"><span>🌲 Небольшое бревно <b style="color:var(--primary)">250₽</b></span><input type="number" id="sB" value="0" min="0" oninput="recalcShop()"></div>
@@ -1469,7 +1473,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- TAXI -->
-<div id="taxi" class="section">
+<div id="taxi" class="section" data-title="Такси">
     <div id="taxiForm" class="card">
         <div class="card-title">🛵 Вызов такси</div>
         <div id="taxiMap"></div>
@@ -1499,14 +1503,14 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- BANK -->
-<div id="bank" class="section">
+<div id="bank" class="section" data-title="Банк">
     <div class="card">
         <div class="card-title">💸 Перевод денег</div>
         <input type="text" id="bTo" placeholder="Имя получателя (отображаемое имя)" autocomplete="off" required minlength="2" maxlength="40">
         <input type="number" id="bAmt" placeholder="Сумма (₽)" required min="1" step="1">
         <button class="btn btn-primary" onclick="doTransfer()">Отправить</button>
     </div>
-    <div class="card" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.04);">
+    <div class="card" style="border-color:rgba(255,128,106,.25);background:rgba(255,128,106,.04);">
         <div class="card-title">📈 Накопительный счёт</div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:12px;background:var(--surface2);border-radius:var(--r-sm);border:1px solid var(--border);">
             <div>
@@ -1548,7 +1552,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- RATINGS -->
-<div id="ratings" class="section">
+<div id="ratings" class="section" data-title="Рейтинг">
     <div class="card">
       <div class="msg-tabs" style="flex-wrap:wrap;gap:6px;">
         <button class="msg-tab active" onclick="switchRatingTab('balance',this)">💰 Богатство</button>
@@ -1558,7 +1562,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- SUBSCRIPTION -->
-<div id="subscription" class="section">
+<div id="subscription" class="section" data-title="Подписка">
     <div class="card">
         <div class="card-title">⭐ Подписка Kapani</div>
         <div style="text-align:center;margin-bottom:20px;">
@@ -1567,7 +1571,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
             <div id="subscriptionExpiry" style="font-size:12px;color:var(--muted);margin-top:4px;"></div>
         </div>
     </div>
-    <div class="card" style="background:rgba(34,211,165,.06);border-color:rgba(34,211,165,.18);">
+    <div class="card" style="background:rgba(240,68,74,.06);border-color:rgba(240,68,74,.18);">
         <div class="card-title">💳 Абонентская плата аккаунта</div>
         <div style="font-size:13px;line-height:1.55;color:var(--text);">
             15 ₽ списываются автоматически <b>каждую неделю</b> за наличие аккаунта.
@@ -1597,7 +1601,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     </div>
     
     <!-- Kapani Plus -->
-    <div class="card" style="border:2px solid var(--gold);background:linear-gradient(145deg,rgba(251,191,36,.1),transparent);">
+    <div class="card" style="border:2px solid var(--gold);background:linear-gradient(145deg,rgba(255,128,106,.1),transparent);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
             <div style="font-size:32px;">⭐</div>
             <div>
@@ -1621,7 +1625,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     </div>
 
     <!-- Kapani Ultra -->
-    <div class="card" style="border:2px solid var(--primary);background:linear-gradient(145deg,rgba(34,211,165,.15),rgba(251,191,36,.05));">
+    <div class="card" style="border:2px solid var(--primary);background:linear-gradient(145deg,rgba(240,68,74,.15),rgba(255,128,106,.05));">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
             <div style="font-size:32px;">💎</div>
             <div>
@@ -1649,7 +1653,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     </div>
 
     <!-- Kapani Prime -->
-    <div class="card" style="border:2px solid rgba(251,191,36,.45);background:rgba(251,191,36,.06);">
+    <div class="card" style="border:2px solid rgba(255,128,106,.45);background:rgba(255,128,106,.06);">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
             <div style="font-size:32px;">👑</div>
             <div>
@@ -1693,7 +1697,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- PROFILE -->
-<div id="profile" class="section">
+<div id="profile" class="section" data-title="Профиль">
     <div class="profile-header" id="profileHeaderBg">
         <div id="profileBgEffect" style="position:absolute;inset:0;pointer-events:none;z-index:-1;overflow:hidden;border-radius:var(--r);"></div>
         <div style="position:relative;z-index:1;">
@@ -1770,7 +1774,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- ЧУЖОЙ ПРОФИЛЬ (полная страница) -->
-<div id="visitorProfile" class="section">
+<div id="visitorProfile" class="section" data-title="Профиль жителя">
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
         <button class="btn btn-ghost btn-sm" type="button" onclick="closeVisitorProfile()" style="flex-shrink:0;">← Назад</button>
         <div style="font-weight:900;font-size:15px;flex:1;">👤 Профиль</div>
@@ -1800,7 +1804,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- JOBS -->
-<div id="jobs" class="section">
+<div id="jobs" class="section" data-title="Работа">
     <div id="jobsAdvertiserStats" style="display:none;margin-bottom:14px;"></div>
     <div class="card">
         <div class="card-title">🛠 Трудоустройство</div>
@@ -1847,11 +1851,11 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 
 <!-- TASKS -->
-<div id="tasks" class="section">
+<div id="tasks" class="section" data-title="Задания">
     <div class="card">
         <div class="card-title">🗂 Задания</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Одноразовые задания открывают базовые возможности, а ежедневные обновляются каждый день.</div>
-        <div class="card" style="margin:0 0 14px;padding:16px;background:rgba(34,211,165,.05);border-color:rgba(34,211,165,.25);">
+        <div class="card" style="margin:0 0 14px;padding:16px;background:rgba(240,68,74,.05);border-color:rgba(240,68,74,.25);">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;">
                 <div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:800;">💰 Счёт заданий</div><div id="taskBalanceDisplay" style="font-size:25px;font-weight:900;color:var(--primary);">0 ₽</div></div>
                 <div style="font-size:11px;color:var(--muted);text-align:right;max-width:180px;line-height:1.4;">Деньги поступают только за выполнение заданий. Минимальный вывод — 500 рублей.</div>
@@ -1866,7 +1870,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- NEWS -->
-<div id="news" class="section">
+<div id="news" class="section" data-title="Новости">
     <div class="card" id="newsEditorPanel" style="display:none;">
         <div class="card-title">📰 Создать новость</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Новости посёлка могут публиковать Кайон и Журналисты. Новости Капанёвских земель — только Кайон.</div>
@@ -1911,7 +1915,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- NEWS DISCUSSION -->
-<div id="newsDiscussion" class="section">
+<div id="newsDiscussion" class="section" data-title="Обсуждение">
     <div class="card">
         <button class="btn btn-ghost btn-sm news-back-btn" onclick="closeNewsDiscussion()">← К новостям</button>
     </div>
@@ -1947,7 +1951,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- DRIVER PAGE -->
-<div id="driverPage" class="section">
+<div id="driverPage" class="section" data-title="Заказы водителя">
     <div style="display:flex;gap:8px;margin-bottom:14px;">
         <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="flex:1;">← Главная</button>
         <button class="btn btn-ghost btn-sm" onclick="navTo('jobs')" style="flex:1;">🛠 Работа</button>
@@ -1965,7 +1969,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- DELIVERY PAGE -->
-<div id="deliveryPage" class="section">
+<div id="deliveryPage" class="section" data-title="Доставка">
     <div style="display:flex;gap:8px;margin-bottom:14px;">
         <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="flex:1;">← Главная</button>
         <button class="btn btn-ghost btn-sm" onclick="navTo('jobs')" style="flex:1;">🛠 Работа</button>
@@ -1976,7 +1980,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 
 <!-- JANITOR PAGE -->
-<div id="janitorPage" class="section">
+<div id="janitorPage" class="section" data-title="Уборщик">
     <div style="display:flex;gap:8px;margin-bottom:14px;">
         <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="flex:1;">← Главная</button>
         <button class="btn btn-ghost btn-sm" onclick="navTo('jobs')" style="flex:1;">🛠 Работа</button>
@@ -2004,7 +2008,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- DUTY PAGE (КСБ / ПОЛИЦИЯ) -->
-<div id="dutyPage" class="section">
+<div id="dutyPage" class="section" data-title="КСБ и полиция">
     <div class="card" style="border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);">
         <div class="card-title" style="color:var(--red);">🛡 Панель КСБ / 👮 Полиции</div>
         <div style="font-size:13px;color:var(--muted);line-height:1.55;">Здесь сотрудники КСБ и полиции выписывают штрафы и принимают вызовы жителей.</div>
@@ -2024,7 +2028,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- HOSPITAL (patient-facing) -->
-<div id="hospital" class="section">
+<div id="hospital" class="section" data-title="Больница">
     <div class="card">
         <div class="card-title">🏥 Больница Капани</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">📍 Лёхин шалаш</div>
@@ -2038,7 +2042,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
         <div class="card-title">🩺 Услуги</div>
         <div id="hospitalServicesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
     </div>
-    <div class="card" id="hospitalBookingCard" style="display:none;border-color:rgba(34,211,165,.3);">
+    <div class="card" id="hospitalBookingCard" style="display:none;border-color:rgba(240,68,74,.3);">
         <div class="card-title">📅 Записаться на приём</div>
         <div id="hospitalBookingServiceInfo" style="font-size:13px;color:var(--muted);margin-bottom:10px;"></div>
         <input type="date" id="hospitalBookDate">
@@ -2053,11 +2057,11 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- HOSPITAL PANEL (doctor-only) -->
-<div id="hospitalPanel" class="section">
+<div id="hospitalPanel" class="section" data-title="Панель больницы">
     <div class="card" id="hospitalPanelNoAccess" style="display:none;border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);">
         <div style="font-size:13px;color:var(--red);">❌ Доступно врачу или помощнику врача.</div>
     </div>
-    <div class="card" style="border-color:rgba(34,211,165,.3);">
+    <div class="card" style="border-color:rgba(240,68,74,.3);">
         <div class="card-title">🏥 Панель больницы</div>
         <div style="font-size:13px;color:var(--muted);">📍 Лёхин шалаш</div>
     </div>
@@ -2099,13 +2103,13 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 <!-- ADMIN PAGE -->
 
-<div id="adminPage" class="section">
-    <div class="card" style="border-color:rgba(251,191,36,.3);background:var(--gold-dim);">
+<div id="adminPage" class="section" data-title="Мэрия">
+    <div class="card" style="border-color:rgba(255,128,106,.3);background:var(--gold-dim);">
         <div class="card-title" style="color:var(--gold);">👑 Мэрия</div>
         <div class="stats-row" id="adminStats"></div>
     </div>
     <div class="card"><div class="card-title">📋 Заявки на работу</div><div id="appList"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
-    <div class="card" style="border-color:rgba(251,191,36,.3);">
+    <div class="card" style="border-color:rgba(255,128,106,.3);">
         <div class="card-title" style="color:var(--gold);">🏛 Принудительное трудоустройство</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Назначает жителя на любую должность в обход требований КВЭ. Действие логируется.</div>
         <select id="adminForceHireTarget" style="margin-bottom:8px;"></select>
@@ -2128,7 +2132,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     <div class="card"><div class="card-title">🏪 Заявки на открытие бизнеса</div><div id="adminBizApps"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card"><div class="card-title">🗑 Заявки на закрытие бизнеса</div><div id="adminBizDeleteReqs"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
     <div class="card"><div class="card-title">💵 Заявки банкомата</div><div id="adminAtmRequests"><div style="color:var(--muted);font-size:13px;">Нет заявок</div></div></div>
-    <div class="card" id="kapaniScooterAppsCard" style="border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.04);"><div class="card-title" style="color:var(--gold);">🛵 Заявки на права на скутер</div><div id="kapaniScooterApps"><div style="color:var(--muted);font-size:13px;">Загрузка…</div></div></div>
+    <div class="card" id="kapaniScooterAppsCard" style="border-color:rgba(255,128,106,.3);background:rgba(255,128,106,.04);"><div class="card-title" style="color:var(--gold);">🛵 Заявки на права на скутер</div><div id="kapaniScooterApps"><div style="color:var(--muted);font-size:13px;">Загрузка…</div></div></div>
     <div class="card">
         <div class="card-title">💳 Управление балансом</div>
         <select id="adminTarget" style="margin-bottom:8px;"></select>
@@ -2143,7 +2147,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
         <input type="number" id="adminFineAmt" placeholder="Штраф (₽)" style="margin-top:8px;" required min="1" step="1">
         <input type="text" id="adminFineReason" placeholder="Причина штрафа (обязательно для уведомления)" style="margin-top:8px;" required minlength="5" maxlength="200">
     </div>
-    <div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.04);">
+    <div class="card" style="border-color:rgba(240,68,74,.3);background:rgba(240,68,74,.04);">
         <div class="card-title" style="color:var(--primary);">📝 КВЭ — Баллы экзамена</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.55;">Выставьте балл КВЭ жителю. После сохранения он получит уведомление и сможет посмотреть результат во вкладке КВЭ. Профессии доступны только при достаточном балле.</div>
         <select id="kveTarget" style="margin-bottom:8px;"><option value="">— Выберите жителя —</option></select>
@@ -2167,7 +2171,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
         <button class="btn btn-gold" onclick="addRentBuilding()" style="margin-top:4px;">➕ Добавить здание</button>
         <div id="adminRentBuildings" style="margin-top:12px;"></div>
     </div>
-    <div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.04);">
+    <div class="card" style="border-color:rgba(240,68,74,.3);background:rgba(240,68,74,.04);">
         <div class="card-title" style="color:var(--primary);">📢 Счётчик рекламщиков</div>
         <div id="adminAdvertiserStats"><div style="color:var(--muted);font-size:13px;">Загрузка…</div></div>
         <button class="btn btn-red btn-sm" style="margin-top:12px;width:100%;" onclick="adminClearAdvertiserStats()">🗑 Очистить всех приглашённых</button>
@@ -2186,13 +2190,13 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
         <button class="btn btn-primary" onclick="openRaceFormModal(null)" style="margin-bottom:14px;">➕ Добавить гонку</button>
         <div id="adminRacesList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
     </div>
-    <div class="card" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.03);">
+    <div class="card" style="border-color:rgba(255,128,106,.25);background:rgba(255,128,106,.03);">
         <div class="card-title" style="color:var(--gold);">📅 Группы дней гонок</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Создайте группы «1 день», «2 день» и т.д. В каждую добавьте нужные гонки. Жители видят гонки только своего дня.</div>
-        <button class="btn btn-ghost" onclick="openDayGroupFormModal(null)" style="margin-bottom:12px;border-color:rgba(251,191,36,.4);color:var(--gold);">➕ Добавить день</button>
+        <button class="btn btn-ghost" onclick="openDayGroupFormModal(null)" style="margin-bottom:12px;border-color:rgba(255,128,106,.4);color:var(--gold);">➕ Добавить день</button>
         <div id="adminDayGroupsList"><div style="color:var(--muted);font-size:13px;">Загрузка...</div></div>
     </div>
-    <div class="card" style="border-color:rgba(34,211,165,.2);">
+    <div class="card" style="border-color:rgba(240,68,74,.2);">
         <div class="card-title">🗓 Назначить день гонок жителю</div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Выберите жителя и укажите, на каком дне он находится. Он увидит только гонки этого дня.</div>
         <select id="raceDayUserSelect" style="margin-bottom:8px;"><option value="">— Выберите жителя —</option></select>
@@ -2203,7 +2207,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- BUSINESSES LIST -->
-<div id="businesses" class="section">
+<div id="businesses" class="section" data-title="Бизнесы">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div style="font-weight:900;font-size:20px;">🏪 Бизнесы</div>
         <button class="btn btn-primary btn-sm" onclick="openBizApplyModal()">+ Открыть бизнес</button>
@@ -2214,12 +2218,12 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 
 <!-- RENT BUILDINGS -->
-<div id="rentBuildings" class="section">
+<div id="rentBuildings" class="section" data-title="Аренда зданий">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div style="font-weight:900;font-size:20px;">🏘️ Аренда зданий</div>
         <button class="btn btn-gold btn-sm" onclick="navTo('adminPage')" style="display:none;" id="rentAdminJumpBtn">👑 Мэрия</button>
     </div>
-    <div class="card" style="border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.05);">
+    <div class="card" style="border-color:rgba(255,128,106,.25);background:rgba(255,128,106,.05);">
         <div style="font-size:13px;color:var(--text);line-height:1.65;">Аренда зданий нужна для того, чтобы открывать на этих местах свой бизнес и переделывать место под себя. То есть чтобы, например, открыть бизнес в беседке, придётся также платить аренду этой самой беседки. При попытке обойти это с вас будут списываться штрафы</div>
     </div>
     <div class="card" id="myRentedBuildingCard" style="display:none;"></div>
@@ -2227,7 +2231,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- BUSINESS DETAIL PAGE -->
-<div id="bizDetail" class="section">
+<div id="bizDetail" class="section" data-title="Бизнес">
     <button class="btn btn-ghost btn-sm" onclick="navTo('businesses')" style="margin-bottom:14px;">← Назад</button>
     <div class="biz-detail-header" id="bizDetailHeader"></div>
     <div style="height:30px;"></div>
@@ -2244,9 +2248,9 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- BUSINESS OWNER PANEL -->
-<div id="bizOwnerPanel" class="section">
+<div id="bizOwnerPanel" class="section" data-title="Управление бизнесом">
     <button class="btn btn-ghost btn-sm" onclick="navTo('bizDetail')" style="margin-bottom:14px;">← К бизнесу</button>
-    <div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.05);">
+    <div class="card" style="border-color:rgba(240,68,74,.3);background:rgba(240,68,74,.05);">
         <div class="card-title" style="color:var(--primary);">🏢 Панель владельца</div>
         <div id="bizOwnerSwitcher" style="margin-bottom:10px;"></div>
         <div id="bizOwnerName" style="font-weight:900;font-size:18px;margin-bottom:4px;"></div>
@@ -2329,9 +2333,9 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- КВЭ ЭКЗАМЕН SECTION -->
-<div id="kveExam" class="section">
+<div id="kveExam" class="section" data-title="Экзамен КВЭ">
     <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="margin-bottom:14px;width:auto;">← Главная</button>
-    <div class="card" style="border-color:rgba(34,211,165,.35);background:linear-gradient(145deg,rgba(34,211,165,.08),transparent);">
+    <div class="card" style="border-color:rgba(240,68,74,.35);background:linear-gradient(145deg,rgba(240,68,74,.08),transparent);">
         <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;color:var(--primary);margin-bottom:6px;">📝 КВЭ</div>
         <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Капанёвский Внутренний Экзамен</div>
     </div>
@@ -2361,7 +2365,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
             <div class="item-row" style="justify-content:space-between;"><span>🏥 Врач</span><b style="color:var(--primary)">90 баллов</b></div>
             <div class="item-row" style="justify-content:space-between;"><span>🩺 Помощник врача</span><b style="color:var(--primary)">80 баллов</b></div>
             <div class="item-row" style="justify-content:space-between;"><span>📢 Рекламщик</span><b style="color:var(--primary)">50 баллов</b></div>
-            <div class="item-row" style="background:var(--pri-dim);border-color:rgba(34,211,165,.3);justify-content:space-between;"><span style="color:var(--primary);font-weight:900;">Минимум (остаться на сайте)</span><b style="color:var(--gold)">32 балла</b></div>
+            <div class="item-row" style="background:var(--pri-dim);border-color:rgba(240,68,74,.3);justify-content:space-between;"><span style="color:var(--primary);font-weight:900;">Минимум (остаться на сайте)</span><b style="color:var(--gold)">32 балла</b></div>
         </div>
     </div>
     <div class="card">
@@ -2381,9 +2385,9 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- ЗАСЕДАНИЕ ДЕПУТАТА -->
-<div id="deputySession" class="section">
+<div id="deputySession" class="section" data-title="Заседание">
     <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="margin-bottom:14px;width:auto;">← Главная</button>
-    <div class="card" style="border-color:rgba(251,191,36,.35);background:linear-gradient(145deg,rgba(251,191,36,.08),transparent);">
+    <div class="card" style="border-color:rgba(255,128,106,.35);background:linear-gradient(145deg,rgba(255,128,106,.08),transparent);">
         <div style="font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;color:var(--gold);margin-bottom:6px;">🏛 Заседание</div>
         <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Депутатская деятельность</div>
     </div>
@@ -2407,7 +2411,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 </div>
 
 <!-- ДОСТАВКА ИЗ БИЗНЕСА / МАРКЕТПЛЕЙСА -->
-<div id="deliveryOrderPage" class="section">
+<div id="deliveryOrderPage" class="section" data-title="Заказать доставку">
     <button class="btn btn-ghost btn-sm" onclick="navTo('home')" style="margin-bottom:14px;width:auto;">← Главная</button>
     <div class="card">
         <div class="card-title">📦 Заказать доставку</div>
@@ -2470,7 +2474,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 <!-- DAY GROUP FORM MODAL (Admin) -->
 <div id="dayGroupFormModal" style="display:none;position:fixed;inset:0;background:rgba(12,17,23,0.97);z-index:9600;overflow-y:auto;padding:24px 16px;" onclick="if(event.target===this)closeDayGroupFormModal()">
-  <div style="max-width:480px;margin:auto;background:var(--surface);border:1px solid rgba(251,191,36,.25);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);">
+  <div style="max-width:480px;margin:auto;background:var(--surface);border:1px solid rgba(255,128,106,.25);border-radius:var(--r);padding:24px;box-shadow:var(--shadow);">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
       <div style="font-weight:900;font-size:18px;">📅 Группа дня</div>
       <span style="font-size:22px;cursor:pointer;color:var(--muted);" onclick="closeDayGroupFormModal()">✕</span>
@@ -2511,13 +2515,13 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
       <img id="raceFormMapImg" style="width:100%;border-radius:var(--r-sm);max-height:200px;object-fit:cover;cursor:pointer;" onclick="openImgViewer(this.src)">
       <button class="btn btn-ghost btn-sm" onclick="clearRaceMapPhoto()" style="margin-top:6px;">🗑 Удалить фото</button>
     </div>
-    <div style="margin:16px 0 8px;padding:14px;background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.2);border-radius:var(--r-sm);">
+    <div style="margin:16px 0 8px;padding:14px;background:rgba(240,68,74,.06);border:1px solid rgba(240,68,74,.2);border-radius:var(--r-sm);">
       <div style="font-weight:900;font-size:13px;color:var(--primary);margin-bottom:10px;">🟢 Легко</div>
       <input type="text" id="raceFormEasyTime" placeholder="Целевое время (напр. 2:30)" maxlength="10">
       <input type="number" id="raceFormEasyWin" placeholder="Ставка за выигрыш (₽)" min="1" step="1">
       <input type="number" id="raceFormEasyLoss" placeholder="Ставка за проигрыш (₽)" min="1" step="1">
     </div>
-    <div style="margin-bottom:8px;padding:14px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2);border-radius:var(--r-sm);">
+    <div style="margin-bottom:8px;padding:14px;background:rgba(255,128,106,.06);border:1px solid rgba(255,128,106,.2);border-radius:var(--r-sm);">
       <div style="font-weight:900;font-size:13px;color:var(--gold);margin-bottom:10px;">🟡 Средне</div>
       <input type="text" id="raceFormMedTime" placeholder="Целевое время (напр. 2:00)" maxlength="10">
       <input type="number" id="raceFormMedWin" placeholder="Ставка за выигрыш (₽)" min="1" step="1">
@@ -3734,7 +3738,7 @@ function calcCommission(amount, rate = 0.02){
 }
 function getDebtHelpHtml(){
     return `
-    <div class="card" style="margin:0 0 12px;background:rgba(248,191,36,.08);border-color:rgba(251,191,36,.3);">
+    <div class="card" style="margin:0 0 12px;background:rgba(248,191,36,.08);border-color:rgba(255,128,106,.3);">
         <div class="card-title" style="margin-bottom:10px;">⚠️ Долг по аккаунту</div>
         <div style="font-size:13px;line-height:1.55;color:var(--text);margin-bottom:12px;">
             Баланс отрицательный, поэтому такси и маркетплейс заблокированы.
@@ -4535,7 +4539,7 @@ function attachUserListener(){
         const kveBtn=qs('bn11'); if(kveBtn) kveBtn.style.display='flex';
         const kveHomeSub=qs('kveHomeSub');
         if(kveHomeSub){
-            if(u.kveScore!==undefined&&u.kveScore!==null){ kveHomeSub.textContent='Ваш балл: '+u.kveScore; const k=qs('kveHomeCard'); if(k) k.style.borderColor='rgba(34,211,165,.6)'; }
+            if(u.kveScore!==undefined&&u.kveScore!==null){ kveHomeSub.textContent='Ваш балл: '+u.kveScore; const k=qs('kveHomeCard'); if(k) k.style.borderColor='rgba(240,68,74,.6)'; }
             else kveHomeSub.textContent='Результат ещё не получен';
         }
     };
@@ -5464,7 +5468,7 @@ if(!window._kapaniPushSwMessageBound&&'serviceWorker' in navigator){window._kapa
     // Notification click while the site is already open: navigate in-app, no page reload.
     if(type==='KAPANI_NOTIFICATION_CLICK'){try{handleKapaniPushDeepLink(event.data.url||'');}catch(e){console.debug('[Kapani Push] click route:',e);}}
 });}
-function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#0c1117':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
+function makeSw(isOn,fn){const bg=isOn?'var(--primary)':'var(--surface2)';const bdr=isOn?'var(--primary)':'var(--border)';const knob=isOn?'right:3px;background:#080507':'left:3px;background:var(--muted)';return `<div onclick="${fn}" style="cursor:pointer;min-width:48px;width:48px;height:28px;border-radius:14px;background:${bg};border:2px solid ${bdr};transition:.25s;position:relative;flex-shrink:0;"><div style="position:absolute;top:3px;${knob};width:18px;height:18px;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div></div>`;}
 function updatePushSettingsUI(){
     const container=qs('pushSettingsContainer'),btn=qs('pushEnableBtn'),statusTxt=qs('pushStatusText');
     if(!container) return;
@@ -5540,7 +5544,7 @@ function showFirstPushPrompt(){
     const m=document.createElement('div');
     m.id='firstPushPrompt';
     m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:10000;display:flex;align-items:flex-end;justify-content:center;padding:16px;';
-    m.innerHTML=`<div style="width:100%;max-width:490px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:22px;box-shadow:var(--shadow);">
+    m.innerHTML=`<div style="width:100%;max-width:490px;background:#170b10;border:1px solid var(--border);border-radius:24px;padding:22px;box-shadow:var(--shadow);">
       <div style="font-size:34px;margin-bottom:8px;">🔔</div>
       <div style="font-size:20px;font-weight:900;margin-bottom:6px;">Включить уведомления?</div>
       <div style="font-size:13px;line-height:1.55;color:var(--muted);margin-bottom:16px;">Получайте сообщения, переводы, уведомления мэрии и другие важные события Капани.</div>
@@ -5974,7 +5978,7 @@ function renderActiveOrders(orders) {
         const lbl=sOrder.status==='pending'?'⏳ Ожидание курьера':'📦 Курьер в пути';
         const workerUser=sOrder.worker?(allUsersCache[sOrder.worker]||{}):null;
         const workerOnline=workerUser?isUserOnline(workerUser):false;
-        const courierBlock=sOrder.worker?`<div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(34,211,165,.08);border-radius:var(--r-sm);margin-bottom:12px;border:1px solid rgba(34,211,165,.2);"><div class="av-wrap-sm ${workerOnline?'online':''}"><img src="${escHtml(workerUser.avatar||DEFAULT_AVATAR_URL)}" style="width:40px;height:40px;border-radius:11px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="openUserProfile('${escHtml(sOrder.worker)}')"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:900;font-size:14px;cursor:pointer;" onclick="openUserProfile('${escHtml(sOrder.worker)}')">${escHtml(sOrder.worker)}</div><div style="font-size:11px;color:${workerOnline?'#22c55e':'var(--muted)'};">${workerOnline?'🟢 В сети':'Курьер'}${workerUser.vehicle?' · '+escHtml(workerUser.vehicle):''}</div></div><button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(sOrder.worker)}')" style="font-size:11px;padding:8px 10px;">💬</button></div>`:'';
+        const courierBlock=sOrder.worker?`<div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(240,68,74,.08);border-radius:var(--r-sm);margin-bottom:12px;border:1px solid rgba(240,68,74,.2);"><div class="av-wrap-sm ${workerOnline?'online':''}"><img src="${escHtml(workerUser.avatar||DEFAULT_AVATAR_URL)}" style="width:40px;height:40px;border-radius:11px;object-fit:cover;cursor:pointer;" loading="lazy" onclick="openUserProfile('${escHtml(sOrder.worker)}')"><div class="online-dot"></div></div><div style="flex:1;"><div style="font-weight:900;font-size:14px;cursor:pointer;" onclick="openUserProfile('${escHtml(sOrder.worker)}')">${escHtml(sOrder.worker)}</div><div style="font-size:11px;color:${workerOnline?'#22c55e':'var(--muted)'};">${workerOnline?'🟢 В сети':'Курьер'}${workerUser.vehicle?' · '+escHtml(workerUser.vehicle):''}</div></div><button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(sOrder.worker)}')" style="font-size:11px;padding:8px 10px;">💬</button></div>`:'';
         ss.innerHTML=`<div class="status-card green"><div class="status-badge ${cls}"><span class="pulse"></span>${lbl}</div><div style="font-weight:700;margin-bottom:8px;">📦 ${escHtml(sOrder.info)}</div><div style="font-size:13px;color:var(--muted);margin-bottom:12px;">📍 ${escHtml(sOrder.address||'')}</div>${courierBlock}<button class="btn btn-primary" style="margin-bottom:8px" onclick="payOrder('${sOrder.id}')">✅ Получил — оплатить ${sOrder.price}₽</button><button class="btn btn-ghost" style="color:var(--red);border-color:var(--red-dim);font-size:12px;" onclick="cancelOrder('${sOrder.id}')">Отменить (-35₽)</button></div>`;
     } else { if(btnBuy) btnBuy.disabled=false; if(ss) ss.innerHTML=''; }
     const ts=qs('taxiStatus');
@@ -6072,7 +6076,7 @@ async function initDeliveryMap(order){
     const center=hasCoords?[order.addrLat,order.addrLng]:[KAPANI_LAT,KAPANI_LNG];
     deliveryMapObj=L.map(mapEl,{center,zoom:hasCoords?16:14});
     addSatelliteLayer(deliveryMapObj);
-    if(hasCoords){L.marker([order.addrLat,order.addrLng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 14px rgba(34,211,165,.8);display:flex;align-items:center;justify-content:center;font-size:15px;">📍</div>',iconSize:[28,28],iconAnchor:[14,14],className:''})}).addTo(deliveryMapObj).bindPopup(`<b>📍 Адрес доставки</b><br>${escHtml(order.address||'')}`).openPopup();}
+    if(hasCoords){L.marker([order.addrLat,order.addrLng],{icon:L.divIcon({html:'<div style="background:#f0444a;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 14px rgba(240,68,74,.8);display:flex;align-items:center;justify-content:center;font-size:15px;">📍</div>',iconSize:[28,28],iconAnchor:[14,14],className:''})}).addTo(deliveryMapObj).bindPopup(`<b>📍 Адрес доставки</b><br>${escHtml(order.address||'')}`).openPopup();}
     const infoEl=qs('deliveryMapInfo');
     if(hasCoords&&infoEl){try{const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:5000}));const dist=haversine(pos.coords.latitude,pos.coords.longitude,order.addrLat,order.addrLng);const eta=Math.ceil(dist/MAX_SPEED_KMH*60);infoEl.innerHTML=`📏 До клиента: <b style="color:var(--primary)">${dist.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${eta} мин</b>`;}catch(e){if(infoEl)infoEl.textContent=`📍 Адрес: ${order.address||'не указан'}`;}}
     else if(infoEl) infoEl.innerHTML=`⚠️ Нет координат. Адрес: <b>${escHtml(order.address||'не указан')}</b>`;
@@ -6217,7 +6221,7 @@ window.openProfileCustomizer=async function(){
     
     const modalHtml = `
         <div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeProfileCustomizer()">
-            <div style="background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;">
+            <div style="background:#170b10;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <div style="font-weight:900;font-size:18px;">🎨 Настройка профиля</div>
                     <span style="cursor:pointer;font-size:20px;" onclick="closeProfileCustomizer()">✕</span>
@@ -6573,7 +6577,7 @@ window.changeAvatar=window.changeAvatarUrl;
 window.handleMktPhoto=async function(e){const file=e.target.files[0];if(!file)return;toast('📷 Сжимаем...','gold');const dataUrl=await compressImage(file,900,0.82);qs('mktPhoto').value='';qs('mktPhotoImg').src=dataUrl;qs('mktPhotoPreview').style.display='block';window._mktPhotoData=dataUrl;e.target.value='';};
 
 // ─── SHOP MAP ─────────────────────────────
-function createShopMarker(lat,lng){return L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(34,211,165,.6);">📍</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})});}
+function createShopMarker(lat,lng){return L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#f0444a;width:22px;height:22px;border-radius:50%;border:3px solid white;box-shadow:0 2px 10px rgba(240,68,74,.6);">📍</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})});}
 async function initShopMapIfNeeded(){
     await window.kapaniLoadLeaflet();
     if(shopMapObj){shopMapObj.invalidateSize();return;}
@@ -6686,9 +6690,9 @@ window.initTaxiMap=async function(){
     try{return await taxiMapInitPromise;}finally{taxiMapInitPromise=null;}
 };
 function onMapClick(e){if(!selectingPoint)return;const{lat,lng}=e.latlng;if(selectingPoint==='from'){setFromPoint(lat,lng);reverseGeocode(lat,lng).then(name=>{qs('tFrom').value=name;});}else{setToPoint(lat,lng);reverseGeocode(lat,lng).then(name=>{qs('tTo').value=name;});}selectingPoint=null;qs('btnFromMap').classList.remove('selecting');qs('btnToMap').classList.remove('selecting');}
-function setFromPoint(lat,lng){fromCoords={lat,lng};if(fromMarker)taxiMap.removeLayer(fromMarker);fromMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(taxiMap).bindPopup('📍 Откуда');updateTaxiCalc();}
-function setToPoint(lat,lng){toCoords={lat,lng};if(toMarker)taxiMap.removeLayer(toMarker);toMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#fbbf24;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(taxiMap).bindPopup('🏁 Куда');updateTaxiCalc();}
-function updateTaxiCalc(){if(!fromCoords||!toCoords)return;const dist=haversine(fromCoords.lat,fromCoords.lng,toCoords.lat,toCoords.lng);const price=Math.round(dist*PRICE_PER_KM);const timeMin=Math.ceil(dist/MAX_SPEED_KMH*60);qs('tDist').textContent=dist.toFixed(1);qs('tTime').textContent=timeMin;qs('tPrice').textContent=price;qs('taxiInfoRow').style.display='flex';qs('btnCallTaxi').disabled=false;if(routeLine)taxiMap.removeLayer(routeLine);routeLine=L.polyline([[fromCoords.lat,fromCoords.lng],[toCoords.lat,toCoords.lng]],{color:'#22d3a5',weight:3,dashArray:'6,6'}).addTo(taxiMap);taxiMap.fitBounds([[fromCoords.lat,fromCoords.lng],[toCoords.lat,toCoords.lng]],{padding:[30,30]});}
+function setFromPoint(lat,lng){fromCoords={lat,lng};if(fromMarker)taxiMap.removeLayer(fromMarker);fromMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#f0444a;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(taxiMap).bindPopup('📍 Откуда');updateTaxiCalc();}
+function setToPoint(lat,lng){toCoords={lat,lng};if(toMarker)taxiMap.removeLayer(toMarker);toMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#ff806a;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',iconSize:[14,14],iconAnchor:[7,7]})}).addTo(taxiMap).bindPopup('🏁 Куда');updateTaxiCalc();}
+function updateTaxiCalc(){if(!fromCoords||!toCoords)return;const dist=haversine(fromCoords.lat,fromCoords.lng,toCoords.lat,toCoords.lng);const price=Math.round(dist*PRICE_PER_KM);const timeMin=Math.ceil(dist/MAX_SPEED_KMH*60);qs('tDist').textContent=dist.toFixed(1);qs('tTime').textContent=timeMin;qs('tPrice').textContent=price;qs('taxiInfoRow').style.display='flex';qs('btnCallTaxi').disabled=false;if(routeLine)taxiMap.removeLayer(routeLine);routeLine=L.polyline([[fromCoords.lat,fromCoords.lng],[toCoords.lat,toCoords.lng]],{color:'#f0444a',weight:3,dashArray:'6,6'}).addTo(taxiMap);taxiMap.fitBounds([[fromCoords.lat,fromCoords.lng],[toCoords.lat,toCoords.lng]],{padding:[30,30]});}
 window.startSelectPoint=function(which){selectingPoint=which;qs('btnFromMap').classList.toggle('selecting',which==='from');qs('btnToMap').classList.toggle('selecting',which==='to');toast(which==='from'?'📍 Кликните — отправление':'🏁 Кликните — назначение','gold');};
 window.detectMyLocation=function(){if(!navigator.geolocation)return toast('❌ Геолокация недоступна','red');toast('📍 Определяем...','gold');navigator.geolocation.getCurrentPosition(pos=>{const{latitude:lat,longitude:lng}=pos.coords;setFromPoint(lat,lng);reverseGeocode(lat,lng).then(name=>{qs('tFrom').value=name;});taxiMap.setView([lat,lng],16);},()=>toast('❌ Нет геолокации','red'));};
 async function reverseGeocode(lat,lon){try{const res=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ru`);const d=await res.json();if(d&&d.address){const a=d.address;return[a.road||a.pedestrian||a.hamlet,a.village||a.town||a.city||a.suburb].filter(Boolean).join(', ')||d.display_name.split(',').slice(0,2).join(', ');}}catch(e){}return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;}
@@ -6859,7 +6863,7 @@ window.startSharingLocation=function(){
     if(locationWatchId!==null)return;
     if(currentTrackOrderId){ get(orderRef(currentTrackOrderId)).then(s=>{if(s.exists()&&s.val().status==='accepted') update(orderRef(currentTrackOrderId),{status:'driver_arriving',locationSharingStartedAt:Date.now()});}).catch(()=>{}); }
     qs('driverShareLocBtn').style.display='none'; qs('driverStopLocBtn').style.display='block';
-    locationWatchId=navigator.geolocation.watchPosition(async pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude;if(currentTrackOrderId){await update(orderRef(currentTrackOrderId),{driverLat:lat,driverLng:lng,driverLocationUpdatedAt:Date.now()});try{const s=await get(orderRef(currentTrackOrderId));const o=s.val()||{};const tLat=String(o.status)==='in_progress'?Number(o.destLat):Number(o.clientLat),tLng=String(o.status)==='in_progress'?Number(o.destLng):Number(o.clientLng),info=qs('driverTrackInfo');if(info&&Number.isFinite(tLat)&&Number.isFinite(tLng)){const d=haversine(lat,lng,tLat,tLng),mins=Math.max(1,Math.ceil(d/MAX_SPEED_KMH*60));info.innerHTML=String(o.status)==='in_progress'?`🏁 До конечной точки: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`:`🛵 До клиента: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`;}}catch(e){}}if(driverTrackMapObj){if(!driverOwnMarker){driverOwnMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:18px;height:18px;border-radius:50%;border:3px solid white;">🛵</div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(driverTrackMapObj);}else driverOwnMarker.setLatLng([lat,lng]);}},()=>toast('❌ Геолокация недоступна','red'),{enableHighAccuracy:true,maximumAge:5000,timeout:10000});
+    locationWatchId=navigator.geolocation.watchPosition(async pos=>{const lat=pos.coords.latitude,lng=pos.coords.longitude;if(currentTrackOrderId){await update(orderRef(currentTrackOrderId),{driverLat:lat,driverLng:lng,driverLocationUpdatedAt:Date.now()});try{const s=await get(orderRef(currentTrackOrderId));const o=s.val()||{};const tLat=String(o.status)==='in_progress'?Number(o.destLat):Number(o.clientLat),tLng=String(o.status)==='in_progress'?Number(o.destLng):Number(o.clientLng),info=qs('driverTrackInfo');if(info&&Number.isFinite(tLat)&&Number.isFinite(tLng)){const d=haversine(lat,lng,tLat,tLng),mins=Math.max(1,Math.ceil(d/MAX_SPEED_KMH*60));info.innerHTML=String(o.status)==='in_progress'?`🏁 До конечной точки: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`:`🛵 До клиента: <b style="color:var(--primary)">${d.toFixed(2)} км</b> · ⏱ ~<b style="color:var(--gold)">${mins} мин</b>`;}}catch(e){}}if(driverTrackMapObj){if(!driverOwnMarker){driverOwnMarker=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#f0444a;width:18px;height:18px;border-radius:50%;border:3px solid white;">🛵</div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(driverTrackMapObj);}else driverOwnMarker.setLatLng([lat,lng]);}},()=>toast('❌ Геолокация недоступна','red'),{enableHighAccuracy:true,maximumAge:5000,timeout:10000});
     toast('📍 Трансляция началась','green');
 };
 window.beginTaxiTrip=async function(id){if(!id)return;const snap=await get(orderRef(id));if(!snap.exists())return;if(snap.val().worker!==currentNick||snap.val().status!=='driver_arriving')return;await update(orderRef(id),{status:'in_progress',tripStartedAt:Date.now()});toast('🚕 Поездка началась','green');};
@@ -6876,13 +6880,13 @@ async function initDriverTrackMap(orderId,clientLat,clientLng,destLat,destLng){
     const center=(Number.isFinite(Number(clientLat))&&Number.isFinite(Number(clientLng)))?[clientLat,clientLng]:[KAPANI_LAT,KAPANI_LNG];
     driverTrackMapObj=L.map(mapEl,{center,zoom:14}); addSatelliteLayer(driverTrackMapObj);
     const bounds=[];
-    if(clientLat&&clientLng){clientMarkerOnDriverMap=L.marker([clientLat,clientLng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">👤</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('<b>📍 Клиент</b>');bounds.push([clientLat,clientLng]);}
-    if(destLat&&destLng){L.marker([destLat,destLng],{icon:L.divIcon({html:'<div style="background:#fbbf24;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🏁</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('<b>🏁 Конечная</b>');bounds.push([destLat,destLng]);}
-    if(clientLat&&clientLng&&destLat&&destLng)L.polyline([[clientLat,clientLng],[destLat,destLng]],{color:'#fbbf24',weight:3,dashArray:'5,5',opacity:0.7}).addTo(driverTrackMapObj);
+    if(clientLat&&clientLng){clientMarkerOnDriverMap=L.marker([clientLat,clientLng],{icon:L.divIcon({html:'<div style="background:#f0444a;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">👤</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('<b>📍 Клиент</b>');bounds.push([clientLat,clientLng]);}
+    if(destLat&&destLng){L.marker([destLat,destLng],{icon:L.divIcon({html:'<div style="background:#ff806a;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🏁</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('<b>🏁 Конечная</b>');bounds.push([destLat,destLng]);}
+    if(clientLat&&clientLng&&destLat&&destLng)L.polyline([[clientLat,clientLng],[destLat,destLng]],{color:'#ff806a',weight:3,dashArray:'5,5',opacity:0.7}).addTo(driverTrackMapObj);
     try{
         const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:7000,maximumAge:0}));
         const dlat=pos.coords.latitude,dlng=pos.coords.longitude; bounds.push([dlat,dlng]);
-        driverOwnMarker=L.marker([dlat,dlng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('Вы');
+        driverOwnMarker=L.marker([dlat,dlng],{icon:L.divIcon({html:'<div style="background:#f0444a;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(driverTrackMapObj).bindPopup('Вы');
         const infoEl=qs('driverTrackInfo');
         let status='driver_arriving';
         try{const snap=await get(orderRef(orderId));if(snap.exists())status=String(snap.val().status||status);}catch(e){}
@@ -6916,7 +6920,7 @@ async function initClientTrackingMap(orderId){
         const targetLng=String(o.status||'')==='in_progress'?Number(o.destLng):Number(o.clientLng);
         if(Number.isFinite(lat)&&Number.isFinite(lng)){
             if(!driverMarkerOnClientMap){
-                driverMarkerOnClientMap=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#22d3a5;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(clientTrackingMap).bindPopup('Водитель');
+                driverMarkerOnClientMap=L.marker([lat,lng],{icon:L.divIcon({html:'<div style="background:#f0444a;width:22px;height:22px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:13px;">🛵</div>',iconSize:[22,22],iconAnchor:[11,11],className:''})}).addTo(clientTrackingMap).bindPopup('Водитель');
             } else driverMarkerOnClientMap.setLatLng([lat,lng]);
             if(Number.isFinite(targetLat)&&Number.isFinite(targetLng)){
                 const d=haversine(lat,lng,targetLat,targetLng);
@@ -7980,7 +7984,7 @@ window.openUserProfile=async function(nick){
             vpfSubBadge.style.display = 'block';
         } else if(u.subscription === 'ultra' && isActive){
             vpfSubBadge.textContent = '💎 Kapani Ultra';
-            vpfSubBadge.style.color = '#22d3a5';
+            vpfSubBadge.style.color = '#f0444a';
             vpfSubBadge.style.display = 'block';
         } else if(u.subscription === 'prime' && isActive){
             vpfSubBadge.innerHTML = '👑 <span class="text-rainbow-prime">Kapani Prime</span>';
@@ -8649,7 +8653,7 @@ function marketCard(l,isMine, isArchived=false){
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             ${canBuy?`<button class="btn btn-gold btn-sm" onclick="requestMeeting('${l.id}')">🤝 ${isService?'Заказать':'Договориться'}</button>`:''}
             ${pendingBuyerReq&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;">⏳ Ожидаем продавца</div><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
-            ${pendingSellerConfirm&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
+            ${pendingSellerConfirm&&!isArchived?`<div style="color:var(--gold);font-size:13px;font-weight:800;padding:6px 0;width:100%;display:flex;align-items:center;gap:6px;">🤝 Хочет ${isService?'заказать':'купить'}: <span style="color:var(--text);background:var(--gold-dim);border:1px solid rgba(255,128,106,.3);border-radius:8px;padding:2px 10px;">${escHtml(l.buyer||'')}</span></div><button class="btn btn-primary btn-sm" onclick="confirmMeeting('${l.id}')">✅ Подтвердить</button><button class="btn btn-red btn-sm" onclick="declineListing('${l.id}')">❌ Отказать</button>`:''}
             ${pendingBuyerConfirm&&!isArchived?`<button class="btn btn-primary btn-sm" onclick="confirmPurchase('${l.id}')">✅ ${isService?'Подтвердить заказ':'Оплатить и подтвердить'}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="cancelMeeting('${l.id}')">✕ Отказаться</button>`:''}
             ${showChat?`<button class="btn btn-ghost btn-sm" onclick="goToChat('${escHtml(chatPartner)}')">💬 Написать</button>`:''}
             ${isMine&&!isArchived?`<button class="btn btn-ghost btn-sm" onclick="pinListing('${l.id}')">${(()=>{const me=allUsersCache[currentNick]||{};const mePrime=me.subscription==='prime'&&me.subscriptionExpiry&&new Date(me.subscriptionExpiry)>new Date();return mePrime?`🔥 ${isListingPinned(l)?'Закреплено':'ХИТ ПРОДАЖ!'} (бесплатно)`:`📌 ${isListingPinned(l)?'Закреплено':'Лидер продаж!'} (${ECONOMY_MARKET_PIN_PRICE}₽)`;})()}</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="archiveListing('${l.id}')">🕓 Скрыть</button><button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteListing('${l.id}')">🗑 Удалить</button>`:''}
@@ -9052,15 +9056,15 @@ async function renderKveSection(u){
     const jNotice=qs('jobKveNotice');
     if(jNotice){
         if(score===null){
-            jNotice.innerHTML=`<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);border-radius:var(--r-sm);padding:12px;font-size:13px;"><b style="color:var(--gold);">📝 Балл КВЭ не выставлен</b><br><span style="color:var(--muted);">Мэрия ещё не выставила вам балл КВЭ. Заявки на работу будут заблокированы до получения результата.</span></div>`;
+            jNotice.innerHTML=`<div style="background:rgba(255,128,106,.08);border:1px solid rgba(255,128,106,.3);border-radius:var(--r-sm);padding:12px;font-size:13px;"><b style="color:var(--gold);">📝 Балл КВЭ не выставлен</b><br><span style="color:var(--muted);">Мэрия ещё не выставила вам балл КВЭ. Заявки на работу будут заблокированы до получения результата.</span></div>`;
         } else {
             const available=getKveJobAccess(score);
             const blocked=Object.keys(KVE_JOB_REQUIREMENTS).filter(j=>!available.includes(j));
-            jNotice.innerHTML=`<div style="background:rgba(34,211,165,.07);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:12px;font-size:13px;"><b style="color:var(--primary);">📝 Ваш балл КВЭ: <span style="font-size:18px;">${score}</span></b>${available.length?`<div style="margin-top:6px;color:var(--text);">✅ Доступные профессии: <b>${available.join(', ')}</b></div>`:''}${blocked.length?`<div style="margin-top:4px;color:var(--muted);">🔒 Недоступно: ${blocked.join(', ')}</div>`:''}</div>`;
+            jNotice.innerHTML=`<div style="background:rgba(240,68,74,.07);border:1px solid rgba(240,68,74,.25);border-radius:var(--r-sm);padding:12px;font-size:13px;"><b style="color:var(--primary);">📝 Ваш балл КВЭ: <span style="font-size:18px;">${score}</span></b>${available.length?`<div style="margin-top:6px;color:var(--text);">✅ Доступные профессии: <b>${available.join(', ')}</b></div>`:''}${blocked.length?`<div style="margin-top:4px;color:var(--muted);">🔒 Недоступно: ${blocked.join(', ')}</div>`:''}</div>`;
         }
     }
     if(score===null){
-        el.innerHTML=`<div class="card" style="border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06);">
+        el.innerHTML=`<div class="card" style="border-color:rgba(255,128,106,.3);background:rgba(255,128,106,.06);">
             <div style="text-align:center;padding:10px 0;">
                 <div style="font-size:40px;margin-bottom:8px;">⏳</div>
                 <div style="font-weight:900;font-size:17px;color:var(--gold);margin-bottom:4px;">Результат ещё не получен</div>
@@ -9072,18 +9076,18 @@ async function renderKveSection(u){
     const isPassed=score>=32;
     const available=getKveJobAccess(score);
     const blocked=Object.keys(KVE_JOB_REQUIREMENTS).filter(j=>!available.includes(j));
-    const scoreColor=score>=90?'#22d3a5':score>=60?'#22c55e':score>=32?'#fbbf24':'#f87171';
+    const scoreColor=score>=90?'#f0444a':score>=60?'#22c55e':score>=32?'#ff806a':'#f87171';
     const examDate=u.kveExamDate?`<div style="font-size:11px;color:var(--muted);margin-top:6px;">Дата выставления: ${u.kveExamDate}</div>`:'';
     el.innerHTML=`<div class="card" style="border-color:${scoreColor}44;background:${scoreColor}11;">
         <div style="text-align:center;padding:8px 0 4px;">
             <div style="font-size:56px;font-weight:900;font-family:'Unbounded',sans-serif;color:${scoreColor};line-height:1;">${score}</div>
             <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:${scoreColor};margin-top:2px;">баллов КВЭ</div>
             ${examDate}
-            <div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:900;background:${isPassed?'rgba(34,211,165,.14)':'rgba(248,113,113,.14)'};color:${isPassed?'var(--primary)':'var(--red)'};">
+            <div style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:900;background:${isPassed?'rgba(240,68,74,.14)':'rgba(248,113,113,.14)'};color:${isPassed?'var(--primary)':'var(--red)'};">
                 ${isPassed?'✅ Порог пройден':'❌ Ниже минимума (32)'}
             </div>
         </div>
-        ${available.length?`<div style="margin-top:14px;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">✅ Доступные профессии</div>${available.map(j=>`<div style="padding:8px 12px;background:rgba(34,211,165,.09);border:1px solid rgba(34,211,165,.2);border-radius:10px;font-size:13px;font-weight:800;margin-bottom:6px;">✅ ${j} — нужно ${KVE_JOB_REQUIREMENTS[j]}б.</div>`).join('')}</div>`:''}
+        ${available.length?`<div style="margin-top:14px;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">✅ Доступные профессии</div>${available.map(j=>`<div style="padding:8px 12px;background:rgba(240,68,74,.09);border:1px solid rgba(240,68,74,.2);border-radius:10px;font-size:13px;font-weight:800;margin-bottom:6px;">✅ ${j} — нужно ${KVE_JOB_REQUIREMENTS[j]}б.</div>`).join('')}</div>`:''}
         ${blocked.length?`<div style="margin-top:8px;"><div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;">🔒 Недоступные профессии</div>${blocked.map(j=>`<div style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted);margin-bottom:6px;">🔒 ${j} — нужно ${KVE_JOB_REQUIREMENTS[j]}б.</div>`).join('')}</div>`:''}
         <button class="btn btn-ghost" style="margin-top:12px;font-size:12px;" onclick="navTo('jobs')">🛠 Перейти к работе →</button>
     </div>`;
@@ -9148,7 +9152,7 @@ async function renderAdvertiserWorkStats(){
     const u=allUsersCache[currentNick]||{}; if(!hasMunicipalJob(u,JOB_ADVERTISER)){host.style.display='none';return;}
     host.style.display='block';
     const count=await getAdvertiserReferralCount(currentNick);
-    host.innerHTML=`<div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.04);"><div class="card-title" style="color:var(--primary);">📢 Результат работы рекламщика</div><div style="font-size:22px;font-weight:900;color:var(--primary);">Приглашено пользователей: ${count}</div></div>`;
+    host.innerHTML=`<div class="card" style="border-color:rgba(240,68,74,.3);background:rgba(240,68,74,.04);"><div class="card-title" style="color:var(--primary);">📢 Результат работы рекламщика</div><div style="font-size:22px;font-weight:900;color:var(--primary);">Приглашено пользователей: ${count}</div></div>`;
 }
 async function renderAdminAdvertiserStats(){
     const host=qs('adminAdvertiserStats'); if(!host) return;
@@ -10244,7 +10248,7 @@ async function renderAchievements(nick=currentNick){
   const ach = u.achievements || {};
   const html = ALL_ACHIEVEMENTS.map(a=>{
     const unlocked = !!ach[a.id];
-    return `<div style="background:${unlocked?'var(--pri-dim)':'var(--surface2)'};border:1px solid ${unlocked?'rgba(34,211,165,.3)':'var(--border)'};border-radius:var(--r-sm);padding:10px 8px;text-align:center;opacity:${unlocked?'1':'.45'};">
+    return `<div style="background:${unlocked?'var(--pri-dim)':'var(--surface2)'};border:1px solid ${unlocked?'rgba(240,68,74,.3)':'var(--border)'};border-radius:var(--r-sm);padding:10px 8px;text-align:center;opacity:${unlocked?'1':'.45'};">
       <div style="font-size:22px;margin-bottom:4px;">${a.icon}</div>
       <div style="font-size:11px;font-weight:900;line-height:1.2;">${a.name}</div>
       <div style="font-size:9px;color:var(--muted);margin-top:2px;line-height:1.3;">${a.desc}</div>
@@ -10284,14 +10288,14 @@ async function renderGamesLibrary(){
   if(!grid) return;
   grid.innerHTML = GAMES_CATALOG.map(g=>{
     const isOwned = !!owned[g.id];
-    const earnBadge = g.canEarn ? `<div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(251,191,36,.08));border:1px solid rgba(251,191,36,.4);border-radius:8px;padding:3px 7px;font-size:9px;font-weight:900;color:var(--gold);margin-bottom:6px;">🪙 МОЖНО ЗАРАБОТАТЬ!</div>` : '';
-    return `<div class="card" style="margin:0;text-align:center;padding:16px 10px;cursor:${isOwned?'pointer':'default'};${isOwned?'border-color:rgba(34,211,165,.3);':''}" ${isOwned?`onclick="navTo('${g.section}')"`:''}>
+    const earnBadge = g.canEarn ? `<div style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(255,128,106,.2),rgba(255,128,106,.08));border:1px solid rgba(255,128,106,.4);border-radius:8px;padding:3px 7px;font-size:9px;font-weight:900;color:var(--gold);margin-bottom:6px;">🪙 МОЖНО ЗАРАБОТАТЬ!</div>` : '';
+    return `<div class="card" style="margin:0;text-align:center;padding:16px 10px;cursor:${isOwned?'pointer':'default'};${isOwned?'border-color:rgba(240,68,74,.3);':''}" ${isOwned?`onclick="navTo('${g.section}')"`:''}>
       <div style="font-size:32px;margin-bottom:6px;">${g.icon}</div>
       <div style="font-weight:900;font-size:13px;margin-bottom:3px;">${g.name}</div>
       <div style="font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.3;">${g.desc}</div>
       ${earnBadge}
       ${isOwned
-        ? `<div style="background:var(--pri-dim);color:var(--primary);border:1px solid rgba(34,211,165,.3);border-radius:10px;padding:5px 8px;font-size:11px;font-weight:900;margin-bottom:6px;">✅ Куплено</div>
+        ? `<div style="background:var(--pri-dim);color:var(--primary);border:1px solid rgba(240,68,74,.3);border-radius:10px;padding:5px 8px;font-size:11px;font-weight:900;margin-bottom:6px;">✅ Куплено</div>
            <button class="btn btn-primary btn-sm" style="width:100%;font-size:11px;" onclick="event.stopPropagation();navTo('${g.section}')">Играть →</button>`
         : `<div style="font-size:17px;font-weight:900;color:var(--gold);margin-bottom:6px;">${g.price}₽</div>
            <button class="btn btn-gold btn-sm" style="width:100%;font-size:11px;" onclick="buyGame('${g.id}')">Купить</button>`
@@ -10765,7 +10769,7 @@ async function renderOnlineDuelLobby(){
   const all=snap.val()||{};
   const incoming=Object.entries(all).filter(([id,d])=>d.opponent===currentNick&&d.status==='waiting');
   const inviteHtml=incoming.map(([id,d])=>`
-    <div style="background:var(--gold-dim);border:1px solid rgba(251,191,36,.35);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+    <div style="background:var(--gold-dim);border:1px solid rgba(255,128,106,.35);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
       <div>
         <div style="font-weight:900;font-size:14px;">⚔️ Вызов от <span style="color:var(--gold);">${escHtml(d.challenger)}</span></div>
         <div style="font-size:12px;color:var(--muted);margin-top:3px;">Ставка: ${d.stake}₽ • ${d.mode==='knb'?'КНБ':'Крестики-нолики'}</div>
@@ -11171,10 +11175,10 @@ function renderAbandonedSetup(){
     .abn-cell.fog{background:rgba(100,116,139,.2);cursor:pointer;}
     .abn-cell.fog:active{transform:scale(.88);}
     .abn-cell.fog:hover{background:rgba(100,116,139,.35);border-color:rgba(255,255,255,.15);}
-    .abn-cell.safe{background:rgba(34,211,165,.08);cursor:default;}
+    .abn-cell.safe{background:rgba(240,68,74,.08);cursor:default;}
     .abn-cell.revealed{cursor:default;}
-    .abn-cell.hint-safe{background:rgba(34,211,165,.18);border-color:rgba(34,211,165,.4);}
-    .abn-cell.hint-treasure{background:rgba(251,191,36,.25);border-color:rgba(251,191,36,.5);animation:hintPulse .7s ease-in-out infinite alternate;}
+    .abn-cell.hint-safe{background:rgba(240,68,74,.18);border-color:rgba(240,68,74,.4);}
+    .abn-cell.hint-treasure{background:rgba(255,128,106,.25);border-color:rgba(255,128,106,.5);animation:hintPulse .7s ease-in-out infinite alternate;}
     .abn-cell.bomb-mode{background:rgba(248,113,113,.25);border-color:rgba(248,113,113,.5);animation:hintPulse .5s ease-in-out infinite alternate;}
     </style>
     <div id="abnGrid" class="abn-grid" style="grid-template-columns:repeat(${ABN_COLS},30px);"></div>
@@ -11402,7 +11406,7 @@ function towerDrawFrame(showMoving){
     const y=startY-(i*TOWER_BLOCK_H);
     if(y<-TOWER_BLOCK_H) return;
     const alpha=0.4+i/visibleBlocks.length*0.6;
-    ctx.fillStyle=`rgba(34,211,165,${alpha})`;
+    ctx.fillStyle=`rgba(240,68,74,${alpha})`;
     ctx.beginPath();ctx.roundRect(b.x,y,b.w,TOWER_BLOCK_H-2,6);ctx.fill();
     if(i===visibleBlocks.length-1){
       ctx.fillStyle='rgba(255,255,255,0.15)';
@@ -11411,7 +11415,7 @@ function towerDrawFrame(showMoving){
   });
   if(showMoving){
     const y=startY-(towerBlocks.length*TOWER_BLOCK_H);
-    ctx.fillStyle='rgba(251,191,36,0.85)';
+    ctx.fillStyle='rgba(255,128,106,0.85)';
     ctx.beginPath();ctx.roundRect(towerBlockPos,y,towerBlockWidth,TOWER_BLOCK_H-2,6);ctx.fill();
     ctx.fillStyle='rgba(255,255,255,0.2)';
     ctx.beginPath();ctx.roundRect(towerBlockPos,y,towerBlockWidth,8,{upperLeft:6,upperRight:6});ctx.fill();
@@ -11512,9 +11516,9 @@ window.startWordleGame = startWordleGame;
 function wdGetHintMarkup(){
   if(!wdHint) return '';
   if(wdHint.type==='letter'){
-    return `<div style="display:flex;justify-content:center;margin:0 0 10px;"><div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);font-weight:900;color:var(--gold);"><span>💡</span><span>Буква: «${wdHint.value}»</span></div></div>`;
+    return `<div style="display:flex;justify-content:center;margin:0 0 10px;"><div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:rgba(255,128,106,.12);border:1px solid rgba(255,128,106,.35);font-weight:900;color:var(--gold);"><span>💡</span><span>Буква: «${wdHint.value}»</span></div></div>`;
   }
-  return `<div style="display:flex;justify-content:center;margin:0 0 10px;"><div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);font-weight:900;color:var(--gold);"><span>🎯</span><span>Позиция ${wdHint.value.pos+1}: «${wdHint.value.letter}»</span></div></div>`;
+  return `<div style="display:flex;justify-content:center;margin:0 0 10px;"><div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:14px;background:rgba(255,128,106,.12);border:1px solid rgba(255,128,106,.35);font-weight:900;color:var(--gold);"><span>🎯</span><span>Позиция ${wdHint.value.pos+1}: «${wdHint.value.letter}»</span></div></div>`;
 }
 
 function renderWordleGame(){
@@ -11525,15 +11529,15 @@ function renderWordleGame(){
     if(attempt){
       rows.push(`<div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">`+
         attempt.letters.map((l,j)=>{
-          const color=attempt.colors[j]==='green'?'#22d3a5':attempt.colors[j]==='yellow'?'#fbbf24':'rgba(100,116,139,.4)';
-          return `<div style="width:40px;height:40px;border-radius:8px;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0c1117;border:2px solid ${color};">${l}</div>`;
+          const color=attempt.colors[j]==='green'?'#f0444a':attempt.colors[j]==='yellow'?'#ff806a':'rgba(100,116,139,.4)';
+          return `<div style="width:40px;height:40px;border-radius:8px;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#080507;border:2px solid ${color};">${l}</div>`;
         }).join('')+`</div>`);
     } else if(i===wdAttempts.length&&!wdDone){
       rows.push(`<div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">`+
         Array.from({length:wdLen},(_, j)=>{
           const ch=wdCurInput[j]||'';
           const isHintPos=wdHint?.type==='position'&&wdHint.value.pos===j;
-          return `<div style="width:40px;height:40px;border-radius:8px;background:${isHintPos?'rgba(251,191,36,.2)':(ch?'var(--surface2)':'transparent')};border:2px solid ${isHintPos?'var(--gold)':(ch?'var(--primary)':'var(--border)')};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--text);position:relative;">${ch|| (isHintPos?wdHint.value.letter:'')}</div>`;
+          return `<div style="width:40px;height:40px;border-radius:8px;background:${isHintPos?'rgba(255,128,106,.2)':(ch?'var(--surface2)':'transparent')};border:2px solid ${isHintPos?'var(--gold)':(ch?'var(--primary)':'var(--border)')};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--text);position:relative;">${ch|| (isHintPos?wdHint.value.letter:'')}</div>`;
         }).join('')+`</div>`);
     } else {
       rows.push(`<div style="display:flex;gap:4px;justify-content:center;margin-bottom:4px;">`+
@@ -11545,8 +11549,8 @@ function renderWordleGame(){
     for(const a of wdAttempts){
       const idx=a.letters.indexOf(k);
       if(idx!==-1){
-        if(a.colors[idx]==='green'){bg='#22d3a5';col='#0c1117';}
-        else if(a.colors[idx]==='yellow'&&bg!=='#22d3a5'){bg='#fbbf24';col='#0c1117';}
+        if(a.colors[idx]==='green'){bg='#f0444a';col='#080507';}
+        else if(a.colors[idx]==='yellow'&&bg!=='#f0444a'){bg='#ff806a';col='#080507';}
         else if(bg==='var(--surface2)'){bg='rgba(100,116,139,.35)';col='var(--muted)';}
       }
     }
@@ -11666,7 +11670,7 @@ function renderReactionGame(state,time){
   } else if(state==='waiting'){
     area.innerHTML=`${bestHtml}<div class="reaction-btn-state" style="width:200px;height:200px;border-radius:50%;background:var(--red-dim);border:3px solid var(--red);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--red);text-align:center;user-select:none;">⏳ Жди...</div>`;
   } else if(state==='go'){
-    area.innerHTML=`${bestHtml}<div class="reaction-btn-state" onclick="reactionClick()" style="width:200px;height:200px;border-radius:50%;background:rgba(34,211,165,.25);border:3px solid var(--primary);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-weight:900;color:var(--primary);text-align:center;user-select:none;touch-action:manipulation;animation:pulse 0.4s infinite;">ЖМЯЯЯЙ!</div>`;
+    area.innerHTML=`${bestHtml}<div class="reaction-btn-state" onclick="reactionClick()" style="width:200px;height:200px;border-radius:50%;background:rgba(240,68,74,.25);border:3px solid var(--primary);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;font-weight:900;color:var(--primary);text-align:center;user-select:none;touch-action:manipulation;animation:pulse 0.4s infinite;">ЖМЯЯЯЙ!</div>`;
   } else if(state==='result'){
     const isRecord=!reactionBest||time<reactionBest;
     area.innerHTML=`<div style="text-align:center;margin-bottom:12px;">
@@ -11917,7 +11921,7 @@ function snakeDrawFrame(){
   ctx.fillStyle='#f87171';
   ctx.beginPath();ctx.arc(snakeFood.x*SNAKE_CELL+SNAKE_CELL/2,snakeFood.y*SNAKE_CELL+SNAKE_CELL/2,SNAKE_CELL/2-2,0,Math.PI*2);ctx.fill();
   snakeBody.forEach((s,i)=>{
-    ctx.fillStyle=i===0?'#22d3a5':'#0fa87e';
+    ctx.fillStyle=i===0?'#f0444a':'#a71924';
     ctx.beginPath();ctx.roundRect(s.x*SNAKE_CELL+1,s.y*SNAKE_CELL+1,SNAKE_CELL-2,SNAKE_CELL-2,4);ctx.fill();
   });
 }
@@ -12403,7 +12407,7 @@ async function renderBusinesses(){
     if(ownedBizs.length){
         myBizPanel.style.display = 'block';
         myBizPanel.innerHTML = `
-            <div class="card" style="border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.05);">
+            <div class="card" style="border-color:rgba(240,68,74,.3);background:rgba(240,68,74,.05);">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
                     <div>
                         <div style="font-weight:900;font-size:15px;">Мои бизнесы</div>
@@ -12420,7 +12424,7 @@ async function renderBusinesses(){
                                 <div style="font-size:12px;color:var(--primary);font-weight:700;">💰 ${(b.balance||0).toLocaleString()} ₽</div>
                             </div>
                             <button class="btn btn-primary btn-sm" onclick="openBizOwnerPanel('${jsEsc(b.id)}');">Управление →</button>
-                            ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:var(--gold-dim);color:var(--gold);border:1px solid rgba(251,191,36,.3);" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 <span class="text-rainbow-prime">ТОП!</span> (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
+                            ${(u.subscription === 'prime' && u.subscriptionExpiry && new Date(u.subscriptionExpiry) > new Date()) ? `<button class="btn btn-ghost btn-sm" style="background:var(--gold-dim);color:var(--gold);border:1px solid rgba(255,128,106,.3);" onclick="promoteBusiness('${jsEsc(b.id)}')">${Number(b.promotedUntil||0) > Date.now() ? '🔥 В ТОПе' : `🔥 <span class="text-rainbow-prime">ТОП!</span> (${ECONOMY_BUSINESS_PROMOTE_PRICE}₽)`}</button>` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -12435,7 +12439,7 @@ async function renderBusinesses(){
     if(!bizneses.length){ el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0;">Бизнесов пока нет</div>'; return; }
     el.innerHTML = `<div class="biz-grid">${bizneses.map(b => `
         <div class="biz-card" onclick="openBizDetail('${jsEsc(b.id)}')">
-            ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 <span class="text-rainbow-prime">ТОП!</span></span>` : ''}
+            ${Number(b.promotedUntil||0) > Date.now() ? `<span style="position:absolute;top:8px;right:8px;z-index:2;display:inline-block;background:var(--gold-dim);border:1px solid rgba(255,128,106,.3);color:var(--gold);padding:4px 10px;border-radius:999px;font-weight:900;font-size:11px;">🔥 <span class="text-rainbow-prime">ТОП!</span></span>` : ''}
             <div style="position:relative;">
                 ${b.banner ? `<img class="biz-card-img" src="${escHtml(b.banner)}" loading="lazy" decoding="async">` : '<div class="biz-card-img" style="display:flex;align-items:center;justify-content:center;font-size:40px;">🏪</div>'}
                 ${b.bgEffect ? `<div class="biz-card-bg-effect" id="bizCardBg_${jsEsc(b.id)}" style="position:absolute;inset:0;pointer-events:none;z-index:1;"></div>` : ''}
@@ -12450,7 +12454,7 @@ async function renderBusinesses(){
                 <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
                     <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;font-weight:800;">Владелец</div>
                     <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                        <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.22);font-size:11px;font-weight:800;">👑 ${escHtml(b.owner||'')}</span>
+                        <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:var(--pri-dim);border:1px solid rgba(240,68,74,.22);font-size:11px;font-weight:800;">👑 ${escHtml(b.owner||'')}</span>
                     </div>
                 </div>
                 ${b.delivery ? '<div style="font-size:11px;color:var(--primary);font-weight:800;margin-top:4px;">🚚 Доставка</div>' : ''}
@@ -12505,7 +12509,7 @@ window.openBizDetail = async function(bizId){
             ${b.address ? `<div style="font-size:13px;color:var(--muted);">📍 ${escHtml(b.address)}</div>` : ''}
             ${b.lat != null && b.lng != null ? `<div style="font-size:12px;color:var(--primary);margin-top:5px;">🗺 Координаты: ${Number(b.lat).toFixed(6)}, ${Number(b.lng).toFixed(6)}</div><div class="card" style="margin-top:10px;padding:8px;"><div id="bizDetailLocationMap" style="width:100%;height:240px;border-radius:12px;overflow:hidden;"></div><div style="font-size:11px;color:var(--muted);margin-top:6px;">📍 Точное местоположение бизнеса</div></div>` : `<div class="card" style="margin-top:10px;padding:8px;"><div id="bizDetailLocationMap" style="width:100%;height:240px;border-radius:12px;overflow:hidden;"></div><div style="font-size:11px;color:var(--muted);margin-top:6px;">📍 Точка бизнеса ещё не задана</div></div>`}
             ${b.services ? `<div style="font-size:13px;color:var(--muted);margin-top:6px;">🛠 ${escHtml(b.services)}</div>` : ''}
-            ${b.delivery ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.3);border-radius:20px;font-size:12px;font-weight:800;color:var(--primary);">🚚 Доставка доступна</div>' : ''}
+            ${b.delivery ? '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--pri-dim);border:1px solid rgba(240,68,74,.3);border-radius:20px;font-size:12px;font-weight:800;color:var(--primary);">🚚 Доставка доступна</div>' : ''}
             <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
                 <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:800;">Владелец</div>
                 <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;" onclick="openUserProfile('${jsEsc(b.owner)}')">
@@ -12517,7 +12521,7 @@ window.openBizDetail = async function(bizId){
                     <span style="color:var(--muted);font-size:16px;">›</span>
                 </div>
             </div>
-            ${myRole ? `<div style="margin-top:8px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);padding:10px;font-size:13px;"><b style="color:var(--primary);">👤 Ваша роль:</b> ${escHtml(getBizEmployeeRoleName(myRole))}</div>` : ''}
+            ${myRole ? `<div style="margin-top:8px;background:var(--pri-dim);border:1px solid rgba(240,68,74,.25);border-radius:var(--r-sm);padding:10px;font-size:13px;"><b style="color:var(--primary);">👤 Ваша роль:</b> ${escHtml(getBizEmployeeRoleName(myRole))}</div>` : ''}
             <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
                 <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:800;">Сотрудники</div>
                 ${renderBizEmployeeTags(b)}
@@ -12629,7 +12633,7 @@ function renderBizDetailProducts(products, b, isOwner){
     }).join('') : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:30px 0;">Товаров нет</div>';
 
     const cartHtml = cartEntries.length ? `
-        <div style="background:var(--surface);border:1px solid rgba(34,211,165,.3);border-radius:var(--r);padding:18px;margin-top:16px;">
+        <div style="background:var(--surface);border:1px solid rgba(240,68,74,.3);border-radius:var(--r);padding:18px;margin-top:16px;">
             <div class="card-title" style="color:var(--primary);margin-bottom:14px;">🧺 Корзина</div>
             <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
                 ${cartEntries.map(([pid, item])=>`
@@ -12646,7 +12650,7 @@ function renderBizDetailProducts(products, b, isOwner){
                     </div>
                 </div>`).join('')}
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--pri-dim);border-radius:var(--r-sm);border:1px solid rgba(34,211,165,.25);margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--pri-dim);border-radius:var(--r-sm);border:1px solid rgba(240,68,74,.25);margin-bottom:12px;">
                 <span style="font-weight:900;">Итого</span>
                 <span style="font-size:22px;font-weight:900;color:var(--primary);">${total.toLocaleString()} ₽</span>
             </div>
@@ -14013,11 +14017,11 @@ window.renderAdminDayGroups = async function() {
   el.innerHTML = groups.map(g => {
     const raceNames = (g.raceIds || []).map(id => racesMap[id]?.name || id);
     return `
-    <div style="background:var(--surface2);border:1px solid rgba(251,191,36,.2);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
+    <div style="background:var(--surface2);border:1px solid rgba(255,128,106,.2);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;">
       <div style="font-weight:900;font-size:14px;color:var(--gold);margin-bottom:4px;">📅 ${escHtml(g.name)}</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${raceNames.length ? raceNames.map(n=>`🏁 ${escHtml(n)}`).join(' · ') : 'Гонок нет'}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        <button class="btn btn-ghost btn-sm" style="border-color:rgba(251,191,36,.35);color:var(--gold);" onclick="openDayGroupFormModal('${jsEsc(g.key)}')">✏️ Редактировать</button>
+        <button class="btn btn-ghost btn-sm" style="border-color:rgba(255,128,106,.35);color:var(--gold);" onclick="openDayGroupFormModal('${jsEsc(g.key)}')">✏️ Редактировать</button>
         <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red-dim);" onclick="deleteDayGroup('${jsEsc(g.key)}')">🗑 Удалить</button>
       </div>
     </div>`;
@@ -14112,7 +14116,7 @@ window.renderEventsSection = async function(){
   const dayRaces = raceIds.map(id => allRacesMap[id]).filter(Boolean).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
 
   el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:var(--r-sm);margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(255,128,106,.08);border:1px solid rgba(255,128,106,.25);border-radius:var(--r-sm);margin-bottom:14px;">
       <div style="font-size:28px;">📅</div>
       <div>
         <div style="font-weight:900;font-size:15px;color:var(--gold);">${escHtml(dayGroup.name)}</div>
@@ -14124,14 +14128,14 @@ window.renderEventsSection = async function(){
 
 function renderRaceCard(r){
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;cursor:pointer;transition:.2s;" onclick="openEventDetail('${jsEsc(r.id)}')" onmouseenter="this.style.borderColor='var(--gold)'" onmouseleave="this.style.borderColor='var(--border)'">
-    ${r.mapImg ? `<img src="${escHtml(r.mapImg)}" style="width:100%;height:180px;object-fit:cover;display:block;" onclick="event.stopPropagation();openImgViewer('${jsEsc(r.mapImg)}')">` : '<div style="width:100%;height:120px;background:linear-gradient(135deg,var(--surface2),rgba(251,191,36,.06));display:flex;align-items:center;justify-content:center;font-size:48px;">🏁</div>'}
+    ${r.mapImg ? `<img src="${escHtml(r.mapImg)}" style="width:100%;height:180px;object-fit:cover;display:block;" onclick="event.stopPropagation();openImgViewer('${jsEsc(r.mapImg)}')">` : '<div style="width:100%;height:120px;background:linear-gradient(135deg,var(--surface2),rgba(255,128,106,.06));display:flex;align-items:center;justify-content:center;font-size:48px;">🏁</div>'}
     <div style="padding:14px;">
       <div style="font-weight:900;font-size:16px;margin-bottom:4px;">${escHtml(r.name)}</div>
       <div style="font-size:12px;color:var(--gold);font-weight:800;margin-bottom:6px;">${escHtml(RACE_TYPE_LABELS[r.type]||r.type)}${r.laps?` · ${r.laps} кр.`:''}</div>
       ${r.desc ? `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">${escHtml(r.desc)}</div>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','easy');" style="border-color:rgba(34,211,165,.4);color:var(--primary);">🟢 Легко</button>
-        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','med');"  style="border-color:rgba(251,191,36,.4);color:var(--gold);">🟡 Средне</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','easy');" style="border-color:rgba(240,68,74,.4);color:var(--primary);">🟢 Легко</button>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','med');"  style="border-color:rgba(255,128,106,.4);color:var(--gold);">🟡 Средне</button>
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEventDiff('${jsEsc(r.id)}','hard');" style="border-color:rgba(248,113,113,.4);color:var(--red);">🔴 Сложно</button>
       </div>
     </div>
@@ -14148,7 +14152,7 @@ window.openEventDetail = async function(raceId){
       <img src="${escHtml(r.mapImg)}" style="width:100%;border-radius:var(--r-sm);max-height:260px;object-fit:cover;cursor:zoom-in;" onclick="openImgViewer('${jsEsc(r.mapImg)}')" title="Нажмите для полного экрана">
       <div style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.5);border-radius:8px;padding:4px 10px;font-size:11px;color:#fff;font-weight:800;">🔍 Полный экран</div>
     </div>` : ''}
-    <div class="card" style="border-color:rgba(251,191,36,.25);background:linear-gradient(145deg,rgba(251,191,36,.06),transparent);">
+    <div class="card" style="border-color:rgba(255,128,106,.25);background:linear-gradient(145deg,rgba(255,128,106,.06),transparent);">
       <div style="font-size:24px;font-weight:900;margin-bottom:4px;">${escHtml(r.name)}</div>
       <div style="font-size:13px;color:var(--gold);font-weight:800;margin-bottom:8px;">${RACE_TYPE_LABELS[r.type]||r.type}${r.laps?` · ${r.laps} кр.`:''}</div>
       ${r.desc ? `<div style="font-size:13px;color:var(--muted);line-height:1.6;">${escHtml(r.desc)}</div>` : ''}
@@ -14158,8 +14162,8 @@ window.openEventDetail = async function(raceId){
       ${['easy','med','hard'].map((lvl,i)=>{
         const labels = ['🟢 Легко','🟡 Средне','🔴 Сложно'];
         const colors = ['var(--primary)','var(--gold)','var(--red)'];
-        const bgs = ['rgba(34,211,165,.06)','rgba(251,191,36,.06)','rgba(248,113,113,.06)'];
-        const borders = ['rgba(34,211,165,.25)','rgba(251,191,36,.25)','rgba(248,113,113,.25)'];
+        const bgs = ['rgba(240,68,74,.06)','rgba(255,128,106,.06)','rgba(248,113,113,.06)'];
+        const borders = ['rgba(240,68,74,.25)','rgba(255,128,106,.25)','rgba(248,113,113,.25)'];
         const d = r[lvl] || {};
         return `<div style="padding:14px;background:${bgs[i]};border:1px solid ${borders[i]};border-radius:var(--r-sm);cursor:pointer;" onclick="openEventDiff('${jsEsc(r.id)}','${lvl}')">
           <div style="font-weight:900;font-size:15px;color:${colors[i]};margin-bottom:8px;">${labels[i]}</div>
@@ -14189,7 +14193,7 @@ window.openEventDiff = async function(raceId, level){
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:800;">⏱ Целевое время</div>
         <div style="font-size:24px;font-weight:900;">${escHtml(d.time||'—')}</div>
       </div>
-      <div style="padding:14px;background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.25);border-radius:var(--r-sm);">
+      <div style="padding:14px;background:rgba(240,68,74,.06);border:1px solid rgba(240,68,74,.25);border-radius:var(--r-sm);">
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-weight:800;">💰 Ставка за выигрыш</div>
         <div style="font-size:24px;font-weight:900;color:var(--primary);">+${(d.win||0)}₽</div>
         <div style="font-size:11px;color:var(--muted);margin-top:4px;">Если уложишься в целевое время</div>
@@ -15228,13 +15232,13 @@ window.openGiftSubscriptionModal = async function(type){
     
     const modalHtml = `
         <div id="giftSubModal" style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeGiftSubscriptionModal()">
-            <div style="background:#131b24;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;">
+            <div style="background:#170b10;border-radius:24px 24px 0 0;width:100%;max-width:490px;max-height:80vh;overflow-y:auto;padding:24px 18px 44px;animation:sheetUp .3s ease-out;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <div style="font-weight:900;font-size:18px;">🎁 Подарить подписку</div>
                     <span style="cursor:pointer;font-size:20px;" onclick="closeGiftSubscriptionModal()">✕</span>
                 </div>
                 
-                <div style="background: ${type==='plus' ? 'rgba(251,191,36,.08)' : type==='ultra' ? 'rgba(34,211,165,.08)' : 'rgba(240,196,25,.08)'};border:2px solid ${type==='plus'?'var(--gold)':type==='ultra'?'var(--primary)':'#f0c419'};border-radius:16px;padding:16px;margin-bottom:20px;">
+                <div style="background: ${type==='plus' ? 'rgba(255,128,106,.08)' : type==='ultra' ? 'rgba(240,68,74,.08)' : 'rgba(240,196,25,.08)'};border:2px solid ${type==='plus'?'var(--gold)':type==='ultra'?'var(--primary)':'#f0c419'};border-radius:16px;padding:16px;margin-bottom:20px;">
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
                         <div style="font-size:28px;">${type==='plus'?'⭐':type==='ultra'?'💎':'👑'}</div>
                         <div>
@@ -16780,7 +16784,7 @@ try {
 
 <!-- EMERGENCY NUMBERS MODAL -->
 <div id="callModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeCallModal()">
-    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;">
+    <div style="width:100%;max-width:460px;background:#170b10;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <div style="font-size:18px;font-weight:900;">📞 Вызов КСБ / Полиции</div>
             <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeCallModal()">✕</button>
@@ -16799,7 +16803,7 @@ try {
 
 <!-- ATM REQUEST MODAL -->
 <div id="atmRequestModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeAtmRequestModal()">
-    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;">
+    <div style="width:100%;max-width:460px;background:#170b10;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <div style="font-size:18px;font-weight:900;">Банкомат — заявка</div>
             <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeAtmRequestModal()">✕</button>
@@ -16819,7 +16823,7 @@ try {
 
 <!-- INFO MODAL -->
 <div id="infoModal" style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9995;display:none;align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeInfoModal()">
-    <div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:85vh;display:flex;flex-direction:column;">
+    <div style="width:100%;max-width:460px;background:#170b10;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);max-height:85vh;display:flex;flex-direction:column;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex:none;">
             <div style="font-size:18px;font-weight:900;">ℹ️ Информация</div>
             <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;" onclick="closeInfoModal()">✕</button>
@@ -16893,7 +16897,7 @@ try {
                     <li>покупать товары в бизнесах и так далее</li>
                 </ul>
                 <p style="margin-bottom:10px;">Заработать можно на <b>заданиях</b> и на <b>работе</b> (все зарплаты написаны).</p>
-                <div style="background:var(--gold-dim);border:1px solid rgba(251,191,36,.3);border-radius:14px;padding:12px;font-size:12px;color:var(--text);">💡 Также советуем немного переводить в наличку — если не будет интернета, вся оплата будет именно наличкой (потом её можно перевести обратно в электронные деньги).</div>
+                <div style="background:var(--gold-dim);border:1px solid rgba(255,128,106,.3);border-radius:14px;padding:12px;font-size:12px;color:var(--text);">💡 Также советуем немного переводить в наличку — если не будет интернета, вся оплата будет именно наличкой (потом её можно перевести обратно в электронные деньги).</div>
             </div>
         </div>
     </div>
@@ -17014,7 +17018,7 @@ ready(function(){
     m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9997;display:flex;align-items:center;justify-content:center;padding:16px;';
     m.onclick = (e)=>{ if(e.target===m) m.remove(); };
     m.innerHTML = `
-      <div style="width:100%;max-width:380px;background:linear-gradient(160deg,#16242a,#0e1620);border:1px solid rgba(34,211,165,.4);border-radius:22px;padding:20px;box-shadow:0 12px 60px rgba(0,0,0,.7);">
+      <div style="width:100%;max-width:380px;background:linear-gradient(160deg,#16242a,#0e1620);border:1px solid rgba(240,68,74,.4);border-radius:22px;padding:20px;box-shadow:0 12px 60px rgba(0,0,0,.7);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:900;color:var(--primary);">📝 Данные паспорта</div>
           <button class="btn btn-ghost btn-sm" style="width:auto;padding:6px 10px;" onclick="this.closest('#passportFormModal').remove()">✕</button>
@@ -17070,7 +17074,7 @@ ready(function(){
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9996;display:flex;align-items:center;justify-content:center;padding:16px;';
     modal.onclick = (e)=>{ if(e.target===modal) modal.remove(); };
     modal.innerHTML = `
-      <div style="width:100%;max-width:420px;background:linear-gradient(160deg,#16242a,#0e1620);border:1px solid rgba(34,211,165,.4);border-radius:24px;padding:22px;box-shadow:0 12px 60px rgba(0,0,0,.7);max-height:92vh;overflow-y:auto;">
+      <div style="width:100%;max-width:420px;background:linear-gradient(160deg,#16242a,#0e1620);border:1px solid rgba(240,68,74,.4);border-radius:24px;padding:22px;box-shadow:0 12px 60px rgba(0,0,0,.7);max-height:92vh;overflow-y:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;color:var(--primary);">🪪 Паспорт Капани${isOwn?'':' — '+escHtml(nick)}</div>
           <button class="btn btn-ghost btn-sm" style="width:auto;padding:6px 10px;" onclick="this.closest('#passportModal').remove()">✕</button>
@@ -17129,7 +17133,7 @@ ready(function(){
     body.style.textAlign = 'left';
     body.style.color = 'var(--text)';
     body.innerHTML = `
-      <div style="background:rgba(34,211,165,.06);border:1px solid rgba(34,211,165,.25);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5;">
+      <div style="background:rgba(240,68,74,.06);border:1px solid rgba(240,68,74,.25);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.5;">
         <div><span style="color:var(--muted);">Имя:</span> <b>${escHtml(p.firstName)}</b></div>
         <div><span style="color:var(--muted);">Фамилия:</span> <b>${escHtml(p.lastName)}</b></div>
         <div><span style="color:var(--muted);">Никнейм на сайте:</span> <b style="color:var(--primary);">${escHtml(siteNick)}</b></div>
@@ -17165,7 +17169,7 @@ ready(function(){
     const card = document.createElement('div');
     card.className = 'card';
     card.id = 'adminLicensesCard';
-    card.style.cssText = 'border-color:rgba(34,211,165,.25);background:rgba(34,211,165,.04);';
+    card.style.cssText = 'border-color:rgba(240,68,74,.25);background:rgba(240,68,74,.04);';
     card.innerHTML = `
       <div class="card-title" style="color:var(--primary);">🪪 Водительские удостоверения</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Выдайте или изымите права у выбранного выше жителя (поле «Управление балансом»).</div>
@@ -17330,7 +17334,7 @@ ready(function(){
     const card = document.createElement('div');
     card.className = 'card';
     card.id = 'dutyPassportLicenseCard';
-    card.style.cssText = 'border-color:rgba(34,211,165,.25);background:rgba(34,211,165,.04);';
+    card.style.cssText = 'border-color:rgba(240,68,74,.25);background:rgba(240,68,74,.04);';
     card.innerHTML = `
       <div class="card-title" style="color:var(--primary);">🪪 Паспорт и права жителя</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Посмотрите паспорт любого жителя или выдайте/изымите права на велосипед и скутер.</div>
@@ -17477,7 +17481,7 @@ ready(function(){
     const card = document.createElement('div');
     card.className = 'card';
     card.id = 'rentListingForm';
-    card.style.cssText = 'border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.04);margin-top:14px;';
+    card.style.cssText = 'border-color:rgba(255,128,106,.3);background:rgba(255,128,106,.04);margin-top:14px;';
     card.innerHTML = `
       <div class="card-title" style="color:var(--gold);">🏘️ Сдать здание в аренду</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Объявление появится в общем списке маркетплейса.</div>
@@ -17524,7 +17528,7 @@ ready(function(){
       <div style="font-weight:900;font-size:14px;margin-bottom:8px;color:var(--gold);">🏘️ Здания в аренду</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${all.map(r=>`
-          <div style="background:var(--surface);border:1px solid rgba(251,191,36,.25);border-radius:var(--r-sm);padding:12px;">
+          <div style="background:var(--surface);border:1px solid rgba(255,128,106,.25);border-radius:var(--r-sm);padding:12px;">
             ${r.photo?`<img src="${escHtml(r.photo)}" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:8px;" loading="lazy">`:''}
             <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
               <div style="min-width:0;flex:1;">
@@ -18002,7 +18006,7 @@ ready(function(){
     function renderScooterExam(){
       const m=qs('scooterExamModal');if(!m||!_scooterExamState)return;
       const st=_scooterExamState,q=SCOOTER_EXAM_QUESTIONS[st.index];
-      m.innerHTML=`<div style="width:100%;max-width:460px;background:#131b24;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);"><div style="font-size:20px;font-weight:900;margin-bottom:8px;">🛵 Экзамен на скутер</div><div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Вопрос ${st.index+1} из ${SCOOTER_EXAM_QUESTIONS.length}. Оплаченные 1 500 ₽ не возвращаются при провале.</div><div style="font-weight:900;font-size:15px;line-height:1.5;margin-bottom:12px;">${escHtml(q.q)}</div><div style="display:grid;gap:8px;">${q.a.map((a,i)=>`<button class="btn btn-ghost" style="text-align:left;" onclick="chooseScooterExamAnswer(${i})">${i+1}. ${escHtml(a)}</button>`).join('')}</div><button class="btn btn-ghost" style="margin-top:10px;" onclick="closeScooterExam()">Закрыть и продолжить позже</button></div>`;
+      m.innerHTML=`<div style="width:100%;max-width:460px;background:#170b10;border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);"><div style="font-size:20px;font-weight:900;margin-bottom:8px;">🛵 Экзамен на скутер</div><div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Вопрос ${st.index+1} из ${SCOOTER_EXAM_QUESTIONS.length}. Оплаченные 1 500 ₽ не возвращаются при провале.</div><div style="font-weight:900;font-size:15px;line-height:1.5;margin-bottom:12px;">${escHtml(q.q)}</div><div style="display:grid;gap:8px;">${q.a.map((a,i)=>`<button class="btn btn-ghost" style="text-align:left;" onclick="chooseScooterExamAnswer(${i})">${i+1}. ${escHtml(a)}</button>`).join('')}</div><button class="btn btn-ghost" style="margin-top:10px;" onclick="closeScooterExam()">Закрыть и продолжить позже</button></div>`;
     }
     window.chooseScooterExamAnswer=async function(choice){
       if(!_scooterExamState)return;const q=SCOOTER_EXAM_QUESTIONS[_scooterExamState.index];_scooterExamState.answers.push(choice===q.c?1:0);
@@ -18088,7 +18092,7 @@ ready(function(){
       const purchase=u.kEducationPurchase||{};
       const paid = purchase.status==='paid' || purchase.status==='submitted';
       host.innerHTML=`
-        <div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.09),rgba(251,191,36,.06));border-color:rgba(34,211,165,.3);">
+        <div class="card" style="background:linear-gradient(145deg,rgba(240,68,74,.09),rgba(255,128,106,.06));border-color:rgba(240,68,74,.3);">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
             <div style="font-size:34px;">🎓</div>
             <div><div style="font-size:22px;font-weight:900;">К-образование</div><div style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.5px;">Подготовка к КВЭ</div></div>
@@ -18100,7 +18104,7 @@ ready(function(){
         <div class="card">
           <div class="card-title">${paid?'Статус обучения':'Оплата К-образования'}</div>
           ${paid
-            ? `<div style="padding:14px;border-radius:14px;background:var(--pri-dim);border:1px solid rgba(34,211,165,.28);font-size:13px;line-height:1.65;">
+            ? `<div style="padding:14px;border-radius:14px;background:var(--pri-dim);border:1px solid rgba(240,68,74,.28);font-size:13px;line-height:1.65;">
                  <div style="font-size:15px;font-weight:900;color:var(--primary);">✅ К-образование оплачено</div>
                  <div style="margin-top:4px;">Заявка уже отправлена в мэрию.</div>
                  <div style="color:var(--muted);font-size:11px;margin-top:6px;">Дата покупки: ${formatDate(purchase.createdAt)}</div>
@@ -18591,7 +18595,7 @@ ready(function(){
       const multiplier=VP_PAYOUTS[name]||0;return {name:name||'Нет комбинации',multiplier};
     }
     function renderVideoPokerCards(st){
-      const cards=st?.cards||[];const interactive=st?.phase==='draw';return `<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:10px 0;">${cards.map((c,i)=>{const held=(st.held||[]).includes(i);const red=['♥','♦'].includes(c.suit);return `<button type="button" class="btn btn-ghost" ${(!interactive||window._videoPokerBusy)?'disabled':''} ${interactive?'onclick="kapaniVideoPokerToggleHold('+i+')"':''} style="min-width:0;padding:7px 2px;height:82px;border:${held?'2px solid var(--gold)':'1px solid var(--border)'};background:${held?'rgba(251,191,36,.12)':'#fff'};color:${red?'#c33':'#111'};border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:${held?'0 0 0 2px rgba(251,191,36,.12)':''};"><span style="font-size:22px;font-weight:900;line-height:1;">${esc(c.rank)}</span><span style="font-size:20px;line-height:1;margin-top:5px;">${esc(c.suit)}</span>${held?'<span style="font-size:8px;font-weight:900;color:#9a6700;margin-top:4px;">HOLD</span>':''}</button>`;}).join('')}</div>`;
+      const cards=st?.cards||[];const interactive=st?.phase==='draw';return `<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:10px 0;">${cards.map((c,i)=>{const held=(st.held||[]).includes(i);const red=['♥','♦'].includes(c.suit);return `<button type="button" class="btn btn-ghost" ${(!interactive||window._videoPokerBusy)?'disabled':''} ${interactive?'onclick="kapaniVideoPokerToggleHold('+i+')"':''} style="min-width:0;padding:7px 2px;height:82px;border:${held?'2px solid var(--gold)':'1px solid var(--border)'};background:${held?'rgba(255,128,106,.12)':'#fff'};color:${red?'#c33':'#111'};border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:${held?'0 0 0 2px rgba(255,128,106,.12)':''};"><span style="font-size:22px;font-weight:900;line-height:1;">${esc(c.rank)}</span><span style="font-size:20px;line-height:1;margin-top:5px;">${esc(c.suit)}</span>${held?'<span style="font-size:8px;font-weight:900;color:#9a6700;margin-top:4px;">HOLD</span>':''}</button>`;}).join('')}</div>`;
     }
     async function renderVideoPoker(uOverride=null){
       const host=qs('videoPokerArea');if(!host)return;const u=uOverride||await getCasinoUser(),st=u.casino?.videoPoker;
@@ -18652,7 +18656,7 @@ ready(function(){
     function injectEconomyAdminUI(){
       const page=qs('adminPage'); if(!page || current()!==ADMIN) return;
       if(!qs('kapaniTreasuryCard')){
-        const c=document.createElement('div');c.className='card';c.id='kapaniTreasuryCard'; c.style.cssText='border-color:rgba(251,191,36,.35);background:linear-gradient(145deg,rgba(251,191,36,.10),rgba(34,211,165,.04));';
+        const c=document.createElement('div');c.className='card';c.id='kapaniTreasuryCard'; c.style.cssText='border-color:rgba(255,128,106,.35);background:linear-gradient(145deg,rgba(255,128,106,.10),rgba(240,68,74,.04));';
         c.innerHTML='<div class="card-title" style="color:var(--gold);">💰 Казна мэрии</div><div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:10px;">Сюда поступают банковские комиссии, налоги, абонентские платы, штрафы и проигрыши в казино.</div><div style="font-size:28px;font-weight:900;color:var(--gold);margin-bottom:10px;" id="kapaniTreasuryBalance">0 ₽</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-gold" onclick="withdrawMunicipalTreasury()">💸 Вывести казну на аккаунт Кайона</button><button class="btn btn-red btn-sm" onclick="clearMunicipalTreasuryHistory()">🗑 Очистить историю</button></div><div style="font-size:11px;color:var(--muted);margin-top:12px;margin-bottom:4px;">Последние операции</div><div id="kapaniTreasuryHistory"></div>';
         page.insertBefore(c,page.firstElementChild?.nextElementSibling||page.firstChild);
       }
@@ -18671,7 +18675,7 @@ ready(function(){
       ensureEconomySections();
       const host=qs('autoSchool');if(!host)return;
       if(!qs('kapaniRightsCard')){
-        const c=document.createElement('div');c.className='card';c.id='kapaniRightsCard';c.style.cssText='border-color:rgba(34,211,165,.3);background:rgba(34,211,165,.04);';
+        const c=document.createElement('div');c.className='card';c.id='kapaniRightsCard';c.style.cssText='border-color:rgba(240,68,74,.3);background:rgba(240,68,74,.04);';
         host.appendChild(c);
       }
       renderRightsCard();
@@ -18694,7 +18698,7 @@ ready(function(){
         autoSchool=document.createElement('div');
         autoSchool.id='autoSchool';
         autoSchool.className='section';
-        autoSchool.innerHTML='<div class="card" style="background:linear-gradient(145deg,rgba(34,211,165,.08),rgba(251,191,36,.05));border-color:rgba(34,211,165,.25);"><div style="font-size:22px;font-weight:900;">🚦 Автошкола</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Купить права на велосипед без экзамена или оплатить экзамен на права на скутер</div><div id="kapaniRightsCard"></div></div>';
+        autoSchool.innerHTML='<div class="card" style="background:linear-gradient(145deg,rgba(240,68,74,.08),rgba(255,128,106,.05));border-color:rgba(240,68,74,.25);"><div style="font-size:22px;font-weight:900;">🚦 Автошкола</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Купить права на велосипед без экзамена или оплатить экзамен на права на скутер</div><div id="kapaniRightsCard"></div></div>';
         main.appendChild(autoSchool);
         renderRightsCard();
       }
@@ -18703,7 +18707,7 @@ ready(function(){
         casino=document.createElement('div');
         casino.id='casino';
         casino.className='section';
-        casino.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(251,191,36,.05));border-color:rgba(248,113,113,.25);"><div style="font-size:22px;font-weight:900;">🎰 Казино</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек, слоты и новые мини-игры</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;"><div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div><div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div></div><div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div><div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;"><button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button><div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div></div></div><div class="card" id="blackjackArea"></div><div class="card" id="slotsArea"></div><div class="card" id="rouletteArea"></div><div class="card" id="coinflipArea"></div><div class="card" id="diceArea"></div><div class="card" id="baccaratArea"></div><div class="card" id="videoPokerArea"></div>`;
+        casino.innerHTML=`<div class="card" style="background:linear-gradient(145deg,rgba(248,113,113,.08),rgba(255,128,106,.05));border-color:rgba(248,113,113,.25);"><div style="font-size:22px;font-weight:900;">🎰 Казино</div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Отдельный игровой баланс · Блекджек, слоты и новые мини-игры</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;"><div style="padding:12px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Основной баланс</div><div id="casinoMainBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--text);">0 ₽</div></div><div style="padding:12px;border-radius:12px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:900;">Баланс казино</div><div id="casinoBalanceDisplay" style="margin-top:3px;font-size:18px;font-weight:900;color:var(--gold);">0 ₽</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;"><input type="number" id="casinoTransferAmt" min="1" step="1" placeholder="Сумма, ₽" style="margin:0;"><button class="btn btn-gold btn-sm" onclick="kapaniCasinoDeposit()">➕ Внести</button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"><button class="btn btn-ghost btn-sm" onclick="kapaniCasinoWithdraw()">➖ Вывести от 500 ₽</button><div style="font-size:10px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;">Вывод доступен только с игрового баланса</div></div></div><div class="card" id="blackjackArea"></div><div class="card" id="slotsArea"></div><div class="card" id="rouletteArea"></div><div class="card" id="coinflipArea"></div><div class="card" id="diceArea"></div><div class="card" id="baccaratArea"></div><div class="card" id="videoPokerArea"></div>`;
         main.appendChild(casino);
       }
       if(!qs('kEducationContent')){const c=document.createElement('div');c.id='kEducationContent';edu.appendChild(c);}
@@ -18757,5 +18761,19 @@ ready(function(){
 })();
 </script>
 
+<script>
+(function(){
+  const ids=['hNick','hJob','hAv'];
+  function syncHero(){
+    const name=document.getElementById('hNick'),role=document.getElementById('hJob'),avatar=document.getElementById('hAv');
+    if(name)document.getElementById('heroName').textContent=name.textContent||'Капани';
+    if(role)document.getElementById('heroRole').textContent=role.textContent||'Житель';
+    if(avatar&&avatar.getAttribute('src'))document.getElementById('heroAvatar').src=avatar.src;
+  }
+  if(typeof MutationObserver!=='undefined')ids.forEach(id=>{const el=document.getElementById(id);if(el)new MutationObserver(syncHero).observe(el,{childList:true,characterData:true,subtree:true,attributes:id==='hAv',attributeFilter:id==='hAv'?['src']:undefined});});
+  syncHero();
+  document.addEventListener('click',e=>{const target=e.target.closest('.bn-item');if(!target)return;target.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});});
+})();
+</script>
 </body>
 </html>
