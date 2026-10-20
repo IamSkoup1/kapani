@@ -287,9 +287,7 @@ async function createFirebaseCustomToken(env, uid) {
     iat: now,
     exp: now + 3600,
     uid: String(uid),
-    // The /session handler verifies this account's password hash before minting.
-    // Keep the privileged identity server-configured and require an exact UID match.
-    claims: { admin: !!env.ADMIN_NICK && String(uid) === String(env.ADMIN_NICK) }
+    claims: {}
   })));
   const input = `${header}.${payload}`;
   const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', customTokenKeyCache.key, te.encode(input)));

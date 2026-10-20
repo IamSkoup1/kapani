@@ -69,6 +69,9 @@
 })();
 </script>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://unpkg.com">
 <style>
 :root {
@@ -1000,7 +1003,6 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
 </style>
 <link rel="stylesheet" href="redesign.css?v=1">
-<link rel="stylesheet" href="./assets/civic-design.css">
 </head>
 <body>
 
@@ -2844,7 +2846,7 @@ const firebaseConfig = CONFIG.firebase;
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
 
-const ADMIN = CONFIG.admin.username;
+const ADMIN = 'Кайон';
 // ─── Deterministic bootstrap signal for additive modules (Kapani Pack v2 etc.) ───
 // Replaces the old setInterval/setTimeout polling handoff: other <script type="module">
 // blocks just `await window.kapaniReady()` instead of polling window.db every 250ms.
@@ -6247,7 +6249,12 @@ window.openProfileCustomizer=async function(){
                     </select>
                 </div>
                 
-                <div style="margin-bottom:20px;color:var(--muted);font-size:13px;">Оформление сайта общее для всех жителей; его выбирает мэр.</div>
+                <div style="margin-bottom:20px;">
+                    <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🎨 Тема интерфейса</div>
+                    <select id="interfaceThemeSelect" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);" onchange="previewInterfaceTheme(this.value)">
+                        ${themeOptions}
+                    </select>
+                </div>
                 ` : '<div style="text-align:center;color:var(--muted);padding:20px;">Нужна подписка для кастомизации</div>'}
                 
                 <div style="display:flex;gap:10px;">
@@ -6360,12 +6367,19 @@ window.previewChatBg=function(style){
 };
 
 window.previewInterfaceTheme=function(theme){
-    // The mayor's shared seasonal design owns the site palette.
+    // Temporarily apply theme to body for preview
+    document.body.classList.remove('theme-gold', 'theme-prime');
+    if(theme === 'gold') {
+        document.body.classList.add('theme-gold');
+    }
 };
 
 window.applyInterfaceTheme=function(theme){
-    // Keep legacy profile data readable without letting it override the shared design.
+    // Apply theme class to body
     document.body.classList.remove('theme-gold', 'theme-prime');
+    if(theme === 'gold') {
+        document.body.classList.add('theme-gold');
+    }
 };
 window.saveProfileCustomization=async function(){
     const emojiSelect = qs('nicknameEmojiSelect');
@@ -6379,7 +6393,10 @@ window.saveProfileCustomization=async function(){
     if(frameSelect) updates.avatarFrame = frameSelect.value || null;
     if(bgSelect) updates.profileBgEffect = bgSelect.value || null;
     if(chatSelect) updates.chatBubbleStyle = chatSelect.value || null;
-    // Existing personal theme values remain in profiles but no longer change the site palette.
+    if(themeSelect) {
+        updates.interfaceTheme = (themeSelect.value === 'gold') ? 'gold' : 'default';
+        applyInterfaceTheme(updates.interfaceTheme);
+    }
     await update(userRef(currentNick), updates);
     toast('✅ Настройки сохранены', 'green');
     closeProfileCustomizer();
@@ -9261,11 +9278,6 @@ window.rejectJanitorSubmission=async function(id){
     renderAdmin();
 };
 async function renderAdmin(){
-    const statusHost=qs('adminStats')?.parentElement;
-    let status=qs('adminLoadStatus');
-    if(statusHost && !status){status=document.createElement('div');status.id='adminLoadStatus';status.setAttribute('role','status');status.style.cssText='font-size:13px;color:var(--muted);margin-bottom:8px;';statusHost.appendChild(status);}
-    if(status)status.textContent='Загрузка данных мэрии…';
-    try {
     const[uSnap,oSnap,aSnap,jSnap,rSnap]=await Promise.all([get(ref(db,'users')),get(ordersRef()),get(appsRef()),get(janitorSubsRef()),get(rentBuildingsRef())]);
     renderAdminUsers(uSnap.val()||{});renderAdminOrders(oSnap.val()||{});renderAdminApps(aSnap.val()||{});renderAdminJanitorSubmissions(jSnap.val()||{});renderAdminUserSelect(uSnap.val()||{});renderUnverifiedAccounts();
     renderAdminBizApps();
@@ -9278,11 +9290,6 @@ async function renderAdmin(){
     renderAdminDeputyProposals();
     renderAdminAtmRequests();
     try { if(typeof window.renderMunicipalTreasury === 'function') window.renderMunicipalTreasury(); } catch(e) {}
-    if(status)status.textContent='';
-    } catch(error) {
-        console.error('[Kapani mayor dashboard]',error);
-        if(status)status.textContent='Не удалось загрузить данные мэрии. Проверьте соединение и откройте раздел ещё раз.';
-    }
 }
 
 async function renderAdminDeputyProposals() {
@@ -9445,10 +9452,6 @@ let _adminMoneyBusy = false;
 window.adminMoney=async function(){
     if(_adminMoneyBusy) return toast('⏳ Операция уже выполняется…','gold');
     if(currentNick!==ADMIN) return toast('🚫 Только мэр','red');
-    const targetForConfirmation=qs('adminTarget')?.value;
-    const amountForConfirmation=String(qs('adminAmt')?.value||'').trim();
-    if(targetForConfirmation && /^-?\d+$/.test(amountForConfirmation) && Number(amountForConfirmation)!==0 &&
-       !confirm(`${Number(amountForConfirmation)>0?'Зачислить':'Списать'} ${Math.abs(Number(amountForConfirmation)).toLocaleString('ru-RU')} ₽ ${targetForConfirmation}? Баланс изменится сразу.`)) return;
     _adminMoneyBusy=true;
     try{
         const target=qs('adminTarget')?.value;
@@ -9481,20 +9484,16 @@ window.adminMoney=async function(){
     }finally{_adminMoneyBusy=false;}
 };
 
-let _adminFineBusy=false;
 window.adminFineWorker=async function(){
-    if(_adminFineBusy) return toast('Операция уже выполняется','gold');
-    if(currentNick!==ADMIN) return toast('Только для мэра','red');
     const target=qs('adminTarget').value;
     const amt=Math.abs(parseInt(qs('adminFineAmt').value)||0);
     const reason=(qs('adminFineReason')?.value||'').trim();
     if(!target)return toast('⚠️ Выберите жителя','gold');
     if(amt<=0)return toast('⚠️ Укажите штраф','gold');
     if(!reason)return toast('⚠️ Укажите причину штрафа','gold');
-    if(!confirm(`Выписать штраф ${amt.toLocaleString('ru-RU')} ₽ жителю ${target}? Причина: ${reason}. Деньги будут списаны с баланса.`)) return;
-    _adminFineBusy=true;
-    try {
     const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
+    
+    try {
         // Вызываем Cloud Function с fallback
         const result = await callFunctionWithFallback('adminAdjustBalance', { 
             uid: target, 
@@ -9524,7 +9523,7 @@ window.adminFineWorker=async function(){
         console.error('Ошибка штрафа:', error);
         const message = error.message || 'Ошибка при выполнении операции';
         toast(`❌ ${message}`,'red');
-    } finally { _adminFineBusy=false; }
+    }
 };
 window.adminSetMigrant = async function(on){
     if(currentNick!==ADMIN) return;
@@ -10081,23 +10080,7 @@ function startTaskLiveListeners(){
     // The user's own listener handles taskBalance and reward flags.
     scheduleTaskLiveRefresh();
 }
-let _mayorPageVerified=false;
-let _mayorPageCheckPending=false;
 window.navTo=function(id){
-    if(id==='adminPage'){
-        if(currentNick!==ADMIN) return;
-        if(!_mayorPageVerified){
-            if(_mayorPageCheckPending) return;
-            _mayorPageCheckPending=true;
-            ensureKapaniServerSessionForCurrentUser(5000).then(user=>{
-                if(user?.uid!==ADMIN) throw new Error('Нет доступа к мэрии');
-                _mayorPageVerified=true;
-                window.navTo('adminPage');
-            }).catch(error=>toast(error?.message||'Не удалось проверить права мэра','red'))
-              .finally(()=>{_mayorPageCheckPending=false;});
-            return;
-        }
-    }
     const previousPage=curPage;
     if(previousPage && previousPage!==id){
         leaveService(previousPage);
@@ -16411,7 +16394,7 @@ function escAttr(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&qu
 function renderHospitalPhotoCards(photos,canDelete){
     const list=Object.entries(photos||{}).sort((a,b)=>(b[1]?.createdAt||0)-(a[1]?.createdAt||0));
     if(!list.length)return '<div style="color:var(--muted);font-size:13px;">Фотографий пока нет.</div>';
-    return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${list.map(([id,p])=>`<div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;"><img src="${escAttr(p.data||'')}" alt="Фото больницы" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:pointer;" onclick="openImgViewer('${escAttr(p.data||'')}')">${canDelete?`<button class="btn btn-red btn-sm" style="position:absolute;right:6px;top:6px;min-width:0;padding:7px 9px;" onclick="deleteHospitalPhoto('${escAttr(id)}')">🗑</button>`:''}<div style="font-size:10px;color:var(--muted);padding:7px 8px;">${escHtml(p.authorNick||'Врач')}</div></div>`).join('')}</div>`;
+    return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">${list.map(([id,p])=>`<div style="position:relative;background:var(--surface2);border:1px solid var(--border);border-radius:14px;overflow:hidden;"><img src="${escAttr(p.data||'')}" alt="Фото больницы" style="width:100%;aspect-ratio:1/1;object-fit:cover;display:block;cursor:pointer;" onclick="openImageFullscreen('${escAttr(p.data||'')}')">${canDelete?`<button class="btn btn-red btn-sm" style="position:absolute;right:6px;top:6px;min-width:0;padding:7px 9px;" onclick="deleteHospitalPhoto('${escAttr(id)}')">🗑</button>`:''}<div style="font-size:10px;color:var(--muted);padding:7px 8px;">${escHtml(p.authorNick||'Врач')}</div></div>`).join('')}</div>`;
 }
 function renderHospitalPhotosGallery(photos){const el=qs('hospitalPhotosGallery');if(el)el.innerHTML=renderHospitalPhotoCards(photos,false);}
 function renderHospitalPanelPhotos(photos,canDelete){const el=qs('hospitalPanelPhotos');if(el)el.innerHTML=renderHospitalPhotoCards(photos,canDelete);}
@@ -16491,7 +16474,6 @@ window.renderBizOwnerPanel = renderBizOwnerPanel;
 // ─── KAPANI PACK v2: expose module-scoped symbols to window for the additive pack ───
 try {
   window.db = db;
-  window.kapaniGetAuth = ensureAuth;
   window.ADMIN = ADMIN;
   window.JOB_JANITOR = JOB_JANITOR;
   window.MIN_BALANCE_ALLOWED = MIN_BALANCE_ALLOWED;
@@ -18793,6 +18775,5 @@ ready(function(){
   document.addEventListener('click',e=>{const target=e.target.closest('.bn-item');if(!target)return;target.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});});
 })();
 </script>
-<script type="module" src="./assets/civic-ui.js"></script>
 </body>
 </html>

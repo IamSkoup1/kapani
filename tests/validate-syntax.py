@@ -25,8 +25,5 @@ with tempfile.TemporaryDirectory() as temp:
     p=Path(temp)/'handlers.cjs';p.write_text('const handlers='+json.dumps(parser.handlers)+'; for(const code of handlers) new Function("event",code);')
     subprocess.run(['node',str(p)],check=True)
     print(f'PASS {len(parser.handlers)} static event handlers and local script paths')
-    for p in ROOT.rglob('*.json'):
-        # Historical local service-account placeholder is not shipped app config.
-        if p.name == 'sa-new.json' and p.parent.name == 'push-worker': continue
-        json.loads(p.read_text(encoding='utf-8-sig'))
+    for p in ROOT.rglob('*.json'): json.loads(p.read_text(encoding='utf-8-sig'))
     print('PASS JSON files')
