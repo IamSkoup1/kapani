@@ -1010,7 +1010,8 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 }
 
 </style>
-<link rel="stylesheet" href="redesign.css?v=2">
+<link rel="stylesheet" href="redesign.css?v=3">
+<link rel="stylesheet" href="assets/kapani-season-themes.css?v=1">
 </head>
 <body>
 
@@ -1467,7 +1468,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
         <div class="item-row"><span><span style="font-size:1.15em;line-height:1;" title="Палка">🥢</span> Палка <b style="color:var(--primary)">30₽</b></span><input type="number" id="sP" value="0" min="0" oninput="recalcShop()"></div>
         <div class="item-row"><span>🍃 Листья <b style="color:var(--primary)">3₽</b></span><input type="number" id="sL" value="0" min="0" oninput="recalcShop()"></div>
         <div class="item-row"><span><span style="font-size:1.15em;line-height:1;" title="Камень">🗿</span> Камень <b style="color:var(--primary)">100₽</b></span><input type="number" id="sK" value="0" min="0" oninput="recalcShop()"></div>
-        <input type="text" id="sAddr" placeholder="📍 Адрес доставки" style="margin-top:10px;">
+        <input type="text" id="sAddr" placeholder="Адрес доставки" style="margin-top:10px;">
         <div style="display:flex;gap:8px;margin-bottom:4px;">
             <button class="toggle-map-btn" style="flex:1;" id="shopMapToggleBtn" onclick="toggleShopMap()">🗺 Выбрать на карте</button>
             <button class="taxi-point-btn" onclick="detectShopLocation()" style="margin-bottom:0;flex-shrink:0;">📍</button>
@@ -1486,12 +1487,12 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
         <div class="card-title">🛵 Вызов такси</div>
         <div id="taxiMap"></div>
         <div class="taxi-point-row">
-            <input type="text" id="tFrom" placeholder="📍 Откуда" style="margin:0;" required minlength="3" maxlength="100" onkeydown="if(event.key==='Enter')geocodeFrom()">
+            <input type="text" id="tFrom" placeholder="Откуда" style="margin:0;" required minlength="3" maxlength="100" onkeydown="if(event.key==='Enter')geocodeFrom()">
             <button class="taxi-point-btn" id="btnFromGeo" onclick="detectMyLocation()">📍</button>
             <button class="taxi-point-btn" id="btnFromMap" onclick="startSelectPoint('from')">🗺</button>
         </div>
         <div class="taxi-point-row">
-            <input type="text" id="tTo" placeholder="🏁 Куда" style="margin:0;" required minlength="3" maxlength="100" onkeydown="if(event.key==='Enter')geocodeTo()">
+            <input type="text" id="tTo" placeholder="Куда" style="margin:0;" required minlength="3" maxlength="100" onkeydown="if(event.key==='Enter')geocodeTo()">
             <button class="taxi-point-btn" id="btnToMap" onclick="startSelectPoint('to')">🗺</button>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:10px;text-align:center;line-height:1.45;"><b style="color:var(--text);">Как поставить точку:</b> нажмите значок <b>🗺</b> у нужного поля («Откуда» или «Куда»), затем <b>коснитесь карты</b> в нужном месте.<br><span style="font-size:11px;">📍 — геолокация только для «Откуда»</span></div>
@@ -2453,7 +2454,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 
         <textarea id="deliveryOrderNotes" placeholder="Комментарий для доставщика (необязательно): подъезд, время, что уточнить..." style="min-height:88px;margin-top:8px;"></textarea>
         <button class="btn btn-ghost btn-sm" type="button" onclick="openDeliveryLocationPicker()">🗺 Выбрать точку доставки на карте</button>
-        <input type="text" id="deliveryOrderAddr" placeholder="📍 Адрес / описание точки доставки" maxlength="150" style="margin-top:8px;">
+        <input type="text" id="deliveryOrderAddr" placeholder="Адрес или описание точки доставки" maxlength="150" style="margin-top:8px;">
         <input type="hidden" id="deliveryOrderLat"><input type="hidden" id="deliveryOrderLng">
         <div id="deliveryLocationPreview" style="font-size:12px;color:var(--primary);margin-top:6px;"></div>
         <input type="text" id="deliveryOrderContact" placeholder="Контакт / способ связи (опционально)" maxlength="100" style="margin-top:8px;">
@@ -9892,10 +9893,10 @@ window.renderNews = async function(){
                         ${unread ? '<span class="news-badge-new">Новая</span>' : ''}
                         ${canDelete ? `<button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);" onclick="deleteNews('${jsEsc(item.id)}')">🗑</button>` : `<div style="margin-left:auto;"></div>`}
                     </div>
-                    <div style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
+                    <div class="news-user-text" style="font-weight:900;font-size:15px;margin-bottom:8px;">${escHtml(item.title)}</div>
                     ${item.imageUrl ? `<img loading="lazy" decoding="async" src="${escHtml(item.imageUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
                     ${item.videoUrl ? `<div style="margin-bottom:10px;cursor:pointer;" onclick="openVideoViewer('${jsEsc(item.videoUrl)}')"><video style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);background:#000;" muted playsinline preload="metadata"><source src="${escHtml(item.videoUrl)}#t=0.1"></video></div>` : ''}
-                    <div style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
+                    <div class="news-user-text" style="font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content)}</div>
                     <div style="margin-top:10px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                         <span>Автор: <b style="color:var(--text);">${escHtml(item.author)}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}</span>
                         <button type="button" class="btn btn-primary btn-sm news-discuss-btn" onclick="openNewsDiscussion('${jsEsc(item.id)}')">Открыть обсуждение</button>
@@ -9934,10 +9935,10 @@ window.openNewsDiscussion = async function(id){
                 <span class="news-scope-badge">${(NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general).emoji} ${(NEWS_CATEGORIES[item.category] || NEWS_CATEGORIES.general).label}</span>
                 <span class="news-scope-badge">${escHtml(item.date || '')} · ${escHtml(item.time || '')}</span>
             </div>
-            <div style="font-weight:900;font-size:18px;margin:10px 0 8px;">${escHtml(item.title || '')}</div>
+            <div class="news-user-text" style="font-weight:900;font-size:18px;margin:10px 0 8px;">${escHtml(item.title || '')}</div>
             ${item.imageUrl ? `<img loading="lazy" decoding="async" src="${escHtml(item.imageUrl)}" style="width:100%;max-height:240px;object-fit:cover;border-radius:var(--r-sm);margin-bottom:10px;cursor:pointer;" onclick="openImgViewer('${jsEsc(item.imageUrl)}')">` : ''}
             ${item.videoUrl ? `<div style="margin-bottom:10px;cursor:pointer;" onclick="openVideoViewer('${jsEsc(item.videoUrl)}')"><video style="width:100%;max-height:260px;object-fit:cover;border-radius:var(--r-sm);border:1px solid var(--border);background:#000;" muted playsinline preload="metadata"><source src="${escHtml(item.videoUrl)}#t=0.1"></video></div>` : ''}
-            <div style="font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content || '')}</div>
+            <div class="news-user-text" style="font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;">${escHtml(item.content || '')}</div>
             <div style="margin-top:10px;font-size:11px;color:var(--muted);">
                 Автор: <b style="color:var(--text);">${escHtml(item.author || '')}</b>${item.authorJob && item.authorJob !== 'Житель' ? ` · ${escHtml(item.authorJob)}` : ''}
             </div>
@@ -18799,6 +18800,7 @@ ready(function(){
 })();
 </script>
 <script src="./assets/kapani-ui.js" defer></script>
+<script src="./assets/kapani-icons.js" defer></script>
 <script type="module" src="./assets/kapani-season.js"></script>
 </body>
 </html>

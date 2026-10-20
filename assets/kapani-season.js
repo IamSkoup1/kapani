@@ -20,6 +20,77 @@ let preview = saved;
 let unsubscribe = null;
 let saving = false;
 let status = 'Подключаем общее оформление…';
+const effectsKey = 'kapani:seasonEffects';
+let effectsEnabled = true;
+try { effectsEnabled = localStorage.getItem(effectsKey) !== 'off'; } catch (_) {}
+const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+const effectShapes = {
+  snow: '<path d="M12 2v20M2 12h20M5 5l14 14M19 5 5 19" fill="none"/>',
+  frost: '<path d="M12 2 21 12 12 22 3 12Z" fill="none"/><path d="M12 2v20M3 12h18" fill="none"/>',
+  drop: '<path d="M12 2C8 8 5 11 5 15a7 7 0 0 0 14 0c0-4-3-7-7-13Z"/>',
+  petal: '<path d="M12 3C6 8 5 14 12 21c7-7 6-13 0-18Z"/>',
+  light: '<circle cx="12" cy="12" r="4"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4" fill="none"/>',
+  seed: '<path d="M12 3c-8 4-9 12-1 18 8-6 9-14 1-18Z"/><path d="M11 21c0-5 2-10 5-13" fill="none"/>',
+  leaf: '<path d="M3 12C5 5 12 3 21 4c-1 9-4 16-12 17C5 20 3 17 3 12Z"/><path d="M5 18c4-4 8-7 13-10" fill="none"/>',
+  mist: '<path d="M2 9h15m-10 5h15m-17 5h10" fill="none"/>'
+};
+const monthEffects = [
+  ['snow','#87b7c9'],['frost','#b5c9e6'],['drop','#7ea886'],['drop','#74a9aa'],
+  ['petal','#d598a0'],['light','#8ebf91'],['light','#d0a750'],['seed','#b48a4b'],
+  ['leaf','#b4824b'],['leaf','#bd7045'],['mist','#9ab0b7'],['snow','#85bfc6']
+];
+
+function renderEffects(month) {
+  const layer = document.getElementById('seasonEffectsLayer');
+  const button = document.getElementById('seasonEffectsToggle');
+  if (!layer || !button) return;
+  const reduced = !!reducedMotion?.matches;
+  const active = effectsEnabled && !reduced;
+  button.disabled = reduced;
+  button.setAttribute('aria-pressed', String(active));
+  button.setAttribute('aria-label', reduced ? 'Сезонные эффекты отключены настройкой устройства' : active ? 'Выключить сезонные эффекты' : 'Включить сезонные эффекты');
+  button.querySelector('span').textContent = reduced ? 'Эффекты: выкл.' : active ? 'Эффекты: вкл.' : 'Эффекты: выкл.';
+  layer.hidden = !active;
+  if (!active) { layer.replaceChildren(); return; }
+  const [shape, color] = monthEffects[month - 1];
+  const count = window.innerWidth < 720 ? 12 : 18;
+  const fragment = document.createDocumentFragment();
+  for (let index = 0; index < count; index++) {
+    const particle = document.createElement('span');
+    particle.className = 'season-particle';
+    particle.style.setProperty('--x', `${(index * 41 + 9) % 101}%`);
+    particle.style.setProperty('--size', `${shape === 'mist' ? 20 : 8 + index % 4 * 3}px`);
+    particle.style.setProperty('--duration', `${10 + index % 5 * 3}s`);
+    particle.style.setProperty('--delay', `${-index * 1.7}s`);
+    particle.style.setProperty('--drift', `${index % 2 ? 36 : -34}px`);
+    particle.style.setProperty('--rotate', `${shape === 'snow' || shape === 'frost' ? 120 : 340}deg`);
+    particle.style.setProperty('--particle-color', color);
+    particle.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${effectShapes[shape]}</svg>`;
+    fragment.appendChild(particle);
+  }
+  layer.replaceChildren(fragment);
+}
+
+function mountEffects() {
+  if (document.getElementById('seasonEffectsToggle')) return;
+  const layer = document.createElement('div');
+  layer.id = 'seasonEffectsLayer';
+  layer.className = 'season-effects-layer';
+  layer.setAttribute('aria-hidden', 'true');
+  const button = document.createElement('button');
+  button.id = 'seasonEffectsToggle';
+  button.className = 'season-effects-toggle';
+  button.type = 'button';
+  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4m0 12v4M2 12h4m12 0h4M5 5l3 3m8 8 3 3M19 5l-3 3M8 16l-3 3"/><circle cx="12" cy="12" r="4"/></svg><span></span>';
+  button.addEventListener('click', () => {
+    effectsEnabled = !effectsEnabled;
+    try { localStorage.setItem(effectsKey, effectsEnabled ? 'on' : 'off'); } catch (_) {}
+    renderEffects(Number(document.documentElement.dataset.season) || currentMonth);
+  });
+  document.body.append(layer, button);
+  reducedMotion?.addEventListener?.('change', () => renderEffects(Number(document.documentElement.dataset.season) || currentMonth));
+  renderEffects(Number(document.documentElement.dataset.season) || currentMonth);
+}
 
 function scene(month) {
   const [,,sky,ground,ink] = MONTHS[month - 1];
@@ -45,6 +116,7 @@ function setMonth(month) {
   if (!Number.isInteger(month) || month < 1 || month > 12) return;
   document.documentElement.dataset.season = String(month);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', MONTHS[month - 1][4]);
+  renderEffects(month);
   const hero = document.querySelector('.home-hero');
   if (hero) {
     let artwork = hero.querySelector('.site-season-scene');
@@ -58,6 +130,7 @@ function setMonth(month) {
   }
 }
 setMonth(saved);
+mountEffects();
 
 function updatePicker() {
   const host = document.getElementById('kapaniSeasonPicker');
