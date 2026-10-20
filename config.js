@@ -14,7 +14,7 @@ const KAPANI_CONFIG = Object.freeze({
     // Канонический backend Web Push: Cloudflare Worker из push-worker/.
     // Не оставляйте пустым: пустой URL включает устаревший Firebase Functions fallback.
     pushWorkerUrl: "https://kapani-push.kapani.workers.dev",
-    admin: { username: "Денис" },
+    admin: { username: "Кайон" },
     jobs: { janitor: "Уборщик", janitorTaskText: "Убрать площадку" },
     finance: { minBalanceAllowed: -2500, pricePerKm: 250, maxSpeedKmh: 30 },
     location: { kapani: { lat: 52.628825753234985, lng: 38.416863347119566 } },
