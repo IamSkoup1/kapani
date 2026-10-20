@@ -317,7 +317,7 @@ async function createFirebaseCustomToken(env, uid) {
     iat: now,
     exp: now + 3600,
     uid: String(uid),
-    claims: {admin:String(uid)===String(env.ADMIN_NICK||'Денис')}
+    claims: {admin:!!env.ADMIN_NICK && String(uid)===String(env.ADMIN_NICK)}
   })));
   const input = `${header}.${payload}`;
   const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', customTokenKeyCache.key, te.encode(input)));

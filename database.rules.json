@@ -2,6 +2,11 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "siteAppearance": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.admin == true",
+      ".validate": "newData.hasChildren(['month', 'updatedAt']) && newData.child('month').isNumber() && newData.child('month').val() >= 1 && newData.child('month').val() <= 12 && newData.child('updatedAt').isNumber()"
+    },
     "users": {
       "$uid": {
         ".read": "auth != null && (auth.uid == $uid || auth.token.admin == true)",

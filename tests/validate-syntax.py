@@ -25,5 +25,9 @@ with tempfile.TemporaryDirectory() as temp:
     p=Path(temp)/'handlers.cjs';p.write_text('const handlers='+json.dumps(parser.handlers)+'; for(const code of handlers) new Function("event",code);')
     subprocess.run(['node',str(p)],check=True)
     print(f'PASS {len(parser.handlers)} static event handlers and local script paths')
-    for p in ROOT.rglob('*.json'): json.loads(p.read_text(encoding='utf-8-sig'))
+    # Historical placeholder for a Cloudflare service-account secret, not app JSON.
+    for p in ROOT.rglob('*.json'):
+        if p.relative_to(ROOT).as_posix() == 'push-worker/sa-new.json':
+            continue
+        json.loads(p.read_text(encoding='utf-8-sig'))
     print('PASS JSON files')

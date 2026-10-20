@@ -3,7 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#090508">
+<meta name="theme-color" content="#235e52">
+<script>
+try {
+    const savedMonth = Number(localStorage.getItem('kapani:sharedSeason'));
+    document.documentElement.dataset.season = String(Number.isInteger(savedMonth) && savedMonth >= 1 && savedMonth <= 12 ? savedMonth : new Date().getMonth() + 1);
+} catch (_) {
+    document.documentElement.dataset.season = String(new Date().getMonth() + 1);
+}
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Капани">
@@ -1002,7 +1010,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 }
 
 </style>
-<link rel="stylesheet" href="redesign.css?v=1">
+<link rel="stylesheet" href="redesign.css?v=2">
 </head>
 <body>
 
@@ -1129,7 +1137,7 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
 <!-- HEADER -->
 <div id="gHeader" style="display:none" class="g-header">
     <button type="button" class="brand-lockup" onclick="navTo('home')" aria-label="Капани — главная"><strong>KAPAN<i>I</i></strong><small>Посёлок со своими правилами</small></button>
-    <div class="header-links"><button type="button" onclick="navTo('home')">Главная</button><button type="button" onclick="navTo('news')">Новости</button><button type="button" onclick="navTo('bank')">Банк</button><button type="button" onclick="openInfoModal()">О Капанях</button></div>
+    <div class="header-links"><button type="button" onclick="navTo('home')">Главная</button><button type="button" onclick="navTo('news')">Новости</button><button type="button" onclick="navTo('bank')">Банк</button><button type="button" id="mayorHeaderBtn" style="display:none" onclick="navTo('adminPage')">Мэрия</button><button type="button" onclick="openInfoModal()">О Капанях</button></div>
     <div class="header-actions"><div class="h-left" onclick="navTo('profile')">
         <div class="avatar-wrap" id="headerAvatarWrap">
             <img id="hAv" class="h-avatar" loading="lazy"><video id="hAvVideo" class="h-avatar" style="display:none;position:absolute;inset:0;object-fit:cover;border-radius:12px;" muted autoplay loop playsinline></video>
@@ -1243,12 +1251,12 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     </div>
 
     <div class="card">
-        <div class="card-title">🆘 Полезное</div>
+        <div class="card-title">Помощь и информация</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div style="grid-column:1/-1;display:flex;justify-content:center;">
-                <button class="btn btn-red help-call-btn" onclick="openCallModal()">📞 Вызов</button>
+                <button class="btn btn-red help-call-btn" onclick="openCallModal()">Вызвать помощь</button>
             </div>
-            <button class="btn btn-primary" style="grid-column:1/-1;" onclick="openInfoModal()">ℹ️ Информация</button>
+            <button class="btn btn-primary" style="grid-column:1/-1;" onclick="openInfoModal()">Информация о посёлке</button>
         </div>
     </div>
     <div id="homeOrders"></div>
@@ -1264,17 +1272,17 @@ body.kapani-shutdown-notice-open{overflow:hidden!important;}
     <div id="bizOrderSection" style="display:none;margin-bottom:14px;">
         <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <div class="card-title" id="bizOrderTitle" style="margin-bottom:0;">🧺 Ваши заказы</div>
+                <div class="card-title" id="bizOrderTitle" style="margin-bottom:0;">Ваши заказы</div>
                 <button class="btn btn-ghost btn-sm" onclick="navTo('rentBuildings')">Здания</button>
             </div>
             <div id="homeBizOrders"></div>
         </div>
     </div>
-    <div id="adminQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-gold" onclick="navTo('adminPage')">👑 Открыть Мэрию</button></div>
+    <div id="adminQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-gold" onclick="navTo('adminPage')">Открыть мэрию →</button></div>
     <div id="dutyQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-red" onclick="navTo('dutyPage')">🛡 Панель КСБ / Полиции<span class="bn-badge" id="dutyCallsBadge" style="position:static;display:none;margin-left:8px;"></span></button></div>
     <div id="hospitalQuickBtn" style="display:none;margin-bottom:14px;"><button class="btn btn-primary" onclick="navTo('hospitalPanel')">🏥 Панель больницы</button></div>
     <div class="card" style="padding:12px;">
-        <div class="card-title" style="margin-bottom:12px;">🗺 Карта поселка</div>
+        <div class="card-title" style="margin-bottom:12px;">Карта посёлка</div>
         <iframe class="map-frame" style="height:280px;" src="https://www.google.com/maps/d/embed?mid=1uYqkCigRmRXX6WOjTjIH01PsF9Na2xw&hl=ru&ll=52.629519493712436,38.41743147652263&z=17" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>
 </div>
@@ -5021,6 +5029,7 @@ function updateHeader(u) {
     updateFrozenOverlay(u);
     const isAdmin=currentNick===ADMIN, isDriver=hasMunicipalJob(u,'Водитель'), isDelivery=hasMunicipalJob(u,'Доставщик'), isJanitor=hasMunicipalJob(u,JOB_JANITOR);
     qs('adminQuickBtn').style.display=isAdmin?'block':'none';
+    const mayorHeaderBtn=qs('mayorHeaderBtn'); if(mayorHeaderBtn) mayorHeaderBtn.style.display=isAdmin?'inline-flex':'none';
     qs('workerSection').style.display=(isDriver||isDelivery||isJanitor)?'block':'none';
     if(isDriver) qs('workerTitle').textContent='🛵 Вызовы такси';
     if(isDelivery) qs('workerTitle').textContent='📦 Заказы на доставку';
@@ -6250,10 +6259,8 @@ window.openProfileCustomizer=async function(){
                 </div>
                 
                 <div style="margin-bottom:20px;">
-                    <div style="font-weight:800;font-size:14px;margin-bottom:10px;">🎨 Тема интерфейса</div>
-                    <select id="interfaceThemeSelect" style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);" onchange="previewInterfaceTheme(this.value)">
-                        ${themeOptions}
-                    </select>
+                    <div style="font-weight:800;font-size:14px;margin-bottom:10px;">Оформление сайта</div>
+                    <div style="font-size:13px;color:var(--muted);line-height:1.45;">Оформление общее для всех жителей. Его выбирает мэр в своей панели.</div>
                 </div>
                 ` : '<div style="text-align:center;color:var(--muted);padding:20px;">Нужна подписка для кастомизации</div>'}
                 
@@ -6367,19 +6374,12 @@ window.previewChatBg=function(style){
 };
 
 window.previewInterfaceTheme=function(theme){
-    // Temporarily apply theme to body for preview
+    // Shared site appearance takes precedence over legacy personal themes.
     document.body.classList.remove('theme-gold', 'theme-prime');
-    if(theme === 'gold') {
-        document.body.classList.add('theme-gold');
-    }
 };
 
 window.applyInterfaceTheme=function(theme){
-    // Apply theme class to body
     document.body.classList.remove('theme-gold', 'theme-prime');
-    if(theme === 'gold') {
-        document.body.classList.add('theme-gold');
-    }
 };
 window.saveProfileCustomization=async function(){
     const emojiSelect = qs('nicknameEmojiSelect');
@@ -6393,10 +6393,7 @@ window.saveProfileCustomization=async function(){
     if(frameSelect) updates.avatarFrame = frameSelect.value || null;
     if(bgSelect) updates.profileBgEffect = bgSelect.value || null;
     if(chatSelect) updates.chatBubbleStyle = chatSelect.value || null;
-    if(themeSelect) {
-        updates.interfaceTheme = (themeSelect.value === 'gold') ? 'gold' : 'default';
-        applyInterfaceTheme(updates.interfaceTheme);
-    }
+    // Preserve previously saved interfaceTheme data without overriding the site theme.
     await update(userRef(currentNick), updates);
     toast('✅ Настройки сохранены', 'green');
     closeProfileCustomizer();
@@ -9278,6 +9275,9 @@ window.rejectJanitorSubmission=async function(id){
     renderAdmin();
 };
 async function renderAdmin(){
+    const status=qs('mayorLoadStatus');
+    if(status) status.textContent='Загружаем данные мэрии…';
+    try {
     const[uSnap,oSnap,aSnap,jSnap,rSnap]=await Promise.all([get(ref(db,'users')),get(ordersRef()),get(appsRef()),get(janitorSubsRef()),get(rentBuildingsRef())]);
     renderAdminUsers(uSnap.val()||{});renderAdminOrders(oSnap.val()||{});renderAdminApps(aSnap.val()||{});renderAdminJanitorSubmissions(jSnap.val()||{});renderAdminUserSelect(uSnap.val()||{});renderUnverifiedAccounts();
     renderAdminBizApps();
@@ -9290,6 +9290,15 @@ async function renderAdmin(){
     renderAdminDeputyProposals();
     renderAdminAtmRequests();
     try { if(typeof window.renderMunicipalTreasury === 'function') window.renderMunicipalTreasury(); } catch(e) {}
+    if(status) status.textContent='';
+    } catch(error) {
+        console.error('[Kapani mayor data]',error);
+        if(status) status.textContent='Не удалось загрузить данные. Проверьте соединение и откройте мэрию ещё раз.';
+        for(const id of ['adminStats','adminOrders','allUsersList','adminRentBuildings','appList','janitorAdminList']){
+            const list=qs(id);
+            if(list && (!list.textContent.trim() || /загрузка/i.test(list.textContent))) list.textContent='Не удалось загрузить список. Попробуйте открыть мэрию ещё раз.';
+        }
+    }
 }
 
 async function renderAdminDeputyProposals() {
@@ -9452,6 +9461,12 @@ let _adminMoneyBusy = false;
 window.adminMoney=async function(){
     if(_adminMoneyBusy) return toast('⏳ Операция уже выполняется…','gold');
     if(currentNick!==ADMIN) return toast('🚫 Только мэр','red');
+    const confirmTarget=qs('adminTarget')?.value;
+    const confirmRaw=String(qs('adminAmt')?.value||'').trim();
+    const confirmAmount=/^-?\d+$/.test(confirmRaw) ? Number(confirmRaw) : NaN;
+    if(!confirmTarget) return toast('⚠️ Выберите жителя','gold');
+    if(!Number.isSafeInteger(confirmAmount)||confirmAmount===0) return toast('⚠️ Укажите целую сумму','gold');
+    if(!confirm(`${confirmAmount>0?'Зачислить':'Списать'} ${Math.abs(confirmAmount).toLocaleString('ru-RU')} ₽ ${confirmTarget}? Баланс изменится сразу.`)) return;
     _adminMoneyBusy=true;
     try{
         const target=qs('adminTarget')?.value;
@@ -9484,16 +9499,20 @@ window.adminMoney=async function(){
     }finally{_adminMoneyBusy=false;}
 };
 
+let _adminFineBusy=false;
 window.adminFineWorker=async function(){
+    if(currentNick!==ADMIN) return toast('Только для мэра','red');
+    if(_adminFineBusy) return toast('Операция уже выполняется','gold');
     const target=qs('adminTarget').value;
     const amt=Math.abs(parseInt(qs('adminFineAmt').value)||0);
     const reason=(qs('adminFineReason')?.value||'').trim();
     if(!target)return toast('⚠️ Выберите жителя','gold');
     if(amt<=0)return toast('⚠️ Укажите штраф','gold');
     if(!reason)return toast('⚠️ Укажите причину штрафа','gold');
-    const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
-    
+    if(!confirm(`Выписать штраф ${amt.toLocaleString('ru-RU')} ₽ жителю ${target}? Причина: ${reason}. Деньги будут списаны с баланса.`)) return;
+    _adminFineBusy=true;
     try {
+        const snap=await get(userRef(target));if(!snap.exists())return toast('❌ Не найден','red');
         // Вызываем Cloud Function с fallback
         const result = await callFunctionWithFallback('adminAdjustBalance', { 
             uid: target, 
@@ -9518,12 +9537,12 @@ window.adminFineWorker=async function(){
             await pushNotification(target,`💸 Штраф ${amt}₽ от мэрии. Причина: ${reason}`,'money');
             qs('adminFineAmt').value='';if(qs('adminFineReason'))qs('adminFineReason').value='';
             toast(`💸 Штраф ${amt}₽ → ${target}`,'red');
-        }
+        } else toast('Не удалось выписать штраф','red');
     } catch (error) {
         console.error('Ошибка штрафа:', error);
         const message = error.message || 'Ошибка при выполнении операции';
         toast(`❌ ${message}`,'red');
-    }
+    } finally { _adminFineBusy=false; }
 };
 window.adminSetMigrant = async function(on){
     if(currentNick!==ADMIN) return;
@@ -10081,6 +10100,7 @@ function startTaskLiveListeners(){
     scheduleTaskLiveRefresh();
 }
 window.navTo=function(id){
+    if(id==='adminPage' && currentNick!==ADMIN){ toast('Раздел доступен только мэру','red'); return; }
     const previousPage=curPage;
     if(previousPage && previousPage!==id){
         leaveService(previousPage);
@@ -10093,7 +10113,7 @@ window.navTo=function(id){
     if(el){requestAnimationFrame(()=>{void el.offsetHeight;el.style.pointerEvents='';});}
     enterService(id);
     try{ attachLivePage(id); }catch(e){ console.debug('[Kapani live] attach:',e?.message||e); }
-    if(id==='adminPage') { renderAdmin(); setTimeout(renderAdminAdvertiserStats,50); }
+    if(id==='adminPage') { window.mountMayorDashboard?.(); renderAdmin(); setTimeout(renderAdminAdvertiserStats,50); }
     if(id==='kveExam') renderKveSection();
     if(id==='jobs') renderKveSection();
     if(id==='driverPage'||id==='deliveryPage') get(ordersRef()).then(s=>renderWorkerPage(s.val()||{}));
@@ -16474,6 +16494,7 @@ window.renderBizOwnerPanel = renderBizOwnerPanel;
 // ─── KAPANI PACK v2: expose module-scoped symbols to window for the additive pack ───
 try {
   window.db = db;
+  window.kapaniGetAuth = ensureAuth;
   window.ADMIN = ADMIN;
   window.JOB_JANITOR = JOB_JANITOR;
   window.MIN_BALANCE_ALLOWED = MIN_BALANCE_ALLOWED;
@@ -17164,6 +17185,7 @@ ready(function(){
   }
 
   function injectAdminUI(){
+    if(window._getCurrentNick?.() !== ADMIN) return;
     const adminPage = qs('adminPage'); if(!adminPage) return;
     if(qs('adminLicensesCard')){ ensureAdminPoliceListener(); _bindAdminTarget(); return; }
     const card = document.createElement('div');
@@ -17562,6 +17584,7 @@ ready(function(){
   const _kapaniBaseNavTo = window.navTo;
   let _kapaniLastPage = null;
   window.navTo = function(id){
+    if(id==='adminPage' && window._getCurrentNick?.() !== ADMIN) return;
     const previous = _kapaniLastPage;
     _kapaniLastPage = id;
     window._kapaniActivePage = id;
@@ -18775,5 +18798,7 @@ ready(function(){
   document.addEventListener('click',e=>{const target=e.target.closest('.bn-item');if(!target)return;target.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});});
 })();
 </script>
+<script src="./assets/kapani-ui.js" defer></script>
+<script type="module" src="./assets/kapani-season.js"></script>
 </body>
 </html>

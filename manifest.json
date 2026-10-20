@@ -4,8 +4,8 @@
   "description": "Официальное приложение Капани",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0c1117",
-  "theme_color": "#22d3a5",
+  "background_color": "#f4f3ec",
+  "theme_color": "#235e52",
   "orientation": "portrait",
   "scope": "./",
   "icons": [
