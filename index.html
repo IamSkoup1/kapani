@@ -3,111 +3,133 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#08130f">
-  <meta name="description" content="Технические работы. Готовится что-то маштабное...">
-  <title>Технические работы</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-
-    :root {
-      color-scheme: dark;
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      font-synthesis: none;
-      text-rendering: optimizeLegibility;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    html { min-height: 100%; background: #08130f; }
-    body { margin: 0; min-height: 100vh; min-height: 100dvh; }
-
-    .scene {
-      position: relative;
-      isolation: isolate;
-      display: grid;
-      place-items: center;
-      min-height: 100vh;
-      min-height: 100dvh;
-      overflow: hidden;
-      padding: max(32px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right))
-               max(32px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
-      text-align: center;
-    }
-
-    .scene::before {
-      content: "";
-      position: absolute;
-      z-index: -2;
-      inset: -14px;
-      background: #10251d url("./assets/dark-forest.webp") center center / cover no-repeat;
-      filter: blur(4px) brightness(.72) saturate(.82);
-      transform: scale(1.025);
-    }
-
-    .scene::after {
-      content: "";
-      position: absolute;
-      z-index: -1;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 75% 68% at 50% 47%, rgba(8, 19, 15, .18), rgba(4, 12, 9, .65) 100%),
-        linear-gradient(180deg, rgba(4, 11, 8, .25), rgba(7, 18, 14, .24) 48%, rgba(2, 9, 6, .66));
-      pointer-events: none;
-    }
-
-    .message {
-      width: min(100%, 1050px);
-      transform: translateY(-2%);
-    }
-
-    .line {
-      width: 58px;
-      height: 2px;
-      margin: 0 auto 34px;
-      border-radius: 10px;
-      background: #a1cc9b;
-      box-shadow: 0 0 20px rgba(156, 216, 151, .32);
-    }
-
-    h1 {
-      margin: 0;
-      color: #f2f6f1;
-      font-size: clamp(2.75rem, 6.8vw, 6.4rem);
-      font-weight: 750;
-      letter-spacing: -.057em;
-      line-height: 1.06;
-      text-wrap: balance;
-      text-shadow: 0 4px 35px rgba(0, 0, 0, .35);
-    }
-
-    p {
-      margin: 25px 0 0;
-      color: rgba(231, 242, 231, .76);
-      font-size: clamp(1rem, 1.7vw, 1.35rem);
-      font-weight: 400;
-      letter-spacing: .02em;
-      line-height: 1.55;
-      text-shadow: 0 2px 18px rgba(0, 0, 0, .5);
-    }
-
-    @media (max-width: 600px) {
-      .scene::before { background-position: 47% center; }
-      .message { transform: translateY(-3%); }
-      .line { width: 42px; margin-bottom: 25px; }
-      h1 { font-size: clamp(2.6rem, 11.5vw, 4.4rem); letter-spacing: -.052em; }
-      p { margin-top: 18px; max-width: 18em; margin-inline: auto; }
-    }
-
-    @media (max-width: 350px) {
-      h1 { font-size: 2.35rem; }
-    }
-  </style>
+  <meta name="theme-color" content="#07130f">
+  <meta name="description" content="Капани вернулись. Знакомый посёлок, новый сайт: красивый дизайн, уведомления и ещё больше своих сервисов.">
+  <meta property="og:title" content="Капани — новая версия сайта">
+  <meta property="og:description" content="Всё своё. Теперь по-новому. Заходи посмотреть, что изменилось и что скоро появится.">
+  <title>Капани — новая глава</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%230a2518'/%3E%3Cpath d='M32 8 10 37h12L13 49h38L42 37h12L32 8Z' fill='%239de5ab'/%3E%3Crect x='28' y='45' width='8' height='12' fill='%239de5ab'/%3E%3C/svg%3E">
+  <link rel="preload" as="image" href="./assets/forest-road.webp" fetchpriority="high">
+  <link rel="stylesheet" href="./assets/site.css">
+  <script>document.documentElement.classList.add('js');</script>
+  <script src="./assets/site.js" defer></script>
 </head>
 <body>
-  <main class="scene">
-    <div class="message">
-      <div class="line" aria-hidden="true"></div>
-      <h1>Технические работы</h1>
-      <p>Готовится что-то маштабное...</p>
+  <div class="intro" id="intro" aria-label="Заставка запуска Капани">
+    <div class="intro-halo" aria-hidden="true"></div>
+    <div class="intro-orbit intro-orbit--outer" aria-hidden="true"></div>
+    <div class="intro-orbit intro-orbit--inner" aria-hidden="true"></div>
+    <div class="intro-particles" id="introParticles" aria-hidden="true"></div>
+    <div class="intro-content">
+      <div class="intro-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" fill="none">
+          <path d="M50 10 22 47h14L16 70h68L64 47h14L50 10Z" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M50 69v20M29 79h42" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/>
+          <path d="M24 59h52" stroke="currentColor" stroke-width="1.4" opacity=".45"/>
+        </svg>
+      </div>
+      <p class="intro-overline">Там, где свои</p>
+      <h1 class="intro-word">Капани<span class="intro-stop">.</span></h1>
+      <p class="intro-caption">Это только начало.</p>
+      <span class="intro-spark intro-spark--one" aria-hidden="true"></span>
+      <span class="intro-spark intro-spark--two" aria-hidden="true"></span>
+    </div>
+    <div class="intro-bottom">
+      <span class="intro-loader" aria-hidden="true"><span></span></span>
+      <button type="button" class="skip-intro" id="skipIntro">Пропустить заставку <span aria-hidden="true">↗</span></button>
+    </div>
+  </div>
+
+  <main class="site" id="landing" aria-hidden="true">
+    <div class="scenery" aria-hidden="true">
+      <div class="scenery-image scenery-image--active" data-scene="0" style="background-image:url('./assets/forest-road.webp')"></div>
+      <div class="scenery-image" data-scene="1" style="background-image:url('./assets/village-road.webp')"></div>
+      <div class="scenery-image" data-scene="2" style="background-image:url('./assets/riverside.webp')"></div>
+      <div class="scenery-shade"></div>
+      <div class="scenery-grain"></div>
+    </div>
+
+    <div class="site-shell">
+      <header class="site-header">
+        <div class="brand" aria-label="Капани">
+          <span class="brand-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none"><path d="M24 4 9 24h8L7 36h34L31 24h8L24 4Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M24 35v10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </span>
+          <span>Капани<span class="brand-dot">.</span></span>
+        </div>
+        <div class="live-tag"><span class="live-light" aria-hidden="true"></span> Новая версия уже здесь</div>
+        <span class="header-place">Сделано для своих</span>
+      </header>
+
+      <section class="hero" id="top" aria-labelledby="heroTitle">
+        <div class="hero-story">
+          <div class="hero-kicker"><span class="kicker-line"></span> Капани вернулись</div>
+          <h2 id="heroTitle">Снова свои.<br><em>Только лучше.</em></h2>
+          <p class="hero-lead">Капанёвский сайт наконец-то обновился. Всё, что мы любим в наших местах, осталось на месте. А сам сайт теперь выглядит и работает совсем по-другому.</p>
+          <div class="hero-signature">
+            <span class="signature-icon" aria-hidden="true">✳</span>
+            <span>Те же Капани. Новые возможности.</span>
+          </div>
+        </div>
+
+        <div class="news-panel">
+          <div class="panel-heading"><span class="panel-eyebrow">Что поменялось</span><span class="panel-index">01 / Обновление</span></div>
+          <div class="changes">
+            <div class="change-row">
+              <div class="change-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 10h18M9 10v10"/></svg></div>
+              <div><h3>Новый аккуратный дизайн сайта</h3><p>Приятнее смотреть, удобнее пользоваться — и с телефона, и с компьютера.</p></div>
+            </div>
+            <div class="change-row">
+              <div class="change-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"/><path d="M18.5 3.5 21 6"/></svg></div>
+              <div><h3>Push-уведомления даже при закрытом сайте</h3><p>Важное не пройдёт мимо, если разрешишь уведомления.</p></div>
+            </div>
+            <div class="change-row">
+              <div class="change-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m4 13 5 5L20 6"/><circle cx="12" cy="12" r="9"/></svg></div>
+              <div><h3>Прочие исправления</h3><p>Подчистили старые косяки и привели многое в порядок. Работы ещё хватит, но уже стало лучше.</p></div>
+            </div>
+          </div>
+
+          <div class="panel-divider"><span>А дальше — ещё интереснее</span></div>
+          <div class="coming-soon">
+            <div class="soon-card">
+              <span class="soon-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="2.5" y="6" width="19" height="12" rx="5"/><path d="M8 10v5M5.5 12.5h5M16.5 10.5h.01M19 13.5h.01" stroke-linecap="round"/></svg></span>
+              <div class="soon-copy"><h3>Капанёвский «Steam»</h3><p>Свои игры, которые можно будет покупать за капанёвские рубли.</p></div>
+              <span class="soon-label">Скоро</span>
+            </div>
+            <div class="soon-card">
+              <span class="soon-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3 9.5 8.5 4 11l5.5 2.5L12 19l2.5-5.5L20 11l-5.5-2.5L12 3Z"/><path d="m19 17 1 2.5 2 1-2 1L19 24l-1-2.5-2-1 2-1L19 17Z"/></svg></span>
+              <div class="soon-copy"><h3>KapaniGPT</h3><p>Наша нейросеть. Если что-то и будет платным, расчёт — в капанёвских рублях.</p></div>
+              <span class="soon-label">Скоро</span>
+            </div>
+          </div>
+
+          <div class="money-message">
+            <span class="money-symbol" aria-hidden="true">₽</span>
+            <p>Остались честно заработанные деньги со старого сайта? Напиши Кайону уже на новом — разберёмся с возвратом. А вот нарисованные «триллионы», само собой, не вернём.</p>
+          </div>
+
+          <a class="enter-button" href="https://iamskoup.github.io/kapani/">
+            <span class="enter-shine" aria-hidden="true"></span>
+            <span>Перейти на новый сайт</span>
+            <span class="enter-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span>
+          </a>
+          <p class="enter-hint">Увидимся там.</p>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <div class="slide-meta"><span class="slide-count" id="slideCount">01 <span>/ 03</span></span><span class="slide-description" id="slideDescription">Лесные дороги</span></div>
+        <div class="slide-controls" aria-label="Слайдшоу пейзажей">
+          <div class="slide-dots" id="slideDots">
+            <button class="slide-dot is-current" type="button" data-go="0" aria-label="Лесные дороги" aria-current="true"><span></span></button>
+            <button class="slide-dot" type="button" data-go="1" aria-label="Деревенская улица"><span></span></button>
+            <button class="slide-dot" type="button" data-go="2" aria-label="У реки"><span></span></button>
+          </div>
+          <span class="controls-divider"></span>
+          <button class="scene-arrow" type="button" id="previousScene" aria-label="Предыдущая фотография"><svg viewBox="0 0 24 24" fill="none"><path d="M19 12H5m6 6-6-6 6-6"/></svg></button>
+          <button class="scene-arrow" type="button" id="nextScene" aria-label="Следующая фотография"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+        </div>
+      </footer>
     </div>
   </main>
 </body>
